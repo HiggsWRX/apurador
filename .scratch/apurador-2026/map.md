@@ -1,0 +1,51 @@
+# Apurador 2026 — mapa
+
+Label: wayfinder:map
+
+## Destination
+
+Especificação fechada e com os riscos resolvidos do site Apurador, pronta para construir até **domingo, 19/10/2026**. Ela cobre o núcleo ao vivo (placar parcial, curva real, curva projetada, projeção, chance de vitória) e o explorador histórico. A construção e o ensaio ficam para 20 a 24/10, e o uso ao vivo é na apuração do 2º turno, **domingo, 25/10/2026**.
+
+## Notes
+
+- Domínio: eleição presidencial brasileira, 2º turno de 2026, Flávio Bolsonaro (PL) × Lula (PT). No 1º turno (04/10), Flávio teve 47,03% e Lula 45,16% dos votos válidos.
+- Vocabulário: `GLOSSARY.md` na raiz do repositório. Use os termos de lá: seções totalizadas, placar parcial, projeção, chance de vitória, curva projetada, virada, lugar.
+- Skills de toda sessão: `grilling` + `domain-modeling` (manter o `GLOSSARY.md` em dia).
+- Mapa de planejamento: os tickets produzem decisões, não código.
+- O prazo é inegociável para o **núcleo ao vivo**. O **explorador histórico** entra só no que couber sem atrasá-lo.
+- Site público, sem login nem cadastro, em português.
+- Lugares: Brasil → UF (e Exterior, no mesmo nível, fora do mapa) → município. Histórico: 2026 1T, 2022 1T/2T, 2018 1T/2T.
+- A curva projetada é o gráfico principal. O eixo horizontal é o % de seções totalizadas.
+- **Não é só mais um site de apuração**: o objetivo é tornar a apuração mais interessante e engajante.
+- **Pesquisas eleitorais entram no modelo.** A projeção e a chance de vitória combinam um agregado de pesquisas com a apuração. O modelo aprende com eleições passadas quanto as pesquisas erraram em relação ao resultado. O visitante pode alternar entre usar **só a apuração** e usar **apuração + pesquisas**.
+- Comparações: ao vivo, cada lugar se compara com o 1º turno de 2026 *e* com o que as pesquisas indicavam. No histórico, dá para comparar quaisquer dois turnos.
+- Produto: celular primeiro. Uma página por lugar, com o bloco ao vivo em cima e o histórico embaixo; a inicial é o Brasil. Postura apartidária, com página de metodologia e aviso de que projeção não é resultado oficial.
+- Construção: Claude escreve o código e o dono do projeto revisa e decide. Tecnologia: TypeScript, o resto a critério do Claude. Hospedagem no plano gratuito da Cloudflare; repositório no GitHub (a definir qual conta). O dono não tem contas ainda: **Claude não cria contas nem digita senhas**, então criação de conta e logins são tarefas do dono, previstas para 18/10. Até lá, repositório Git local, com tudo preparado para ir ao GitHub e à Cloudflare depois.
+- Ensaio geral obrigatório antes de 25/10: rodar uma apuração passada inteira, acelerada, no site.
+- Lançamento o quanto antes, em fases. O núcleo ao vivo tem prazo duro: 17h de 25/10 (20h UTC).
+- **Antes das 17h de 25/10, o site publica o agregado de pesquisas, a projeção e a chance de vitória**, aceitando a zona cinzenta legal, **condicionado à** [Consulta a advogado eleitoral](issues/16-consulta-advogado-eleitoral.md). A forma de apresentação segue a orientação do advogado.
+- Controle **Base da projeção**: "Só apuração" ou "Apuração + pesquisas" (padrão).
+- Pesquisas usadas no agregado: só registradas no TSE, de institutos com histórico em 2018/2022, nacionais e por UF se houver volume. O erro histórico é medido com os 2º turnos de 2002 a 2022, uso interno.
+- Engajamento escolhido: **narração da noite**, **curva de comparação** (qualquer turno passado, desligada por padrão) e **simulador "e se"**.
+- A página de metodologia mostra como o modelo teria se saído em 2018 e 2022.
+- Achados de pesquisa ficam em `.scratch/apurador-2026/research/`, apontados pelo ticket.
+
+## Decisions so far
+
+- [Restrições legais à projeção](issues/04-restricoes-legais.md): projeção e chance de vitória calculadas com resultados oficiais podem ser publicadas a partir das 17h de 25/10, quando o TSE libera o resultado. Publicar agregado de pesquisas ou projeção baseada em pesquisas *antes* disso é zona cinzenta, com multa possível. Pesquisas registradas exibidas uma a uma exigem os seis dados do art. 10. Enquetes são proibidas. Dados do TSE são CC-BY e não podem ser alterados. Cores neutras e tratamento igual aos candidatos.
+- [Dados históricos por município e malhas](issues/03-dados-historicos-e-malhas.md): o TSE (CC-BY) basta para o nível de município, com a tabela oficial TSE→IBGE casando 100% dos códigos. O exterior entra no total Brasil, sem polígono. O arquivo `detalhe_votacao_secao` (2018, 2022, 2026) traz a hora de recebimento e de primeira totalização de **cada seção**, o que permite reconstruir as curvas reais passadas. A malha correta exige simplificar a do IBGE 2024/2025, porque a API só tem a de 2022, sem Boa Esperança do Norte (MT). Dados agregados com cerca de 0,7 MB e malha com 0,4 a 1 MB, com gzip. Os arquivos oficiais do 2T 2026 só saem por volta de 26–27/10.
+- [Métodos de projeção da apuração](issues/05-metodos-de-projecao.md): os métodos de referência (WaPo, NYT, DDHQ, *exit poll* britânico) projetam a variação de cada unidade em relação a uma linha de base, que para nós é a variação entre o 1T e o 2T de 2026. A recomendação é variação por município, com recuo hierárquico (município → região do IBGE → UF) e erros correlacionados. A curva projetada é a soma das projeções por unidade na ordem de chegada prevista, e ninguém publica uma pronta. Projetos abertos de 2026 relatam erro de 0,1 a 0,2 p.p. depois de 25% das seções. Ganho relatado de usar pesquisas como ponto de partida durante a apuração: no máximo 0,05 p.p.
+
+## Not yet specified
+
+- **Operação na noite**: monitoramento, plano B se o TSE mudar ou bloquear o acesso, correção manual. Depende de *Arquitetura e tecnologia*.
+- **Plano de lançamento em fases**: o site vai ao ar o quanto antes. O que entra em cada fase (explorador histórico, metodologia com histórico de acerto, simulador, núcleo ao vivo) depende da arquitetura e do que se pode mostrar antes das 17h de 25/10.
+- **Página de metodologia**: explicação do modelo e o histórico de acerto do modelo em 2018 e 2022. O conteúdo depende do método escolhido.
+
+## Out of scope
+
+- Governadores e outros cargos: só Presidente (definido no charting, por causa do prazo).
+- Recortes menores que município (zona, local de votação, bairro, seção) no site. Seções e municípios podem ser usados *internamente* pelo modelo.
+- Eleições anteriores a 2018.
+- Login, contas, personalização.
+- Cards para compartilhar e palpites dos visitantes: não escolhidos para o engajamento. Uma votação aberta de visitantes ("quem vai ganhar?") seria, além disso, uma enquete, que é proibida.
