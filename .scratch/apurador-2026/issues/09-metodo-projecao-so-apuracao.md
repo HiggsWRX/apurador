@@ -17,6 +17,13 @@ Testar de 2 a 3 métodos candidatos, vindos de *Métodos de projeção da apura�
 
 Insumos já conhecidos, por [Dados históricos por município e malhas](03-dados-historicos-e-malhas.md): `detalhe_votacao_secao` traz a hora de primeira totalização de cada seção, base para reproduzir a ordem real de chegada. Só 92,4% das seções de 2026 têm a mesma chave de 2022, então é preciso uma regra para as que não casam. Há 5.246 votos "nulos técnicos" no 1T de 2026 nos arquivos por seção, que devem ser tratados como nulos.
 
+Achados de [Linha do tempo de apurações passadas](02-linha-do-tempo-apuracoes-passadas.md) que restringem o método:
+
+- Centro-Oeste e Sul chegam cedo, e Sudeste e Nordeste chegam tarde. No 1T de 2026, a fatia de Lula contra Flávio subiu de 44% no primeiro décimo das seções para 59% no último.
+- O que falta apurar não se parece com o que já chegou: até ±10 p.p. entre metades de uma UF, e 2,4 p.p. em média dentro do município, com seções tardias +1,4 p.p. a favor de Lula em 2022. Variação uniforme por UF erra de forma sistemática; a base precisa ser no mínimo o município, com folga para essa deriva.
+- A ordem por seção quase não se repete entre turnos (correlação de 0,15 a 0,55); o padrão por UF e região se repete. A curva projetada precisa de incerteza na ordem de chegada.
+- O 2º turno anda bem mais rápido que o 1º (em 2022, chegou a 50% 69 minutos antes).
+
 Pontos a decidir levantados por [Métodos de projeção da apuração](05-metodos-de-projecao.md):
 
 - unidade do modelo (município, zona ou seção), conforme o que o TSE divulga ao vivo;
