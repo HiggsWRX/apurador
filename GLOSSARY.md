@@ -24,6 +24,10 @@ _Avoid_: votos totais
 O % de votos válidos de cada candidato entre as seções já totalizadas.
 _Avoid_: resultado parcial, parcial
 
+**Placar entre finalistas**:
+Num 1º turno, o % de cada um dos dois finalistas sobre a soma dos votos dos dois (no Brasil, em 2026: Flávio 51,0, Lula 49,0). É a base de toda comparação entre um 2º turno e o 1º turno.
+_Avoid_: resultado do 1º turno (quando é a base de comparação com o 2º)
+
 **Curva real**:
 A trajetória do placar parcial ao longo do % de seções totalizadas, com os dados já divulgados.
 
@@ -45,8 +49,12 @@ Uma pesquisa de intenção de voto registrada no TSE, de um instituto, com datas
 _Avoid_: sondagem, enquete (enquete é outra coisa: sem metodologia amostral)
 
 **Agregado de pesquisas**:
-A estimativa combinada de várias pesquisas para um lugar, num momento.
+A estimativa combinada das pesquisas nacionais, num momento. Só existe para o Brasil.
 _Avoid_: média das pesquisas, poll of polls
+
+**Indicação das pesquisas**:
+O % de votos válidos que as pesquisas indicam para cada candidato num lugar. No Brasil, é o agregado de pesquisas. Nos outros lugares, é o placar entre finalistas do lugar no 1º turno, somado à mesma mudança que o agregado mostra para o Brasil.
+_Avoid_: agregado da UF, pesquisa do lugar
 
 **Erro histórico das pesquisas**:
 A diferença, medida em eleições passadas, entre o que o agregado de pesquisas indicava e o resultado oficial.

@@ -17,3 +17,5 @@ Qual é o roteiro do dono e do coletor em 25/10, do preparo do computador até o
 - **Fim da noite**: quando o coletor para, como fica o site depois da totalização final e quem desliga o quê.
 
 Decisões de [Arquitetura e tecnologia](08-arquitetura-e-tecnologia.md) que moldam esta: coletor no computador do dono, só com conexões de saída, estado em disco e supervisor que reinicia (16); JSONs ao vivo no R2 com plano B de republicação (15); cada estado da noite guardado no R2 (18); aviso de "atualização interrompida" depois de 3 min (19). Cuidado de [API ao vivo do TSE](01-api-ao-vivo-tse.md): 100 req/s por IP, bloqueio de 10 min que se renova, e 404 e 304 contam. O [Ensaio geral](15-ensaio-geral.md) é onde este roteiro é testado.
+
+De [Agregado de pesquisas e erro histórico](10-agregado-de-pesquisas.md): a última atualização das pesquisas é um deploy até as 23h de 24/10, e nada das pesquisas muda em 25/10. O roteiro começa conferindo que esse deploy está no ar.

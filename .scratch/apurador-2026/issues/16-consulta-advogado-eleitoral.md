@@ -19,3 +19,11 @@ Levar ao advogado o arquivo [research/04-restricoes-legais.md](../research/04-re
 6. A malha de municípios do IBGE pode ser redistribuída e exibida no site? (O IBGE não declara licença aberta explícita para ela.)
 
 Resolvido quando houver uma orientação por escrito, registrada aqui em resumo, sobre o que se pode mostrar antes das 17h e com que forma.
+
+O que se pretende mostrar, por [Agregado de pesquisas e erro histórico](10-agregado-de-pesquisas.md):
+
+- **(a)** A lista das pesquisas usadas: só nacionais, de 14 institutos com histórico, com registro conferido no CSV do TSE. Cada uma traz os seis dados do art. 10 e link para a fonte.
+- **(b)** O agregado (média simples dessas pesquisas, em votos válidos) com faixa de incerteza, e a linha de tendência desde 05/10.
+- **(c)** A projeção e a chance de vitória antes da apuração.
+
+A atualização é diária, até as 23h de 24/10. Pesquisas divulgadas em 25/10 não entram. Sem sinal verde, até as 17h de 25/10 aparece só (a).

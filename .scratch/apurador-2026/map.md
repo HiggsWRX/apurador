@@ -26,7 +26,8 @@ Especificação fechada e com os riscos resolvidos do site Apurador, pronta para
 - Lançamento o quanto antes, em fases. O núcleo ao vivo tem prazo duro: 17h de 25/10 (20h UTC).
 - **Antes das 17h de 25/10, o site publica o agregado de pesquisas, a projeção e a chance de vitória**, aceitando a zona cinzenta legal, **condicionado à** [Consulta a advogado eleitoral](issues/16-consulta-advogado-eleitoral.md). A forma de apresentação segue a orientação do advogado.
 - Controle **Base da projeção**: "Só apuração" ou "Apuração + pesquisas" (padrão).
-- Pesquisas usadas no agregado: só registradas no TSE, de institutos com histórico em 2018/2022, nacionais e por UF se houver volume. O erro histórico é medido com os 2º turnos de 2002 a 2022, uso interno.
+- Pesquisas usadas no agregado: só registradas no TSE, de institutos com histórico em 2018/2022, só nacionais (regra exata em [Agregado de pesquisas e erro histórico](issues/10-agregado-de-pesquisas.md)). O erro histórico é medido com os 2º turnos de 2002 a 2022, uso interno.
+- Comparações com o 1º turno usam o **placar entre finalistas**, e "o que as pesquisas indicavam" é a **indicação das pesquisas** (ver `GLOSSARY.md`).
 - Engajamento escolhido: **narração da noite**, **curva de comparação** (qualquer turno passado, desligada por padrão) e **simulador "e se"**.
 - A página de metodologia mostra como o modelo teria se saído em 2018 e 2022.
 - Achados de pesquisa ficam em `.scratch/apurador-2026/research/`, apontados pelo ticket.
@@ -42,6 +43,7 @@ Especificação fechada e com os riscos resolvidos do site Apurador, pronta para
 - [Pesquisas eleitorais: dados atuais e erro histórico](issues/06-pesquisas-eleitorais.md): **não existe fonte oficial dos percentuais**. O TSE só publica metadados de registro, então os números vêm da Wikipédia e da imprensa. Há 19 pesquisas nacionais do 2T 2026 até 17/10. **Pesquisas por UF do 2T são insuficientes** (30 registros, quase todos em RN, DF e TO). O erro histórico nacional dá para medir (2002–2022, cerca de 1,2 ponto na participação e 2,5 na margem, sem lado fixo), mas o ajuste por instituto seria frágil. No 1T 2026, as pesquisas subestimaram Flávio em 2,8 pontos na margem. Os dados históricos abertos têm buracos e sujeira.
 - [Arquitetura e tecnologia](issues/08-arquitetura-e-tecnologia.md): **a CDN da Cloudflare atende todos os visitantes, e o computador do dono é o coletor.** Páginas estáticas em Astro e Preact (com camada 3D opcional em three.js), JSONs ao vivo no R2 com cache curto, e o coletor em Node lendo o TSE a cada 20 s com IP residencial. Tudo em TypeScript, nos planos gratuitos. Descartados: Workers dinâmicos, GitHub Actions como coletor e servir visitantes do computador. O placar oficial aparece sem alteração, separado dos cálculos.
 - [Método de projeção só com a apuração](issues/09-metodo-projecao-so-apuracao.md): **transferência de votos corrigida pelo próprio município**, por município, com incerteza analítica e erros correlacionados. No 2T de 2022 errou 0,1 p.p. com 5% das seções, contra 4,2 do placar parcial. A **virada é mostrada como ponto mais faixa**, com ordem de chegada "mistura", porque perto de 50% ela é muito sensível. O desvio das seções tardias fica na incerteza, sem correção. Os ajustes são provisórios, a calibrar no ensaio com o 1T de 2026.
+- [Agregado de pesquisas e erro histórico](issues/10-agregado-de-pesquisas.md): **agregado só nacional**, a média simples da última pesquisa de cada um de **14 institutos com histórico** em 7 dias. O centro não é deslocado pelo viés do 1º turno, e a incerteza é de 1,5 ponto na eleição (em 18/10: Flávio 51,0%, chance de ~71%). Os outros lugares recebem a **indicação das pesquisas**: o próprio placar entre finalistas do 1º turno mais a mudança nacional. A coleta é manual, conferida contra o TSE e congelada às 23h de 24/10. Sem sinal verde do advogado, até as 17h de 25/10 o site mostra só a lista das pesquisas.
 
 ## Not yet specified
 
@@ -54,4 +56,5 @@ Especificação fechada e com os riscos resolvidos do site Apurador, pronta para
 - Eleições anteriores a 2018.
 - Login, contas, personalização.
 - [Acesso ao TSE a partir da nuvem](issues/17-acesso-ao-tse-pela-nuvem.md): fechado. O coletor roda no computador do dono, com IP residencial, sem reserva na nuvem.
+- Pesquisas estaduais do 2º turno, no modelo e no site: só há 30 registros, nenhum em SP, PR, RS, PE ou CE (ver [Agregado de pesquisas e erro histórico](issues/10-agregado-de-pesquisas.md)).
 - Cards para compartilhar e palpites dos visitantes: não escolhidos para o engajamento. Uma votação aberta de visitantes ("quem vai ganhar?") seria, além disso, uma enquete, que é proibida.

@@ -15,3 +15,4 @@ O site vai ao ar o quanto antes, em fases. O que entra em cada fase, em que data
 - O que acontece com o site depois de 25/10: o resultado final e o histórico do 2º turno de 2026, quando o TSE publicar os arquivos oficiais (por volta de 26–27/10).
 
 Restrições: o prazo é inegociável só para o núcleo ao vivo; o explorador histórico e o 3D entram no que couber sem atrasá-lo ([Arquitetura e tecnologia](08-arquitetura-e-tecnologia.md), decisão 9). A construção e o ensaio ocupam 20 a 24/10.
+- De [Agregado de pesquisas e erro histórico](10-agregado-de-pesquisas.md): a lista das pesquisas, com os seis dados do art. 10, pode ir ao ar sem o sinal verde do advogado. O agregado, a tendência, a projeção e a chance de vitória antes das 17h dependem dele. Cada atualização do agregado é um deploy por dia até as 23h de 24/10, então uma fase com pesquisas só tem uso se entrar no ar antes disso.
