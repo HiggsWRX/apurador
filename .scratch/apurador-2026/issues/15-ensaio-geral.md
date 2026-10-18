@@ -1,7 +1,7 @@
 # Ensaio geral
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 02, 08
 Map: [Apurador 2026](../map.md)
 
