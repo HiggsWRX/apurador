@@ -4,7 +4,7 @@ Label: wayfinder:map
 
 ## Destination
 
-Especificação fechada e com os riscos resolvidos do site Apurador, pronta para construir até **domingo, 19/10/2026**. Ela cobre o núcleo ao vivo (placar parcial, curva real, curva projetada, projeção, chance de vitória) e o explorador histórico. A construção e o ensaio ficam para 20 a 24/10, e o uso ao vivo é na apuração do 2º turno, **domingo, 25/10/2026**.
+Especificação fechada e com os riscos resolvidos do site Apurador, pronta para construir até **segunda, 19/10/2026**. Ela cobre o núcleo ao vivo (placar parcial, curva real, curva projetada, projeção, chance de vitória) e o explorador histórico. A construção e o ensaio ficam para 20 a 24/10, e o uso ao vivo é na apuração do 2º turno, **domingo, 25/10/2026**.
 
 ## Notes
 
