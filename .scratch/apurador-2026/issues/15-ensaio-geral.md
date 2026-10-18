@@ -186,3 +186,11 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
     - o link para o app do TSE depois de 10 min de "interrompida";
     - a passagem da página para o plano B;
     - os alertas no computador, no celular e da sentinela.
+- 18/10/2026, de [Volume de gravações na noite](24-volume-de-gravacoes-na-noite.md):
+  - **Gravações por ensaio** (decisão 4 de lá): cada ensaio geral grava ~115 mil vezes no R2, quase o mesmo que a noite. Por isso, só os dois ensaios gerais e testes de até 10 min publicam no R2. O resto dos testes da construção publica na pasta local.
+  - **Metas no ensaio 1** (decisão 9 de lá), que detalham a medição de gravações e volume do comentário anterior. Nenhuma bloqueia, e o ajuste é feito até o ensaio 2:
+    - as gravações do ensaio, levadas para a noite, ficam abaixo de 200 mil, e o teto de 1.500 por rodada nunca é atingido;
+    - o volume fica em ~500 MB por noite, somando o envio e o que vem do TSE;
+    - o contador de gravações do coletor bate com o painel da Cloudflare, com até 1% de diferença;
+    - os JSONs gravados com gzip chegam certos ao navegador pela borda, com ETag e 304. Se falhar, o coletor grava sem compressão.
+  - **Celular** (decisão 8 de lá): se o ensaio 1 medir mais de 500 MB por noite, entra o plano pronto, e o arquivo da noite fica no disco enquanto a conexão for o celular.

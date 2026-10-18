@@ -73,3 +73,14 @@ Onde roda cada parte do site e com que tecnologia, dentro do plano gratuito da C
   - **Sentinela** (decisão 8 de lá): um Worker agendado a cada minuto, um dos 5 Cron Triggers do Free, lê o arquivo de rodada público e alerta o dono pelo ntfy.
   - **Relógio** (decisão 7 de lá): o coletor compara o próprio relógio com o cabeçalho `Date` do TSE e alerta acima de 2 s.
   - **Fim** (decisão 21 de lá): na totalização final, o coletor publica a fase "encerrada" e para sozinho 30 min depois.
+- 18/10/2026, de [Volume de gravações na noite](24-volume-de-gravacoes-na-noite.md), que revê a decisão 18 daqui:
+  - **Arquivos ao vivo** (decisão 1 de lá):
+    - o JSON do município guarda só o que vem do arquivo do TSE dele e a narração dele;
+    - a projeção, a margem, a chance de vitória e a virada projetada de cada município, nas duas bases, vão para uma tabela de projeções por UF (28, contando o Exterior);
+    - o que é nacional vai para o arquivo de rodada: o peso das pesquisas, os quatro eventos do Brasil intercalados, a fase e as chaves.
+    - UF e Brasil continuam com JSON completo. Sem essa separação, uma noite passaria de 500 mil gravações no R2.
+  - **Desenho no navegador** (detalha a decisão 1 daqui): a página de município desenha a própria curva projetada ligando o placar parcial à projeção, sem rodar o modelo.
+  - **Só o que mudou** (decisão 2 de lá): cada arquivo é gravado só quando os bytes mudam, com os números na precisão exibida.
+  - **Estados da noite** (decisão 3 de lá): um objeto comprimido por rodada, com o estado de retomada e os arquivos do TSE que chegaram nela.
+  - **Gzip** (decisão 6 de lá): os JSONs vão ao R2 já comprimidos, conferido no ensaio 1.
+  - **Conta**: ~135 mil gravações por noite e ~370 mil no mês, com os dois ensaios. No plano B (decisão 15 daqui), são ~5.820 arquivos, dentro dos 20.000 por versão.

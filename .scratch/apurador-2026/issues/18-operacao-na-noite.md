@@ -198,3 +198,13 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
 **Novo ticket**: [Volume de gravações na noite](24-volume-de-gravacoes-na-noite.md). A conta de gravações no R2 foi feita para um JSON só, antes de a decisão 18 da Arquitetura passar a um JSON por lugar.
 
 **Glossário**: entram "Plano zero", "Painel do coletor", "Alerta", "Aviso", "Vigia", "Sentinela" e "Roteiro da noite".
+
+## Comments
+
+- 18/10/2026, de [Volume de gravações na noite](24-volume-de-gravacoes-na-noite.md):
+  - **Painel do coletor** (decisões 5 e 8 de lá, detalham a decisão 6 daqui): a parte de gravação passa a mostrar as gravações do mês nos dois buckets, contadas pelo coletor, e os MB que passaram pelo celular desde a troca.
+  - **Trava em 90%** (decisão 5 de lá, abre uma exceção na decisão 7 daqui): com 90% das gravações do mês, o coletor passa sozinho a gravar só Brasil, UFs, tabelas de projeções e arquivo de rodada, mais cada município no máximo a cada 5 min, e manda um **alerta crítico**. É a exceção ao "nenhum alerta age sozinho", porque a alternativa é cobrança. O alerta de atenção acima de 70% continua.
+  - **Teto por rodada**: no máximo 1.500 gravações. O excedente fica para a rodada seguinte, nesta ordem: arquivo de rodada, Brasil, UFs, tabelas e os municípios mais antigos.
+  - **Franquia** (decisão 7 de lá, fecha a decisão 2 daqui): uma noite inteira pelo celular dá ~500 MB, e o dono confirma pelo menos 1 GB livre em 25/10, com ancoragem liberada. Se faltar, ele compra um pacote extra até 24/10. A operadora e o plano seguem não informados.
+  - **Reserva de internet** (decisão 8 de lá, sobre a decisão 2 daqui): sem modo especial, e o coletor faz o mesmo no cabo e no celular.
+  - **Retomada** (decisão 3 de lá, detalha a decisão 4 daqui): o estado no R2 é o último objeto da rodada, com narração, hashes, chaves e contador. Uma partida sem estado no disco nem no R2 regrava todos os arquivos ao vivo uma vez, ~5.900 gravações.

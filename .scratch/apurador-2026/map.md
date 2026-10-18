@@ -70,6 +70,11 @@ Especificação fechada e com os riscos resolvidos do site Apurador, pronta para
   - **Falhas**: cada uma tem um cartão no roteiro da noite (`docs/roteiro-da-noite.md`, impresso). A reserva de internet é o celular por USB, e a troca é puxar o cabo, porque o computador não tem Wi-Fi.
   - **Fim**: na totalização final, o coletor publica "encerrada" e para sozinho.
   - **Do dono**: preparar o computador até 21/10 e medir o nobreak.
+- [Volume de gravações na noite](issues/24-volume-de-gravacoes-na-noite.md): **o JSON do município guarda só o que vem do TSE dele e a narração dele**, e cada arquivo só é gravado quando muda.
+  - **Onde fica o resto**: as projeções dos municípios vão para uma tabela por UF, e o que é nacional (peso das pesquisas, eventos do Brasil, fase, chaves) vai para o arquivo de rodada.
+  - **Conta**: no 2T de 2022, isso dá ~135 mil gravações no R2 por noite e ~370 mil no mês, com os dois ensaios, contra ~2 milhões por noite regravando todo lugar.
+  - **Trava**: em 90% do mês, o coletor reduz sozinho as gravações e manda um alerta crítico.
+  - **Celular**: uma noite inteira pelo celular dá ~500 MB, e o dono confirma 1 GB livre. Não há modo especial para a reserva.
 
 ## Not yet specified
 
