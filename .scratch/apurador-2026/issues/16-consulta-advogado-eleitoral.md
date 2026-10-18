@@ -27,3 +27,7 @@ O que se pretende mostrar, por [Agregado de pesquisas e erro histórico](10-agre
 - **(c)** A projeção e a chance de vitória antes da apuração, e a curva projetada da noite, com a virada projetada. Ver [Combinação de pesquisas e apuração](11-combinacao-pesquisas-e-apuracao.md).
 
 A atualização é diária, até as 23h de 24/10. Pesquisas divulgadas em 25/10 não entram. Sem sinal verde, até as 17h de 25/10 aparece só (a).
+
+## Comments
+
+- 18/10/2026, na sessão de [Telas da página de lugar](12-telas-da-pagina-de-lugar.md): o dono do projeto informou que **consultou um advogado e está liberado para fazer o agregado de pesquisas** (e, com ele, a projeção e a chance de vitória com pesquisas antes das 17h). Falta registrar aqui o resumo por escrito da orientação, incluindo as perguntas 2 a 6, para resolver este ticket.
