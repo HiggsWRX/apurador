@@ -102,6 +102,14 @@ _Avoid_: feed, timeline, ao vivo (sozinho)
 O recurso em que o visitante ajusta hipóteses e vê a projeção e a curva projetada resultantes. Ele nunca substitui a projeção do site.
 _Avoid_: cenários, previsão do usuário
 
+**Página de lugar**:
+A página do site dedicada a um lugar, com o bloco ao vivo em cima e o histórico embaixo. A inicial é a do Brasil.
+_Avoid_: tela, painel, dashboard
+
+**Manchete**:
+A frase gerada no topo da página de lugar que resume o momento da apuração ali: sempre o placar parcial oficial e, no máximo, uma frase atribuída à projeção.
+_Avoid_: título, resumo, chamada
+
 **Lugar**:
 Um recorte consultável: Brasil, estado (UF), Exterior ou município. Não há recorte menor que município.
 _Avoid_: região (reservado às cinco regiões do IBGE), localidade

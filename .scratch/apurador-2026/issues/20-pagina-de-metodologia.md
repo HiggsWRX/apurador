@@ -21,6 +21,8 @@ O que já está decidido e precisa entrar:
   - os dados do TSE aparecem sem alteração, com atribuição (CC-BY);
   - a lista das pesquisas traz os seis dados do art. 10.
 
+- **Sino da projeção**, de [Telas da página de lugar](12-telas-da-pagina-de-lugar.md): a distribuição do resultado final, com a área de cada lado de 50% igual à chance de vitória de cada candidato. Saiu da página de lugar, onde a chance aparece numa barra dividida, e serve aqui para explicar de onde vem a chance. Está pronto no protótipo (`svgSino` em `componentes.js`, variante C).
+
 A decidir:
 
 - Ordem e profundidade: um resumo em cima e os detalhes abaixo?

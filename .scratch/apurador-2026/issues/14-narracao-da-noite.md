@@ -20,4 +20,11 @@ De [Arquitetura e tecnologia](08-arquitetura-e-tecnologia.md): a narração é g
 
 De [Agregado de pesquisas e erro histórico](10-agregado-de-pesquisas.md): a discrepância entre pesquisas e apuração num lugar é medida contra a **indicação das pesquisas** daquele lugar. Comparações com o 1º turno usam o **placar entre finalistas**, nunca o % sobre todos os válidos.
 
+De [Telas da página de lugar](12-telas-da-pagina-de-lugar.md):
+- **No celular**: o último evento aparece numa linha sob a **manchete**, e a lista dos 5 últimos vem depois da projeção, com "Ver toda a narração".
+- **No computador**: a lista completa fica numa coluna fixa.
+- **Na curva**: os eventos aparecem como números que batem com os da lista. Hoje são virada, marcos, "pesquisas param de pesar" e indicação do TSE.
+- **Manchete**: a regra é a da decisão 5 desse ticket, que também gera texto e precisa do mesmo tom.
+- **Nomes ambíguos**: no protótipo, "São Paulo terminou" confundia o estado com a capital na página do município. O texto precisa distinguir os dois.
+
 De [Combinação de pesquisas e apuração](11-combinacao-pesquisas-e-apuracao.md): "As pesquisas deixaram de pesar" é um evento candidato. Ele acontece quando as duas bases da projeção passam a coincidir no Brasil (menos de 0,1 p.p. na projeção e menos de 1 ponto na chance de vitória). O JSON traz o peso das pesquisas a cada rodada.
