@@ -1,7 +1,7 @@
 # Narração da noite
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 01
 Map: [Apurador 2026](../map.md)
 
