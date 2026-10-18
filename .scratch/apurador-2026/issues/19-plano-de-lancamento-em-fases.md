@@ -1,7 +1,7 @@
 # Plano de lançamento em fases
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: —
 Map: [Apurador 2026](../map.md)
 
