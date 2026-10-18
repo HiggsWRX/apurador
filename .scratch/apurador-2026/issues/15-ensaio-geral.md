@@ -170,3 +170,19 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
 **Para a construção**: o TSE falso precisa marcar a indicação do TSE no mesmo campo do EA20 que o TSE usa. O campo ainda não foi conferido no dicionário do EA20.
 
 **Glossário**: entram "Ensaio geral", "Calibração" e "Chave de publicação".
+
+## Comments
+
+- 18/10/2026, de [Operação na noite](18-operacao-na-noite.md): o roteiro está resolvido (decisão 10 daqui) e vira `docs/roteiro-da-noite.md`, que o ensaio 2 segue passo a passo.
+  - **Antes de 22/10**: o nobreak fica 5 min fora da tomada, com tudo ligado, para medir a autonomia.
+  - **Ensaio 1, também**:
+    - apertar o botão de reiniciar e ver o coletor voltar pela tarefa do Agendador, com meta de 5 min;
+    - testar a reserva fria no notebook, se houver;
+    - medir o volume de dados por hora e as gravações no R2 por rodada (ver [Volume de gravações na noite](24-volume-de-gravacoes-na-noite.md));
+    - conferir os limites provisórios dos alertas.
+  - **Ensaio 2, também**:
+    - o TSE falso responde 403 por um tempo, para testar o bloqueio e a troca de IP;
+    - os três avisos prontos;
+    - o link para o app do TSE depois de 10 min de "interrompida";
+    - a passagem da página para o plano B;
+    - os alertas no computador, no celular e da sentinela.

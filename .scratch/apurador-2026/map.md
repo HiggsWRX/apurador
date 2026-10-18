@@ -64,6 +64,12 @@ Especificação fechada e com os riscos resolvidos do site Apurador, pronta para
   - **A calibração**: escolhe as constantes, a zona, o K e o limite do sinal de virada em três noites (2T 2022, 2T 2018 inteiro e 1T 2026), por regra escrita antes, sem treinar nada.
   - **A aprovação**: é por bloco, cada um com a sua chave de publicação, e um bloco reprovado fica desligado na noite. Sem o núcleo mínimo, vale o **plano zero**: o site manda para o app do TSE e não publica dado ao vivo.
   - **Do dono**: comprar o domínio até 21/10.
+- [Operação na noite](issues/18-operacao-na-noite.md): **o dono opera, com um vigia de fora e o Claude de prontidão, e nenhum alerta age sozinho.**
+  - **Ver e agir**: um painel do coletor que só mostra (arquivo local, sem porta) e comandos de terminal com confirmação. As ações são fechadas: chaves por bloco, plano zero reversível, três avisos prontos, troca para o plano B e retirada de pesquisa até as 16h.
+  - **Alertas**: críticos e de atenção, no computador e no celular (ntfy), mais uma sentinela na nuvem para quando o computador some. Depois de 10 min de "interrompida", a página manda sozinha para o app do TSE.
+  - **Falhas**: cada uma tem um cartão no roteiro da noite (`docs/roteiro-da-noite.md`, impresso). A reserva de internet é o celular por USB, e a troca é puxar o cabo, porque o computador não tem Wi-Fi.
+  - **Fim**: na totalização final, o coletor publica "encerrada" e para sozinho.
+  - **Do dono**: preparar o computador até 21/10 e medir o nobreak.
 
 ## Not yet specified
 

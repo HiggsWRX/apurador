@@ -142,3 +142,7 @@ Resolvido em 18/10/2026 com o protótipo (branch `prototipo/telas-pagina-lugar`)
   - **Mapa** (decisões 19 e 22 de lá): volta a ter um plano B, agora por desempenho. Se o mapa não desenhar todos os municípios em até 2 s no Android barato, nem em canvas, a chave do mapa fica desligada e o cartão mostra só a Tabela.
   - **Base da projeção** (decisão 19 de lá): se a base Apuração + pesquisas for reprovada, o controle de base some e a página mostra só "Só apuração".
   - **Fase** (decisão 7 de lá): a página passa das 17h para o ao vivo pelo arquivo de rodada, nunca pelo relógio do aparelho.
+- 18/10/2026, de [Operação na noite](18-operacao-na-noite.md):
+  - **Avisos prontos** (decisão 10 de lá): uma faixa abaixo da manchete, em todas as páginas, mostra um de três avisos prontos quando o dono publica. Não há texto livre.
+  - **Interrupção longa** (decisão 11 de lá): depois de 10 min de "interrompida", a página acrescenta "Acompanhe no app oficial do TSE", com o link, e mantém os últimos dados à vista.
+  - **Plano B** (decisão 14 de lá): a página lê o endereço principal dos JSONs ao vivo e passa ao do plano B se o principal der erro ou tiver rodada com mais de 2 min.

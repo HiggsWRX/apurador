@@ -171,3 +171,31 @@ _Avoid_: ZZ, UF exterior
 **Ensaio geral**:
 A reprodução de uma apuração passada inteira, acelerada, no site e na infraestrutura reais, com pessoas assistindo, para aprovar o site antes da noite.
 _Avoid_: teste, simulado (o simulado é do TSE)
+
+**Plano zero**:
+O estado do site em que nenhum dado ao vivo vai ao ar e a página manda o visitante para o app oficial do TSE. É reversível na própria noite.
+_Avoid_: site fora do ar, modo de emergência
+
+**Painel do coletor**:
+A tela do dono na noite, com o estado do coletor, do TSE e da publicação, e o site visto de fora. Nenhum visitante a vê.
+_Avoid_: painel (sozinho), dashboard, monitor
+
+**Alerta**:
+Um sinal ao dono de que algo na noite pede atenção, crítico ou de atenção. Nunca aparece para o visitante e nunca age sozinho.
+_Avoid_: aviso, alarme
+
+**Aviso**:
+Uma mensagem ao visitante sobre o estado do site, como "atualização interrompida". Fora os automáticos, só vão ao ar avisos prontos, de uma lista fechada.
+_Avoid_: alerta, comunicado
+
+**Vigia**:
+A pessoa que acompanha a noite de fora da rede do dono, como visitante, compara o site com o app oficial do TSE e reporta ao dono. Não opera nada.
+_Avoid_: monitor, sentinela
+
+**Sentinela**:
+O vigilante automático, fora do computador do dono, que confere se o site continua recebendo rodadas e alerta o dono quando elas param.
+_Avoid_: vigia, monitor
+
+**Roteiro da noite**:
+O passo a passo escrito do dono para 25/10: a linha do tempo do dia e, para cada falha, o sintoma, como confirmar, o que fazer e como voltar.
+_Avoid_: checklist, runbook, plano

@@ -64,3 +64,12 @@ Onde roda cada parte do site e com que tecnologia, dentro do plano gratuito da C
   - **Chaves** (decisão 19 de lá): a base Apuração + pesquisas e o mapa ganham chave de publicação própria.
   - **Zonas** (decisão 16 de lá, fecha a decisão 20 daqui): a zona entra no modelo só se a calibração mostrar ganho de pelo menos 0,05 p.p. em todas as noites.
   - **Domínio** (decisão 8 de lá): o dono compra o domínio até 21/10.
+- 18/10/2026, de [Operação na noite](18-operacao-na-noite.md):
+  - **Gravações** (decisão 18 daqui): com um JSON por lugar, a conta de 240 gravações por noite da pesquisa de limites não vale mais. O ticket [Volume de gravações na noite](24-volume-de-gravacoes-na-noite.md) refaz a conta antes da construção do coletor.
+  - **Painel e comandos** (decisão 5 de lá): o coletor grava a cada rodada uma página local, o painel do coletor, e lê um arquivo de controle com os comandos do dono. Nenhuma porta aberta, o que mantém a decisão 16 daqui.
+  - **Retomada em outra máquina** (decisão 4 de lá): sem estado em disco, o coletor retoma do último estado guardado no R2.
+  - **Bloqueio** (decisão 12 de lá): no primeiro 403 ou 429, o coletor para de pedir ao TSE. Depois da troca de IP, retoma com rodada a cada 40 s por 15 min.
+  - **Plano B** (decisão 14 de lá, detalha a decisão 15 daqui): a página conhece os dois endereços e passa ao outro se o principal der erro ou tiver rodada com mais de 2 min. O coletor só publica no plano B por comando do dono e fica nele até o fim da noite.
+  - **Sentinela** (decisão 8 de lá): um Worker agendado a cada minuto, um dos 5 Cron Triggers do Free, lê o arquivo de rodada público e alerta o dono pelo ntfy.
+  - **Relógio** (decisão 7 de lá): o coletor compara o próprio relógio com o cabeçalho `Date` do TSE e alerta acima de 2 s.
+  - **Fim** (decisão 21 de lá): na totalização final, o coletor publica a fase "encerrada" e para sozinho 30 min depois.

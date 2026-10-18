@@ -26,3 +26,7 @@ Restrições: o prazo é inegociável só para o núcleo ao vivo; o explorador h
   - **Ambiente**: o ensaio roda num ambiente fechado, com Worker, subdomínio e bucket próprios. Nunca toca no site de produção, mesmo que ele já esteja público.
   - **Domínio**: o dono compra `apurador.app` até 21/10 (decisão 8 de lá), então o lançamento pode usar o endereço definitivo.
   - **Plano zero**: se o núcleo mínimo não for aprovado até 24/10, a noite vai sem bloco ao vivo, com link para o app do TSE (decisão 24 de lá). O plano de fases precisa prever esse caminho.
+- De [Operação na noite](18-operacao-na-noite.md):
+  - **Fim da noite** (decisão 21 de lá): na totalização final do Brasil, o coletor publica a fase "encerrada" e para sozinho 30 min depois. O site fica com o último estado no R2, e a chave de escrita do R2 é revogada no dia seguinte. Qualquer mudança no site depois de 25/10 vai por deploy, ou por uma chave nova criada para isso.
+  - **Plano zero** (decisão 9 de lá): é desligar a chave do núcleo mínimo, e dá para voltar atrás na própria noite.
+  - **Congelamento do roteiro**: o [roteiro da noite](18-operacao-na-noite.md) congela às 23h de 24/10, junto com o último deploy das pesquisas.
