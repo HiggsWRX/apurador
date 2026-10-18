@@ -1,0 +1,20 @@
+{
+  "name": "@apurador/site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "typecheck": "astro check",
+    "deploy": "astro build && wrangler deploy"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "wrangler": "^4.151.1"
+  },
+  "dependencies": {
+    "astro": "^7.4.0",
+    "@apurador/pipeline": "*"
+  }
+}

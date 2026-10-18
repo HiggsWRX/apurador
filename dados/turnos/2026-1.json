@@ -1,0 +1,23 @@
+{
+  "ano": 2026,
+  "turno": 1,
+  "cargo": "Presidente",
+  "geracao": ["18/10/2026 16:32:58","18/10/2026 19:31:39"],
+  "candidatos": [
+    {"numero":22,"nome":"FLAVIO NANTES BOLSONARO","nomeUrna":"FLAVIO BOLSONARO","partido":"PL"},
+    {"numero":13,"nome":"LUIZ INÁCIO LULA DA SILVA","nomeUrna":"LULA","partido":"PT"},
+    {"numero":70,"nome":"AUGUSTO JORGE CURY","nomeUrna":"ESCRITOR AUGUSTO CURY","partido":"AVANTE"},
+    {"numero":14,"nome":"RENAN ANTONIO FERREIRA DOS SANTOS","nomeUrna":"RENAN SANTOS","partido":"MISSÃO"},
+    {"numero":55,"nome":"RONALDO RAMOS CAIADO","nomeUrna":"RONALDO CAIADO","partido":"PSD"},
+    {"numero":30,"nome":"ROMEU ZEMA NETO","nomeUrna":"ZEMA","partido":"NOVO"},
+    {"numero":80,"nome":"SAMARA MARTINS DA SILVA FEITOSA","nomeUrna":"SAMARA","partido":"UP"},
+    {"numero":16,"nome":"HERTZ DA CONCEICAO DIAS","nomeUrna":"HERTZ DIAS","partido":"PSTU"},
+    {"numero":27,"nome":"CLARIANA ZACARKIM BARAO","nomeUrna":"CLARIANA BARAO","partido":"DC"},
+    {"numero":21,"nome":"EDMILSON SILVA COSTA","nomeUrna":"EDMILSON COSTA","partido":"PCB"},
+    {"numero":35,"nome":"WILSON GRASSI JUNIOR","nomeUrna":"VETERINÁRIO WILSON GRASSI","partido":"DEMOCRATA"},
+    {"numero":29,"nome":"RUI COSTA PIMENTA","nomeUrna":"RUI COSTA PIMENTA","partido":"PCO"}
+  ],
+  "lugares": {
+    "BR": {"aptos":158745502,"votantes":125275835,"abstencoes":33469244,"validos":119300788,"brancos":2300798,"nulos":3674249,"secoes":517179,"votos":[56104503,53879538,3448569,2675887,2605148,326488,122911,43103,40043,22693,16881,15024]}
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "fontes": [
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip",
+      "membro": "votacao_candidato_munzona_2026_BR.csv",
+      "sha256": "3008e8035fdbce6512570c6248b270245f271a83739c661647b6b8c37ca323ce",
+      "bytes": 33579378,
+      "baixadoEm": "2026-10-18T23:38:28.902Z",
+      "geracao": [
+        "18/10/2026 19:31:39"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2026.zip",
+      "membro": "detalhe_votacao_munzona_2026_BR.csv",
+      "sha256": "93a6737d77cc1043a7ed7926fcf3c69e491ce953677db34247f5dce5fafd742a",
+      "bytes": 1737042,
+      "baixadoEm": "2026-10-18T23:38:28.777Z",
+      "geracao": [
+        "18/10/2026 16:32:58"
+      ]
+    }
+  ],
+  "derivados": [
+    {
+      "arquivo": "turnos/2026-1.json",
+      "sha256": "7b55fbd1559bab758046914a02892e5f1fd990275a824d0368d2ba59f423da58",
+      "fontes": [
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2026.zip"
+      ]
+    }
+  ]
+}

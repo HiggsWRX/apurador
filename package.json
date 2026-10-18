@@ -1,0 +1,26 @@
+{
+  "name": "apurador",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json && npm run typecheck -w @apurador/site",
+    "test": "vitest run",
+    "build": "npm run build -w @apurador/site",
+    "dados": "npm run gerar -w @apurador/pipeline",
+    "deploy": "npm run deploy -w @apurador/site"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "fflate": "^0.8.3",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

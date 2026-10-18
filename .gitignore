@@ -5,6 +5,9 @@ node_modules/
 .env.*
 .wrangler/
 dist/
+.astro/
+# cache dos arquivos baixados do TSE e do IBGE; o repositório guarda só os dados derivados
+.cache/
 # protótipos vivem em branches descartáveis (prototipo/*), fora da main
 prototipos/
 .claude/launch.json

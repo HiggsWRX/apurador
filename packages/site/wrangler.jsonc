@@ -1,0 +1,11 @@
+// O site é estático: um Worker só com static assets, sem código nosso rodando por visitante.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "apurador",
+  "compatibility_date": "2026-10-01",
+  // Só o endereço do próprio Worker, sem uma URL pública a mais por versão.
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist"
+  }
+}

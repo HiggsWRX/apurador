@@ -1,0 +1,72 @@
+---
+import type { Turno } from "@apurador/pipeline";
+import { formatarPct, formatarVotos } from "../lib/formato";
+
+interface Props {
+  turno: Turno;
+  lugar: string;
+}
+const { turno, lugar } = Astro.props;
+const resultado = turno.lugares[lugar];
+if (!resultado) throw new Error(`Sem resultado de ${lugar} em ${turno.ano} ${turno.turno}º turno`);
+
+// Os 5 mais votados (os candidatos já vêm em ordem de votos no Brasil) e o resto em "demais".
+const MAIORES = 5;
+const linhas = turno.candidatos.map((c, i) => ({ rotulo: `${c.nomeUrna} (${c.partido})`, votos: resultado.votos[i] ?? 0 })).sort((a, b) => b.votos - a.votos);
+const demais = linhas.slice(MAIORES);
+const barras = [
+  ...linhas.slice(0, MAIORES),
+  ...(demais.length > 0 ? [{ rotulo: `Demais candidatos (${demais.length})`, votos: demais.reduce((s, l) => s + l.votos, 0) }] : []),
+];
+---
+
+<section>
+  <h2>{turno.turno}º turno de {turno.ano}</h2>
+  <ol>
+    {
+      barras.map((b) => (
+        <li data-barra>
+          <span class="rotulo">{b.rotulo}</span>
+          <span class="numeros">
+            <strong>{formatarPct(b.votos, resultado.validos)}</strong> · {formatarVotos(b.votos)} votos
+          </span>
+          <span class="trilho">
+            <span class="barra" style={`width: ${(100 * b.votos) / resultado.validos}%`} />
+          </span>
+        </li>
+      ))
+    }
+  </ol>
+  <p class="nota">Percentuais sobre os votos válidos.</p>
+</section>
+
+<style>
+  ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .trilho {
+    grid-column: 1 / -1;
+    height: 0.5rem;
+    background: var(--trilho);
+  }
+  .barra {
+    display: block;
+    height: 100%;
+    background: var(--barra);
+  }
+  .numeros,
+  .nota {
+    color: var(--texto-suave);
+  }
+  .nota {
+    font-size: 0.85rem;
+  }
+</style>
