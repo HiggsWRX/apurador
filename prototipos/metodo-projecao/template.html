@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protótipo: método de projeção</title>
+<style>
+  :root {
+    --tx: #1f2328; --tx2: #57606a; --bg: #ffffff; --bg2: #f6f8fa; --bd: #d8dee4;
+    --acento: #2563eb; --lula: #0f766e; --bolso: #b45309; --mudou: #fff4c2;
+    --m-placar: #8c959f; --m-uf: #7c3aed; --m-municipio: #2563eb; --m-transferencia: #db2777;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--tx); background: var(--bg); }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 32px 0 12px; }
+  .selo { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; color: #9a3412; background: #ffedd5; border-radius: 4px; padding: 2px 8px; margin-bottom: 12px; }
+  .pergunta { background: var(--bg2); border-left: 3px solid var(--acento); padding: 12px 16px; border-radius: 4px; color: var(--tx2); }
+  .pergunta strong { color: var(--tx); }
+  .estado { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+  .campo { border: 1px solid var(--bd); border-radius: 6px; padding: 8px 12px; }
+  .campo .rotulo { font-size: 12px; color: var(--tx2); }
+  .campo .valor { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .campo.mudou { background: var(--mudou); }
+  .campo.real { border-style: dashed; }
+  .lula { color: var(--lula); } .bolso { color: var(--bolso); }
+  .grafico { border: 1px solid var(--bd); border-radius: 6px; padding: 8px; margin-top: 12px; }
+  svg { width: 100%; height: auto; display: block; }
+  .controles { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
+  @media (max-width: 760px) { .controles { grid-template-columns: 1fr; } }
+  .caixa { border: 1px solid var(--bd); border-radius: 6px; padding: 12px; }
+  .caixa h3 { font-size: 14px; margin: 0 0 8px; }
+  button { font: inherit; font-size: 14px; border: 1px solid var(--bd); background: var(--bg); border-radius: 6px; padding: 6px 10px; cursor: pointer; margin: 0 4px 6px 0; }
+  button:hover:not(:disabled) { border-color: var(--acento); }
+  button:disabled { opacity: .4; cursor: default; }
+  button.proximo { border-color: var(--acento); background: #eff4ff; font-weight: 600; }
+  button.feito { color: var(--tx2); text-decoration: line-through; }
+  input[type=range] { width: 100%; }
+  .metodo { display: block; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+  .metodo:hover { background: var(--bg2); }
+  .metodo small { display: block; color: var(--tx2); margin-left: 22px; }
+  .ajuste { margin-bottom: 10px; }
+  .ajuste label { display: flex; justify-content: space-between; font-size: 13px; }
+  .ajuste small { color: var(--tx2); display: block; font-size: 12px; }
+  .abas { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--bd); }
+  .abas button { margin: 0; border-radius: 6px 6px 0 0; border-bottom: none; }
+  .abas button.ativa { background: var(--bg2); font-weight: 600; }
+  .roteiro { border: 1px solid var(--bd); border-top: none; border-radius: 0 0 6px 6px; padding: 12px; background: var(--bg2); }
+  .roteiro p { margin: 0 0 10px; color: var(--tx2); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--bd); vertical-align: top; }
+  th { font-weight: 600; color: var(--tx2); }
+  tr.atual td { background: #eff4ff; }
+  .tabela { overflow-x: auto; }
+  .nota { color: var(--tx2); font-size: 13px; }
+  .legenda span { display: inline-block; margin-right: 14px; font-size: 13px; }
+  .legenda i { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="selo">PROTÓTIPO DESCARTÁVEL</div>
+  <h1>Método de projeção, só com a apuração</h1>
+  <div class="pergunta">
+    <strong>Pergunta:</strong> na base "Só apuração", qual método estima melhor o voto das seções que ainda não chegaram,
+    e com uma margem e uma chance de vitória honestas? Para descobrir, a página reproduz a noite real do
+    <strong>2º turno de 2022</strong> (Lula × Bolsonaro), seção por seção, na ordem e no horário em que o TSE as totalizou.
+    Cada método só "sabe" o que já tinha chegado naquele instante, mais o resultado do 1º turno de 2022 por município.
+    <br><br>
+    <strong>Premissas do protótipo:</strong> o modelo enxerga a apuração por município (como a divulgação ao vivo do TSE);
+    a ordem prevista de chegada, que só afeta a curva projetada e a virada, pode ser escolhida nos ajustes;
+    a margem é um intervalo de 95%.
+    Os ajustes estão sendo testados na mesma noite que os avalia, então o "placar do teste" é otimista.
+  </div>
+
+  <h2>Situação agora</h2>
+  <div class="estado" id="estado"></div>
+
+  <div class="grafico">
+    <svg id="curva" viewBox="0 0 800 380" role="img" aria-label="Curva real e curva projetada"></svg>
+    <div class="legenda" id="legendaCurva"></div>
+  </div>
+
+  <div class="controles">
+    <div class="caixa">
+      <h3>Avançar a apuração</h3>
+      <div>
+        <button data-acao="recomecar">Recomeçar (17h)</button>
+        <button data-acao="-5">−5%</button><button data-acao="-1">−1%</button>
+        <button data-acao="+1">+1%</button><button data-acao="+5">+5%</button>
+        <button data-acao="virada">Ir para a virada real</button>
+        <button data-acao="fim">Ir para o fim</button>
+      </div>
+      <input type="range" id="barra" min="-1" value="-1" aria-label="Fotografia da apuração">
+      <label style="display:block;margin-top:8px"><input type="checkbox" id="revelar"> Revelar o resultado final real</label>
+    </div>
+    <div class="caixa">
+      <h3>Método</h3>
+      <div id="metodos"></div>
+    </div>
+    <div class="caixa" style="grid-column: 1 / -1">
+      <h3>Ajustes da incerteza</h3>
+      <div class="controles" style="margin-top:0">
+        <div id="ajustes1"></div><div id="ajustes2"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Roteiros</h2>
+  <div class="abas" id="abas"></div>
+  <div class="roteiro" id="roteiro"></div>
+
+  <h2>Placar do teste: a noite inteira, para cada método</h2>
+  <p class="nota">Cada linha roda o método em todas as 100 e poucas fotografias da noite, com os ajustes atuais.
+    "Erro" é a distância entre a projeção e o resultado final real (50,90% para Lula), em pontos percentuais.</p>
+  <div class="tabela"><table id="teste"></table></div>
+  <div class="grafico">
+    <svg id="erros" viewBox="0 0 800 260" role="img" aria-label="Erro da projeção ao longo da noite"></svg>
+    <div class="legenda" id="legendaErros"></div>
+  </div>
+
+  <p class="nota" style="margin-top:24px">Dados: TSE, dados abertos (CC-BY): <code>detalhe_votacao_secao_2022</code> (hora da 1ª totalização de cada seção),
+    <code>votacao_secao_2022</code> (votos por seção, 2º turno) e <code>votacao_candidato_munzona_2022</code> (1º turno por município).
+    Gerado por <code>build_data.py</code>.</p>
+</main>
+
+<script>
+const DADOS = /*__DADOS__*/null;
+</script>
+
+<script>
+// ============================================================================
+// Módulo de projeção: funções puras sobre dados simples. Não toca no DOM.
+// É a parte que pode ser levada para o código real.
+// ============================================================================
+const Projecao = (() => {
+  const MIN_PAI = 2000;           // votos válidos apurados mínimos para um nível (UF, região) servir de referência
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const sq = x => x * x;
+
+  // Φ, função de distribuição da normal padrão
+  function phi(z) {
+    const t = 1 / (1 + 0.2316419 * Math.abs(z));
+    const d = 0.3989423 * Math.exp(-z * z / 2);
+    const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return z > 0 ? 1 - p : p;
+  }
+
+  // Derivados do 1º turno, por município.
+  function preparar(D) {
+    const n = D.mun.uf.length, M = D.mun;
+    const b = new Float64Array(n), l = new Float64Array(n), o = new Float64Array(n), r1 = new Float64Array(n);
+    for (let m = 0; m < n; m++) {
+      const T1 = M.L1[m] + M.B1[m] + M.O1[m];
+      b[m] = M.L1[m] + M.B1[m] > 0 ? M.L1[m] / (M.L1[m] + M.B1[m]) : 0.5;   // fatia de Lula entre os dois, no 1T
+      l[m] = T1 > 0 ? M.L1[m] / T1 : 0.5;                                    // fatia de Lula nos válidos do 1T
+      o[m] = T1 > 0 ? M.O1[m] / T1 : 0;                                      // fatia dos outros candidatos no 1T
+      r1[m] = M.aptos1[m] > 0 ? T1 / M.aptos1[m] : 0.8;                      // válidos por eleitor apto no 1T
+    }
+    return { ...D, n, b, l, o, r1 };
+  }
+
+  // Apuração acumulada até a fotografia k (k = -1: nada apurado).
+  function apuracaoNaFoto(P, k) {
+    const E = { k, sec: new Float64Array(P.n), aptos: new Float64Array(P.n), L: new Float64Array(P.n), B: new Float64Array(P.n) };
+    for (let j = 0; j <= k; j++) somarFoto(P, E, j);
+    return E;
+  }
+  function somarFoto(P, E, j) {
+    const ev = P.fotos[j].ev;
+    for (let i = 0; i < ev.length; i += 5) {
+      const m = ev[i];
+      E.sec[m] += ev[i + 1]; E.aptos[m] += ev[i + 2]; E.L[m] += ev[i + 3]; E.B[m] += ev[i + 4];
+    }
+    E.k = j;
+  }
+
+  function placar(P, E) {
+    let L = 0, B = 0, s = 0;
+    for (let m = 0; m < P.n; m++) { L += E.L[m]; B += E.B[m]; s += E.sec[m]; }
+    return { L, B, V: L + B, secoes: s, pct: 100 * s / P.N, lula: L + B > 0 ? L / (L + B) : null };
+  }
+
+  // Referência de cada UF: a variação média (métodos de variação) ou a fração dos "outros" que foi para Lula
+  // (transferência), com recuo UF -> região -> Brasil -> 1º turno quando falta dado.
+  function estimarReferencias(P, E, metodo) {
+    const nU = P.ufs.length, nR = P.regioes.length;
+    const novo = () => ({ W: 0, Sx: 0, Syo: 0, Soo: 0 });
+    const U = Array.from({ length: nU }, novo), R = Array.from({ length: nR }, novo), BR = novo();
+    for (let m = 0; m < P.n; m++) {
+      const nm = E.L[m] + E.B[m];
+      if (nm <= 0) continue;
+      const s = E.L[m] / nm, u = P.mun.uf[m];
+      for (const g of [U[u], R[P.ufRegiao[u]], BR]) {
+        g.W += nm; g.Sx += nm * (s - P.b[m]); g.Syo += nm * (s - P.l[m]) * P.o[m]; g.Soo += nm * P.o[m] * P.o[m];
+      }
+    }
+    const transf = metodo === 'transferencia';
+    const valor = g => transf ? (g.Soo > 0 ? clamp(g.Syo / g.Soo, 0, 1) : 0.5) : (g.W > 0 ? g.Sx / g.W : 0);
+    const prever = (m, par) => transf ? P.l[m] + par * P.o[m] : P.b[m] + par;
+    const ref = [];
+    for (let u = 0; u < nU; u++) {
+      const r = P.ufRegiao[u];
+      let g = null, fonte = '1º turno';
+      if (U[u].W >= MIN_PAI) { g = U[u]; fonte = 'UF'; }
+      else if (R[r].W >= MIN_PAI) { g = R[r]; fonte = 'região'; }
+      else if (BR.W >= MIN_PAI) { g = BR; fonte = 'Brasil'; }
+      ref.push({ par: g ? valor(g) : (transf ? 0.5 : 0), fonte });
+    }
+    // dispersão dos municípios em torno da referência da sua UF
+    const RS = Array.from({ length: nU }, () => ({ W: 0, S2: 0, W2: 0, c: 0 }));
+    for (let m = 0; m < P.n; m++) {
+      const nm = E.L[m] + E.B[m];
+      if (nm <= 0) continue;
+      const u = P.mun.uf[m], res = E.L[m] / nm - prever(m, ref[u].par), g = RS[u];
+      g.W += nm; g.S2 += nm * res * res; g.W2 += nm * nm; g.c++;
+    }
+    let tW = 0, tS2 = 0;
+    for (const g of RS) { tW += g.W; tS2 += g.S2; }
+    const sdBR = tW > 0 ? Math.sqrt(tS2 / tW) : 0.04;
+    // UFs que herdam a mesma referência (da região, do Brasil ou do 1º turno) erram juntas: mesmo "grupo".
+    return ref.map((e, u) => {
+      const g = RS[u];
+      const sdRes = Math.max(0.005, g.c >= 5 ? Math.sqrt(g.S2 / g.W) : sdBR);
+      const neff = g.W > 0 ? g.W * g.W / g.W2 : 0;
+      const se = e.fonte === 'UF' ? sdRes / Math.sqrt(Math.max(neff, 1)) : e.fonte === '1º turno' ? 0.04 : 0.02;
+      const grupo = e.fonte === 'UF' ? 'uf' + u : e.fonte === 'região' ? 'r' + P.ufRegiao[u] : e.fonte;
+      return { ...e, sdRes, se, grupo };
+    });
+  }
+
+  // Projeção do resultado final.
+  // metodo: 'placar' | 'uf' | 'municipio' | 'transferencia'
+  // prm: { tau: incerteza regional (p.p.), delta: incerteza nacional (p.p.), k: votos para o município valer metade }
+  function projetar(P, E, metodo, prm) {
+    const pl = placar(P, E);
+    const R = new Float64Array(P.n), shat = new Float64Array(P.n);
+    let num = 0, den = 0;
+    for (let m = 0; m < P.n; m++) if (E.aptos[m] > 0) { num += E.L[m] + E.B[m]; den += E.aptos[m] * P.r1[m]; }
+    const rho = den > 0 ? num / den : 1;            // válidos do 2T em relação ao 1T, onde já chegou
+    const ref = metodo === 'placar' ? null : estimarReferencias(P, E, metodo);
+    const RU = new Float64Array(P.ufs.length);
+    const pl0 = pl.V > 0 ? pl.L / pl.V : 0.5;
+    let varInd = 0, Rtot = 0, Ladd = 0;
+    for (let m = 0; m < P.n; m++) {
+      const remA = Math.max(0, P.mun.A[m] - E.aptos[m]);
+      if (remA <= 0) continue;
+      const nm = E.L[m] + E.B[m];
+      const Rm = remA * (E.aptos[m] >= 300 && nm > 0 ? nm / E.aptos[m] : P.r1[m] * rho);
+      let s = pl0;
+      if (ref) {
+        const u = P.mun.uf[m], e = ref[u];
+        const base = metodo === 'transferencia' ? P.l[m] + e.par * P.o[m] : P.b[m] + e.par;
+        const w = metodo !== 'uf' && nm > 0 ? nm / (nm + prm.k) : 0;
+        s = nm > 0 ? base + w * (E.L[m] / nm - base) : base;
+        RU[u] += Rm;
+        varInd += Rm * Rm * (1 - w) * e.sdRes * e.sdRes;
+      }
+      s = clamp(s, 0.01, 0.99);
+      R[m] = Rm; shat[m] = s; Rtot += Rm; Ladd += Rm * s;
+    }
+    const Vp = pl.V + Rtot, Pp = Vp > 0 ? (pl.L + Ladd) / Vp : 0.5;
+    if (!ref) return { P: pl.V > 0 ? Pp : null, sigma: null, chance: null, R, shat, Rtot, Vp };
+    let v = varInd + sq(Rtot * prm.delta / 100);
+    const grupos = new Map();
+    for (let u = 0; u < RU.length; u++) {
+      v += sq(RU[u] * prm.tau / 100);
+      const g = grupos.get(ref[u].grupo) || { R: 0, se: ref[u].se };
+      g.R += RU[u]; grupos.set(ref[u].grupo, g);
+    }
+    for (const g of grupos.values()) v += sq(g.R * g.se);
+    const sigma = Math.sqrt(v) / Vp;
+    return { P: Pp, sigma, chance: sigma > 0 ? phi((Pp - 0.5) / sigma) : (Pp > 0.5 ? 1 : 0), R, shat, Rtot, Vp, ref };
+  }
+
+  // Fração das seções do município m que já tinham chegado no 1º turno quando o país tinha x% das seções.
+  function perfil(P, m, x) {
+    const Q = P.perfilQ, base = m * Q.length;
+    if (x >= 100) return 1;
+    if (x <= 0) return P.perfil1T[base] / 1000;
+    const i = Math.min(Q.length - 2, Math.floor(x / (Q[1] - Q[0])));
+    const t = (x - Q[i]) / (Q[i + 1] - Q[i]);
+    return (P.perfil1T[base + i] * (1 - t) + P.perfil1T[base + i + 1] * t) / 1000;
+  }
+
+  // Curva projetada: o placar parcial daqui até 100%, somando o que falta de cada município
+  // segundo um modelo de ordem de chegada:
+  //   'turno1'       no ritmo em que o município chegou no 1º turno;
+  //   'proporcional' o que falta chega misturado, cada município na mesma proporção;
+  //   'ritmo'        cada UF continua no ritmo que mostrou até agora nesta noite;
+  //   'mistura'      média de 'turno1' e 'ritmo'.
+  function curvaProjetada(P, E, pr, passos = 50, ordem = 'mistura') {
+    const pl = placar(P, E), p0 = pl.pct;
+    if (ordem !== 'turno1' && ordem !== 'proporcional' && p0 < 2) ordem = ordem === 'mistura' ? 'turno1' : 'proporcional';
+    const cU = new Float64Array(P.ufs.length), sU = new Float64Array(P.ufs.length);
+    for (let m = 0; m < P.n; m++) { cU[P.mun.uf[m]] += E.sec[m]; sU[P.mun.uf[m]] += P.mun.S[m]; }
+    const lista = [];
+    for (let m = 0; m < P.n; m++) {
+      const remS = P.mun.S[m] - E.sec[m];
+      if (remS <= 0) continue;
+      const u = P.mun.uf[m], c0 = cU[u] / sU[u];
+      // ritmo: fração da UF que falta e chega a cada ponto percentual nacional, no ritmo observado
+      lista.push([m, remS, perfil(P, m, p0), c0 < 1 ? (c0 / (p0 / 100)) / (1 - c0) : 1e9]);
+    }
+    const pts = pl.V > 0 ? [{ x: p0, y: pl.lula, sd: 0 }] : [];
+    for (let st = 1; st <= passos; st++) {
+      const x = p0 + (100 - p0) * st / passos;
+      let aS = 0, aV = 0, aL = 0;
+      for (const [m, remS, F0, vel] of lista) {
+        const f1 = () => F0 >= 0.999 ? (x - p0) / (100 - p0) : clamp((perfil(P, m, x) - F0) / (1 - F0), 0, 1);
+        const fr = st === passos ? 1
+          : ordem === 'proporcional' ? (x - p0) / (100 - p0)
+          : ordem === 'ritmo' ? clamp(vel * (x - p0) / 100, 0, 1)
+          : ordem === 'mistura' ? (f1() + clamp(vel * (x - p0) / 100, 0, 1)) / 2
+          : f1();
+        aS += fr * remS; aV += fr * pr.R[m]; aL += fr * pr.R[m] * pr.shat[m];
+      }
+      const V = pl.V + aV;
+      if (V <= 0) continue;
+      const sd = pr.sigma != null && pr.Rtot > 0 ? pr.sigma * pr.Vp * (aV / pr.Rtot) / V : 0;
+      pts.push({ x: 100 * (pl.secoes + aS) / P.N, y: (pl.L + aL) / V, sd });
+    }
+    return pts;
+  }
+
+  // Ponto da curva projetada em que muda quem lidera, com a faixa em que isso pode acontecer:
+  // de quando a margem do candidato atrás encosta em 50% até quando a curva toda passa de 50%.
+  function viradaProjetada(pts) {
+    if (pts.length < 2) return null;
+    const lider0 = pts[0].y > 0.5 ? 'L' : 'B';
+    const atras = p => lider0 === 'L' ? 1 - p.y : p.y;               // fatia de quem está atrás agora
+    const cruza = f => {
+      for (let i = 1; i < pts.length; i++) {
+        const a = f(pts[i - 1]), b = f(pts[i]);
+        if (a <= 0.5 && b > 0.5) return pts[i - 1].x + (0.5 - a) / (b - a) * (pts[i].x - pts[i - 1].x);
+      }
+      return null;
+    };
+    const x = cruza(atras);
+    return {
+      x, quem: x == null ? lider0 : (lider0 === 'L' ? 'B' : 'L'),
+      cedo: cruza(p => atras(p) + 1.96 * p.sd),
+      tarde: x == null ? null : cruza(p => atras(p) - 1.96 * p.sd),
+    };
+  }
+
+  // Roda o método na noite inteira e resume o desempenho.
+  function testar(P, metodo, prm) {
+    const fim = P.final.L / (P.final.L + P.final.B), lulaVence = fim > 0.5;
+    const E = apuracaoNaFoto(P, -1), linhas = [], viradas = {};
+    const marcos = [20, 40, 60];
+    for (let j = 0; j < P.fotos.length; j++) {
+      somarFoto(P, E, j);
+      const pr = projetar(P, E, metodo, prm), pl = placar(P, E);
+      linhas.push({ p: pl.pct, P: pr.P, sigma: pr.sigma, chance: pr.chance, erro: pr.P == null ? null : 100 * Math.abs(pr.P - fim) });
+      for (const mk of marcos) if (viradas[mk] === undefined && pl.pct >= mk) viradas[mk] = viradaProjetada(curvaProjetada(P, E, pr, 40, prm.ordem));
+    }
+    const erroEm = pct => { const l = linhas.find(l => l.p >= pct); return l ? l.erro : null; };
+    const desde = ok => { let d = null; for (const l of linhas) { if (ok(l)) { if (d === null) d = l.p; } else d = null; } return d; };
+    const comS = linhas.filter(l => l.sigma != null);
+    return {
+      metodo, linhas, viradas,
+      erro5: erroEm(5), erro25: erroEm(25), erro50: erroEm(50),
+      acertaDesde: desde(l => l.P != null && (l.P > 0.5) === lulaVence),
+      chance95Desde: comS.length ? desde(l => l.chance != null && (lulaVence ? l.chance : 1 - l.chance) >= 0.95) : null,
+      cobertura: comS.length ? comS.filter(l => Math.abs(l.P - fim) <= 1.96 * l.sigma).length / comS.length : null,
+      brier: comS.length ? comS.reduce((s, l) => s + sq(l.chance - (lulaVence ? 1 : 0)), 0) / comS.length : null,
+    };
+  }
+
+  return { preparar, apuracaoNaFoto, placar, projetar, curvaProjetada, viradaProjetada, testar };
+})();
+</script>
+
+<script>
+// ============================================================================
+// Página (descartável): estado da tela, botões e gráficos.
+// ============================================================================
+const P = Projecao.preparar(DADOS);
+const FINAL = P.final.L / (P.final.L + P.final.B);
+const VIRADA_REAL = P.viradas.length ? P.viradas[P.viradas.length - 1] : null;
+const PADRAO = { tau: 1.0, delta: 1.0, k: 3000, ordem: 'mistura' };
+const ORDENS = {
+  mistura: { nome: 'Mistura', desc: 'Média entre "como no 1º turno" e "ritmo desta noite".' },
+  turno1: { nome: 'Como no 1º turno', desc: 'Cada município termina de chegar no mesmo ritmo em que chegou no 1º turno de 2022.' },
+  ritmo: { nome: 'Ritmo desta noite', desc: 'Cada UF continua no ritmo que mostrou até agora; as atrasadas ficam para o fim.' },
+  proporcional: { nome: 'Proporcional', desc: 'O que falta chega misturado: todo município na mesma proporção.' },
+};
+const METODOS = {
+  placar: { nome: 'Placar parcial', cor: 'var(--m-placar)', desc: 'Supõe que o que falta vota igual ao que já chegou. É a referência ingênua.' },
+  uf: { nome: 'Variação por UF', cor: 'var(--m-uf)', desc: 'Mede, em cada UF, quanto Lula ganhou ou perdeu em relação ao 1º turno nos municípios já apurados, e aplica essa variação a todos os municípios da UF.' },
+  municipio: { nome: 'Variação por município', cor: 'var(--m-municipio)', desc: 'Usa a variação do próprio município quando ele já tem votos apurados, e recua para a da UF quando tem pouco.' },
+  transferencia: { nome: 'Transferência de votos', cor: 'var(--m-transferencia)', desc: 'Estima, em cada UF, que fração dos votos dos outros candidatos do 1º turno foi para Lula, e aplica aos municípios que faltam, corrigindo pelo próprio município quando ele já tem votos.' },
+};
+const AJUSTES = [
+  { id: 'tau', nome: 'Incerteza regional', un: ' p.p.', min: 0, max: 4, passo: 0.25, onde: 'ajustes1',
+    desc: 'Quanto uma UF inteira pode se desviar da sua referência, além do erro estatístico.' },
+  { id: 'delta', nome: 'Incerteza nacional (erro comum a todos)', un: ' p.p.', min: 0, max: 4, passo: 0.25, onde: 'ajustes1',
+    desc: 'Um desvio que vale para todo o voto que falta ao mesmo tempo, como as seções tardias pendendo para um lado.' },
+  { id: 'k', nome: 'Peso do próprio município', un: ' votos', min: 0, max: 20000, passo: 500, onde: 'ajustes2',
+    desc: 'Quantos votos apurados um município precisa para que a variação dele valha metade e a da UF a outra metade. 0 = confiar totalmente nas primeiras seções.' },
+];
+
+let st = { k: -1, metodo: 'municipio', prm: { ...PADRAO }, revelar: false };
+let anterior = {};
+const cacheE = new Map();
+const estadoApuracao = k => { if (!cacheE.has(k)) cacheE.set(k, Projecao.apuracaoNaFoto(P, k)); return cacheE.get(k); };
+
+// curva real em cada fotografia
+const REAL = (() => {
+  const pts = []; let L = 0, B = 0;
+  for (const f of P.fotos) { for (let i = 0; i < f.ev.length; i += 5) { L += f.ev[i + 3]; B += f.ev[i + 4]; } pts.push({ x: f.p, y: L / (L + B) }); }
+  return pts;
+})();
+
+const fmt = (x, c = 2) => x.toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c });
+const pct = (x, c = 2) => fmt(100 * x, c) + '%';
+const chanceTxt = c => c > 0.995 ? '>99%' : c < 0.005 ? '<1%' : fmt(100 * c, 0) + '%';
+const fotoEm = alvo => { if (alvo <= 0.005) return -1; const i = P.fotos.findIndex(f => f.p >= alvo - 0.01); return i < 0 ? P.fotos.length - 1 : i; };
+const pctAtual = () => st.k < 0 ? 0 : P.fotos[st.k].p;
+
+// ---------------------------------------------------------------- ações
+const acoes = {
+  recomecar: () => { st.k = -1; },
+  ir: alvo => { st.k = fotoEm(alvo); },
+  andar: d => { st.k = d > 0 ? fotoEm(pctAtual() + d) : fotoEm(Math.max(0, pctAtual() + d)); },
+  virada: () => { st.k = fotoEm(VIRADA_REAL.p); },
+  fim: () => { st.k = P.fotos.length - 1; },
+  metodo: m => { st.metodo = m; },
+  ajuste: (id, v) => { st.prm[id] = v; },
+  padrao: () => { st.prm = { ...PADRAO }; },
+  revelar: v => { st.revelar = v; },
+};
+
+// ---------------------------------------------------------------- roteiros
+const ROTEIROS = [
+  { titulo: 'O começo enganoso',
+    texto: 'As primeiras seções vêm sobretudo do Centro-Oeste e do Sul, e o placar parcial abre com Bolsonaro bem à frente. Com 5% das seções, quase nada do Nordeste chegou. Veja o que cada método diz nesse momento e compare com o resultado real no fim.',
+    passos: [
+      ['Começar do zero com o Placar parcial', () => { acoes.recomecar(); acoes.padrao(); acoes.metodo('placar'); acoes.revelar(false); }],
+      ['Avançar para 5% das seções', () => acoes.ir(5)],
+      ['Trocar para Variação por UF', () => acoes.metodo('uf')],
+      ['Trocar para Variação por município', () => acoes.metodo('municipio')],
+      ['Trocar para Transferência de votos', () => acoes.metodo('transferencia')],
+      ['Revelar o resultado final real', () => acoes.revelar(true)],
+    ] },
+  { titulo: 'Onde vai ser a virada?',
+    texto: 'Em 2022, Lula passou Bolsonaro de vez com cerca de 68% das seções, às 18h44. Avance a noite e veja onde a curva projetada anunciava a virada. Depois troque o modelo de ordem de chegada: perto de 50% a curva é quase plana, então pequenas diferenças na ordem ou na projeção movem a virada por dezenas de pontos.',
+    passos: [
+      ['Começar do zero com Variação por município', () => { acoes.recomecar(); acoes.padrao(); acoes.metodo('municipio'); acoes.revelar(false); }],
+      ['Ir para 10%', () => acoes.ir(10)], ['Ir para 25%', () => acoes.ir(25)], ['Ir para 45%', () => acoes.ir(45)],
+      ['Ir para 60%', () => acoes.ir(60)],
+      ['Voltar para 40% e revelar o resultado real', () => { acoes.ir(40); acoes.revelar(true); }],
+      ['Trocar a ordem para "Como no 1º turno"', () => acoes.ajuste('ordem', 'turno1')],
+      ['Trocar a ordem para "Ritmo desta noite"', () => acoes.ajuste('ordem', 'ritmo')],
+      ['Trocar a ordem para "Proporcional"', () => acoes.ajuste('ordem', 'proporcional')],
+      ['Voltar para "Mistura"', () => acoes.ajuste('ordem', 'mistura')],
+    ] },
+  { titulo: 'A margem é honesta?',
+    texto: 'Uma margem de 95% só é honesta se, em 95% das vezes, o resultado real cair dentro dela. Zere as incertezas e veja a coluna "Resultado dentro da margem" do placar do teste despencar, mesmo com a projeção quase igual. Depois exagere e veja a chance de vitória ficar tímida demais.',
+    passos: [
+      ['Começar com Variação por município e ajustes padrão', () => { acoes.recomecar(); acoes.padrao(); acoes.metodo('municipio'); acoes.revelar(true); }],
+      ['Ir para 20%', () => acoes.ir(20)],
+      ['Zerar a incerteza regional e a nacional', () => { acoes.ajuste('tau', 0); acoes.ajuste('delta', 0); }],
+      ['Exagerar: 3 pontos em cada uma', () => { acoes.ajuste('tau', 3); acoes.ajuste('delta', 3); }],
+      ['Voltar aos ajustes padrão', () => acoes.padrao()],
+    ] },
+  { titulo: 'Confiar cedo no município?',
+    texto: 'As primeiras seções de um município costumam ser diferentes das últimas (em 2022, as tardias pendiam para Lula). O "peso do próprio município" decide quanto o modelo acredita nelas. Compare o erro e a virada projetada nos dois extremos.',
+    passos: [
+      ['Começar com Variação por município', () => { acoes.recomecar(); acoes.padrao(); acoes.metodo('municipio'); acoes.revelar(true); }],
+      ['Ir para 30%', () => acoes.ir(30)],
+      ['Confiar totalmente nas primeiras seções (0 votos)', () => acoes.ajuste('k', 0)],
+      ['Quase ignorar o município (20 mil votos)', () => acoes.ajuste('k', 20000)],
+      ['Voltar ao padrão', () => acoes.padrao()],
+    ] },
+];
+let abaAtiva = 0;
+const progresso = ROTEIROS.map(() => 0);
+
+// ---------------------------------------------------------------- desenho
+function textoVirada(vir) {
+  if (!vir) return '—';
+  const nome = q => q === 'L' ? 'Lula' : 'Bolsonaro';
+  if (vir.x == null) return vir.cedo == null ? `Sem virada: ${nome(vir.quem)} segue à frente até o fim`
+    : `Provavelmente sem virada (${nome(vir.quem)} segue à frente), mas pode ocorrer a partir de ~${fmt(vir.cedo, 0)}%`;
+  return `${nome(vir.quem)} passa à frente com ~${fmt(vir.x, 0)}% das seções <small style="font-weight:400">(faixa: ${vir.cedo == null ? '?' : fmt(vir.cedo, 0)}% a ${vir.tarde == null ? 'pode não ocorrer' : fmt(vir.tarde, 0) + '%'})</small>`;
+}
+function campo(id, rotulo, valor, extra = '') { return { id, html: `<div class="campo ${extra}" data-id="${id}"><div class="rotulo">${rotulo}</div><div class="valor">${valor}</div></div>`, valor }; }
+
+function renderEstado(pl, pr, vir) {
+  const f = st.k >= 0 ? P.fotos[st.k] : null;
+  const c = [];
+  c.push(campo('hora', 'Horário (30/10/2022)', f ? f.hora : '17:00:00, antes da 1ª seção'));
+  c.push(campo('secoes', 'Seções totalizadas', pct(pl.pct / 100)));
+  c.push(campo('placar', 'Placar parcial (válidos)', pl.V > 0 ? `<span class="lula">Lula ${pct(pl.lula)}</span> × <span class="bolso">${pct(1 - pl.lula)} Bolsonaro</span>` : '—'));
+  c.push(campo('projecao', 'Projeção para Lula', pr.P == null ? '—' : pr.sigma == null ? pct(pr.P) : `${pct(pr.P)} ± ${fmt(196 * pr.sigma)} p.p.`));
+  c.push(campo('chance', 'Chance de vitória', pr.chance == null ? '— (este método não estima)' : `<span class="lula">Lula ${chanceTxt(pr.chance)}</span> · <span class="bolso">Bolsonaro ${chanceTxt(1 - pr.chance)}</span>`));
+  c.push(campo('virada', 'Virada projetada', textoVirada(vir)));
+  if (st.revelar) {
+    c.push(campo('final', 'Resultado final real', `<span class="lula">Lula ${pct(FINAL)}</span>`, 'real'));
+    c.push(campo('erro', 'Erro da projeção agora', pr.P == null ? '—' : `${fmt(100 * Math.abs(pr.P - FINAL))} p.p.`, 'real'));
+    c.push(campo('vreal', 'Virada real', `${fmt(VIRADA_REAL.p, 1)}% das seções, ${VIRADA_REAL.hora}`, 'real'));
+  }
+  const el = document.getElementById('estado');
+  el.innerHTML = c.map(x => x.html).join('');
+  for (const x of c) if (anterior[x.id] !== undefined && anterior[x.id] !== x.valor) el.querySelector(`[data-id="${x.id}"]`).classList.add('mudou');
+  anterior = Object.fromEntries(c.map(x => [x.id, x.valor]));
+}
+
+function svgCurva(pl, pts, vir) {
+  const W = 800, H = 380, ml = 52, mr = 16, mt = 16, mb = 44, y0 = 40, y1 = 60;
+  const X = x => ml + (W - ml - mr) * x / 100, Y = y => mt + (H - mt - mb) * (1 - (100 * y - y0) / (y1 - y0));
+  const linha = (ps, f) => ps.map((p, i) => `${i ? 'L' : 'M'}${X(p.x).toFixed(1)},${Y(f(p)).toFixed(1)}`).join('');
+  let s = `<defs><clipPath id="area"><rect x="${ml}" y="${mt}" width="${W - ml - mr}" height="${H - mt - mb}"/></clipPath></defs>`;
+  for (let v = y0; v <= y1; v += 2) s += `<line x1="${ml}" x2="${W - mr}" y1="${Y(v / 100)}" y2="${Y(v / 100)}" stroke="${v === 50 ? '#8c959f' : '#eaeef2'}" stroke-width="${v === 50 ? 1.5 : 1}"/><text x="${ml - 8}" y="${Y(v / 100) + 4}" font-size="12" text-anchor="end" fill="#57606a">${v}%</text>`;
+  s += '<g clip-path="url(#area)">';
+  const ate = REAL.filter(p => p.x <= pl.pct + 1e-9);
+  if (st.revelar) {
+    s += `<path d="${linha(REAL, p => p.y)}" fill="none" stroke="var(--lula)" stroke-width="1.5" opacity=".25"/>`;
+    s += `<path d="${linha(REAL, p => 1 - p.y)}" fill="none" stroke="var(--bolso)" stroke-width="1.5" opacity=".25"/>`;
+    s += `<line x1="${X(VIRADA_REAL.p)}" x2="${X(VIRADA_REAL.p)}" y1="${mt}" y2="${H - mb}" stroke="#57606a" stroke-dasharray="2,3"/><text x="${X(VIRADA_REAL.p) + 4}" y="${mt + 12}" font-size="11" fill="#57606a">virada real</text>`;
+    s += `<line x1="${X(0)}" x2="${X(100)}" y1="${Y(FINAL)}" y2="${Y(FINAL)}" stroke="var(--lula)" stroke-dasharray="1,4" opacity=".6"/>`;
+  }
+  if (pts.length > 1) {
+    const banda = (f, g) => pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.x).toFixed(1)},${Y(f(p)).toFixed(1)}`).join('') + pts.slice().reverse().map(p => `L${X(p.x).toFixed(1)},${Y(g(p)).toFixed(1)}`).join('') + 'Z';
+    s += `<path d="${banda(p => p.y + 1.96 * p.sd, p => p.y - 1.96 * p.sd)}" fill="var(--lula)" opacity=".12"/>`;
+    s += `<path d="${banda(p => 1 - p.y + 1.96 * p.sd, p => 1 - p.y - 1.96 * p.sd)}" fill="var(--bolso)" opacity=".12"/>`;
+    s += `<path d="${linha(pts, p => p.y)}" fill="none" stroke="var(--lula)" stroke-width="2" stroke-dasharray="6,4"/>`;
+    s += `<path d="${linha(pts, p => 1 - p.y)}" fill="none" stroke="var(--bolso)" stroke-width="2" stroke-dasharray="6,4"/>`;
+  }
+  if (ate.length) {
+    s += `<path d="${linha(ate, p => p.y)}" fill="none" stroke="var(--lula)" stroke-width="2.5"/>`;
+    s += `<path d="${linha(ate, p => 1 - p.y)}" fill="none" stroke="var(--bolso)" stroke-width="2.5"/>`;
+  }
+  s += '</g>';
+  for (let v = 0; v <= 100; v += 10) s += `<text x="${X(v)}" y="${H - mb + 18}" font-size="12" text-anchor="middle" fill="#57606a">${v}%</text>`;
+  s += `<text x="${(ml + W - mr) / 2}" y="${H - 6}" font-size="12" text-anchor="middle" fill="#57606a">% de seções totalizadas</text>`;
+  s += `<line x1="${X(pl.pct)}" x2="${X(pl.pct)}" y1="${mt}" y2="${H - mb}" stroke="var(--acento)" stroke-width="1"/><text x="${X(pl.pct) + 4}" y="${H - mb - 6}" font-size="11" fill="var(--acento)">agora</text>`;
+  if (vir && vir.x != null) s += `<circle cx="${X(vir.x)}" cy="${Y(0.5)}" r="5" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="${X(vir.x)}" y="${Y(0.5) - 10}" font-size="11" text-anchor="middle" fill="#1f2328">virada projetada</text>`;
+  document.getElementById('curva').innerHTML = s;
+  document.getElementById('legendaCurva').innerHTML =
+    `<span><i style="background:var(--lula)"></i>Lula</span><span><i style="background:var(--bolso)"></i>Bolsonaro</span>` +
+    `<span>linha cheia: curva real · tracejada: curva projetada · faixa: margem de 95%</span>`;
+}
+
+function svgErros(testes) {
+  const W = 800, H = 260, ml = 52, mr = 16, mt = 12, mb = 40, ymax = 5;
+  const X = x => ml + (W - ml - mr) * x / 100, Y = y => mt + (H - mt - mb) * (1 - Math.min(y, ymax) / ymax);
+  let s = '';
+  for (let v = 0; v <= ymax; v++) s += `<line x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#eaeef2"/><text x="${ml - 8}" y="${Y(v) + 4}" font-size="12" text-anchor="end" fill="#57606a">${v}</text>`;
+  for (let v = 0; v <= 100; v += 10) s += `<text x="${X(v)}" y="${H - mb + 18}" font-size="12" text-anchor="middle" fill="#57606a">${v}%</text>`;
+  s += `<text x="14" y="${mt + 10}" font-size="12" fill="#57606a">p.p.</text><text x="${(ml + W - mr) / 2}" y="${H - 4}" font-size="12" text-anchor="middle" fill="#57606a">% de seções totalizadas</text>`;
+  for (const t of testes) {
+    const ps = t.linhas.filter(l => l.erro != null);
+    s += `<path d="${ps.map((l, i) => `${i ? 'L' : 'M'}${X(l.p).toFixed(1)},${Y(l.erro).toFixed(1)}`).join('')}" fill="none" stroke="${METODOS[t.metodo].cor}" stroke-width="${t.metodo === st.metodo ? 2.5 : 1.5}"/>`;
+  }
+  s += `<line x1="${X(pctAtual())}" x2="${X(pctAtual())}" y1="${mt}" y2="${H - mb}" stroke="var(--acento)"/>`;
+  document.getElementById('erros').innerHTML = s;
+  document.getElementById('legendaErros').innerHTML = Object.entries(METODOS).map(([k, m]) => `<span><i style="background:${m.cor}"></i>${m.nome}</span>`).join('') + '<span>(eixo cortado em 5 p.p.)</span>';
+}
+
+let testes = null, chaveTeste = '';
+function renderTeste() {
+  const chave = JSON.stringify(st.prm);
+  if (chave !== chaveTeste) { testes = Object.keys(METODOS).map(m => Projecao.testar(P, m, st.prm)); chaveTeste = chave; }
+  const e = x => x == null ? '—' : fmt(x) + ' p.p.';
+  const d = x => x == null ? 'nunca' : fmt(x, 1) + '%';
+  const vir = v => !v ? '—' : v.x == null ? (v.quem === 'L' ? 'já à frente' : 'não prevê')
+    : `${fmt(v.x, 0)}% <small>(${v.cedo == null ? '?' : fmt(v.cedo, 0)}–${v.tarde == null ? '…' : fmt(v.tarde, 0)})</small>`;
+  let h = `<tr><th>Método</th><th>Erro com 5%</th><th>com 25%</th><th>com 50%</th><th>Acerta o vencedor de vez a partir de</th>
+    <th>Chance ≥ 95% para o vencedor a partir de</th><th>Resultado dentro da margem (meta: 95%)</th><th>Nota de Brier (menor é melhor)</th>
+    <th>Virada projetada (faixa) aos 20% / 40% / 60%, ordem "${ORDENS[st.prm.ordem].nome}" (real: ${fmt(VIRADA_REAL.p, 1)}%)</th></tr>`;
+  for (const t of testes) {
+    h += `<tr class="${t.metodo === st.metodo ? 'atual' : ''}"><td><b style="color:${METODOS[t.metodo].cor}">${METODOS[t.metodo].nome}</b></td>
+      <td>${e(t.erro5)}</td><td>${e(t.erro25)}</td><td>${e(t.erro50)}</td><td>${d(t.acertaDesde)}</td>
+      <td>${t.cobertura == null ? '—' : d(t.chance95Desde)}</td><td>${t.cobertura == null ? '—' : fmt(100 * t.cobertura, 0) + '%'}</td>
+      <td>${t.brier == null ? '—' : fmt(t.brier, 3)}</td><td>${vir(t.viradas[20])} / ${vir(t.viradas[40])} / ${vir(t.viradas[60])}</td></tr>`;
+  }
+  document.getElementById('teste').innerHTML = h;
+  svgErros(testes);
+}
+
+function renderRoteiro() {
+  document.getElementById('abas').innerHTML = ROTEIROS.map((r, i) => `<button class="${i === abaAtiva ? 'ativa' : ''}" data-aba="${i}">${r.titulo}</button>`).join('');
+  const r = ROTEIROS[abaAtiva], prox = progresso[abaAtiva];
+  document.getElementById('roteiro').innerHTML = `<p>${r.texto}</p>` + r.passos.map(([rot], i) =>
+    `<button data-passo="${i}" class="${i < prox ? 'feito' : i === prox ? 'proximo' : ''}" ${i === 0 || i === prox ? '' : 'disabled'}>${i + 1}. ${rot}</button>`).join('');
+}
+
+function renderControles() {
+  document.getElementById('metodos').innerHTML = Object.entries(METODOS).map(([k, m]) =>
+    `<label class="metodo"><input type="radio" name="metodo" value="${k}" ${k === st.metodo ? 'checked' : ''}> <b style="color:${m.cor}">${m.nome}</b><small>${m.desc}</small></label>`).join('');
+  for (const a of AJUSTES) {
+    const el = document.getElementById(a.onde);
+    let div = el.querySelector(`[data-ajuste="${a.id}"]`);
+    if (!div) {
+      div = document.createElement('div'); div.className = 'ajuste'; div.dataset.ajuste = a.id;
+      div.innerHTML = `<label><span>${a.nome}</span><b></b></label><input type="range" min="${a.min}" max="${a.max}" step="${a.passo}"><small>${a.desc}</small>`;
+      el.appendChild(div);
+      div.querySelector('input').addEventListener('input', ev => { acoes.ajuste(a.id, +ev.target.value); render(false); });
+      div.querySelector('input').addEventListener('change', () => render(true));
+    }
+    div.querySelector('input').value = st.prm[a.id];
+    div.querySelector('b').textContent = (a.id === 'k' ? fmt(st.prm[a.id], 0) : fmt(st.prm[a.id])) + a.un;
+  }
+  let ord = document.getElementById('ordem');
+  if (!ord) {
+    ord = document.createElement('div'); ord.id = 'ordem'; ord.className = 'ajuste';
+    document.getElementById('ajustes2').appendChild(ord);
+  }
+  ord.innerHTML = `<label><span>Ordem prevista de chegada (só muda a curva projetada e a virada)</span></label>` +
+    Object.entries(ORDENS).map(([k, o]) => `<label class="metodo" style="display:block"><input type="radio" name="ordem" value="${k}" ${k === st.prm.ordem ? 'checked' : ''}> ${o.nome}<small>${o.desc}</small></label>`).join('');
+  const barra = document.getElementById('barra');
+  barra.max = P.fotos.length - 1; barra.value = st.k;
+  document.getElementById('revelar').checked = st.revelar;
+  document.querySelector('[data-acao="virada"]').disabled = !VIRADA_REAL;
+}
+
+function render(teste = true) {
+  const E = estadoApuracao(st.k);
+  const pl = Projecao.placar(P, E);
+  const pr = Projecao.projetar(P, E, st.metodo, st.prm);
+  const pts = Projecao.curvaProjetada(P, E, pr, 50, st.prm.ordem);
+  const vir = Projecao.viradaProjetada(pts);
+  renderEstado(pl, pr, vir);
+  svgCurva(pl, pts, vir);
+  renderControles();
+  renderRoteiro();
+  if (teste) renderTeste(); else if (testes) svgErros(testes);
+}
+
+// ---------------------------------------------------------------- eventos
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('button');
+  if (!b) return;
+  if (b.dataset.acao) {
+    const a = b.dataset.acao;
+    if (a === 'recomecar') acoes.recomecar(); else if (a === 'virada') acoes.virada(); else if (a === 'fim') acoes.fim(); else acoes.andar(+a);
+    render();
+  } else if (b.dataset.aba) { abaAtiva = +b.dataset.aba; renderRoteiro(); }
+  else if (b.dataset.passo) {
+    const i = +b.dataset.passo;
+    ROTEIROS[abaAtiva].passos[i][1]();
+    progresso[abaAtiva] = i + 1;
+    render();
+  }
+});
+document.addEventListener('change', ev => {
+  if (ev.target.name === 'metodo') { acoes.metodo(ev.target.value); render(); }
+  if (ev.target.name === 'ordem') { acoes.ajuste('ordem', ev.target.value); render(); }
+  if (ev.target.id === 'revelar') { acoes.revelar(ev.target.checked); render(); }
+});
+document.getElementById('barra').addEventListener('input', ev => { st.k = +ev.target.value; render(); });
+
+render();
+</script>
+</body>
+</html>
