@@ -29,4 +29,5 @@ Depois disso, o Claude:
 - confirma os dois logins (`gh auth status`, `npx wrangler whoami`);
 - reescreve os commits locais (todas as branches) com o e-mail noreply da conta e fixa esse e-mail em `.git/config`;
 - cria o repositório `apurador` privado na conta pessoal e envia `main` e `prototipo/metodo-projecao` (o protótipo é um ativo apontado pelo [Método de projeção só com a apuração](09-metodo-projecao-so-apuracao.md); a branch nunca entra na `main`);
+- passa ao dono o último passo, que exige o repositório criado: criar na Cloudflare um token de API com o modelo "Edit Cloudflare Workers" (painel → My Profile → API Tokens) e guardá-lo como secret do GitHub com `gh secret set CLOUDFLARE_API_TOKEN --repo <usuário>/apurador`, que pede o valor sem mostrá-lo. O Claude grava o ID da conta com `gh secret set CLOUDFLARE_ACCOUNT_ID`, porque o ID não é segredo;
 - registra aqui o usuário do GitHub, a URL do repositório, o ID da conta Cloudflare, o subdomínio `workers.dev` e o domínio comprado, sem nenhum segredo.
