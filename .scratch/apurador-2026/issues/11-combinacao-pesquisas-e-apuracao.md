@@ -68,3 +68,7 @@ Só os votos dos eliminados têm destino incerto. Por isso, a mesma mudança par
 **Nota para a implementação**: as duas bases partem do placar entre finalistas de cada lugar, e a base com pesquisas soma a ele a mudança nacional, como decidiu o [Método de projeção só com a apuração](09-metodo-projecao-so-apuracao.md). O protótipo não faz isso: no recuo "1º turno" do método de transferência, ele divide os votos dos eliminados meio a meio (`par = 0,5`). O código definitivo deve seguir a decisão.
 
 **Glossário**: entra "Peso das pesquisas".
+
+## Comments
+
+- 18/10/2026, de [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md): a curva projetada antes das 17h (decisão 6 daqui) fica atrás de uma chave, desligada até a [Segunda consulta jurídica](21-segunda-consulta-juridica.md). Desligada, nenhuma das duas bases mostra projeção antes das 17h. A combinação a partir das 17h não muda.

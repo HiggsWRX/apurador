@@ -94,3 +94,7 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
 **Para a implementação**: o simulador é a ilha em Preact que roda o módulo `modelo` sobre o arquivo completo da decisão 18 da [Arquitetura e tecnologia](08-arquitetura-e-tecnologia.md). As hipóteses entram como ajustes no voto que falta de cada município, sem uma segunda cópia do modelo.
 
 **Glossário**: entram "Voto que falta", "Hipótese", "Simulação" e "Comparecimento". A definição de "Simulador 'e se'" passa a falar em simulação, e não em projeção.
+
+## Comments
+
+- 18/10/2026, de [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md): o simulador antes das 17h (decisões 5 e 9 daqui) fica atrás de uma chave, desligada até a [Segunda consulta jurídica](21-segunda-consulta-juridica.md) liberar. Desligada, o simulador abre às 17h, e as hipóteses prontas, que só existem antes da apuração, não aparecem. Se o modelo for enquadrado na regra de IA, outra chave desliga o simulador inteiro.

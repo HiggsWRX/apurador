@@ -20,6 +20,7 @@ O que já está decidido e precisa entrar:
   - a projeção não é resultado oficial nem pesquisa;
   - os dados do TSE aparecem sem alteração, com atribuição (CC-BY);
   - a lista das pesquisas traz os seis dados do art. 10.
+- **Exigência do advogado**, de [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md) (decisão 5): a metodologia do agregado e da projeção é pública, com os critérios de seleção, os cálculos e as limitações. A página diz que o agregado não é pesquisa própria e que a projeção não é resultado oficial nem garantia do resultado. Pela pesquisa legal, o modelo não é apresentado como "IA".
 
 - **Sino da projeção**, de [Telas da página de lugar](12-telas-da-pagina-de-lugar.md): a distribuição do resultado final, com a área de cada lado de 50% igual à chance de vitória de cada candidato. Saiu da página de lugar, onde a chance aparece numa barra dividida, e serve aqui para explicar de onde vem a chance. Está pronto no protótipo (`svgSino` em `componentes.js`, variante C).
 

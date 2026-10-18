@@ -67,3 +67,11 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
     - Conta prévia, com incerteza de 1,5: Bolsonaro com ~100% de chance em 2018 (média de 57,0% contra 55,1% real) e Lula com ~75% em 2022 (51,0% contra 50,9%).
 
 **Glossário**: "Agregado de pesquisas" passa a valer só para o Brasil. Entram "Indicação das pesquisas" e "Placar entre finalistas".
+
+## Comments
+
+- 18/10/2026, de [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md):
+  - Por escrito, só (a) está liberado antes das 17h. (b) e (c) ficam atrás de uma chave, desligada até a [Segunda consulta jurídica](21-segunda-consulta-juridica.md), e o caminho "sem sinal verde" da decisão 9 daqui volta a ser o padrão.
+  - A coleta da decisão 8 ganha um registro datado de cada verificação (`pesquisas-verificacoes.csv`) e a conferência diária de suspensões.
+  - Depois do congelamento das 23h de 24/10, ainda é permitido **retirar** uma pesquisa e recalcular o agregado. Incluir pesquisa nova não é.
+  - O agregado leva o aviso "Média calculada pelo Apurador sobre pesquisas registradas no TSE. Não é uma pesquisa própria."

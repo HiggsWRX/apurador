@@ -49,3 +49,4 @@ Depois disso, o Claude:
 - Os dois secrets do GitHub ficam com o dono, porque a permissão do Claude bloqueou a gravação de secrets: `CLOUDFLARE_ACCOUNT_ID` (o ID acima, que não é segredo) e `CLOUDFLARE_API_TOKEN` (um token com o modelo "Edit Cloudflare Workers").
 - Colar a chave de escrita do R2 no `.env` do coletor (dono, quando o coletor existir).
 - Comprar o domínio (dono, mais tarde).
+- Criar um e-mail de contato dedicado ao projeto, para o rodapé (dono). Ver a decisão 7 de [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md).

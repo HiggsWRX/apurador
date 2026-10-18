@@ -120,3 +120,8 @@ Resolvido em 18/10/2026 com o protótipo (branch `prototipo/telas-pagina-lugar`)
 ## Comments
 
 - 18/10/2026, de [Simulador "e se"](13-simulador-e-se.md): a página de lugar ganha o **indicador ao vivo** (decisão 14 de lá) no cartão do placar oficial e na linha fixa do topo. Ele tem seis estados, e o estado "interrompido" é o aviso da decisão 12 daqui.
+- 18/10/2026, de [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md): **o sinal verde da decisão 11 não veio por escrito.** O agregado e a projeção antes das 17h ficam atrás de uma chave, desligada até a [Segunda consulta jurídica](21-segunda-consulta-juridica.md). Com a chave desligada, o **caminho "sem sinal verde" volta** (decisão 2 de lá): no Brasil, a lista das pesquisas aberta e "O que esperar da noite" sem números de projeção; nos outros lugares, sem indicação das pesquisas. Além disso:
+  - todo número do TSE aparece com duas casas, também em tabelas, cartões do mapa e linha fixa (decisão 3 de lá);
+  - o aviso da projeção da decisão 3 daqui passa a ser "Estimativa do Apurador. Não é resultado oficial nem garantia do resultado." (decisão 5 de lá);
+  - o rodapé da decisão 10 daqui traz o nome do dono, um e-mail dedicado ao projeto e a independência em relação ao TSE, aos candidatos e aos partidos, sem CPF nem endereço (decisão 7 de lá);
+  - se o mapa do IBGE não for liberado, o cartão do mapa mostra só a Tabela (decisão 4 de lá).
