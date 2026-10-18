@@ -15,7 +15,7 @@ Checklist do dono (HITL):
 
 **Aguardando o dono**: os passos 1 a 4 ficam para mais tarde em 18/10. Os outros tickets podem supor que as duas contas vão existir.
 
-Decidido pelo dono em 18/10: **conta pessoal** do GitHub, repositório **privado até o lançamento**, e os commits trocam o e-mail da DTACT pelo **noreply do GitHub** antes do primeiro push.
+Decidido pelo dono em 18/10: **conta pessoal** do GitHub, repositório **privado até o lançamento**, e os commits trocam o e-mail de trabalho pelo **noreply do GitHub** antes do primeiro push.
 
 1. **Cloudflare**: criar uma conta gratuita em https://dash.cloudflare.com/sign-up e confirmar o e-mail. Não é preciso cartão nem domínio. Depois, abrir **Workers & Pages** no painel e, se ele pedir, escolher o subdomínio `workers.dev`: ele aparece nas URLs públicas, então convém um nome neutro. Sem ele, o primeiro `wrangler deploy` (que não roda de forma interativa aqui) falha.
    - **R2**: no painel, abrir **R2 Object Storage** e ativar o plano gratuito pelo checkout (pode pedir cartão).
@@ -33,3 +33,19 @@ Depois disso, o Claude:
 - passa ao dono o último passo, que exige o repositório criado: criar na Cloudflare um token de API com o modelo "Edit Cloudflare Workers" (painel → My Profile → API Tokens) e guardá-lo como secret do GitHub com `gh secret set CLOUDFLARE_API_TOKEN --repo <usuário>/apurador`, que pede o valor sem mostrá-lo. O Claude grava o ID da conta com `gh secret set CLOUDFLARE_ACCOUNT_ID`, porque o ID não é segredo;
 - cria o bucket do R2 para os JSONs ao vivo e passa ao dono a criação da chave de escrita só nesse bucket (painel → R2 → Manage API tokens → Object Read & Write), que o dono cola no `.env` do coletor, ignorado pelo Git;
 - registra aqui o usuário do GitHub, a URL do repositório, o ID da conta Cloudflare, o subdomínio `workers.dev`, o domínio comprado e o nome do bucket, sem nenhum segredo.
+
+## Comments
+
+**18/10/2026, feito:**
+
+- **GitHub**: logado como `HiggsWRX` (id 9259595), com o escopo `workflow`. O Git usa o protocolo SSH. O e-mail dos commits deste repositório passa a ser `9259595+HiggsWRX@users.noreply.github.com`, fixado em `.git/config`.
+- **Cloudflare**: logado pelo `wrangler login`. ID da conta: `40aa2d90c0ed3139d2e8a10389f509ec`. O R2 está ativo, com o bucket `apurador-ao-vivo` criado.
+- **Domínio**: adiado pelo dono. Até ele existir, o site usa `*.workers.dev`, e os JSONs ao vivo seguem o plano B da [Arquitetura e tecnologia](08-arquitetura-e-tecnologia.md) (decisão 15). O subdomínio `workers.dev` aparece no primeiro deploy.
+
+**Falta:**
+
+- Reescrever os commits antigos com o e-mail noreply. A permissão do Claude bloqueou a reescrita do histórico, então o dono roda o comando ou autoriza o Claude.
+- Criar o repositório privado e enviar `main` e `prototipo/metodo-projecao`.
+- Guardar os secrets do GitHub: o token de API da Cloudflare fica com o dono, e o `CLOUDFLARE_ACCOUNT_ID` com o Claude.
+- Colar a chave de escrita do R2 no `.env` do coletor (dono, quando o coletor existir).
+- Comprar o domínio (dono, mais tarde).
