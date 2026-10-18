@@ -1,7 +1,7 @@
 # Combinação de pesquisas e apuração
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 09, 10
 Map: [Apurador 2026](../map.md)
 
