@@ -1,7 +1,7 @@
 # Consulta a advogado eleitoral
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: —
 Map: [Apurador 2026](../map.md)
 
