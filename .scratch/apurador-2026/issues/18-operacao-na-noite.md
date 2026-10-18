@@ -26,3 +26,13 @@ De [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md):
 - De [Segunda consulta jurídica](21-segunda-consulta-juridica.md): o agregado, a projeção e o simulador antes das 17h estão ligados. Fica desligada a chave de **textos preditivos**, que pode ser ligada na própria noite se a [Confirmação dos textos preditivos](22-confirmacao-dos-textos-preditivos.md) chegar. O roteiro precisa dizer como ligá-la e conferir que ela está desligada antes das 17h.
 
 De [Narração da noite](14-narracao-da-noite.md): a chave de textos preditivos vive no coletor, que só põe os eventos preditivos nos JSONs públicos com ela ligada. Ligada no meio da noite, ela vale dali em diante, sem publicação retroativa. Desligada, apaga dos JSONs todos os preditivos já publicados (decisão 6 de lá). Na retomada depois de uma queda, o coletor recarrega o estado da narração guardado no R2 e não reconstrói o que perdeu (decisão 11).
+
+De [Ensaio geral](15-ensaio-geral.md):
+- **Prazo**: este roteiro precisa estar resolvido até 22/10. O ensaio geral 2, na noite de 23/10, segue o roteiro escrito, passo a passo (decisão 10 de lá).
+- **Tempos que o roteiro precisa cumprir** (decisão 20 de lá): o coletor derrubado volta sozinho em menos de 1 min; com a internet cortada, a publicação volta em até 3 min pelo roteador de celular; com o plano B acionado, os dados voltam em até 5 min.
+- **Uma chave por bloco** (decisão 19 de lá): núcleo mínimo, projeção, base Apuração + pesquisas (chave nova), simulador, mapa e textos preditivos. Um bloco reprovado no ensaio 2 fica desligado a noite toda. O roteiro confere, antes das 17h, que cada chave está como o ensaio decidiu.
+- **Plano zero** (decisão 24 de lá): se o núcleo mínimo não for aprovado até 24/10, a partir das 17h o site mostra "Acompanhe a apuração no app oficial do TSE" e não publica nenhum dado ao vivo. O roteiro diz como ligar esse estado.
+- **Fase pelo coletor** (decisão 7 de lá): a passagem das 17h na página depende do arquivo de rodada. Se o coletor não estiver rodando às 17h, as páginas não passam ao ao vivo.
+- **Retirada de pesquisa** (decisão 12 de lá): o deploy do agregado recalculado vale no site em até 10 min, sem tocar no coletor.
+- **TSE real, zerado** (decisão 11 de lá): de 21 a 24/10, o coletor roda 15 min por dia contra os arquivos reais da eleição `6258`, publicando só numa pasta local. Em 24/10, roda 30 min publicando nos destinos de produção.
+- **Congelamento**: depois das 18h de 24/10, nada muda no código até a noite (decisão 25 de lá).

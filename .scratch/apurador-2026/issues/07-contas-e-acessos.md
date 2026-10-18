@@ -48,5 +48,6 @@ Depois disso, o Claude:
 
 - Os dois secrets do GitHub ficam com o dono, porque a permissão do Claude bloqueou a gravação de secrets: `CLOUDFLARE_ACCOUNT_ID` (o ID acima, que não é segredo) e `CLOUDFLARE_API_TOKEN` (um token com o modelo "Edit Cloudflare Workers").
 - Colar a chave de escrita do R2 no `.env` do coletor (dono, quando o coletor existir).
-- Comprar o domínio (dono, mais tarde).
+- Comprar o domínio (dono, **até 21/10**): pela decisão 8 do [Ensaio geral](15-ensaio-geral.md), o ensaio precisa dele para medir o caminho principal (R2 com cache) além do plano B. É `apurador.app`, ou `apurador.org` se o primeiro não estiver livre.
+- Criar o bucket do R2 e o Worker do ensaio, separados dos de produção (Claude, na construção), e a chave de escrita só nesse bucket (dono). Ver a decisão 5 do [Ensaio geral](15-ensaio-geral.md).
 - Criar um e-mail de contato dedicado ao projeto, para o rodapé (dono). Ver a decisão 7 de [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md).

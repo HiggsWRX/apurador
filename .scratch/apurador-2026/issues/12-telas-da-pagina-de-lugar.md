@@ -137,3 +137,8 @@ Resolvido em 18/10/2026 com o protótipo (branch `prototipo/telas-pagina-lugar`)
     - nas páginas de UF, Exterior e município, a lista intercala quatro eventos do Brasil, marcados como "Brasil" e sem número na curva;
     - os números na curva marcam só os eventos factuais do lugar, nunca os preditivos;
     - o bloco leva o selo "Narração do Apurador com dados do TSE".
+- 18/10/2026, de [Ensaio geral](15-ensaio-geral.md):
+  - **Plano zero** (decisão 24 de lá): se o núcleo mínimo não for aprovado até 24/10, a partir das 17h o bloco ao vivo dá lugar a "Acompanhe a apuração no app oficial do TSE", com o link, e nenhum dado ao vivo vai ao ar. O resto da página fica como está.
+  - **Mapa** (decisões 19 e 22 de lá): volta a ter um plano B, agora por desempenho. Se o mapa não desenhar todos os municípios em até 2 s no Android barato, nem em canvas, a chave do mapa fica desligada e o cartão mostra só a Tabela.
+  - **Base da projeção** (decisão 19 de lá): se a base Apuração + pesquisas for reprovada, o controle de base some e a página mostra só "Só apuração".
+  - **Fase** (decisão 7 de lá): a página passa das 17h para o ao vivo pelo arquivo de rodada, nunca pelo relógio do aparelho.

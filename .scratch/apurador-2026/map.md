@@ -59,6 +59,11 @@ Especificação fechada e com os riscos resolvidos do site Apurador, pronta para
   - **Na narração do Brasil**: entram as viradas e os fins das UFs e os 50% dos 8 maiores eleitorados. Em 2022, isso dá ~50 eventos na noite, sem precisar de intervalo mínimo.
   - **Preditivos**: sinal de virada, chance passando de 90% e 99% e linha da projeção nos marcos. Só entram nos JSONs públicos com a chave ligada, sem publicação retroativa.
   - **Também lá**: os modelos de texto e as formas da manchete.
+- [Ensaio geral](issues/15-ensaio-geral.md): **três peças**, o replay automático no CI, a **calibração** (20–21/10) e o **ensaio geral** (22 e 23/10, com correções até as 18h de 24/10).
+  - **O ensaio**: roda o 2T de 2022 num TSE falso no formato de 2026, num ambiente fechado e com tarja, a 3x e com a cadência real. A fase da página vem do coletor, nunca do relógio do aparelho.
+  - **A calibração**: escolhe as constantes, a zona, o K e o limite do sinal de virada em três noites (2T 2022, 2T 2018 inteiro e 1T 2026), por regra escrita antes, sem treinar nada.
+  - **A aprovação**: é por bloco, cada um com a sua chave de publicação, e um bloco reprovado fica desligado na noite. Sem o núcleo mínimo, vale o **plano zero**: o site manda para o app do TSE e não publica dado ao vivo.
+  - **Do dono**: comprar o domínio até 21/10.
 
 ## Not yet specified
 

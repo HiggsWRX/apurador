@@ -70,3 +70,9 @@ Resolvido em 18/10/2026 com o protótipo (branch `prototipo/metodo-projecao`), q
 
 - 18/10/2026, de [Sinal de virada](23-sinal-de-virada.md): o "pode não ocorrer" da decisão 4 dá lugar a três estados com a chance de virada: virada projetada, virada possível e sem sinal de virada. O ponto mais faixa e a ordem "mistura" ficam.
 - 18/10/2026, de [Segunda consulta jurídica](21-segunda-consulta-juridica.md) (decisão 3 de lá): a liberação jurídica do modelo depende de ele não usar aprendizagem de máquina. As fórmulas são fixas, com parâmetros escolhidos e documentados, e a calibração da decisão 6 daqui escolhe constantes, sem treinar nada.
+- 18/10/2026, de [Ensaio geral](15-ensaio-geral.md) (decisões 13 a 16 de lá), que detalha a decisão 6 daqui:
+  - **Noites**: a calibração usa três, o 2T de 2022, o 2T de 2018 inteiro e o 1T de 2026.
+  - **Candidatos**, escritos antes de rodar: incerteza regional e nacional de 0,5, 1, 1,5 ou 2 p.p.; peso do próprio município com 1.000, 3.000 ou 10.000 votos; ordem de chegada "mistura", "1º turno" ou "ritmo da noite".
+  - **Escolha**, nesta ordem: cobertura de 95%, chance honesta, menor erro entre 5% e 50% e, no empate, a incerteza mais larga.
+  - **Zona** (revisão da decisão 2 daqui): entra só se reduzir o erro em pelo menos 0,05 p.p. em todas as noites, sem piorar a cobertura.
+  - **Prazo**: as constantes ficam congeladas no fim de 21/10.

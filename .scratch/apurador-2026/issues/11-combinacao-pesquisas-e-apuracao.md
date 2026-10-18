@@ -73,3 +73,8 @@ Só os votos dos eliminados têm destino incerto. Por isso, a mesma mudança par
 
 - 18/10/2026, de [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md): a curva projetada antes das 17h (decisão 6 daqui) fica atrás de uma chave, desligada até a [Segunda consulta jurídica](21-segunda-consulta-juridica.md). Desligada, nenhuma das duas bases mostra projeção antes das 17h. A combinação a partir das 17h não muda.
 - 18/10/2026, de [Segunda consulta jurídica](21-segunda-consulta-juridica.md): a chave está ligada, e a decisão 6 daqui volta a valer como painel, com os rótulos do [Sinal de virada](23-sinal-de-virada.md) e sem frases preditivas. A confirmação expressa é pedida na [Confirmação dos textos preditivos](22-confirmacao-dos-textos-preditivos.md).
+- 18/10/2026, de [Ensaio geral](15-ensaio-geral.md) (decisões 17 e 19 de lá):
+  - **Candidatos a K**: 0,25%, 0,5%, 1% e 2%.
+  - **Casos**: o 2T de 2022 com o agregado real e deslocado 2 pontos para cada lado; o 2T de 2018 com o agregado real; e o 1T de 2026 com as pesquisas entre os dois finalistas, que erraram 2,8 pontos na margem.
+  - **Escolha**: fica o K com o menor erro no pior caso entre 0,1% e 5% das seções, com a cobertura de 95% mantida em todos.
+  - **Chave própria**: a base Apuração + pesquisas ganha uma. Se ela for reprovada no ensaio, a noite vai só com "Só apuração".

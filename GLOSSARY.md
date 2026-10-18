@@ -106,6 +106,10 @@ _Avoid_: ordem de apuração, ordem de contagem
 A fração dos votos dados no 1º turno aos candidatos eliminados que vai para cada finalista no 2º turno.
 _Avoid_: migração de votos, herança de votos
 
+**Calibração**:
+A escolha, em noites passadas, das constantes fixas do modelo, entre valores listados antes e por uma regra escrita antes. Não treina nada.
+_Avoid_: treino, aprendizado, ajuste automático
+
 ## Produto
 
 **Núcleo ao vivo**:
@@ -150,6 +154,10 @@ _Avoid_: título, resumo, chamada
 Uma frase gerada automaticamente que afirma o que a projeção espera, como quem vence ou quando vira. Não se confunde com os números e rótulos curtos do bloco da projeção.
 _Avoid_: comentário, previsão
 
+**Chave de publicação**:
+Um liga-desliga de um bloco do site, que muda o que vai ao ar sem código novo.
+_Avoid_: flag
+
 **Lugar**:
 Um recorte consultável: Brasil, estado (UF), Exterior ou município. Não há recorte menor que município.
 _Avoid_: região (reservado às cinco regiões do IBGE), localidade
@@ -157,3 +165,9 @@ _Avoid_: região (reservado às cinco regiões do IBGE), localidade
 **Exterior**:
 O lugar que reúne os votos dados fora do país. Fica no mesmo nível das UFs, entra no total do Brasil e não aparece no mapa.
 _Avoid_: ZZ, UF exterior
+
+## Operação
+
+**Ensaio geral**:
+A reprodução de uma apuração passada inteira, acelerada, no site e na infraestrutura reais, com pessoas assistindo, para aprovar o site antes da noite.
+_Avoid_: teste, simulado (o simulado é do TSE)

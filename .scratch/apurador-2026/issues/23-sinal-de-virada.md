@@ -29,3 +29,10 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou a recomen
 5. **Substitui** o "pode não ocorrer" da decisão 4 do [Método de projeção só com a apuração](09-metodo-projecao-so-apuracao.md) e as frases da virada projetada da decisão 4 das [Telas da página de lugar](12-telas-da-pagina-de-lugar.md). O losango, a faixa e a ordem de chegada "mistura" continuam como estão.
 
 **Glossário**: entra "Chance de virada", e "Virada projetada" passa a citar a chance de virada no lugar de "pode não ocorrer".
+
+## Comments
+
+- 18/10/2026, de [Ensaio geral](15-ensaio-geral.md) (decisão 18 de lá), que define a calibração dos limites da decisão 2 daqui:
+  - **50% fica.**
+  - **5% é posto à prova** em todas as rodadas da calibração, nas duas bases e com as pesquisas deslocadas. No Brasil e nas UFs, "sem sinal de virada" nunca pode aparecer antes de uma virada real. Nos municípios, no máximo 5% dos momentos com "sem sinal de virada" podem ser seguidos de uma virada.
+  - **Se falhar**: o limite cai para 2% e, depois, para 1%.

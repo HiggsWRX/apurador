@@ -31,3 +31,7 @@ A decidir:
 - Quais gráficos entram.
 - Se reproduzimos a noite de 2018, para mostrar um caso em que as pesquisas erraram (1,9 ponto). O custo é montar a reprodução de 2018 a partir de `detalhe_votacao_secao`, como foi feito para 2022.
 - Se a página oferece os dados ou o código para baixar.
+
+De [Ensaio geral](15-ensaio-geral.md):
+- **Calibração**: as constantes do modelo, a zona, o K e o limite do sinal de virada são escolhidos em três noites (2T de 2022, 2T de 2018 inteiro e 1T de 2026). Os valores candidatos e a regra de escolha são escritos antes, sem treinar nada (decisões 13 a 18 de lá). A tabela fica em `docs/calibracao.md` e entra nesta página, porque mostra como as constantes foram escolhidas.
+- **2018**: a calibração já reproduz o 2T de 2018 inteiro, porque o `detalhe_votacao_secao` dá a hora de cada seção mesmo antes da abertura das 19h. Com isso, o custo da reprodução de 2018 deixa de pesar na pergunta acima.

@@ -57,3 +57,10 @@ Onde roda cada parte do site e com que tecnologia, dentro do plano gratuito da C
 ## Comments
 
 - 18/10/2026, de [Simulador "e se"](13-simulador-e-se.md) (decisão 14 de lá): além dos arquivos da decisão 18, o coletor publica a cada rodada um **arquivo de rodada** minúsculo, com a hora da rodada. Os 3 min da decisão 19 passam a contar desde a última rodada do coletor, e não desde a última novidade do TSE.
+- 18/10/2026, de [Ensaio geral](15-ensaio-geral.md):
+  - **Fase e relógio** (decisão 7 de lá): a fase da página (antes das 17h, ao vivo, depois) sai do arquivo de rodada. Os 3 min da decisão 19 comparam a hora da rodada com o cabeçalho `Date` da resposta da CDN, nunca com o relógio do aparelho.
+  - **TSE falso** (decisão 4 de lá, detalha a decisão 7 daqui): ele serve 2022 no formato de 2026, com a configuração de municípios e zonas de 2022. Por isso, o coletor e o site não podem ter os candidatos nem a lista de municípios fixos no código.
+  - **Ambiente do ensaio** (decisão 5 de lá): Worker, subdomínio e bucket próprios, nunca os de produção. O coletor ganha esse destino na mesma interface de publicação da decisão 15.
+  - **Chaves** (decisão 19 de lá): a base Apuração + pesquisas e o mapa ganham chave de publicação própria.
+  - **Zonas** (decisão 16 de lá, fecha a decisão 20 daqui): a zona entra no modelo só se a calibração mostrar ganho de pelo menos 0,05 p.p. em todas as noites.
+  - **Domínio** (decisão 8 de lá): o dono compra o domínio até 21/10.
