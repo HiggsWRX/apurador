@@ -21,3 +21,5 @@ O advogado confirma, por escrito, a projeção com pesquisas antes das 17h, os t
 As chaves estão na decisão 5 da [Segunda consulta jurídica](21-segunda-consulta-juridica.md), e os rótulos no [Sinal de virada](23-sinal-de-virada.md).
 
 Resolvido quando houver resposta por escrito aos quatro itens, registrada aqui em resumo, com o estado final de cada chave. As chaves podem mudar até a noite de 25/10, sem código novo.
+
+De [Narração da noite](14-narracao-da-noite.md): os textos exatos do item 2b estão nas decisões 8 e 9 de lá e podem ser mostrados ao advogado. São três tipos de evento preditivo na narração: a mudança do sinal de virada, a chance passando de 90% e de 99% e a linha da projeção nos marcos. Todos começam com "Projeção do Apurador:". Na manchete, há três frases, uma por estado do sinal de virada. Com a chave desligada, nenhum deles entra nos arquivos públicos.

@@ -54,6 +54,11 @@ Especificação fechada e com os riscos resolvidos do site Apurador, pronta para
   - **Planos B**: se o mapa do IBGE não for liberado, só a Tabela; se o modelo cair na regra de IA, a projeção e o simulador são desligados.
 - [Segunda consulta jurídica](issues/21-segunda-consulta-juridica.md): estão **liberados** o agregado (como agregado estatístico, não como nova pesquisa), o modelo (por não usar IA generativa nem aprendizagem de máquina), o simulador antes das 17h, a camada analítica separada e identificada, e a malha do IBGE (CC BY 4.0, conferida na nota técnica). A atualização do placar e dos painéis em 25/10 também está liberada. A projeção antes das 17h fica ligada como painel. **Textos preditivos** automáticos ficam desligados por uma chave até confirmação expressa.
 - [Sinal de virada](issues/23-sinal-de-virada.md): o painel da curva sempre mostra um rótulo com a **chance de virada**, a chance de vitória de quem está atrás no placar parcial, em três estados: virada projetada (≥ 50%), virada possível (5–50%) e **sem sinal de virada** (< 5%). Os limites são provisórios, a calibrar no ensaio. Ele substitui o "pode não ocorrer".
+- [Narração da noite](issues/14-narracao-da-noite.md): **cada lugar tem a sua narração**, com quatro eventos do Brasil intercalados.
+  - **Factuais, sempre no ar**: começo, marcos de % de seções, virada (só depois de 3% das seções, com as idas e vindas de 10 minutos num evento só), fim, "as pesquisas deixaram de pesar" e indicação do TSE. Os marcos do Brasil dizem onde falta apurar.
+  - **Na narração do Brasil**: entram as viradas e os fins das UFs e os 50% dos 8 maiores eleitorados. Em 2022, isso dá ~50 eventos na noite, sem precisar de intervalo mínimo.
+  - **Preditivos**: sinal de virada, chance passando de 90% e 99% e linha da projeção nos marcos. Só entram nos JSONs públicos com a chave ligada, sem publicação retroativa.
+  - **Também lá**: os modelos de texto e as formas da manchete.
 
 ## Not yet specified
 

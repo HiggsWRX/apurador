@@ -38,6 +38,14 @@ A trajetória do placar parcial ao longo do % de seções totalizadas, com os da
 **Virada**:
 O momento em que muda o candidato que lidera o placar parcial.
 
+**Indicação do TSE**:
+O anúncio oficial do TSE de que a eleição presidencial está matematicamente definida, com o nome do eleito, antes da totalização final. Só existe para o Brasil.
+_Avoid_: matematicamente definido (sozinho), eleito pela projeção
+
+**Totalização final**:
+O fim oficial da apuração num lugar, quando o TSE conclui a totalização de todas as seções.
+_Avoid_: 100% apurado, resultado final (quando se fala da projeção)
+
 **Curva de comparação**:
 A curva real de um turno passado, sobreposta à curva real atual no mesmo eixo de % de seções totalizadas.
 _Avoid_: curva de 2022 (é qualquer turno)
@@ -107,8 +115,16 @@ A parte do site usada na noite da apuração: placar parcial, curva real, curva 
 A parte do site para consultar eleições presidenciais passadas e comparar resultados.
 
 **Narração da noite**:
-A sequência de eventos da apuração (virada, marcos, mudanças de chance) gerada automaticamente a partir dos dados.
+A sequência de eventos da apuração num lugar (virada, marcos, mudanças de chance), gerada automaticamente a partir dos dados, com os principais eventos do Brasil intercalados.
 _Avoid_: feed, timeline, ao vivo (sozinho)
+
+**Evento**:
+Um acontecimento da noite num lugar, com hora, registrado na narração da noite: um marco, uma virada, a indicação do TSE. É factual, ou preditivo quando afirma o que a projeção espera.
+_Avoid_: post, notícia, atualização
+
+**Marco**:
+Um % de seções totalizadas fixado de antemão, como 50%, cuja passagem num lugar vira um evento.
+_Avoid_: meta, checkpoint
 
 **Simulador "e se"**:
 O recurso em que o visitante ajusta hipóteses e vê a simulação resultante. Ele nunca substitui a projeção do site.

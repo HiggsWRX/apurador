@@ -130,3 +130,10 @@ Resolvido em 18/10/2026 com o protótipo (branch `prototipo/telas-pagina-lugar`)
   - **Virada**: as frases da decisão 4 daqui dão lugar aos rótulos curtos do [Sinal de virada](23-sinal-de-virada.md) ("Sem sinal de virada · chance de virada 3%").
   - **Camada analítica**: a curva, o mapa, a tabela, as comparações e a projeção levam "Cálculo do Apurador com dados do TSE".
   - **Mapa do IBGE**: liberado, com a atribuição "Malha: IBGE, Malha Municipal Digital 2024, CC BY 4.0, simplificada pelo Apurador" no rodapé. O plano B só com a Tabela sai.
+- 18/10/2026, de [Narração da noite](14-narracao-da-noite.md):
+  - **Manchete**: os textos da decisão 5 daqui estão detalhados na decisão 9 de lá. Isso inclui a diferença em votos quando ela fica abaixo de 0,10 ponto e a manchete de virada por 10 minutos.
+  - **Narração**: as decisões 4 e 7 daqui ficam assim:
+    - a linha sob a manchete mostra o último evento do **próprio lugar**;
+    - nas páginas de UF, Exterior e município, a lista intercala quatro eventos do Brasil, marcados como "Brasil" e sem número na curva;
+    - os números na curva marcam só os eventos factuais do lugar, nunca os preditivos;
+    - o bloco leva o selo "Narração do Apurador com dados do TSE".

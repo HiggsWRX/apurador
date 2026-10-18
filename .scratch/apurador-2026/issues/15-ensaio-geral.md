@@ -26,3 +26,8 @@ Como reproduzimos uma apuração passada inteira no site, acelerada, antes de 25
 - De [Simulador "e se"](13-simulador-e-se.md): testar os seis estados do indicador ao vivo, sobretudo "TSE sem novidade" contra "interrompido", que o arquivo de rodada separa. Testar também a passagem sozinha das 17h para o ao vivo, sem recarregar, e o simulador se atualizando com as hipóteses paradas.
 - De [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md): testar as chaves de publicação ligadas e desligadas, sem código novo, e a retirada de uma pesquisa com o agregado recalculado depois do congelamento.
 - De [Sinal de virada](23-sinal-de-virada.md): calibrar os limites provisórios de 50% e 5% da chance de virada e conferir se "sem sinal de virada" nunca apareceu numa noite que acabou virando. Testar também a chave de textos preditivos ligada e desligada no meio da noite.
+- De [Narração da noite](14-narracao-da-noite.md):
+  - "Narração coerente" pode ser conferida contra a [medição do 2º turno de 2022](../research/14-narracao-noite-2t-2022.md). Com as regras decididas, a narração do Brasil deve dar cerca de 50 eventos, uma única virada às ~18:44, sem a troca de 0,26%, e as 4 viradas em UF (MG duas vezes, AP e AM).
+  - Testar a janela de 10 minutos da virada nas fases do relógio do coletor que veem 4 trocas no Brasil.
+  - Testar a retomada do coletor sem eventos repetidos nem retroativos.
+  - Com a chave desligada, conferir que nenhum evento preditivo, nem a frase de projeção da manchete, aparece nos JSONs públicos (decisão 6 de lá).
