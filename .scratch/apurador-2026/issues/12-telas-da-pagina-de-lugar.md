@@ -4,6 +4,7 @@ Type: prototype
 Status: claimed
 Blocked by: —
 Map: [Apurador 2026](../map.md)
+Protótipo: branch `prototipo/telas-pagina-lugar`, arquivo `prototipos/telas-pagina-lugar/telas-pagina-lugar.html` (abre com dois cliques; variantes em `?variant=A|B|C`)
 
 ## Question
 
