@@ -62,6 +62,18 @@ _Avoid_: probabilidade, odds
 **Curva projetada**:
 A trajetória prevista do placar parcial desde o ponto atual até 100% de seções totalizadas, incluindo se e onde deve ocorrer a virada.
 
+**Virada projetada**:
+O ponto da curva projetada em que deve mudar quem lidera, sempre acompanhado da faixa de % de seções em que a virada é provável (ou da indicação de que pode não ocorrer).
+_Avoid_: hora da virada, previsão da virada
+
+**Ordem de chegada**:
+A sequência em que as seções (e, por agregação, municípios e UFs) são totalizadas na noite. A ordem prevista define o formato da curva projetada.
+_Avoid_: ordem de apuração, ordem de contagem
+
+**Transferência de votos**:
+A fração dos votos dados no 1º turno aos candidatos eliminados que vai para cada finalista no 2º turno.
+_Avoid_: migração de votos, herança de votos
+
 ## Produto
 
 **Núcleo ao vivo**:
