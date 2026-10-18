@@ -35,3 +35,9 @@ A decidir:
 De [Ensaio geral](15-ensaio-geral.md):
 - **Calibração**: as constantes do modelo, a zona, o K e o limite do sinal de virada são escolhidos em três noites (2T de 2022, 2T de 2018 inteiro e 1T de 2026). Os valores candidatos e a regra de escolha são escritos antes, sem treinar nada (decisões 13 a 18 de lá). A tabela fica em `docs/calibracao.md` e entra nesta página, porque mostra como as constantes foram escolhidas.
 - **2018**: a calibração já reproduz o 2T de 2018 inteiro, porque o `detalhe_votacao_secao` dá a hora de cada seção mesmo antes da abertura das 19h. Com isso, o custo da reprodução de 2018 deixa de pesar na pergunta acima.
+
+De [Plano de lançamento em fases](19-plano-de-lancamento-em-fases.md) (decisões 3 e 5 de lá):
+- **Mínimo para a etapa "Antes da noite"** (meta qui 22/10): a página precisa estar no ar com o que o advogado exige, ou seja, critérios de seleção, cálculos, limitações, "sem IA generativa nem aprendizagem de máquina" e a atribuição da malha. Sem isso, o painel de antes das 17h não abre.
+- **Pode chegar depois**, até o build do ensaio 2 (23/10): a tabela da calibração e o histórico de acerto.
+- **Corte, se atrasar**: os gráficos extras são os primeiros a sair.
+- **Correções**: as de texto valem até as 18h de 24/10. Função nova, só até o ensaio 2.

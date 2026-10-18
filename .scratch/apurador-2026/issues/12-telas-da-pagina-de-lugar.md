@@ -146,3 +146,6 @@ Resolvido em 18/10/2026 com o protótipo (branch `prototipo/telas-pagina-lugar`)
   - **Avisos prontos** (decisão 10 de lá): uma faixa abaixo da manchete, em todas as páginas, mostra um de três avisos prontos quando o dono publica. Não há texto livre.
   - **Interrupção longa** (decisão 11 de lá): depois de 10 min de "interrompida", a página acrescenta "Acompanhe no app oficial do TSE", com o link, e mantém os últimos dados à vista.
   - **Plano B** (decisão 14 de lá): a página lê o endereço principal dos JSONs ao vivo e passa ao do plano B se o principal der erro ou tiver rodada com mais de 2 min.
+- 18/10/2026, de [Plano de lançamento em fases](19-plano-de-lancamento-em-fases.md):
+  - **Antes das 17h** (decisão 2 de lá): o conteúdo da decisão 11 daqui vai ao ar na etapa "Antes da noite", com meta em 22/10, como build estático, sem o coletor.
+  - **Depois** (decisão 8 de lá, detalha a decisão 13 daqui): "Como a projeção se saiu" entra na manhã de 26/10. O 2º turno de 2026 entra no histórico, a partir do último estado da noite, com o aviso "provisório, até os arquivos oficiais do TSE", que sai quando eles chegam.

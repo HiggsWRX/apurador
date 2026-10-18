@@ -208,3 +208,8 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
   - **Franquia** (decisão 7 de lá, fecha a decisão 2 daqui): uma noite inteira pelo celular dá ~500 MB, e o dono confirma pelo menos 1 GB livre em 25/10, com ancoragem liberada. Se faltar, ele compra um pacote extra até 24/10. A operadora e o plano seguem não informados.
   - **Reserva de internet** (decisão 8 de lá, sobre a decisão 2 daqui): sem modo especial, e o coletor faz o mesmo no cabo e no celular.
   - **Retomada** (decisão 3 de lá, detalha a decisão 4 daqui): o estado no R2 é o último objeto da rodada, com narração, hashes, chaves e contador. Uma partida sem estado no disco nem no R2 regrava todos os arquivos ao vivo uma vez, ~5.900 gravações.
+- 18/10/2026, de [Plano de lançamento em fases](19-plano-de-lancamento-em-fases.md):
+  - **Antes de 25/10** (decisão 2 de lá): o site já está público em `apurador.app` desde a etapa "Antes da noite", com meta em 22/10. A noite não abre endereço novo.
+  - **Fim da noite** (decisão 8 de lá, detalha a decisão 21 daqui):
+    - **26/10, de manhã**: entram "Como a projeção se saiu" e o 2º turno de 2026, provisório, e a chave de escrita do R2 é revogada.
+    - **À tarde**: o Worker e o bucket do ensaio são apagados, e o repositório fica público depois da varredura de segredos.

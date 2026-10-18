@@ -51,3 +51,9 @@ Depois disso, o Claude:
 - Comprar o domínio (dono, **até 21/10**): pela decisão 8 do [Ensaio geral](15-ensaio-geral.md), o ensaio precisa dele para medir o caminho principal (R2 com cache) além do plano B. É `apurador.app`, ou `apurador.org` se o primeiro não estiver livre.
 - Criar o bucket do R2 e o Worker do ensaio, separados dos de produção (Claude, na construção), e a chave de escrita só nesse bucket (dono). Ver a decisão 5 do [Ensaio geral](15-ensaio-geral.md).
 - Criar um e-mail de contato dedicado ao projeto, para o rodapé (dono). Ver a decisão 7 de [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md).
+
+**18/10/2026, de [Plano de lançamento em fases](19-plano-de-lancamento-em-fases.md):**
+
+- **Repositório** (decisão 7 de lá): o "privado até o lançamento" passa a valer até **26/10**. Ele só abre depois de uma varredura de segredos e de endereços de ensaio em todo o histórico do Git.
+- **Domínio** (decisão 6 de lá): o site abre em `apurador.app`. O limite segue 21/10, mas comprar já em 19/10 dá folga para a meta de 22/10 da etapa "Antes da noite".
+- **E-mail do projeto**: o rodapé com ele é critério de pronto da etapa "Antes da noite" (decisão 3 de lá), então ele precisa existir antes de 22/10.

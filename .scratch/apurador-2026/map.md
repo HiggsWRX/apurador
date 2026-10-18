@@ -23,7 +23,7 @@ Especificação fechada e com os riscos resolvidos do site Apurador, pronta para
 - Construção: Claude escreve o código e o dono do projeto revisa e decide. Tecnologia: TypeScript, o resto a critério do Claude. Hospedagem no plano gratuito da Cloudflare; repositório no GitHub (a definir qual conta). O dono não tem contas ainda: **Claude não cria contas nem digita senhas**, então criação de conta e logins são tarefas do dono, previstas para 18/10. Até lá, repositório Git local, com tudo preparado para ir ao GitHub e à Cloudflare depois.
 - **Servidor disponível**: o computador do dono (Ryzen 5 5600X3D, RTX 4080, 64 GB de RAM, Windows 11, internet de 800 Mbps simétricos) é o servidor do projeto. Fora ele, só os planos gratuitos da Cloudflare e do GitHub.
 - Ensaio geral obrigatório antes de 25/10: rodar uma apuração passada inteira, acelerada, no site.
-- Lançamento o quanto antes, em fases. O núcleo ao vivo tem prazo duro: 17h de 25/10 (20h UTC).
+- Lançamento o quanto antes, em etapas ([Plano de lançamento em fases](issues/19-plano-de-lancamento-em-fases.md)). O núcleo ao vivo tem prazo duro: 17h de 25/10 (20h UTC).
 - **Antes das 17h de 25/10**, o site publica a lista das pesquisas, o agregado, a projeção e a chance de vitória como painel, e o simulador ([Segunda consulta jurídica](issues/21-segunda-consulta-juridica.md)). **Textos preditivos** automáticos ficam desligados por uma chave até a [Confirmação dos textos preditivos](issues/22-confirmacao-dos-textos-preditivos.md). Cada bloco jurídico sensível tem uma **chave de publicação**, que liga e desliga sem código novo.
 - Controle **Base da projeção**: "Só apuração" ou "Apuração + pesquisas" (padrão).
 - Pesquisas usadas no agregado: só registradas no TSE, de institutos com histórico em 2018/2022, só nacionais (regra exata em [Agregado de pesquisas e erro histórico](issues/10-agregado-de-pesquisas.md)). O erro histórico é medido com os 2º turnos de 2002 a 2022, uso interno.
@@ -75,6 +75,10 @@ Especificação fechada e com os riscos resolvidos do site Apurador, pronta para
   - **Conta**: no 2T de 2022, isso dá ~135 mil gravações no R2 por noite e ~370 mil no mês, com os dois ensaios, contra ~2 milhões por noite regravando todo lugar.
   - **Trava**: em 90% do mês, o coletor reduz sozinho as gravações e manda um alerta crítico.
   - **Celular**: uma noite inteira pelo celular dá ~500 MB, e o dono confirma 1 GB livre. Não há modo especial para a reserva.
+- [Plano de lançamento em fases](issues/19-plano-de-lancamento-em-fases.md): **são três etapas de lançamento**, e o site abre só em `apurador.app`.
+  - **Antes da noite**: meta qui 22/10. Entram o histórico, as pesquisas, o painel de antes das 17h como build estático e a metodologia, com critério de pronto escrito e o de acordo do dono. Se atrasar, o limite é a manhã de 24/10.
+  - **Noite**: o núcleo ao vivo, no build aprovado no ensaio 2. O congelamento do ensaio 2 vale para o site todo.
+  - **Depois**, a partir de 26/10: "Como a projeção se saiu", o 2º turno de 2026 no histórico (provisório até os arquivos oficiais) e o repositório público. O 3D fica fora deste mapa.
 
 ## Not yet specified
 

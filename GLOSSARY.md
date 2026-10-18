@@ -154,6 +154,14 @@ _Avoid_: título, resumo, chamada
 Uma frase gerada automaticamente que afirma o que a projeção espera, como quem vence ou quando vira. Não se confunde com os números e rótulos curtos do bloco da projeção.
 _Avoid_: comentário, previsão
 
+**Fase**:
+O momento da noite que a página mostra: antes das 17h, ao vivo ou encerrada. Muda para todos os visitantes ao mesmo tempo, nunca pelo relógio do aparelho.
+_Avoid_: etapa (reservado ao lançamento), estado, modo
+
+**Etapa de lançamento**:
+Um conjunto de partes do site que vai ao ar junto, com data e critério de pronto: antes da noite, noite e depois.
+_Avoid_: fase (é o momento da página), release, versão
+
 **Chave de publicação**:
 Um liga-desliga de um bloco do site, que muda o que vai ao ar sem código novo.
 _Avoid_: flag

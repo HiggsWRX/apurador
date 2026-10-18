@@ -194,3 +194,8 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
     - o contador de gravações do coletor bate com o painel da Cloudflare, com até 1% de diferença;
     - os JSONs gravados com gzip chegam certos ao navegador pela borda, com ETag e 304. Se falhar, o coletor grava sem compressão.
   - **Celular** (decisão 8 de lá): se o ensaio 1 medir mais de 500 MB por noite, entra o plano pronto, e o arquivo da noite fica no disco enquanto a conexão for o celular.
+- 18/10/2026, de [Plano de lançamento em fases](19-plano-de-lancamento-em-fases.md):
+  - **Congelamento do site todo** (decisão 5 de lá, responde à pergunta da decisão 2 daqui): a regra de nada de função nova depois do ensaio 2 vale também para o histórico e a metodologia. Seguem permitidas as correções até as 18h de 24/10, as pesquisas até as 23h e as correções de texto da metodologia até as 18h.
+  - **Simulador** (decisão 2 de lá): pode ir ao ar antes, na etapa "Antes da noite", se estiver pronto. Senão, chega com o build aprovado aqui.
+  - **Limite da etapa "Antes da noite"**: se ela atrasar, vai ao ar com o build aprovado no ensaio 2, na manhã de 24/10, sem código novo.
+  - **Ambiente do ensaio** (decisão 8 de lá): o Worker e o bucket do ensaio são apagados em 26/10, antes de o repositório ficar público.
