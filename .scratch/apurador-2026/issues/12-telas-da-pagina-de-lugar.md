@@ -116,3 +116,7 @@ Resolvido em 18/10/2026 com o protótipo (branch `prototipo/telas-pagina-lugar`)
 **Para a implementação**: o protótipo é a referência visual, mas não é código de produção. Os blocos estão em `componentes.js`, o mapa em `mapa.js` (d3-geo e TopoJSON em SVG, com o mapa de municípios do Brasil em 5.570 caminhos) e os picos em `picos3d.js` (three.js r128, carregado sob demanda). A noite e a projeção dele (`noite.js`) são imitações e não devem ser portadas: o modelo é o de [Método de projeção só com a apuração](09-metodo-projecao-so-apuracao.md) e [Combinação de pesquisas e apuração](11-combinacao-pesquisas-e-apuracao.md).
 
 **Glossário**: entram "Página de lugar" e "Manchete".
+
+## Comments
+
+- 18/10/2026, de [Simulador "e se"](13-simulador-e-se.md): a página de lugar ganha o **indicador ao vivo** (decisão 14 de lá) no cartão do placar oficial e na linha fixa do topo. Ele tem seis estados, e o estado "interrompido" é o aviso da decisão 12 daqui.

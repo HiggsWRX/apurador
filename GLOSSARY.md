@@ -20,6 +20,10 @@ _Avoid_: % das urnas apuradas, % de votos apurados
 Votos dados a um candidato, excluídos brancos e nulos. Todos os percentuais de candidatos são sobre votos válidos.
 _Avoid_: votos totais
 
+**Comparecimento**:
+A fração dos eleitores aptos de um lugar que votou.
+_Avoid_: participação (usado para a fatia de um candidato), presença
+
 **Placar parcial**:
 O % de votos válidos de cada candidato entre as seções já totalizadas.
 _Avoid_: resultado parcial, parcial
@@ -43,6 +47,10 @@ _Avoid_: curva de 2022 (é qualquer turno)
 **Projeção**:
 O resultado final estimado (% de votos válidos de cada candidato, com margem de incerteza), recalculado a cada nova informação: uma pesquisa nova ou uma atualização da apuração.
 _Avoid_: previsão (como termo técnico), estimativa
+
+**Voto que falta**:
+Os votos válidos das seções ainda não totalizadas, que a projeção estima. Só ele pode mudar o resultado.
+_Avoid_: votos restantes, voto pendente
 
 **Pesquisa**:
 Uma pesquisa de intenção de voto registrada no TSE, de um instituto, com datas de campo e abrangência (Brasil ou UF).
@@ -99,8 +107,16 @@ A sequência de eventos da apuração (virada, marcos, mudanças de chance) gera
 _Avoid_: feed, timeline, ao vivo (sozinho)
 
 **Simulador "e se"**:
-O recurso em que o visitante ajusta hipóteses e vê a projeção e a curva projetada resultantes. Ele nunca substitui a projeção do site.
+O recurso em que o visitante ajusta hipóteses e vê a simulação resultante. Ele nunca substitui a projeção do site.
 _Avoid_: cenários, previsão do usuário
+
+**Hipótese**:
+Um ajuste do visitante no simulador "e se": quanto o voto que falta pende para um candidato além do que a projeção espera, ou quanto o comparecimento muda, no Brasil ou numa região.
+_Avoid_: cenário, premissa
+
+**Simulação**:
+O resultado das hipóteses do visitante: resultado final estimado, chance de vitória e curva projetada. Fica sempre ao lado da projeção do site, sem substituí-la.
+_Avoid_: projeção do visitante, previsão do usuário
 
 **Página de lugar**:
 A página do site dedicada a um lugar, com o bloco ao vivo em cima e o histórico embaixo. A inicial é a do Brasil.

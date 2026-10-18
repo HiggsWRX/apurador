@@ -53,3 +53,7 @@ Onde roda cada parte do site e com que tecnologia, dentro do plano gratuito da C
 19. **Falha do computador ou da internet**: sem coletor reserva na nuvem. O computador e o roteador ficam no nobreak, e o roteador de celular é a reserva de internet. O site continua no ar com as páginas e o último JSON na Cloudflare. Se os dados passarem 3 min sem atualizar, a página mostra "atualizado às HH:MM, atualização interrompida". [Acesso ao TSE a partir da nuvem](17-acesso-ao-tse-pela-nuvem.md) sai do mapa como fora do escopo.
 20. **Zonas**: o coletor guarda desde o início as zonas dos 190 municípios com mais de uma (mais 535 arquivos por varredura). O [Ensaio geral](15-ensaio-geral.md) decide se o modelo as usa.
 21. **Placar parcial de cada lugar**: o placar parcial e o % de seções totalizadas vêm do arquivo do TSE do próprio lugar, sem alteração (o do Brasil sai do arquivo do Brasil, nunca da soma dos municípios), com a hora da última totalização do TSE, num bloco visualmente separado dos cálculos do site. A curva real é a sequência desses placares na noite. A projeção usa os arquivos de município e de zona.
+
+## Comments
+
+- 18/10/2026, de [Simulador "e se"](13-simulador-e-se.md) (decisão 14 de lá): além dos arquivos da decisão 18, o coletor publica a cada rodada um **arquivo de rodada** minúsculo, com a hora da rodada. Os 3 min da decisão 19 passam a contar desde a última rodada do coletor, e não desde a última novidade do TSE.

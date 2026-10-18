@@ -31,3 +31,4 @@ A atualização é diária, até as 23h de 24/10. Pesquisas divulgadas em 25/10 
 ## Comments
 
 - 18/10/2026, na sessão de [Telas da página de lugar](12-telas-da-pagina-de-lugar.md): o dono do projeto informou que **consultou um advogado e está liberado para fazer o agregado de pesquisas** (e, com ele, a projeção e a chance de vitória com pesquisas antes das 17h). Falta registrar aqui o resumo por escrito da orientação, incluindo as perguntas 2 a 6, para resolver este ticket.
+- 18/10/2026, de [Simulador "e se"](13-simulador-e-se.md): o simulador funciona antes das 17h com o mesmo sinal verde da projeção com pesquisas, salvo ressalva do advogado à pergunta 4 (art. 28, § 1º-C). O resumo por escrito precisa dizer se houve ressalva sobre o simulador.
