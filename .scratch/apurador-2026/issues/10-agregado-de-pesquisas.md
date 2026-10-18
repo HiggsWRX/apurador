@@ -1,7 +1,7 @@
 # Agregado de pesquisas e erro histórico
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 04, 06
 Map: [Apurador 2026](../map.md)
 
