@@ -1,0 +1,37 @@
+# 30: Ambiente de ensaio e scripts de conferência
+
+Status: ready-for-agent
+Blocked by: 11, 19, 20
+Spec: [Apurador 2026: especificação da construção](../spec.md)
+
+## O que construir
+
+O ambiente fechado do ensaio geral: um Worker, um subdomínio e um bucket do R2 próprios, nunca os de produção, com `noindex` e uma tarja fixa. Nele:
+
+- o TSE falso roda como servidor HTTP no computador do dono, a 3x e 30x;
+- o coletor, a CDN e o navegador mantêm a cadência real.
+
+Junto, vêm os scripts que medem os critérios de aprovação e o modelo do registro de cada ensaio.
+
+Precisa do dono: a chave de escrita só no bucket do ensaio.
+
+Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decisões 3 a 6, 12 e 19 a 23, e comentários) e [Volume de gravações na noite](../../apurador-2026/issues/24-volume-de-gravacoes-na-noite.md) (decisões 4 e 9).
+
+## Critérios de aceite
+
+- [ ] **Ambiente**: o Worker, o subdomínio e o bucket do ensaio são separados dos de produção, e o coletor tem o destino "R2 do ensaio" na interface de publicação.
+- [ ] **Tarja**: todas as páginas do ensaio têm `noindex` e a tarja "Ensaio: reprodução da apuração de 30/10/2022. Não é resultado de 2026."
+- [ ] **Antes das 17h no ensaio**: o painel usa o agregado das pesquisas de 2022.
+- [ ] **Retirada de pesquisa**: dá para retirar uma pesquisa de 2022 por deploy, e o agregado recalculado aparece em até 10 min, sem tocar no coletor.
+- [ ] **Placar idêntico**: compara o placar publicado com o arquivo do TSE falso, em todas as rodadas e lugares. A meta é zero divergências.
+- [ ] **Atraso visto de fora**: o script lê o endereço público como a página lê (a cada 30 s, com `If-None-Match`) e dá a mediana e o p95. As metas são 35 s e 70 s no caminho R2 e 75 s e 150 s no plano B.
+- [ ] **Textos preditivos**: com a chave desligada, nenhum preditivo em nenhum JSON público de nenhuma rodada.
+- [ ] **Narração factual**: igual à do replay automático da mesma noite, salvo o que as quedas provocadas explicam.
+- [ ] **Cache**: no caminho R2, pelo menos 90% das respostas dos JSONs ao vivo vêm da borda (`HIT` ou `REVALIDATED`).
+- [ ] **Medições sem meta bloqueante**:
+  - o tempo de cada rodada (meta: menos de 20 s no pico a 3x);
+  - as gravações por rodada e por hora;
+  - o volume da noite;
+  - o contador do coletor contra o painel da Cloudflare (até 1% de diferença);
+  - os dados por visitante na página do Brasil das 17h às 20h (até 10 MB).
+- [ ] **Registro de cada ensaio**: traz os números contra os critérios, as falhas com hora e o veredito de cada bloco, para o dono assinar.
