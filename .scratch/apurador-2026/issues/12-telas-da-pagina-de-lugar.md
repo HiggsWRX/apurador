@@ -20,4 +20,6 @@ Protótipo visual rápido com dados fictícios, para reagir e decidir:
 - Os estados da página: antes da apuração (só pesquisas), durante, depois.
 - Identidade visual: cores dos candidatos, tipografia, tom neutro. Pela pesquisa de [Restrições legais à projeção](04-restricoes-legais.md): cores neutras (nada de vermelho do PT nem verde-amarelo), tratamento visual idêntico aos dois candidatos, fotos oficiais do TSE sem alteração, placar oficial separado dos cálculos do site, avisos e rodapé com responsável identificado.
 
+- **3D**, pela decisão 9 de [Arquitetura e tecnologia](08-arquitetura-e-tecnologia.md): o mapa de picos do Brasil (com os picos crescendo na noite), parallax na abertura e na passagem do bloco ao vivo para o histórico, e shaders sutis em fundos e na faixa de incerteza. Nunca no placar parcial, na curva projetada, na projeção ou na chance de vitória. Câmera ortográfica e vista inicial que não favorece região. Testar no celular se impressiona sem atrapalhar a leitura.
+
 O protótipo fica linkado aqui como asset.

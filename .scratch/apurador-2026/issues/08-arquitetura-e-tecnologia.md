@@ -23,15 +23,21 @@ Onde roda cada parte do site e com que tecnologia, dentro do plano gratuito da C
 
 ## Answer
 
-*Em andamento (18/10). Falta decidir: onde roda o coletor, como o JSON ao vivo chega aos visitantes e com que frequência, a conta de tráfego, o plano B de IP e as salvaguardas do 3D.*
+*Em andamento (18/10). Falta decidir: onde roda o coletor, como o JSON ao vivo chega aos visitantes e com que frequência, a conta de tráfego e o plano B de IP.*
 
 **Decisões** (aceitas pelo dono do projeto):
 
 1. **Cálculo central**: o coletor calcula projeção, chance de vitória, curva projetada e narração da noite para as duas bases da projeção e publica o resultado pronto. O navegador só desenha. Ler o TSE direto do navegador está descartado: a projeção precisa dos 5.757 arquivos de município. O mesmo módulo do modelo roda no navegador só no simulador "e se", que baixa os dados por município quando é aberto.
 2. **Linguagem**: TypeScript em tudo (site, coletor, pipeline de dados históricos e o módulo do modelo, portado do protótipo). O histórico de acerto da página de metodologia roda o mesmo código da noite.
 3. **Framework**: Astro, com uma página estática por lugar (cerca de 5.800) e o bloco histórico já no HTML. O bloco ao vivo e o simulador são ilhas em Preact.
-4. **Gráficos e mapas**: SVG feito à mão com partes pequenas do D3 (escalas, linhas). Mapas com d3-geo e TopoJSON em SVG, sem bibliotecas de mapa com fundo. O mapa do Brasil por município passa para canvas se o ensaio mostrar lentidão. O dono quer visualizações 3D, com parallax ou shaders, onde possível (salvaguardas em discussão).
+4. **Gráficos e mapas**: SVG feito à mão com partes pequenas do D3 (escalas, linhas). Mapas com d3-geo e TopoJSON em SVG, sem bibliotecas de mapa com fundo. O mapa do Brasil por município passa para canvas se o ensaio mostrar lentidão. O 3D segue a decisão 9.
 5. **Malha**: a do IBGE 2024/2025, simplificada na construção, para incluir Boa Esperança do Norte (MT).
 6. **Dados congelados**: o pipeline baixa TSE e IBGE para um cache fora do Git. O repositório guarda só os dados derivados (~2 MB), com manifesto de origem (URL, data de geração do TSE, hash). A construção do site lê só o repositório. O agregado de pesquisas também é um arquivo no repositório, e cada atualização é um deploy.
 7. **TSE trocável**: o coletor lê de uma URL base configurável: o TSE de verdade, os arquivos finais do 1º turno de 2026 ou um "TSE falso" local que serve, no formato oficial, a apuração reconstruída do 2º turno de 2022 acelerada. O TSE falso é a peça do [Ensaio geral](15-ensaio-geral.md).
 8. **Domínio**: comprar `apurador.app` no Cloudflare Registrar (ou `apurador.org`), passo do dono em [Contas e acessos](07-contas-e-acessos.md). `apurador.com.br` já tem dono. O site precisa funcionar também em `*.workers.dev`.
+9. **3D (parallax e shaders)**: camada por cima de uma versão 2D completa, construída só depois que o núcleo ao vivo passar no ensaio geral, na mesma prioridade do explorador histórico.
+   - **Onde não entra**: placar parcial, curva projetada, projeção e chance de vitória, porque a perspectiva distorce comprimentos e áreas.
+   - **Onde pode entrar**: um mapa de picos do Brasil (altura = votos válidos do município, cor = quem lidera; na noite, os picos crescem conforme as seções são totalizadas), parallax na abertura e na passagem do bloco ao vivo para o histórico, e shaders sutis em fundos e na faixa de incerteza. O desenho fica com [Telas da página de lugar](12-telas-da-pagina-de-lugar.md).
+   - **Salvaguardas**: carga sob demanda, fora do caminho do bloco ao vivo. Só aparece com WebGL2, sem pedido de movimento reduzido e em aparelho sem pouca memória. Botão 2D/3D. Todo dado em 3D existe também em 2D ou tabela. Volta sozinho ao 2D se a taxa de quadros cair.
+   - **Biblioteca**: three.js, carregada sob demanda, com os picos desenhados como instâncias de uma mesma forma.
+   - **Neutralidade**: câmera ortográfica (nada encolhe com a distância), inclinação e parallax limitados, vista inicial igual para todos sem favorecer região, cores e tratamento idênticos para os dois candidatos, e altura que nunca mede a vantagem de um só candidato.
