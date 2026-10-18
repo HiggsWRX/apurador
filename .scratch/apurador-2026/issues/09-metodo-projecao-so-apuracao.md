@@ -1,9 +1,10 @@
 # Método de projeção só com a apuração
 
 Type: prototype
-Status: open
+Status: claimed
 Blocked by: 02, 03, 05
 Map: [Apurador 2026](../map.md)
+Protótipo: branch `prototipo/metodo-projecao`, arquivo `prototipos/metodo-projecao/metodo-projecao-2t-2022.html` (abre com dois cliques)
 
 ## Question
 
