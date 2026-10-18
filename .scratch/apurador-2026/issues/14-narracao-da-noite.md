@@ -28,3 +28,9 @@ De [Telas da página de lugar](12-telas-da-pagina-de-lugar.md):
 - **Nomes ambíguos**: no protótipo, "São Paulo terminou" confundia o estado com a capital na página do município. O texto precisa distinguir os dois.
 
 De [Combinação de pesquisas e apuração](11-combinacao-pesquisas-e-apuracao.md): "As pesquisas deixaram de pesar" é um evento candidato. Ele acontece quando as duas bases da projeção passam a coincidir no Brasil (menos de 0,1 p.p. na projeção e menos de 1 ponto na chance de vitória). O JSON traz o peso das pesquisas a cada rodada.
+
+De [Segunda consulta jurídica](21-segunda-consulta-juridica.md) (decisão 5 de lá): **textos preditivos automáticos ficam desligados durante a apuração** até a [Confirmação dos textos preditivos](22-confirmacao-dos-textos-preditivos.md).
+- O catálogo precisa separar os eventos **factuais** (virada real, marcos de % de seções, UF que terminou, indicação do TSE, "as pesquisas deixaram de pesar"), que vão ao ar, dos **preditivos** (chance cruzando limiares, projeção mudando, mudança do sinal de virada), que ficam atrás da chave.
+- A manchete fica só com o placar oficial enquanto a chave estiver desligada.
+- Os textos preditivos do catálogo também precisam estar prontos, porque a chave pode ser ligada na própria noite.
+- De [Sinal de virada](23-sinal-de-virada.md): com a chave ligada, os três estados (virada projetada, virada possível, sem sinal de virada) viram frases, como "Sem sinal de virada: Flávio deve seguir à frente até o fim".

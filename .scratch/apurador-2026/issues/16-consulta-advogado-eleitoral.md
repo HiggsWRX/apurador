@@ -81,3 +81,7 @@ Resolvido em 18/10/2026 com a resposta por escrito do primeiro advogado, trazida
 7. **Responsável e rodapé**: pessoa física. O rodapé traz o nome completo do dono, um e-mail de contato dedicado ao projeto e a declaração de independência em relação ao TSE, aos candidatos e aos partidos, sem CPF nem endereço. Criar o e-mail é tarefa do dono, registrada em [Contas e acessos](07-contas-e-acessos.md).
 
 **Glossário**: sem termos novos.
+
+## Comments
+
+- 18/10/2026, de [Segunda consulta jurídica](21-segunda-consulta-juridica.md): as chaves da decisão 2 daqui ficam ligadas, o plano B do item 4.1 sai e o mapa do IBGE foi liberado pela CC BY 4.0. Entrou uma chave nova, a de textos preditivos, desligada até a [Confirmação dos textos preditivos](22-confirmacao-dos-textos-preditivos.md).

@@ -125,3 +125,8 @@ Resolvido em 18/10/2026 com o protótipo (branch `prototipo/telas-pagina-lugar`)
   - o aviso da projeção da decisão 3 daqui passa a ser "Estimativa do Apurador. Não é resultado oficial nem garantia do resultado." (decisão 5 de lá);
   - o rodapé da decisão 10 daqui traz o nome do dono, um e-mail dedicado ao projeto e a independência em relação ao TSE, aos candidatos e aos partidos, sem CPF nem endereço (decisão 7 de lá);
   - se o mapa do IBGE não for liberado, o cartão do mapa mostra só a Tabela (decisão 4 de lá).
+- 18/10/2026, de [Segunda consulta jurídica](21-segunda-consulta-juridica.md): **o agregado, a projeção e o simulador antes das 17h voltam a ser liberados**, e o desenho da decisão 11 daqui volta a valer, só como painel. O que muda:
+  - **Textos preditivos** ficam desligados durante a apuração até a [Confirmação dos textos preditivos](22-confirmacao-dos-textos-preditivos.md). A manchete da decisão 5 daqui fica só com o placar oficial, sem frase de projeção.
+  - **Virada**: as frases da decisão 4 daqui dão lugar aos rótulos curtos do [Sinal de virada](23-sinal-de-virada.md) ("Sem sinal de virada · chance de virada 3%").
+  - **Camada analítica**: a curva, o mapa, a tabela, as comparações e a projeção levam "Cálculo do Apurador com dados do TSE".
+  - **Mapa do IBGE**: liberado, com a atribuição "Malha: IBGE, Malha Municipal Digital 2024, CC BY 4.0, simplificada pelo Apurador" no rodapé. O plano B só com a Tabela sai.

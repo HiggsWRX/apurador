@@ -75,3 +75,4 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
   - A coleta da decisão 8 ganha um registro datado de cada verificação (`pesquisas-verificacoes.csv`) e a conferência diária de suspensões.
   - Depois do congelamento das 23h de 24/10, ainda é permitido **retirar** uma pesquisa e recalcular o agregado. Incluir pesquisa nova não é.
   - O agregado leva o aviso "Média calculada pelo Apurador sobre pesquisas registradas no TSE. Não é uma pesquisa própria."
+- 18/10/2026, de [Segunda consulta jurídica](21-segunda-consulta-juridica.md): (b) foi liberado, inclusive da 0h às 17h de 25/10, como agregado estatístico e não como nova pesquisa sujeita a registro. A chave fica ligada. (c) também fica ligada, como painel, com a confirmação pedida na [Confirmação dos textos preditivos](22-confirmacao-dos-textos-preditivos.md). Nenhum texto do site diz que o modelo "aprende" com o erro histórico: ele usa o erro medido.

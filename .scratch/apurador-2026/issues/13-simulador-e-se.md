@@ -98,3 +98,4 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
 ## Comments
 
 - 18/10/2026, de [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md): o simulador antes das 17h (decisões 5 e 9 daqui) fica atrás de uma chave, desligada até a [Segunda consulta jurídica](21-segunda-consulta-juridica.md) liberar. Desligada, o simulador abre às 17h, e as hipóteses prontas, que só existem antes da apuração, não aparecem. Se o modelo for enquadrado na regra de IA, outra chave desliga o simulador inteiro.
+- 18/10/2026, de [Segunda consulta jurídica](21-segunda-consulta-juridica.md): o simulador foi liberado, inclusive antes das 17h, e a chave fica ligada. O plano B da regra de IA sai. O "o que seria preciso" (decisão 10 daqui) fica no ar, mas entra no pedido de [Confirmação dos textos preditivos](22-confirmacao-dos-textos-preditivos.md). Se o advogado não confirmar, ele sai do simulador.

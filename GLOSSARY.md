@@ -79,11 +79,15 @@ _Avoid_: confiança nas pesquisas, peso do modelo
 A probabilidade, segundo o modelo, de cada candidato terminar com mais votos válidos.
 _Avoid_: probabilidade, odds
 
+**Chance de virada**:
+A chance de vitória de quem está atrás no placar parcial. Diz se a virada é projetada, possível ou se não há sinal dela.
+_Avoid_: probabilidade de virada
+
 **Curva projetada**:
 A trajetória prevista do placar parcial desde o ponto atual até 100% de seções totalizadas, incluindo se e onde deve ocorrer a virada.
 
 **Virada projetada**:
-O ponto da curva projetada em que deve mudar quem lidera, sempre acompanhado da faixa de % de seções em que a virada é provável (ou da indicação de que pode não ocorrer).
+O ponto da curva projetada em que deve mudar quem lidera, sempre acompanhado da faixa de % de seções em que a virada é provável e da chance de virada.
 _Avoid_: hora da virada, previsão da virada
 
 **Ordem de chegada**:
@@ -125,6 +129,10 @@ _Avoid_: tela, painel, dashboard
 **Manchete**:
 A frase gerada no topo da página de lugar que resume o momento da apuração ali: sempre o placar parcial oficial e, no máximo, uma frase atribuída à projeção.
 _Avoid_: título, resumo, chamada
+
+**Texto preditivo**:
+Uma frase gerada automaticamente que afirma o que a projeção espera, como quem vence ou quando vira. Não se confunde com os números e rótulos curtos do bloco da projeção.
+_Avoid_: comentário, previsão
 
 **Lugar**:
 Um recorte consultável: Brasil, estado (UF), Exterior ou município. Não há recorte menor que município.

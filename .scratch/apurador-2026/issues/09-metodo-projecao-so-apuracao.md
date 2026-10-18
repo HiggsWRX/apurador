@@ -65,3 +65,8 @@ Resolvido em 18/10/2026 com o protótipo (branch `prototipo/metodo-projecao`), q
 **Provisório, conforme o protótipo**: antes da primeira seção, a base "Só apuração" projeta a fatia de Lula entre os dois no 1T, com a incerteza mais larga (referência "1º turno"). A forma de mostrar "matematicamente definido" segue a indicação oficial do TSE (ver *Restrições legais à projeção*) e fica com *Telas da página de lugar* e *Narração da noite*.
 
 **Para a implementação**: o módulo puro `Projecao` em `template.html` (funções sobre dados simples, sem DOM) é o ponto de partida. Uma projeção completa com curva sobre os 5.751 municípios leva poucos milissegundos no navegador.
+
+## Comments
+
+- 18/10/2026, de [Sinal de virada](23-sinal-de-virada.md): o "pode não ocorrer" da decisão 4 dá lugar a três estados com a chance de virada: virada projetada, virada possível e sem sinal de virada. O ponto mais faixa e a ordem "mistura" ficam.
+- 18/10/2026, de [Segunda consulta jurídica](21-segunda-consulta-juridica.md) (decisão 3 de lá): a liberação jurídica do modelo depende de ele não usar aprendizagem de máquina. As fórmulas são fixas, com parâmetros escolhidos e documentados, e a calibração da decisão 6 daqui escolhe constantes, sem treinar nada.

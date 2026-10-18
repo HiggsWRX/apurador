@@ -72,3 +72,4 @@ Só os votos dos eliminados têm destino incerto. Por isso, a mesma mudança par
 ## Comments
 
 - 18/10/2026, de [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md): a curva projetada antes das 17h (decisão 6 daqui) fica atrás de uma chave, desligada até a [Segunda consulta jurídica](21-segunda-consulta-juridica.md). Desligada, nenhuma das duas bases mostra projeção antes das 17h. A combinação a partir das 17h não muda.
+- 18/10/2026, de [Segunda consulta jurídica](21-segunda-consulta-juridica.md): a chave está ligada, e a decisão 6 daqui volta a valer como painel, com os rótulos do [Sinal de virada](23-sinal-de-virada.md) e sem frases preditivas. A confirmação expressa é pedida na [Confirmação dos textos preditivos](22-confirmacao-dos-textos-preditivos.md).
