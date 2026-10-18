@@ -1,7 +1,7 @@
 # Arquitetura e tecnologia
 
 Type: grilling
-Status: claimed
+Status: resolved
 Blocked by: 01, 03, 05
 Map: [Apurador 2026](../map.md)
 
@@ -23,7 +23,7 @@ Onde roda cada parte do site e com que tecnologia, dentro do plano gratuito da C
 
 ## Answer
 
-*Em andamento (18/10). Falta decidir: de onde vem o placar parcial de cada lugar.*
+**Em uma linha**: a CDN da Cloudflare atende todos os visitantes (páginas em static assets, JSONs ao vivo no R2). O computador do dono lê o TSE, calcula e grava no R2, e nenhum visitante chega a ele. Tudo em TypeScript, nos planos gratuitos. Por que assim: [ADR 0001](../../../docs/adr/0001-coletor-no-computador-do-dono.md). Limites e contas de tráfego: [research/08-limites-cloudflare-e-github.md](../research/08-limites-cloudflare-e-github.md).
 
 **Decisões** (aceitas pelo dono do projeto):
 
@@ -52,3 +52,4 @@ Onde roda cada parte do site e com que tecnologia, dentro do plano gratuito da C
 18. **Arquivos ao vivo**: um JSON por lugar (placar parcial, projeção, chance de vitória, curva real e curva projetada nas duas bases, e a narração do lugar se a [Narração da noite](14-narracao-da-noite.md) decidir que existe por lugar); um `mapa.json` compacto (~25 KB com gzip) baixado só com o mapa na tela; e um arquivo completo para o simulador, baixado só quando ele abre. O coletor reescreve só o que mudou e guarda no R2 cada estado da noite (~50 MB), para auditar, corrigir e medir depois o acerto do modelo em 2026.
 19. **Falha do computador ou da internet**: sem coletor reserva na nuvem. O computador e o roteador ficam no nobreak, e o roteador de celular é a reserva de internet. O site continua no ar com as páginas e o último JSON na Cloudflare. Se os dados passarem 3 min sem atualizar, a página mostra "atualizado às HH:MM, atualização interrompida". [Acesso ao TSE a partir da nuvem](17-acesso-ao-tse-pela-nuvem.md) sai do mapa como fora do escopo.
 20. **Zonas**: o coletor guarda desde o início as zonas dos 190 municípios com mais de uma (mais 535 arquivos por varredura). O [Ensaio geral](15-ensaio-geral.md) decide se o modelo as usa.
+21. **Placar parcial de cada lugar**: o placar parcial e o % de seções totalizadas vêm do arquivo do TSE do próprio lugar, sem alteração (o do Brasil sai do arquivo do Brasil, nunca da soma dos municípios), com a hora da última totalização do TSE, num bloco visualmente separado dos cálculos do site. A curva real é a sequência desses placares na noite. A projeção usa os arquivos de município e de zona.

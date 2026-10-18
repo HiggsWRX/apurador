@@ -1,9 +1,11 @@
 # Acesso ao TSE a partir da nuvem
 
 Type: task
-Status: open
+Status: closed
 Blocked by: 07
 Map: [Apurador 2026](../map.md)
+
+**Fora do escopo** (18/10): pela decisão 16 de [Arquitetura e tecnologia](08-arquitetura-e-tecnologia.md), o coletor roda no computador do dono, com IP residencial, e não há coletor reserva na nuvem. Ninguém mais precisa acessar o TSE a partir da nuvem.
 
 ## Question
 

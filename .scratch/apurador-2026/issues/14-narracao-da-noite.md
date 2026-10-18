@@ -15,3 +15,5 @@ Que eventos a narração da noite gera automaticamente, com que regras e com que
 - Se a narração existe por lugar ou só no Brasil.
 
 Fatos de [API ao vivo do TSE](01-api-ao-vivo-tse.md): cada arquivo traz a hora da última totalização (`dt`/`ht`) e o andamento (`and`: não iniciada, parcial, finalizada), o que permite marcos como "UF X terminou". Não há arquivo de eleitos para Presidente; o resultado final vem do arquivo nacional (`tf="s"`). Os horários vêm sem fuso, provavelmente de Brasília.
+
+De [Arquitetura e tecnologia](08-arquitetura-e-tecnologia.md): a narração é gerada pelo coletor, que tem o histórico da noite, e publicada pronta, igual para todos (decisão 1). Ela vai no JSON de cada lugar se existir por lugar (decisão 18). O coletor relê o TSE a cada 20 s, e o visitante fica ~35 s atrás do app oficial (decisão 17).

@@ -13,3 +13,4 @@ Que hipóteses o visitante pode ajustar no simulador "e se", como cada uma entra
 - O simulador funciona antes e durante a apuração? Durante, os ajustes valem só para o que ainda não foi totalizado?
 - Fato útil de [Método de projeção só com a apuração](09-metodo-projecao-so-apuracao.md): uma projeção completa, com curva, sobre os 5.751 municípios leva poucos milissegundos no navegador, então o simulador pode recalcular a cada ajuste.
 - Como evitar que a simulação seja confundida com a projeção oficial do site, e se ela pode ser compartilhada por link.
+- De [Arquitetura e tecnologia](08-arquitetura-e-tecnologia.md): o simulador é o único lugar onde o modelo roda no navegador. Ele baixa, ao abrir, um arquivo completo com os dados por município, que o coletor republica a cada rodada (decisões 1 e 18).
