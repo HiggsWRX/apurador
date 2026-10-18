@@ -42,10 +42,10 @@ Depois disso, o Claude:
 - **Cloudflare**: logado pelo `wrangler login`. ID da conta: `40aa2d90c0ed3139d2e8a10389f509ec`. O R2 está ativo, com o bucket `apurador-ao-vivo` criado.
 - **Domínio**: adiado pelo dono. Até ele existir, o site usa `*.workers.dev`, e os JSONs ao vivo seguem o plano B da [Arquitetura e tecnologia](08-arquitetura-e-tecnologia.md) (decisão 15). O subdomínio `workers.dev` aparece no primeiro deploy.
 
+**18/10/2026, depois da reescrita:** o dono reescreveu os commits antigos com o e-mail noreply (`git filter-branch`), e o Claude conferiu que as duas branches têm só o noreply e o mesmo conteúdo de antes. O Claude criou o repositório privado [HiggsWRX/apurador](https://github.com/HiggsWRX/apurador), com remoto SSH, e enviou `main` e `prototipo/metodo-projecao`. A chave de host do GitHub foi adicionada ao `known_hosts` do dono, conferida contra a impressão digital oficial.
+
 **Falta:**
 
-- Reescrever os commits antigos com o e-mail noreply. A permissão do Claude bloqueou a reescrita do histórico, então o dono roda o comando ou autoriza o Claude.
-- Criar o repositório privado e enviar `main` e `prototipo/metodo-projecao`.
-- Guardar os secrets do GitHub: o token de API da Cloudflare fica com o dono, e o `CLOUDFLARE_ACCOUNT_ID` com o Claude.
+- Os dois secrets do GitHub ficam com o dono, porque a permissão do Claude bloqueou a gravação de secrets: `CLOUDFLARE_ACCOUNT_ID` (o ID acima, que não é segredo) e `CLOUDFLARE_API_TOKEN` (um token com o modelo "Edit Cloudflare Workers").
 - Colar a chave de escrita do R2 no `.env` do coletor (dono, quando o coletor existir).
 - Comprar o domínio (dono, mais tarde).

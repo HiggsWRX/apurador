@@ -21,3 +21,5 @@ Como reproduzimos uma apuração passada inteira no site, acelerada, antes de 25
   - Medir: o atraso de ponta a ponta sobre o TSE (meta ~35 s em média, ~70 s no pior caso, decisão 17), o tempo até um JSON novo valer na borda pelo R2 e pelo plano B de republicação (decisão 15) e a carga no computador.
   - Testar: derrubar e reiniciar o coletor no meio da noite, cortar a internet e passar para o roteador de celular, e conferir o aviso de "atualização interrompida" (decisões 16 e 19).
   - Usar as zonas dos 190 municípios com mais de uma, já coletadas desde o início (decisão 20).
+- De [Combinação de pesquisas e apuração](11-combinacao-pesquisas-e-apuracao.md): a mesma reprodução do 2º turno de 2022 roda também com as pesquisas deslocadas 2 pontos para cada candidato, para calibrar K, o quanto as pesquisas valem em seções apuradas.
+- De [Contas e acessos](07-contas-e-acessos.md): o domínio foi adiado. Até ele existir, os JSONs ao vivo seguem o plano B (Worker com os JSONs como static assets, em `*.workers.dev`), e é esse caminho que o ensaio mede primeiro.

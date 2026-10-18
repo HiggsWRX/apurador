@@ -63,6 +63,10 @@ A diferença, medida em eleições passadas, entre o que o agregado de pesquisas
 O conjunto de informações que a projeção usa, escolhido pelo visitante: **Só apuração** (placar parcial e eleições passadas) ou **Apuração + pesquisas** (o mesmo, mais o agregado de pesquisas).
 _Avoid_: modo, modelo (para a escolha do visitante)
 
+**Peso das pesquisas**:
+Quanto a indicação das pesquisas ainda influencia a projeção na base Apuração + pesquisas. É 100% antes da apuração e cai conforme o Brasil é apurado, igual para todos os lugares.
+_Avoid_: confiança nas pesquisas, peso do modelo
+
 **Chance de vitória**:
 A probabilidade, segundo o modelo, de cada candidato terminar com mais votos válidos.
 _Avoid_: probabilidade, odds

@@ -19,3 +19,5 @@ Fatos de [API ao vivo do TSE](01-api-ao-vivo-tse.md): cada arquivo traz a hora d
 De [Arquitetura e tecnologia](08-arquitetura-e-tecnologia.md): a narração é gerada pelo coletor, que tem o histórico da noite, e publicada pronta, igual para todos (decisão 1). Ela vai no JSON de cada lugar se existir por lugar (decisão 18). O coletor relê o TSE a cada 20 s, e o visitante fica ~35 s atrás do app oficial (decisão 17).
 
 De [Agregado de pesquisas e erro histórico](10-agregado-de-pesquisas.md): a discrepância entre pesquisas e apuração num lugar é medida contra a **indicação das pesquisas** daquele lugar. Comparações com o 1º turno usam o **placar entre finalistas**, nunca o % sobre todos os válidos.
+
+De [Combinação de pesquisas e apuração](11-combinacao-pesquisas-e-apuracao.md): "As pesquisas deixaram de pesar" é um evento candidato. Ele acontece quando as duas bases da projeção passam a coincidir no Brasil (menos de 0,1 p.p. na projeção e menos de 1 ponto na chance de vitória). O JSON traz o peso das pesquisas a cada rodada.

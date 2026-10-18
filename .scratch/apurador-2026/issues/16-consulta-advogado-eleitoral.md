@@ -24,6 +24,6 @@ O que se pretende mostrar, por [Agregado de pesquisas e erro histórico](10-agre
 
 - **(a)** A lista das pesquisas usadas: só nacionais, de 14 institutos com histórico, com registro conferido no CSV do TSE. Cada uma traz os seis dados do art. 10 e link para a fonte.
 - **(b)** O agregado (média simples dessas pesquisas, em votos válidos) com faixa de incerteza, e a linha de tendência desde 05/10.
-- **(c)** A projeção e a chance de vitória antes da apuração.
+- **(c)** A projeção e a chance de vitória antes da apuração, e a curva projetada da noite, com a virada projetada. Ver [Combinação de pesquisas e apuração](11-combinacao-pesquisas-e-apuracao.md).
 
 A atualização é diária, até as 23h de 24/10. Pesquisas divulgadas em 25/10 não entram. Sem sinal verde, até as 17h de 25/10 aparece só (a).
