@@ -1,7 +1,7 @@
 # Simulador "e se"
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 11, 12
 Map: [Apurador 2026](../map.md)
 
