@@ -1,7 +1,7 @@
 # Arquitetura e tecnologia
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 01, 03, 05
 Map: [Apurador 2026](../map.md)
 

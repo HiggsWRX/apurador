@@ -13,6 +13,8 @@ Deixar prontas as contas e os logins de que a arquitetura e o deploy dependem. I
 
 Checklist do dono (HITL):
 
+**Aguardando o dono**: os passos 1 a 4 ficam para mais tarde em 18/10. Os outros tickets podem supor que as duas contas vão existir.
+
 Decidido pelo dono em 18/10: **conta pessoal** do GitHub, repositório **privado até o lançamento**, e os commits trocam o e-mail da DTACT pelo **noreply do GitHub** antes do primeiro push.
 
 1. **Cloudflare**: criar uma conta gratuita em https://dash.cloudflare.com/sign-up e confirmar o e-mail. Não é preciso cartão nem domínio. Depois, abrir **Workers & Pages** no painel e, se ele pedir, escolher o subdomínio `workers.dev`: ele aparece nas URLs públicas, então convém um nome neutro. Sem ele, o primeiro `wrangler deploy` (que não roda de forma interativa aqui) falha.
