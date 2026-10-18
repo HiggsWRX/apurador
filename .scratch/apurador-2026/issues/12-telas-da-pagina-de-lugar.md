@@ -1,7 +1,7 @@
 # Telas da página de lugar
 
 Type: prototype
-Status: open
+Status: claimed
 Blocked by: —
 Map: [Apurador 2026](../map.md)
 
