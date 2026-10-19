@@ -30,6 +30,21 @@ export interface Constantes {
   incertezaLocalDasPesquisas: { uf: number; municipio: number };
 }
 
+/**
+ * Os valores provisórios das decisões do mapa (Método de projeção só com a apuração, 09; Combinação de pesquisas e
+ * apuração, 11; Sinal de virada, 23), de antes da calibração. O porte fiel e o registro da calibração os comparam.
+ */
+export const CONSTANTES_PROVISORIAS: Constantes = {
+  incertezaRegional: 1,
+  incertezaNacional: 1,
+  pesoDoMunicipio: 3000,
+  minimoPorNivel: 2000,
+  ordemDeChegada: "mistura",
+  sinalDeVirada: { projetada: 0.5, possivel: 0.05 },
+  secoesDasPesquisas: 0.5,
+  incertezaLocalDasPesquisas: { uf: 0.13, municipio: 0.15 },
+};
+
 const ORDENS: OrdemDeChegada[] = ["mistura", "primeiro-turno", "ritmo-da-noite"];
 
 /** As constantes do arquivo de dados, conferidas: um número fora do lugar falha aqui, e não no meio da noite. */

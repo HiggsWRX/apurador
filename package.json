@@ -21,6 +21,7 @@
     "tse-falso": "npm run tse-falso -w @apurador/ensaio --",
     "coletor": "npm run coletor -w @apurador/coletor --",
     "replay": "vitest run packages/ensaio/test/replay.test.ts",
+    "calibracao": "npm run calibracao -w @apurador/ensaio --",
     "conferir": "npm run conferir -w @apurador/pipeline --",
     "pesquisas": "npm run conferir-pesquisas -w @apurador/pipeline --",
     "deploy": "npm run deploy -w @apurador/site --"

@@ -16,7 +16,7 @@ Os candidatos e a regra foram registrados em 19/10/2026, num commit anterior ao 
 
 As noites são as reconstruídas seção por seção do `dados/noites/`, e as bases, as do `dados/bases/`. Os agregados saem do `agregadoDaNoite` do `pipeline`, com a incerteza de 1,5 ponto da noite.
 
-**Momentos**: as fotografias do executor de noites, isto é, a primeira chegada que alcança 0,1, 0,25, 0,5 e 0,75% das seções, cada ponto inteiro de 1 a 99%, 99,5 e 99,9%, mais o fim da noite. Onde a regra das decisões diz "rodadas", valem esses momentos (decisão do dono, 19/10): é a medida do protótipo e do ticket 09, e dá o mesmo peso a cada trecho da apuração.
+**Momentos**: as fotografias do executor de noites, isto é, a primeira chegada que alcança 0,1, 0,25, 0,5 e 0,75% das seções, cada ponto inteiro de 1 a 99%, 99,5 e 99,9%, mais o fim da noite. Onde a regra das decisões diz "rodadas", valem esses momentos (decisão do dono, 19/10): é a medida do protótipo e do ticket 09, e dá o mesmo peso a cada trecho da apuração. A fotografia de um ponto alcança o número de seções arredondado: ela fica até meia seção abaixo do ponto (a de 0,1% de 2022 tem 0,09998%) ou passa dele pela chegada que o alcança (a de 50% de 2018 tem 50,0077%), e conta como o ponto nos intervalos da regra (esclarecido pelo dono em 19/10, antes de rodar).
 
 ## Candidatos
 
