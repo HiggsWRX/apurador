@@ -35,3 +35,7 @@ Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decis�
   - o contador do coletor contra o painel da Cloudflare (até 1% de diferença);
   - os dados por visitante na página do Brasil das 17h às 20h (até 10 MB).
 - [ ] **Registro de cada ensaio**: traz os números contra os critérios, as falhas com hora e o veredito de cada bloco, para o dono assinar.
+
+## Comments
+
+- 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): a conferência do placar existe: `conferirPlacar(publicados, { noite, cadastro })`, em `packages/ensaio/src/conferencia.ts`. Ela recebe cada arquivo de lugar observado, com a ordem dos candidatos do `rodada.json`, e o compara com o TSE falso na hora publicada. Por isso serve ao ensaio, com o atraso da CDN. `resultadosDoTseFalso` lê o TSE falso sem o limite de pedidos.

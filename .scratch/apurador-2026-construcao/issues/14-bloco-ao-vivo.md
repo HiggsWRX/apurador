@@ -42,3 +42,11 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
 - [ ] A passagem para o ao vivo acontece sem recarregar e só pelo arquivo de rodada.
 - [ ] **Leitor ao vivo**: a lógica da ilha que decide o que mostrar é testada com respostas simuladas (status, `Date`, ETag e corpo) e relógio injetado, cobrindo os seis estados e os 3 e 10 min.
 - [ ] Placar e curva ficam visíveis em até 3 s num Android barato no 4G.
+
+## Comments
+
+- 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): o coletor publica `rodada.json` e `lugares/<id>.json`. O contrato está no comentário de resolução do 12.
+  - `totalizacao` é a hora do TSE, em Brasília (`AAAA-MM-DD HH:MM:SS`). `rodada` e `novidade.vista` são ISO, no relógio do coletor: é `rodada` que se compara com o `Date` da resposta.
+  - Os votos e os percentuais de cada lugar vão na ordem de `candidatos` do `rodada.json`: alfabética pelo nome de urna, com `sequencial` para a foto oficial.
+  - A curva real é `[% de seções, % de cada candidato]`, com um ponto novo só quando algum número muda.
+  - A pasta local do desenvolvimento sai de dois terminais: `npm run tse-falso -- --partida 16:58` e `npm run coletor -- --tse http://127.0.0.1:8022/oficial`. Sem `--pasta`, ela fica em `.cache/coletor/publicado`.

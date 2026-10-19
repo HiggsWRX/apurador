@@ -27,3 +27,7 @@ Decisões: [Volume de gravações na noite](../../apurador-2026/issues/24-volume
 - [ ] **Replay com quedas**: o coletor é derrubado em rodadas escolhidas e retoma do disco e do objeto da noite, sem evento repetido nem retroativo.
 - [ ] **Reprodutível**: rodar o modelo de novo sobre os objetos da noite do replay dá exatamente os números publicados.
 - [ ] **Máquina reserva**: o roteiro para retomar num notebook (repositório, Node e `.env`) fica descrito para o [Roteiro da noite](31-roteiro-da-noite.md).
+
+## Comments
+
+- 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): o estado fica em memória, em `criarColetor` (`packages/coletor/src/coletor.ts`): ETags, a hora de cada pedido, resultados, índices, zonas pendentes, hashes, curvas e novidade. Os resultados guardados saem por `coletor.resultado()`.

@@ -26,3 +26,7 @@ Decisões: [Operação na noite](../../apurador-2026/issues/18-operacao-na-noite
 - [ ] **Fim da noite**: na totalização final do Brasil, o coletor publica a fase "encerrada", roda mais 30 min e para sozinho. Com essa fase, a página nunca mais mostra "interrompido".
 - [ ] O replay testa cada proteção: 403 do TSE falso, rodada acima do teto, contador perto de 90% e totalização final.
 - [ ] Nenhuma outra ação é automática.
+
+## Comments
+
+- 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): num 403 ou 429, o coletor hoje só registra a falha da URL e segue pedindo. Já existe o teto de downloads por rodada (14 s de pedidos), mas não o de gravações nem a parada 30 min depois da final. O replay da noite inteira já roda até 30 min depois da final (`packages/ensaio/test/replay.test.ts`).

@@ -22,14 +22,27 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      # Inclui o replay automático: o coletor sobre o TSE falso, a noite inteira do 2º turno de 2022
-      # (packages/ensaio/test/replay.test.ts, ~1 min).
-      - run: npm test
+      - run: npm run lint
+      # Todos os testes menos os do ensaio, que rodam ao lado, no job replay. Localmente, `npm test` roda tudo.
+      - run: npx vitest run --project '!@apurador/ensaio'
       # Os totais de cada turno, no Brasil e em cada UF, contra os arquivos do TSE baixados agora.
       - run: npm run conferir
 
+  # O TSE falso e o replay automático: o coletor sobre a noite inteira do 2º turno de 2022, com e sem o cache da
+  # borda do TSE (~2 min). Num job à parte, para o CI não somar o tempo dele ao dos outros testes.
+  replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run --project @apurador/ensaio
+
   deploy:
-    needs: testes
+    needs: [testes, replay]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     env:

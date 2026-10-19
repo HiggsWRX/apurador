@@ -41,3 +41,9 @@ Decisões: [Operação na noite](../../apurador-2026/issues/18-operacao-na-noite
 - [ ] **ntfy**: o alerta vai por HTTPS de saída, num tópico com nome impossível de adivinhar, guardado no `.env`, fora do Git. As mensagens só dizem o estado.
 - [ ] **Sentinela**: um Worker com Cron Trigger a cada minuto lê o arquivo de rodada público e manda alerta pelo ntfy se ele passar 3 min parado. Com a fase "encerrada", ele não alerta.
 - [ ] Os alertas são testados no replay, provocando cada condição.
+
+## Comments
+
+- 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): o registro de cada rodada (`RegistroDaRodada`) já sai no `aoRodar` e em `.cache/coletor/rodadas-*.jsonl`, com duração, processamento, pedidos, respostas por status, baixados, gravações e falhas.
+  - As falhas são texto: arquivo que o leitor não entende (`não é JSON`), arquivo sem os candidatos do Brasil, status HTTP e gravação que falhou.
+  - O ritmo padrão (45 pedidos/s, nunca acima de 50 num segundo, no máximo 14 s de pedidos por rodada) fica abaixo dos limites de atenção de pico e de duração da rodada.

@@ -62,8 +62,9 @@ async function replay(de: string, ate: string | ((tse: TseFalso) => boolean), op
     eleicao: "6258",
     relogio,
     buscar: async (url, init) => {
-      pedidos.push({ url, quando: relogio.agora() });
-      const trocado = opcoes.trocar?.(url, relogio.agora());
+      const quando = relogio.agora();
+      pedidos.push({ url, quando });
+      const trocado = opcoes.trocar?.(url, quando);
       return trocado === undefined ? doTse(url, init) : new Response(trocado, { status: 200 });
     },
     destino: {

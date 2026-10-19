@@ -28,3 +28,7 @@ Decisões: [Arquitetura e tecnologia](../../apurador-2026/issues/08-arquitetura-
 - [ ] **Sem domínio**: só existe o caminho do Worker, e a página funciona com ele.
 - [ ] **Credenciais**: as chaves de escrita ficam no `.env` local do coletor, nunca no Git.
 - [ ] **Contador de gravações**: o coletor conta cada gravação nos dois buckets e guarda o contador no estado, para o [ticket 23](23-protecoes-e-fim-da-noite.md).
+
+## Comments
+
+- 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): `Destino { gravar(caminho, bytes) }` (`packages/coletor/src/destino.ts`) é a interface única, e hoje só existe `pastaLocal`. O coletor já grava só quando os bytes mudam (um hash por caminho) e conta `gravacoes` no registro de cada rodada.
