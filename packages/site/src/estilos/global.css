@@ -87,7 +87,8 @@ a {
   outline-offset: 2px;
 }
 
-.so-leitor {
+.so-leitor,
+:root.js .par-titulo {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -453,28 +454,25 @@ a {
   color: var(--texto);
 }
 
-/* Sem JavaScript, as escolhas não funcionam: todos os pares ficam à vista, cada um com o seu título. */
+/* Sem JavaScript, as escolhas não funcionam: todos os pares ficam à vista, cada um com o seu título (que, com
+   JavaScript, fica só para o leitor de tela, junto de `.so-leitor`). */
 :root:not(.js) .escolha {
   display: none;
 }
 :root.js .par:not([data-ativo]) {
   display: none;
 }
-:root.js .par-titulo {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 
 .par {
   margin-top: 0.75rem;
 }
 
-.par + .par {
+:root:not(.js) .par + .par {
   margin-top: 1.25rem;
+}
+
+[data-mesmo-turno]:empty {
+  margin: 0;
 }
 
 .par-titulo {

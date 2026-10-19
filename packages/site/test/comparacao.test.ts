@@ -59,18 +59,33 @@ describe("compararTurnos", () => {
     expect(() => compararTurnos(lugar("BR"), semOPt, turno("2022-2"))).toThrow(/placar entre finalistas/);
   });
 
-  it("diz em que turno o lugar não votou, como Boa Esperança do Norte (MT) antes de 2026", () => {
-    const comparacao = compararTurnos(lugar("73709"), turno("2026-1"), turno("2022-2"));
+  it("fecha o placar entre finalistas em 100,0 e dá aos dois lados a mesma mudança, com o sinal trocado", () => {
+    // Dar es Salaam (Exterior): 6 votos para Bolsonaro e 7 para Haddad no 2º turno de 2018 (46,15% e 53,85%); 5 para
+    // Flávio e 11 para Lula no 1º turno de 2026, 31,25 × 68,75 entre os finalistas, que a página mostra como 31,3 × 68,7,
+    // como na indicação das pesquisas.
+    const comparacao = compararTurnos(lugar("38962"), turno("2018-2"), turno("2026-1"));
 
-    expect(comparacao.tipo).toBe("sem-votacao");
-    expect(comparacao.tipo === "sem-votacao" && idDoTurno(comparacao.turno)).toBe("2022-2");
+    expect(comparacao.tipo === "comparacao" && comparacao.lados.map((l) => [l.pct, l.mudanca])).toEqual([
+      [[46.15, 31.3], -14.9],
+      [[53.85, 68.7], 14.9],
+    ]);
+  });
+
+  it("diz em que turno o lugar não votou, como Boa Esperança do Norte (MT) antes de 2026", () => {
+    const turnos = (um: string, outro: string) => {
+      const comparacao = compararTurnos(lugar("73709"), turno(um), turno(outro));
+      return comparacao.tipo === "sem-votacao" && comparacao.turnos.map(idDoTurno);
+    };
+
+    expect(turnos("2026-1", "2022-2")).toEqual(["2022-2"]);
+    expect(turnos("2022-1", "2018-1")).toEqual(["2018-1", "2022-1"]);
   });
 
   it("diz em que turno nenhum dos dois partidos teve voto, como em Argel em 2018", () => {
     const comparacao = compararTurnos(lugar("29300"), turno("2018-2"), turno("2026-1"));
 
     expect(comparacao.tipo).toBe("sem-votos");
-    expect(comparacao.tipo === "sem-votos" && idDoTurno(comparacao.turno)).toBe("2018-2");
+    expect(comparacao.tipo === "sem-votos" && comparacao.turnos.map(idDoTurno)).toEqual(["2018-2"]);
   });
 });
 

@@ -172,10 +172,11 @@ describe("comparação de dois turnos", () => {
     expect(mudou(comparacao(pagina("/sp/campinas/")))).toEqual([]);
   });
 
-  it("avisa quando o lugar não votou num dos dois turnos", () => {
-    expect(texto(par(pagina("/mt/boa-esperanca-do-norte/"), "2022-2_2026-1"))).toContain(
-      "Boa Esperança do Norte (MT) não teve votação no 2º turno de 2022.",
-    );
+  it("avisa quando o lugar não votou num dos dois turnos, ou em nenhum", () => {
+    const html = pagina("/mt/boa-esperanca-do-norte/");
+
+    expect(texto(par(html, "2022-2_2026-1"))).toContain("Boa Esperança do Norte (MT) não teve votação no 2º turno de 2022.");
+    expect(texto(par(html, "2018-1_2022-1"))).toContain("Boa Esperança do Norte (MT) não teve votação no 1º turno de 2018 nem no 1º turno de 2022.");
   });
 });
 
