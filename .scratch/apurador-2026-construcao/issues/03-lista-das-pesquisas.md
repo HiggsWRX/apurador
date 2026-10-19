@@ -37,7 +37,7 @@ Decisões: [Agregado de pesquisas e erro histórico](../../apurador-2026/issues/
 
 **19/10/2026, resolvido:**
 
-- **Lista**: o `dados/pesquisas.csv` tem 15 pesquisas nacionais do 2º turno, de 8 institutos da lista, com campo de 05/10 a 18/10 e divulgadas até 19/10.
+- **Lista**: o `dados/pesquisas.csv` tem 17 pesquisas nacionais do 2º turno, de 9 institutos da lista, com campo de 05/10 a 18/10 e divulgadas até 19/10.
   - Cada número foi lido na fonte citada na linha (relatório do instituto ou reportagem), nunca na Wikipédia, que em alguns casos troca a espontânea pela estimulada.
   - Os votos são os totais, como a fonte divulgou, pelo número do candidato (`votos_22`, `votos_13`).
   - Brancos e nulos e indecisos ficam vazios quando a fonte não os separa: Quaest de 10 a 13/10 e Gerp de 8 a 12/10.
@@ -61,15 +61,14 @@ Decisões: [Agregado de pesquisas e erro histórico](../../apurador-2026/issues/
   - a Futura, pela 100% Cidades, contratada pela Futura Consultoria, o CNPJ da Futura em 2022;
   - a Gerp, pela Gerp Mercadologia;
   - a Real Time Big Data, pela Real Time Mídia.
-- **Pendente com o dono**: o CNPJ da FSB de 2018 (IPRI) registra desde 2024 as pesquisas da Nexus (BTG/Nexus).
-  - Contar a Nexus como FSB dá 9 institutos e 51,1% em 18/10, contra os 8 institutos e 51,0% da decisão 3 do [ticket 10](../../apurador-2026/issues/10-agregado-de-pesquisas.md).
-  - Por isso as duas BTG/Nexus (BR-07997/2026 e BR-04499/2026) ficaram de fora até a decisão.
-  - Para incluí-las, basta trocar o instituto da linha da FSB para Nexus e voltar as duas linhas, que já foram conferidas.
+- **Nexus é a FSB**: o CNPJ da FSB de 2018 (IPRI) registra desde 2024 as pesquisas da Nexus (BTG/Nexus), e o dono decidiu hoje que a Nexus conta como FSB.
+  - As duas BTG/Nexus (BR-07997/2026 e BR-04499/2026) entram na lista.
+  - O agregado de 18/10 passa a 9 institutos e 51,09%, não 51,0% com 8. A decisão ficou registrada no [ticket 10](../../apurador-2026/issues/10-agregado-de-pesquisas.md) e no [ticket 04](04-agregado-de-pesquisas.md).
 - **Fora por enquanto**: as duas entram na atualização de amanhã, se as fontes trouxerem os números.
   - **AtlasIntel de 13 a 18/10** (BR-02418/2026), divulgada hoje: os votos totais só aparecem em gráfico no relatório, e nenhuma reportagem os trouxe em texto.
   - **Futura de 16 a 17/10** (BR-06715/2026): liberada hoje e ainda não divulgada.
 - **Site**: a lista fica num bloco próprio e recolhido na página do Brasil. Cada pesquisa traz os votos totais, os seis dados do art. 10 e o link para a fonte. O registro das conferências e o extrato não vão ao site.
-- **Para o ticket 04**: o `pesquisas.csv` não traz o CNPJ. O instituto da lista de cada pesquisa sai do CNPJ do registro no extrato, cruzado com o `pesquisas-institutos.csv`. A Futura e a Gerp têm dois CNPJs com o mesmo nome.
+- **Para o ticket 04**: o `pesquisas.csv` não traz o CNPJ. O instituto da lista de cada pesquisa sai do CNPJ do registro no extrato, cruzado com o `pesquisas-institutos.csv`. A Futura e a Gerp têm dois CNPJs com o mesmo nome, e a Nexus conta como FSB.
 - **Depois que 02 e 06 entrarem na `main`**:
   - registrar o extrato no `manifesto.json`. Ele ficou com a origem dentro do próprio arquivo para não mexer no manifesto em paralelo;
   - juntar os dois leitores de CSV (`tse/src/csv.ts` e `pipeline/src/csv.ts`).
