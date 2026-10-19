@@ -381,7 +381,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     } catch (erro) {
       registro.falhas.push(`rodada: ${(erro as Error).message}`);
     }
-    registro.duracao = relogio.agora() - inicio;
+    registro.duracao = Math.round(relogio.agora() - inicio);
     registro.processamento = Math.round(performance.now() - inicioReal);
     return registro;
   }
