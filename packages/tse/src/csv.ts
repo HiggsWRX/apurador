@@ -56,3 +56,22 @@ export function inteiro(valor: string | undefined, coluna: string): number {
   if (valor === undefined || valor === "" || !Number.isInteger(n)) throw new Error(`Valor inválido na coluna ${coluna}: ${valor}`);
   return n;
 }
+
+/**
+ * Data e hora do TSE, `DD/MM/AAAA HH:MM:SS` (ou já `AAAA-MM-DD HH:MM:SS`, como no `bweb` de 2026), como
+ * `AAAA-MM-DD HH:MM:SS`. `null` quando o campo vem vazio (`#NULO#`).
+ */
+export function dataHora(valor: string | undefined, coluna: string): string | null {
+  if (valor === "" || valor === "#NULO#" || valor === "#NULO") return null;
+  const br = /^(\d\d)\/(\d\d)\/(\d{4}) (\d\d:\d\d:\d\d)$/.exec(valor ?? "");
+  if (br) return `${br[3]}-${br[2]}-${br[1]} ${br[4]}`;
+  if (valor !== undefined && /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/.test(valor)) return valor;
+  throw new Error(`Data e hora inválidas na coluna ${coluna}: ${valor}`);
+}
+
+/** Data do TSE, `DD/MM/AAAA`, como `AAAA-MM-DD`. */
+export function data(valor: string | undefined, coluna: string): string {
+  const br = /^(\d\d)\/(\d\d)\/(\d{4})$/.exec(valor ?? "");
+  if (!br) throw new Error(`Data inválida na coluna ${coluna}: ${valor}`);
+  return `${br[3]}-${br[2]}-${br[1]}`;
+}

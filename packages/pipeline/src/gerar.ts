@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { lerDetalheVotacaoMunzona, lerVotacaoCandidatoMunzona, urlDadosAbertos } from "@apurador/tse";
 import { membroDePresidenteComCache, RAIZ } from "./fontes.ts";
+import { atualizarManifesto, gravarManifesto, lerManifesto } from "./manifesto.ts";
 import { resultadoDoTurno, type Turno } from "./turno.ts";
 
 // Gera os dados derivados no repositório a partir dos arquivos do TSE.
@@ -39,8 +40,9 @@ for (const { ano, turno } of TURNOS) {
   console.log(`${arquivo}: ${resultado.candidatos.length} candidatos, ${Object.keys(resultado.lugares).length} lugar(es)`);
 }
 
-const manifesto = { fontes: [...fontes.values()], derivados };
-writeFileSync(new URL("manifesto.json", DADOS), `${JSON.stringify(manifesto, null, 2)}\n`);
+// O manifesto também tem os derivados de outros geradores (`gerar-noites.ts`), que ficam como estão.
+const manifesto = atualizarManifesto(lerManifesto(), { pastas: ["turnos/"], fontes: [...fontes.values()], derivados });
+gravarManifesto(manifesto);
 console.log(`manifesto.json: ${manifesto.fontes.length} fontes, ${derivados.length} derivados`);
 
 /** JSON estável e legível no diff: um candidato e um lugar por linha. */

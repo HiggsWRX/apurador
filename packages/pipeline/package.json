@@ -7,7 +7,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "gerar": "tsx src/gerar.ts"
+    "gerar": "tsx src/gerar.ts",
+    "noites": "tsx src/gerar-noites.ts"
   },
   "dependencies": {
     "@apurador/tse": "*"

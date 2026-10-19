@@ -3,7 +3,7 @@ import { colunas, inteiro, lerCsvTse } from "./csv.ts";
 // Leitores dos arquivos históricos por município e zona do portal de dados abertos do TSE
 // (`votacao_candidato_munzona` e `detalhe_votacao_munzona`, membro `*_BR.csv`, só Presidente).
 
-export type ArquivoHistorico = "votacao_candidato_munzona" | "detalhe_votacao_munzona";
+export type ArquivoHistorico = "votacao_candidato_munzona" | "detalhe_votacao_munzona" | "detalhe_votacao_secao";
 
 /** O zip de um ano no portal de dados abertos do TSE. Tem centenas de MB: leia só o membro de Presidente. */
 export function urlDadosAbertos(arquivo: ArquivoHistorico, ano: number): string {
