@@ -116,6 +116,69 @@ describe("histórico do lugar", () => {
   });
 });
 
+describe("comparação de dois turnos", () => {
+  const comparacao = (html: string) => elemento(html, /<div[^>]*data-comparacao/);
+  const par = (html: string, id: string) => elemento(comparacao(html), new RegExp(`<div[^>]*data-par="${id}"`));
+  const linhas = (html: string) => elementos(html, /<tr[^>]*data-cor/).map((l) => [texto(l), /data-cor="([a-z]+)"/.exec(l)?.[1]]);
+  const mudou = (html: string) => elementos(html, /<li[^>]*data-mudou/).map((m) => [texto(m), /href="([^"]+)"/.exec(m)?.[1], /data-cor="([a-z]+)"/.exec(m)?.[1]]);
+
+  it("deixa escolher quaisquer dois dos cinco turnos, com 2022 2T e 2026 1T de partida", () => {
+    const html = pagina("/sp/campinas/");
+    const escolhas = elementos(comparacao(html), /<select[^>]*data-comparar/);
+
+    expect(escolhas).toHaveLength(2);
+    for (const escolha of escolhas) expect(elementos(escolha, /<option/).map(texto)).toEqual(["2026 1T", "2022 2T", "2022 1T", "2018 2T", "2018 1T"]);
+    expect(escolhas.map((e) => /<option[^>]*value="([^"]+)"[^>]*selected/.exec(e)?.[1])).toEqual(["2022-2", "2026-1"]);
+    // Os 10 pares de turnos já estão no HTML, e o de partida aparece.
+    expect(elementos(comparacao(html), /<div[^>]*data-par=/)).toHaveLength(10);
+    expect(par(html, "2022-2_2026-1")).toMatch(/^<div[^>]*data-ativo/);
+    expect(par(html, "2018-1_2018-2")).not.toMatch(/^<div[^>]*data-ativo/);
+  });
+
+  it("compara só o PT, na cor de Lula, e o partido de Bolsonaro, na de Flávio, rotulados pelo partido", () => {
+    // Resultados oficiais: 2018 2T, Bolsonaro 55,13% e Haddad 44,87%; 2022 2T, Lula 50,90% e Bolsonaro 49,10%.
+    const brasil = par(pagina("/"), "2018-2_2022-2");
+
+    expect(texto(elemento(brasil, /<thead/))).toBe("Partido 2018 2T 2022 2T Mudança");
+    expect(linhas(brasil)).toEqual([
+      ["PSL/PL JAIR BOLSONARO 55,13% 49,10% −6,0", "flavio"],
+      ["PT FERNANDO HADDAD → LULA 44,87% 50,90% +6,0", "lula"],
+    ]);
+  });
+
+  it("usa nos 1º turnos o placar entre finalistas, um cálculo do Apurador, com uma casa", () => {
+    // 2026 1T: Flávio 51,0 e Lula 49,0 entre os finalistas (GLOSSARY.md).
+    expect(linhas(par(pagina("/"), "2022-2_2026-1"))).toEqual([
+      ["PL JAIR BOLSONARO → FLAVIO BOLSONARO 49,10% 51,0% +1,9", "flavio"],
+      ["PT LULA 50,90% 49,0% −1,9", "lula"],
+    ]);
+    expect(texto(comparacao(pagina("/")))).toContain("Cálculo do Apurador com dados do TSE");
+  });
+
+  it("mostra onde mais mudou: as UFs, na página do Brasil, e os municípios, na da UF", () => {
+    // O % do PT no 2º turno de 2018 e no de 2022, nos resultados oficiais: Exterior 28,98 e 51,28; SP 32,03 e 44,76.
+    const brasil = mudou(par(pagina("/"), "2018-2_2022-2"));
+    expect(brasil.slice(0, 2)).toEqual([
+      ["Exterior PT +22,3", "/exterior/", "lula"],
+      ["São Paulo PT +12,7", "/sp/", "lula"],
+    ]);
+    expect(brasil).toHaveLength(5);
+
+    const sp = par(pagina("/sp/"), "2022-2_2026-1");
+    expect(mudou(sp)).toHaveLength(5);
+    for (const [, caminho] of mudou(sp)) expect(caminho).toMatch(/^\/sp\/[a-z-]+\/$/);
+    expect(texto(sp)).toContain("Entre os municípios com ao menos 3.000 votos nos dois partidos em cada turno.");
+
+    expect(mudou(comparacao(pagina("/sp/campinas/")))).toEqual([]);
+  });
+
+  it("avisa quando o lugar não votou num dos dois turnos", () => {
+    expect(texto(par(pagina("/mt/boa-esperanca-do-norte/"), "2022-2_2026-1"))).toContain(
+      "Boa Esperança do Norte (MT) não teve votação no 2º turno de 2022.",
+    );
+  });
+});
+
 describe("rodapé", () => {
   const rodape = texto(elemento(pagina("/sp/campinas/"), /<footer/));
 

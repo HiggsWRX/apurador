@@ -28,6 +28,14 @@ export function lugarAcima(l: Lugar): Lugar | undefined {
   return lugar("BR");
 }
 
+const abaixo = Map.groupBy(
+  LUGARES.filter((l) => l.tipo !== "brasil"),
+  (l) => (l.tipo === "municipio" ? l.uf! : "BR"),
+);
+
+/** Os lugares logo abaixo deste: as UFs e o Exterior no Brasil, os municípios numa UF e as cidades no Exterior. */
+export const lugaresAbaixo = (l: Lugar): Lugar[] => abaixo.get(l.id) ?? [];
+
 export function caminhoDe(l: Lugar): string {
   if (l.tipo === "brasil") return "/";
   if (l.tipo === "exterior") return "/exterior/";

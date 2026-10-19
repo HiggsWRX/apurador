@@ -19,5 +19,9 @@ const UMA_CASA = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maxi
 export const formatarCalculo = (n: number) => UMA_CASA.format(n);
 /** O valor como a página o mostra, com uma casa: o que se soma ou se subtrai na página parte dele. */
 export const umaCasa = (n: number) => Number(n.toFixed(1));
+/** Um % já calculado, com as casas que ele tem na página: duas num número do TSE, uma num cálculo do Apurador. */
+export const formatarPctComCasas = (pct: number, casas: 1 | 2) => `${(casas === 2 ? PCT : UMA_CASA).format(pct)}%`;
+/** Uma mudança com sinal e uma casa: "+1,9", "−1,9", "0,0". */
+export const formatarMudanca = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${formatarCalculo(Math.abs(n))}`;
 /** Uma diferença em pontos, "0,1 ponto", "2,0 pontos". */
 export const formatarPontos = (n: number) => `${formatarCalculo(n)} ${Math.abs(umaCasa(n)) < 2 ? "ponto" : "pontos"}`;
