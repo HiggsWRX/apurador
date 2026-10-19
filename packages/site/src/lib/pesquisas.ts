@@ -1,13 +1,5 @@
-import {
-  agregadoDePesquisas,
-  diaDoAgregado,
-  indicacaoDasPesquisas,
-  placarEntreFinalistas,
-  tendenciaDoAgregado,
-  type PesquisaDoAgregado,
-} from "@apurador/modelo";
-import { finalistas, listaDasPesquisas, type CandidatoDoTurno, type ExtratoDoTse, type Turno } from "@apurador/pipeline";
-import { umaCasa } from "./formato";
+import { agregadoDePesquisas, diaDoAgregado, indicacaoDasPesquisas, placarEntreFinalistas, tendenciaDoAgregado } from "@apurador/modelo";
+import { finalistas, listaDasPesquisas, pesquisasDoAgregado, type CandidatoDoTurno, type ExtratoDoTse, type Turno } from "@apurador/pipeline";
 import institutos from "../../../../dados/pesquisas-institutos.csv?raw";
 import extrato from "../../../../dados/pesquisas-tse.json";
 import verificacoes from "../../../../dados/pesquisas-verificacoes.csv?raw";
@@ -24,26 +16,18 @@ export const EXTRATO = extrato as ExtratoDoTse;
 export const PESQUISAS = listaDasPesquisas({ pesquisas: pesquisasCsv, institutos, extrato: EXTRATO, verificacoes, turno: TURNO });
 
 // O agregado é o do instante do build: o do dia, em Brasília, e o da noite depois do congelamento às 23h de 24/10.
-// Um deploy por dia, o da atualização do pesquisas.csv, o mantém em dia. Os testes fixam o relógio em APURADOR_AGORA.
+// O deploy de cada atualização do pesquisas.csv e os deploys agendados no CI o mantêm em dia. Os testes fixam o
+// relógio em APURADOR_AGORA.
 const agora = process.env.APURADOR_AGORA ? new Date(process.env.APURADOR_AGORA) : new Date();
 if (Number.isNaN(agora.getTime())) throw new Error(`APURADOR_AGORA não é um instante: ${process.env.APURADOR_AGORA}`);
-export const DIA_DO_AGREGADO = diaDoAgregado(agora);
+const dia = diaDoAgregado(agora);
+const doAgregado = pesquisasDoAgregado(PESQUISAS, TURNO);
+export const AGREGADO = agregadoDePesquisas(doAgregado, dia);
+export const TENDENCIA = tendenciaDoAgregado(doAgregado, dia);
 
-// O agregado é o % do primeiro finalista (o mais votado no 1º turno, Flávio) nos votos válidos.
-const [primeiro, segundo] = finalistas(TURNO) as [number, number];
-const doAgregado: PesquisaDoAgregado[] = PESQUISAS.map((p) => ({
-  registro: p.registro,
-  instituto: p.institutoDaLista,
-  campoFim: p.campoFim,
-  divulgacao: p.divulgacao,
-  votos: [p.votos.get(primeiro)!, p.votos.get(segundo)!],
-}));
-export const AGREGADO = agregadoDePesquisas(doAgregado, DIA_DO_AGREGADO);
-export const TENDENCIA = tendenciaDoAgregado(doAgregado, DIA_DO_AGREGADO);
-
-const candidato = (numero: number) => TURNO.candidatos.find((c) => c.numero === numero)!;
+const [primeiro, segundo] = finalistas(TURNO).map((n) => TURNO.candidatos.findIndex((c) => c.numero === n)) as [number, number];
 /** Os dois finalistas na ordem do agregado: o primeiro é aquele cujo % o agregado dá. */
-export const FINALISTAS = [candidato(primeiro), candidato(segundo)] as const;
+export const FINALISTAS = [TURNO.candidatos[primeiro]!, TURNO.candidatos[segundo]!] as const;
 
 /** Um valor do primeiro finalista (em %) repartido entre os dois, na ordem alfabética, a mesma de toda a página. */
 export interface PctDoCandidato {
@@ -63,34 +47,32 @@ export function quemGanhou(diferenca: number): { candidato: CandidatoDoTurno; po
   return { candidato: FINALISTAS[diferenca > 0 ? 0 : 1], pontos: Math.abs(diferenca) };
 }
 
-const indice = (numero: number) => TURNO.candidatos.findIndex((c) => c.numero === numero);
-const placarDoLugar = (id: string): number | undefined => {
+const placarEntreFinalistasDoLugar = (id: string): number | undefined => {
   const votos = TURNO.lugares[id]?.votos;
-  return votos && placarEntreFinalistas(votos[indice(primeiro)]!, votos[indice(segundo)]!);
+  return votos && placarEntreFinalistas(votos[primeiro]!, votos[segundo]!);
 };
 
 /** O placar entre finalistas do Brasil no 1º turno, em % do primeiro finalista: a base da mudança nacional. */
-export const PLACAR_DO_BRASIL = placarDoLugar("BR")!;
+export const PLACAR_ENTRE_FINALISTAS_DO_BRASIL = placarEntreFinalistasDoLugar("BR")!;
 
-/**
- * A mudança nacional desde o 1º turno como a página a mostra: a diferença entre o agregado e o placar entre finalistas
- * do Brasil, os dois já com uma casa, para que a conta feche na página ("51,0%, desde então +0,1": 51,1%).
- */
-export const MUDANCA_MOSTRADA = AGREGADO && umaCasa(umaCasa(AGREGADO.valor) - umaCasa(PLACAR_DO_BRASIL));
-
-export type IndicacaoDoLugar = { tipo: "indicacao"; placar: number; indicacao: number; limitada: boolean } | { tipo: "sem-votacao" } | { tipo: "sem-voto-nos-finalistas" };
+export type IndicacaoDoLugar =
+  | { tipo: "indicacao"; placarEntreFinalistas: number; indicacao: number }
+  | { tipo: "sem-votacao" }
+  | { tipo: "sem-voto-nos-finalistas" };
 
 /** A indicação das pesquisas de uma UF, do Exterior ou de um município, ou o motivo de não haver. */
 export function indicacaoDoLugar(id: string): IndicacaoDoLugar | undefined {
   if (!AGREGADO) return undefined;
   if (!TURNO.lugares[id]) return { tipo: "sem-votacao" };
-  const placar = placarDoLugar(id);
+  const placar = placarEntreFinalistasDoLugar(id);
   if (placar === undefined) return { tipo: "sem-voto-nos-finalistas" };
-  const semLimite = placar + AGREGADO.valor - PLACAR_DO_BRASIL;
   return {
     tipo: "indicacao",
-    placar,
-    indicacao: indicacaoDasPesquisas({ placarDoLugar: placar, placarDoBrasil: PLACAR_DO_BRASIL, agregado: AGREGADO.valor }),
-    limitada: semLimite < 0 || semLimite > 100,
+    placarEntreFinalistas: placar,
+    indicacao: indicacaoDasPesquisas({
+      placarEntreFinalistasDoLugar: placar,
+      placarEntreFinalistasDoBrasil: PLACAR_ENTRE_FINALISTAS_DO_BRASIL,
+      agregado: AGREGADO.valor,
+    }),
   };
 }

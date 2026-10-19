@@ -8,5 +8,5 @@ import { lugar } from "../lib/lugares";
 
 <PaginaDeLugar lugar={lugar("BR")}>
   {CHAVES.antesDas17h.agregado && <AgregadoDePesquisas />}
-  <ListaDasPesquisas />
+  <ListaDasPesquisas aberta={!CHAVES.antesDas17h.agregado} />
 </PaginaDeLugar>

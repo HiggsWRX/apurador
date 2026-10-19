@@ -14,12 +14,12 @@ describe("placar entre finalistas", () => {
 
 describe("indicação das pesquisas", () => {
   it("é o placar entre finalistas do lugar no 1º turno somado à mudança do agregado sobre o do Brasil", () => {
-    expect(indicacaoDasPesquisas({ placarDoLugar: 30, placarDoBrasil: 51.01, agregado: 51.09 })).toBeCloseTo(30.08, 10);
-    expect(indicacaoDasPesquisas({ placarDoLugar: 62.5, placarDoBrasil: 51.01, agregado: 49.51 })).toBeCloseTo(61, 10);
+    expect(indicacaoDasPesquisas({ placarEntreFinalistasDoLugar: 30, placarEntreFinalistasDoBrasil: 51.01, agregado: 51.09 })).toBeCloseTo(30.08, 10);
+    expect(indicacaoDasPesquisas({ placarEntreFinalistasDoLugar: 62.5, placarEntreFinalistasDoBrasil: 51.01, agregado: 49.51 })).toBeCloseTo(61, 10);
   });
 
   it("fica entre 0% e 100%", () => {
-    expect(indicacaoDasPesquisas({ placarDoLugar: 99.8, placarDoBrasil: 51.01, agregado: 52.01 })).toBe(100);
-    expect(indicacaoDasPesquisas({ placarDoLugar: 0.4, placarDoBrasil: 51.01, agregado: 50.01 })).toBe(0);
+    expect(indicacaoDasPesquisas({ placarEntreFinalistasDoLugar: 99.8, placarEntreFinalistasDoBrasil: 51.01, agregado: 52.01 })).toBe(100);
+    expect(indicacaoDasPesquisas({ placarEntreFinalistasDoLugar: 0.4, placarEntreFinalistasDoBrasil: 51.01, agregado: 50.01 })).toBe(0);
   });
 });

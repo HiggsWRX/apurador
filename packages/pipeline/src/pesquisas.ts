@@ -1,4 +1,4 @@
-import { CONGELAMENTO } from "@apurador/modelo";
+import { CONGELAMENTO, dataEmBrasilia, DIA_DA_ELEICAO, INICIO_DO_2O_TURNO, type PesquisaDoAgregado } from "@apurador/modelo";
 import { abrangenciaDoRegistro, type RegistroDePesquisa } from "@apurador/tse";
 import { lerCsv } from "./csv.ts";
 import type { Turno } from "./turno.ts";
@@ -151,14 +151,17 @@ export function listaDasPesquisas(entrada: { pesquisas: string; institutos: stri
   return conferencias.map((c) => ({ ...c.pesquisa, institutoDaLista: c.institutoDaLista! }));
 }
 
-/** O instante da primeira conferência de cada registro, no texto do `pesquisas-verificacoes.csv`. */
+/**
+ * O instante em que cada registro entrou na lista, no texto do `pesquisas-verificacoes.csv`: a primeira conferência em
+ * que a pesquisa bateu com o TSE. Uma pesquisa só conferida como divergente nunca esteve na lista que vai ao site.
+ */
 export function primeiraConferencia(verificacoes: string): Map<string, string> {
   const [cabecalho = [], ...linhas] = lerCsv(verificacoes);
-  const conferidoEm = cabecalho.indexOf("conferido_em");
-  const registro = cabecalho.indexOf("registro");
-  if (conferidoEm < 0 || registro < 0) throw new Error("pesquisas-verificacoes.csv: faltam as colunas conferido_em e registro");
+  const [conferidoEm, registro, resultado] = ["conferido_em", "registro", "resultado"].map((c) => cabecalho.indexOf(c)) as [number, number, number];
+  if (conferidoEm < 0 || registro < 0 || resultado < 0) throw new Error("pesquisas-verificacoes.csv: faltam as colunas conferido_em, registro e resultado");
   const primeira = new Map<string, string>();
   for (const linha of linhas) {
+    if (linha[resultado] !== "ok") continue;
     const [r, em] = [linha[registro]!, linha[conferidoEm]!];
     const antes = primeira.get(r);
     if (antes === undefined || Date.parse(em) < Date.parse(antes)) primeira.set(r, em);
@@ -169,8 +172,17 @@ export function primeiraConferencia(verificacoes: string): Map<string, string> {
 /** Os números dos dois candidatos do 2º turno: os mais votados no Brasil no 1º turno. */
 export const finalistas = (primeiroTurno: Turno) => primeiroTurno.candidatos.slice(0, 2).map((c) => c.numero);
 
-/** A data de um instante em Brasília (UTC−3, sem horário de verão desde 2019), `aaaa-mm-dd`. */
-export const dataEmBrasilia = (instante: Date) => new Date(instante.getTime() - 3 * 3600_000).toISOString().slice(0, 10);
+/** As pesquisas da lista como o agregado as lê: o instituto da lista e os votos dos dois finalistas, na ordem do 1º turno. */
+export function pesquisasDoAgregado(lista: readonly PesquisaDaLista[], primeiroTurno: Turno): PesquisaDoAgregado[] {
+  const [primeiro, segundo] = finalistas(primeiroTurno) as [number, number];
+  return lista.map((p) => ({
+    registro: p.registro,
+    instituto: p.institutoDaLista,
+    campoFim: p.campoFim,
+    divulgacao: p.divulgacao,
+    votos: [p.votos.get(primeiro)!, p.votos.get(segundo)!],
+  }));
+}
 
 const COLUNAS_DAS_PESQUISAS = [
   "registro",
@@ -261,10 +273,6 @@ function divergenciasDosNumeros(p: Pesquisa, finalistas: number[]): string[] {
 }
 
 const pct = (n: number) => `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(n)}%`;
-
-// O 1º turno foi em 04/10. Uma pesquisa com campo antes de 05/10 ouviu eleitores antes do resultado.
-const INICIO_DO_2O_TURNO = "2026-10-05";
-const DIA_DA_ELEICAO = "2026-10-25";
 
 // O registro é feito antes do campo e traz a amostra prevista. A realizada difere um pouco (a AtlasIntel de 3 a 8/10
 // registrou 5.000 e divulgou 5.026), mas uma diferença maior é erro de digitação ou de registro.

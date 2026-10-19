@@ -14,6 +14,6 @@ export function placarEntreFinalistas(primeiro: number, segundo: number): number
  * no 1º turno somado à mudança que o agregado mostra para o Brasil (agregado − placar entre finalistas do Brasil),
  * limitado a 0–100%.
  */
-export function indicacaoDasPesquisas(entrada: { placarDoLugar: number; placarDoBrasil: number; agregado: number }): number {
-  return Math.min(100, Math.max(0, entrada.placarDoLugar + entrada.agregado - entrada.placarDoBrasil));
+export function indicacaoDasPesquisas(entrada: { placarEntreFinalistasDoLugar: number; placarEntreFinalistasDoBrasil: number; agregado: number }): number {
+  return Math.min(100, Math.max(0, entrada.placarEntreFinalistasDoLugar + entrada.agregado - entrada.placarEntreFinalistasDoBrasil));
 }

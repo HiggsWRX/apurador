@@ -1,10 +1,16 @@
 ---
-import { dataEmBrasilia, finalistas, type Modo } from "@apurador/pipeline";
+import { dataEmBrasilia } from "@apurador/modelo";
+import { finalistas, type Modo } from "@apurador/pipeline";
 import { formatarData, formatarNumero } from "../lib/formato";
 import { EXTRATO, PESQUISAS, TURNO } from "../lib/pesquisas";
 
 // A lista das pesquisas nacionais do 2º turno, cada uma com os seis dados do art. 10 da Res. 23.600 e o link
 // para a fonte. Uma linha do pesquisas.csv que não bata com o extrato do TSE quebra o build: nunca vai ao ar.
+// Recolhida abaixo do agregado; aberta quando o agregado está desligado (Consulta a advogado eleitoral, decisão 2).
+interface Props {
+  aberta?: boolean;
+}
+const { aberta = false } = Astro.props;
 const pesquisas = [...PESQUISAS].sort((a, b) => b.campoFim.localeCompare(a.campoFim) || b.divulgacao.localeCompare(a.divulgacao));
 // Sempre na mesma ordem, a alfabética.
 const candidatos = TURNO.candidatos.filter((c) => finalistas(TURNO).includes(c.numero)).sort((a, b) => a.nomeUrna.localeCompare(b.nomeUrna));
@@ -16,7 +22,7 @@ const conferidoEm = dataEmBrasilia(new Date(EXTRATO.fonte.conferidoEm));
 ---
 
 <section class="pesquisas" data-bloco="lista-das-pesquisas">
-  <details>
+  <details open={aberta}>
     <summary><h2>Pesquisas registradas no TSE ({pesquisas.length})</h2></summary>
     <p class="nota">
       Pesquisas nacionais do 2º turno, de institutos que fizeram pesquisa final no 2º turno de 2018 ou de 2022, conferidas no

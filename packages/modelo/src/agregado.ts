@@ -1,3 +1,4 @@
+import { dataEmBrasilia, diasEntre, somarDias } from "./datas.ts";
 import { phi, Z_95 } from "./normal.ts";
 
 // O agregado de pesquisas do Brasil (Agregado de pesquisas e erro histórico, decisões 3 a 5): a média simples, em
@@ -31,14 +32,19 @@ export interface Agregado {
   chance: number;
   /** Em dias: 7, ou 14 quando a de 7 tem menos de 4 institutos. */
   janela: number;
+  /** O primeiro e o último dia em que o campo de uma pesquisa pode terminar para entrar na janela. */
+  campoEntre: readonly [string, string];
   /** A pesquisa de cada instituto que entrou na média. */
   pesquisas: PesquisaDoAgregado[];
 }
 
 /** O dia da eleição. */
 export const DIA_DA_ELEICAO = "2026-10-25";
-/** O dia seguinte ao 1º turno: só entram pesquisas com campo a partir dele, e a tendência começa nele. */
-export const INICIO_DA_TENDENCIA = "2026-10-05";
+/**
+ * O dia seguinte ao 1º turno, que foi em 04/10: só entram pesquisas com campo a partir dele (antes, elas ouviram
+ * eleitores que não sabiam o resultado), e a tendência começa nele.
+ */
+export const INICIO_DO_2O_TURNO = "2026-10-05";
 /**
  * O congelamento (decisão 8): às 23h de 24/10, o agregado passa a ser o da noite, o de 25/10, e fica nele. Pesquisas
  * divulgadas em 25/10 ficam de fora. Depois disso, só se retira pesquisa.
@@ -47,8 +53,7 @@ export const CONGELAMENTO = "2026-10-24T23:00:00-03:00";
 
 /** O dia do agregado num instante: o dia em Brasília (UTC−3, sem horário de verão) até o congelamento, e 25/10 dali em diante. */
 export function diaDoAgregado(instante: Date): string {
-  if (instante.getTime() >= Date.parse(CONGELAMENTO)) return DIA_DA_ELEICAO;
-  return new Date(instante.getTime() - 3 * 3600_000).toISOString().slice(0, 10);
+  return instante.getTime() >= Date.parse(CONGELAMENTO) ? DIA_DA_ELEICAO : dataEmBrasilia(instante);
 }
 
 // Decisão 5: 1,5 ponto na eleição, mais 0,4² por dia que falta, na variância.
@@ -76,6 +81,7 @@ export function agregadoDePesquisas(pesquisas: readonly PesquisaDoAgregado[], di
     faixa: [valor - Z_95 * incerteza, valor + Z_95 * incerteza],
     chance: phi((valor - 50) / incerteza),
     janela,
+    campoEntre: [somarDias(dia, -janela), somarDias(dia, -1)],
     pesquisas: usadas,
   };
 }
@@ -83,7 +89,7 @@ export function agregadoDePesquisas(pesquisas: readonly PesquisaDoAgregado[], di
 /** A tendência: o agregado de cada dia, desde 05/10 até o dia dado, com a mesma regra. Os dias sem pesquisa ficam de fora. */
 export function tendenciaDoAgregado(pesquisas: readonly PesquisaDoAgregado[], ate: string): Agregado[] {
   const tendencia: Agregado[] = [];
-  for (let dia = INICIO_DA_TENDENCIA; dia <= ate; dia = somarDias(dia, 1)) {
+  for (let dia = INICIO_DO_2O_TURNO; dia <= ate; dia = somarDias(dia, 1)) {
     const agregado = agregadoDePesquisas(pesquisas, dia);
     if (agregado) tendencia.push(agregado);
   }
@@ -104,7 +110,3 @@ function maisRecentePorInstituto(pesquisas: readonly PesquisaDoAgregado[], dia: 
 
 /** Os válidos saem dos votos totais publicados: Flávio ÷ (Flávio + Lula). */
 const validosDoPrimeiro = (p: PesquisaDoAgregado) => (100 * p.votos[0]) / (p.votos[0] + p.votos[1]);
-
-const DIA_EM_MS = 86_400_000;
-const somarDias = (dia: string, n: number) => new Date(Date.parse(dia) + n * DIA_EM_MS).toISOString().slice(0, 10);
-const diasEntre = (de: string, ate: string) => Math.round((Date.parse(ate) - Date.parse(de)) / DIA_EM_MS);

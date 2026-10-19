@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
-import { agregadoDePesquisas, diaDoAgregado, tendenciaDoAgregado, type PesquisaDoAgregado } from "@apurador/modelo";
-import { listaDasPesquisas, type ExtratoDoTse, type Turno } from "@apurador/pipeline";
+import { agregadoDePesquisas, diaDoAgregado, tendenciaDoAgregado } from "@apurador/modelo";
+import { listaDasPesquisas, pesquisasDoAgregado, type ExtratoDoTse, type Turno } from "@apurador/pipeline";
 import { describe, expect, it } from "vitest";
 import { AGORA, DIST_CHAVES_DESLIGADAS, elemento, elementos, pagina, texto } from "./html";
 
@@ -17,19 +17,14 @@ const lista = listaDasPesquisas({
   verificacoes: ler("pesquisas-verificacoes.csv"),
   turno,
 });
-// Flávio (22) e Lula (13), nessa ordem: o agregado é o % de Flávio nos válidos.
-const pesquisas: PesquisaDoAgregado[] = lista.map((p) => ({
-  registro: p.registro,
-  instituto: p.institutoDaLista,
-  campoFim: p.campoFim,
-  divulgacao: p.divulgacao,
-  votos: [p.votos.get(22)!, p.votos.get(13)!],
-}));
+// Os números que a página deve mostrar são os do modelo sobre o mesmo pesquisas.csv, no mesmo instante. As referências
+// externas dos números ficam nos testes do modelo e do pipeline (o agregado de 18/10).
+const pesquisas = pesquisasDoAgregado(lista, turno);
 const dia = diaDoAgregado(new Date(AGORA));
 const agregado = agregadoDePesquisas(pesquisas, dia)!;
 const tendencia = tendenciaDoAgregado(pesquisas, dia);
 
-const umaCasa = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const comUmaCasa = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const placarEntreFinalistas = (id: string) => {
   const [flavio, lula] = turno.lugares[id]!.votos;
   return (100 * flavio!) / (flavio! + lula!);
@@ -45,13 +40,13 @@ describe("agregado de pesquisas na página do Brasil", () => {
   const textoDoBloco = texto(bloco);
 
   it("mostra o agregado do dia, em votos válidos, com uma casa", () => {
-    expect(textoDoBloco).toContain(`FLAVIO BOLSONARO ${umaCasa(agregado.valor)}%`);
-    expect(textoDoBloco).toContain(`LULA ${umaCasa(100 - Number(agregado.valor.toFixed(1)))}%`);
+    expect(textoDoBloco).toContain(`FLAVIO BOLSONARO ${comUmaCasa(agregado.valor)}%`);
+    expect(textoDoBloco).toContain(`LULA ${comUmaCasa(100 - Number(agregado.valor.toFixed(1)))}%`);
     expect(textoDoBloco).toContain(`${agregado.pesquisas.length} pesquisas`);
   });
 
   it("mostra a faixa de incerteza de 95%", () => {
-    expect(textoDoBloco).toContain(`de ${umaCasa(agregado.faixa[0])}% a ${umaCasa(agregado.faixa[1])}%`);
+    expect(textoDoBloco).toContain(`de ${comUmaCasa(agregado.faixa[0])}% a ${comUmaCasa(agregado.faixa[1])}%`);
   });
 
   it("desenha a tendência desde 05/10, um ponto por dia com agregado", () => {
@@ -99,10 +94,10 @@ describe("indicação das pesquisas nos outros lugares", () => {
   ])("em %s, é o placar entre finalistas do 1º turno somado à mudança do agregado", (caminho, id) => {
     const t = indicacao(caminho);
     const flavio = Number(indicado(id).toFixed(1));
-    expect(t).toContain(`FLAVIO BOLSONARO ${umaCasa(flavio)}%`);
-    expect(t).toContain(`LULA ${umaCasa(100 - flavio)}%`);
+    expect(t).toContain(`FLAVIO BOLSONARO ${comUmaCasa(flavio)}%`);
+    expect(t).toContain(`LULA ${comUmaCasa(100 - flavio)}%`);
     // O ponto de partida é o placar entre finalistas do lugar, não o % sobre todos os válidos.
-    expect(t).toContain(`${umaCasa(placarEntreFinalistas(id))}%`);
+    expect(t).toContain(`${comUmaCasa(placarEntreFinalistas(id))}%`);
     // Nenhum desses lugares passa de 0–100%.
     expect(t).not.toContain("limitado");
     expect(t).not.toMatch(PALAVRAS_PROIBIDAS);
@@ -124,11 +119,12 @@ describe("chave do agregado e da tendência antes das 17h", () => {
     expect(JSON.parse(ler("chaves.json"))).toMatchObject({ antesDas17h: { agregado: true } });
   });
 
-  it("desligada, esconde o agregado e a tendência, e a lista das pesquisas continua", () => {
+  it("desligada, esconde o agregado e a tendência, e a lista das pesquisas fica aberta", () => {
+    // Consulta a advogado eleitoral, decisão 2: sem o agregado, o Brasil mostra a lista das pesquisas aberta.
     const html = desligada("/");
     expect(elementos(html, BLOCO_DO_AGREGADO)).toEqual([]);
     expect(html).not.toContain("Média calculada pelo Apurador");
-    expect(elementos(html, /<section[^>]*data-bloco="lista-das-pesquisas"/)).toHaveLength(1);
+    expect(elemento(html, /<section[^>]*data-bloco="lista-das-pesquisas"/)).toMatch(/<details[^>]*\bopen\b/);
   });
 
   it("desligada, esconde a indicação das pesquisas, que deriva do agregado", () => {

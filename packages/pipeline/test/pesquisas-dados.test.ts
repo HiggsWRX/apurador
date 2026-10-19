@@ -47,6 +47,13 @@ describe("pesquisas.csv", () => {
       const semAntes = linhas.filter((l) => l[registro] !== nova);
       expect(() => listaDasPesquisas(depois([...semAntes, ...reconferencia]))).toThrow(new RegExp(`${nova}.*depois do congelamento`));
     });
+
+    it("recusa uma pesquisa que, antes dele, só tinha sido conferida como divergente", () => {
+      const corrigida = reconferencia[0]![registro]!;
+      const resultado = cabecalho!.indexOf("resultado");
+      const divergenteAntes = linhas.map((l) => (l[registro] === corrigida ? l.map((v, i) => (i === resultado ? "divergente: entrevistas" : v)) : l));
+      expect(() => listaDasPesquisas(depois([...divergenteAntes, ...reconferencia]))).toThrow(new RegExp(`${corrigida}.*depois do congelamento`));
+    });
   });
 
   it("quebra com uma linha que não bate, dizendo qual", () => {
