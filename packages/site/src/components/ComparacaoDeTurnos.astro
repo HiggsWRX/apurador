@@ -1,0 +1,127 @@
+---
+import { idDoTurno, nomeCompleto, type Lugar, type Turno } from "@apurador/pipeline";
+import { casasDoTurno, compararTurnos, MINIMO_DE_VOTOS, ondeMaisMudou } from "../lib/comparacao";
+import { formatarMudanca, formatarPctComCasas, formatarVotos } from "../lib/formato";
+import { caminhoDe, TURNOS } from "../lib/lugares";
+
+// "Comparar dois turnos" no histórico (Telas da página de lugar, decisão 14). Os pares de turnos já vão todos no HTML,
+// cada um do mais antigo ao mais recente, e o visitante escolhe qual ver. De partida, os dois turnos mais recentes.
+// Sem JavaScript, as escolhas não funcionam, e todos os pares ficam à vista, um embaixo do outro.
+
+interface Props {
+  lugar: Lugar;
+}
+const { lugar } = Astro.props;
+
+const curto = (t: Turno) => `${t.ano} ${t.turno}T`;
+const turnos = (ts: Turno[]) => ts.map((t) => `${t.turno}º turno de ${t.ano}`).join(" nem no ");
+// Os pares, dos turnos mais recentes aos mais antigos: o de partida é o primeiro.
+const pares = TURNOS.flatMap((um, i) =>
+  TURNOS.slice(i + 1).map((outro) => {
+    const comparacao = compararTurnos(lugar, um, outro);
+    return { id: `${idDoTurno(comparacao.antes)}_${idDoTurno(comparacao.depois)}`, comparacao, ondeMaisMudou: ondeMaisMudou(lugar, um, outro) };
+  }),
+);
+const partida = pares[0]!.comparacao;
+const abaixo = lugar.tipo === "exterior" ? "as cidades" : lugar.tipo === "uf" ? "os municípios" : undefined;
+---
+
+<div class="comparacao" data-comparacao>
+  <h3>Comparar dois turnos</h3>
+  <div class="escolha">
+    <select data-comparar aria-label="Um turno">
+      {TURNOS.map((t) => <option value={idDoTurno(t)} selected={t === partida.antes}>{curto(t)}</option>)}
+    </select>
+    <span>com</span>
+    <select data-comparar aria-label="Outro turno">
+      {TURNOS.map((t) => <option value={idDoTurno(t)} selected={t === partida.depois}>{curto(t)}</option>)}
+    </select>
+  </div>
+  <p class="nota">
+    Só entre o PT e o partido de Bolsonaro (PSL em 2018, PL depois), do turno mais antigo ao mais recente. Nos 2º turnos, o % dos votos
+    válidos, como o TSE publica; nos 1º turnos, o placar entre finalistas, com uma casa. A mudança é em pontos.
+  </p>
+  <p class="nota" data-mesmo-turno role="status"></p>
+  {
+    pares.map(({ id, comparacao: c, ondeMaisMudou }, i) => (
+      <div class="par" data-par={id} data-ativo={i === 0 ? "" : undefined}>
+        <h4 class="par-titulo">
+          {curto(c.antes)} e {curto(c.depois)}
+        </h4>
+        {c.tipo !== "comparacao" ? (
+          <p>
+            {c.tipo === "sem-votacao"
+              ? `${nomeCompleto(lugar)} não teve votação no ${turnos(c.turnos)}.`
+              : `Nem o PT nem o partido de Bolsonaro tiveram voto aqui no ${turnos(c.turnos)}.`}
+          </p>
+        ) : (
+          <table class="tabela-comparacao">
+            <thead>
+              <tr>
+                <th scope="col">
+                  <span class="so-leitor">Partido</span>
+                </th>
+                <th scope="col">{curto(c.antes)}</th>
+                <th scope="col">{curto(c.depois)}</th>
+                <th scope="col">Mudança</th>
+              </tr>
+            </thead>
+            <tbody>
+              {c.lados.map((l) => (
+                <tr data-cor={l.cor}>
+                  <th scope="row">
+                    {l.partido}
+                    <small>{l.candidatos[0] === l.candidatos[1] ? l.candidatos[0] : `${l.candidatos[0]} → ${l.candidatos[1]}`}</small>
+                  </th>
+                  <td>{formatarPctComCasas(l.pct[0], casasDoTurno(c.antes))}</td>
+                  <td>{formatarPctComCasas(l.pct[1], casasDoTurno(c.depois))}</td>
+                  <td>{formatarMudanca(l.mudanca)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {ondeMaisMudou.length > 0 && (
+          <>
+            <h5>Onde mais mudou</h5>
+            <ol class="mudou">
+              {ondeMaisMudou.map((m) => (
+                <li data-mudou>
+                  <a href={caminhoDe(m.lugar)}>{m.lugar.nome}</a>
+                  <span data-cor={m.ganhou?.cor}>{m.ganhou ? `${m.ganhou.partido} ${formatarMudanca(m.ganhou.mudanca)}` : "Sem mudança"}</span>
+                </li>
+              ))}
+            </ol>
+            {abaixo && (
+              <p class="nota">
+                Entre {abaixo} com ao menos {formatarVotos(MINIMO_DE_VOTOS)} votos nos dois partidos em cada turno.
+              </p>
+            )}
+          </>
+        )}
+      </div>
+    ))
+  }
+  <p class="nota">Cálculo do Apurador com dados do TSE (CC-BY).</p>
+</div>
+
+<script>
+  for (const comparacao of document.querySelectorAll<HTMLElement>("[data-comparacao]")) {
+    const escolhas = [...comparacao.querySelectorAll<HTMLSelectElement>("[data-comparar]")];
+    const mesmoTurno = comparacao.querySelector<HTMLElement>("[data-mesmo-turno]")!;
+    const mostrar = () => {
+      const [um, outro] = escolhas.map((e) => e.value);
+      // O aviso é lido pelo leitor de tela quando aparece, porque a comparação some junto.
+      const aviso = um === outro ? "Escolha dois turnos diferentes." : "";
+      if (mesmoTurno.textContent !== aviso) mesmoTurno.textContent = aviso;
+      // Cada par serve às duas ordens de escolha.
+      for (const par of comparacao.querySelectorAll<HTMLElement>("[data-par]")) {
+        const turnos = par.dataset.par!.split("_");
+        par.toggleAttribute("data-ativo", um !== outro && turnos.includes(um!) && turnos.includes(outro!));
+      }
+    };
+    for (const escolha of escolhas) escolha.addEventListener("change", mostrar);
+    // Ao voltar à página, o navegador pode devolver as escolhas da visita anterior.
+    mostrar();
+  }
+</script>

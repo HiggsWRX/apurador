@@ -2,6 +2,7 @@
 import { idDoTurno, nomeCompleto, type Lugar } from "@apurador/pipeline";
 import { TURNOS } from "../lib/lugares";
 import BarrasDoTurno from "./BarrasDoTurno.astro";
+import ComparacaoDeTurnos from "./ComparacaoDeTurnos.astro";
 
 interface Props {
   lugar: Lugar;
@@ -25,6 +26,7 @@ const aberto = TURNOS.find((t) => t.lugares[lugar.id]) ?? TURNOS[0]!;
   </div>
   {TURNOS.map((t) => <BarrasDoTurno turno={t} lugar={lugar} ativo={t === aberto} />)}
   <p class="nota">Percentuais dos candidatos sobre os votos válidos; brancos e nulos sobre os votantes. Fonte: TSE (CC-BY).</p>
+  <ComparacaoDeTurnos lugar={lugar} />
 </section>
 
 <script>
