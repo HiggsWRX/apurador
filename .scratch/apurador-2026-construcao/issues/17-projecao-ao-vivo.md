@@ -50,3 +50,12 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
 ## Comments
 
 - 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): o modelo lê o que o coletor guarda por `coletor.resultado(abrangencia)`: Brasil, UFs, municípios e as 725 zonas dos 190 municípios com mais de uma, que não são publicadas. Cada resultado é um `ResultadoDoTse` (`packages/tse/src/ao-vivo.ts`), com seções, eleitorado, válidos, brancos, nulos e os votos de cada candidato. Os arquivos ao vivo são montados em `publicar()`, em `packages/coletor/src/coletor.ts`.
+- 19/10/2026, do [ticket 08](08-base-apuracao-mais-pesquisas.md):
+  - A cada rodada, `projetarNasDuasBases(modelo, apuracao, constantes, agregado)`, com o agregado congelado (incerteza de 1,5), dá:
+    - as duas bases (`soApuracao` e `comPesquisas`);
+    - o peso das pesquisas, para o arquivo de rodada (`comPesquisas.pesoDasPesquisas`);
+    - `coincidem` no Brasil, em cada UF e no Exterior e em cada município.
+  - A curva projetada de cada base é o `curvaProjetada` sobre a `Projecao` daquela base.
+  - No replay de 2022, o agregado é o `agregadoDaNoite` do `pipeline`: Lula com 50,98, no 1º finalista da base do modelo.
+  - Com esse agregado, as bases coincidem no Brasil de ~12% das seções até o fim, e não nos ~5% do exemplo do ticket 14 do mapa. As projeções já ficam a menos de 0,1 p.p. desde 3%, mas as chances diferem mais de 1 ponto até 12%.
+  - Nas três noites de 2022 (agregado real e deslocado), o "coincidem" do Brasil começa e fica. Numa noite em que ele vá e volte, o evento "as pesquisas deixaram de pesar" ainda sai uma vez só.

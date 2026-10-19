@@ -20,3 +20,7 @@ Decisões: [Página de metodologia](../../apurador-2026/issues/20-pagina-de-meto
 - [ ] **"Em um minuto"**: ganha a frase do teste de 2022.
 - [ ] **Para baixar**: a calibração e as noites reproduzidas de 2018 e 2022, momento a momento, em CSV.
 - [ ] **Gráficos extras**: o peso das pesquisas ao longo da apuração, o diagrama da transferência de votos e o erro com as pesquisas deslocadas. São os primeiros a sair se atrasar.
+
+## Comments
+
+- 19/10/2026, do [ticket 08](08-base-apuracao-mais-pesquisas.md): o gráfico do erro com as pesquisas deslocadas reproduz a série do protótipo da metodologia. Na noite de 2022, o erro com 5% das seções é de 0,10 com o agregado real, 0,23 com +2 para Lula e 0,03 com +2 para Bolsonaro, e as versões ficam a menos de 0,1 ponto da "Só apuração" a partir de 7,0% das seções. Os números saem do executor de noites (ver os comentários do [ticket 28](28-calibracao.md)).

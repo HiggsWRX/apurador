@@ -41,3 +41,10 @@ Decisões: [Simulador "e se"](../../apurador-2026/issues/13-simulador-e-se.md) (
   - "o que seria preciso" leva o resultado a 50%.
 - [ ] O simulador abre em até 5 s num Android barato no 4G.
 - [ ] A simulação nunca aparece na manchete, na narração nem na página de lugar.
+
+## Comments
+
+- 19/10/2026, do [ticket 08](08-base-apuracao-mais-pesquisas.md):
+  - A base que o simulador herda é o `projetar` do `modelo`: sem o agregado, a "Só apuração"; com ele (`{ valor, incerteza }`), a "Apuração + pesquisas".
+  - As hipóteses mexem no voto que falta de cada município, que a `Projecao` daquela base dá em `votoQueFalta` e `fatiaDoQueFalta`.
+  - O peso das pesquisas é `pesoDasPesquisas` na mesma `Projecao`, e é 0 na "Só apuração".
