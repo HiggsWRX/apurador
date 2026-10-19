@@ -18,6 +18,11 @@ import { phi, Z_95 } from "./normal.ts";
 export interface MunicipioDaBase {
   uf: string;
   municipio: number;
+  /**
+   * Só num município dividido em zonas, para o teste da zona da calibração: a zona desta parte. Cada parte entra no
+   * modelo como um município, com o 1º turno e o perfil de chegada dela.
+   */
+  zona?: number;
   aptos: number;
   /** As seções do 1º turno, o denominador do perfil de chegada. */
   secoes: number;
@@ -54,8 +59,8 @@ export type Apuracao = ApuracaoDoMunicipio[];
 export interface Modelo {
   /** Os números dos dois finalistas, na ordem da base. */
   finalistas: number[];
-  /** Os municípios, na ordem da base. */
-  municipios: { uf: string; municipio: number }[];
+  /** Os municípios, ou as partes de um município dividido em zonas, na ordem da base. */
+  municipios: { uf: string; municipio: number; zona?: number }[];
   /** As UFs e o Exterior (`ZZ`), na ordem da base. */
   ufs: string[];
   /** A posição da UF de cada município em `ufs`. */
@@ -99,7 +104,7 @@ export function prepararModelo(base: BaseDoModelo): Modelo {
   const posicaoDaUf = new Map(ufs.map((uf, i) => [uf, i]));
   const modelo: Modelo = {
     finalistas: base.finalistas.map((f) => f.numero),
-    municipios: base.municipios.map((m) => ({ uf: m.uf, municipio: m.municipio })),
+    municipios: base.municipios.map((m) => ({ uf: m.uf, municipio: m.municipio, ...(m.zona === undefined ? {} : { zona: m.zona }) })),
     ufs,
     ufDoMunicipio: Int32Array.from(base.municipios, (m) => posicaoDaUf.get(m.uf)!),
     regiaoDaUf: Int32Array.from(ufs, (uf) => {

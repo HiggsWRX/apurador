@@ -174,8 +174,17 @@ for (const b of BASES) {
   const conteudo = gravarBase(base);
   // As fontes são as do turno da base e, numa noite de outro ano, as dos finalistas e da geografia da noite.
   const daGeografia = noite ? [(await detalheDasSecoes(b.noite.ano)).url] : [];
-  gravar(arquivo, conteudo, [...new Set([...daBase.urls, detalhe.url, ...(daNoite.length > 0 ? resultadoDaNoite.urls : []), ...daGeografia])]);
+  const deOnde = [...new Set([...daBase.urls, detalhe.url, ...(daNoite.length > 0 ? resultadoDaNoite.urls : []), ...daGeografia])];
+  gravar(arquivo, conteudo, deOnde);
   console.log(`${arquivo}: ${base.municipios.length} municípios, ${(conteudo.length / 1e6).toFixed(2)} MB`);
+
+  // Para o teste da zona da calibração, a mesma base com os municípios de mais de uma zona divididos nas zonas da noite.
+  if (!noite) continue;
+  const porZona = baseDoModelo({ ...b, finalistas, candidatos: daBase.candidatos, detalhes: daBase.detalhes, secoes: detalhe.secoes, municipios, zonas: noite.zonas });
+  const arquivoPorZona = `bases/${b.noite.ano}-${b.noite.turno}-zonas.json`;
+  const conteudoPorZona = gravarBase(porZona);
+  gravar(arquivoPorZona, conteudoPorZona, deOnde);
+  console.log(`${arquivoPorZona}: ${porZona.municipios.length} partes, ${new Set(porZona.municipios.filter((m) => m.zona !== undefined).map((m) => `${m.uf}/${m.municipio}`)).size} municípios divididos, ${(conteudoPorZona.length / 1e6).toFixed(2)} MB`);
 }
 
 const manifesto = atualizarManifesto(lerManifesto(), { pastas: ["noites/", "bases/"], fontes: [...fontes.values()], derivados });

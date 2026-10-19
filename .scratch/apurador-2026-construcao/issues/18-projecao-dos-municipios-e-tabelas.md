@@ -22,3 +22,9 @@ Decisões: [Volume de gravações na noite](../../apurador-2026/issues/24-volume
 - [ ] Antes das 17h, a tabela mostra o placar entre finalistas do 1º turno de 2026.
 - [ ] A tabela leva "Cálculo do Apurador com dados do TSE" na projeção, e os números do TSE vão com duas casas.
 - [ ] **Replay de 2022**: as gravações da noite ficam na ordem das contas do ticket 24 (~135 mil), e o teto de 1.500 por rodada nunca é atingido.
+
+## Comments
+
+- 19/10/2026, do [ticket 28](28-calibracao.md):
+  - O ticket 07 mediu a margem dos municípios estreita com as constantes provisórias: ela cobria o resultado em 72% dos momentos com 50% das seções e em 55% com 90%. As congeladas (incertezas de 2 e 2 p.p. e peso do próprio município de 10.000 votos) alargam a margem, mas a calibração mede só o Brasil. Vale medir de novo nos municípios antes de mostrar a margem deles.
+  - A zona não entra: a projeção é por município.

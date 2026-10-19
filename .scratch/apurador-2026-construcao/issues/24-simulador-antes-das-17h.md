@@ -48,3 +48,6 @@ Decisões: [Simulador "e se"](../../apurador-2026/issues/13-simulador-e-se.md) (
   - A base que o simulador herda é o `projetar` do `modelo`: sem o agregado, a "Só apuração"; com ele (`{ valor, incerteza }`), a "Apuração + pesquisas".
   - As hipóteses mexem no voto que falta de cada município, que a `Projecao` daquela base dá em `votoQueFalta` e `fatiaDoQueFalta`.
   - O peso das pesquisas é `pesoDasPesquisas` na mesma `Projecao`, e é 0 na "Só apuração".
+
+- 19/10/2026, do [ticket 28](28-calibracao.md):
+  - O simulador lê as constantes congeladas do `packages/modelo/constantes.json`. A margem de 95% delas é mais larga que a das provisórias (~3,0 p.p. em média de 5% a 50% das seções nas noites passadas).

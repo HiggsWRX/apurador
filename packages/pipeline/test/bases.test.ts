@@ -135,3 +135,23 @@ describe("a base da noite do 1º turno de 2026, da calibração: o 1º turno de 
     expect(base.municipios.find((m) => m.uf === BOA_ESPERANCA_DO_NORTE.uf && m.municipio === BOA_ESPERANCA_DO_NORTE.municipio)).toMatchObject({ aptos: 0, secoes: 0, validos: 0, degrausDeChegada: [] });
   });
 });
+
+describe("as bases por zona das noites da calibração", () => {
+  // O teste da zona (Ensaio geral, decisão 16): os municípios com mais de uma zona (189 em 2018 e em 2022, 190 em
+  // 2026, ticket 27) entram divididos nas zonas da noite, salvo os que mudaram de zonas desde o turno da base.
+  const divididos = (base: BaseDoModelo) => new Set(base.municipios.filter((m) => m.zona !== undefined).map((m) => `${m.uf}/${m.municipio}`));
+
+  it("dividem os 189 municípios com mais de uma zona em 2022 e em 2018, e 185 dos 190 em 2026, com base em 2022", () => {
+    expect([ler("2022-2-zonas"), ler("2018-2-zonas"), ler("2026-1-zonas")].map((b) => divididos(b).size)).toEqual([189, 189, 185]);
+  });
+
+  it("deixam São Paulo inteiro em 2026, porque ele tinha 58 zonas em 2022 e tem 57", () => {
+    expect(ler("2022-2-zonas").municipios.filter((m) => m.uf === "SP" && m.municipio === 71072)).toHaveLength(58);
+    expect(ler("2026-1-zonas").municipios.filter((m) => m.uf === "SP" && m.municipio === 71072).map((m) => m.zona)).toEqual([undefined]);
+  });
+
+  it("somam no Brasil os totais do resultado oficial do 1º turno de 2022 e de 2018", () => {
+    expect(noBrasil(ler("2022-2-zonas"))).toEqual({ aptos: 156_454_011, secoes: 472_075, validos: 118_229_719, votos: [57_259_504, 51_072_345] });
+    expect(noBrasil(ler("2018-2-zonas"))).toMatchObject({ aptos: 147_306_295, validos: 107_050_749, votos: [49_277_010, 31_342_051] });
+  });
+});

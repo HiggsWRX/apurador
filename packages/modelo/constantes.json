@@ -1,11 +1,18 @@
 {
-  "nota": "Valores provisórios das decisões do mapa (tickets 09, 11 e 23). A calibração (ticket 28) escolhe os definitivos entre candidatos escritos antes e congela este arquivo no fim de 21/10. Nada aqui é treinado.",
-  "incertezaRegional": 1,
-  "incertezaNacional": 1,
-  "pesoDoMunicipio": 3000,
+  "nota": "Escolhidas pela calibração de 19/10/2026 (ticket 28, docs/calibracao.md), entre candidatos escritos antes e pela regra escrita antes, e congeladas para a noite. Nada aqui é treinado. As provisórias das decisões do mapa são o CONSTANTES_PROVISORIAS do modelo.",
+  "incertezaRegional": 2,
+  "incertezaNacional": 2,
+  "pesoDoMunicipio": 10000,
   "minimoPorNivel": 2000,
   "ordemDeChegada": "mistura",
-  "sinalDeVirada": { "projetada": 0.5, "possivel": 0.05 },
-  "secoesDasPesquisas": 0.5,
-  "incertezaLocalDasPesquisas": { "uf": 0.13, "municipio": 0.15 }
+  "sinalDeVirada": {
+    "projetada": 0.5,
+    "possivel": 0.02
+  },
+  "secoesDasPesquisas": 0.25,
+  "incertezaLocalDasPesquisas": {
+    "uf": 0.13,
+    "municipio": 0.15
+  },
+  "zona": false
 }

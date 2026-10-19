@@ -7,10 +7,12 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "tse-falso": "tsx src/servir.ts"
+    "tse-falso": "tsx src/servir.ts",
+    "calibracao": "tsx src/calibrar.ts"
   },
   "dependencies": {
     "@apurador/coletor": "*",
+    "@apurador/modelo": "*",
     "@apurador/pipeline": "*",
     "@apurador/tse": "*"
   }

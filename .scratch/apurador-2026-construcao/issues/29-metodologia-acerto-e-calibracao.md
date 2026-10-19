@@ -24,3 +24,8 @@ Decisões: [Página de metodologia](../../apurador-2026/issues/20-pagina-de-meto
 ## Comments
 
 - 19/10/2026, do [ticket 08](08-base-apuracao-mais-pesquisas.md): o gráfico do erro com as pesquisas deslocadas reproduz a série do protótipo da metodologia. Na noite de 2022, o erro com 5% das seções é de 0,10 com o agregado real, 0,23 com +2 para Lula e 0,03 com +2 para Bolsonaro, e as versões ficam a menos de 0,1 ponto da "Só apuração" a partir de 7,0% das seções. Os números saem do executor de noites (ver os comentários do [ticket 28](28-calibracao.md)).
+
+- 19/10/2026, do [ticket 28](28-calibracao.md):
+  - A tabela da calibração e os números por noite estão em `docs/calibracao.md` ("Resultados"). Os CSVs para baixar estão em `docs/calibracao/`: `constantes.csv`, `ordem-de-chegada.csv`, `k.csv`, `sinal-de-virada.csv` e `zona.csv`, e as noites momento a momento em `noite-2022-2.csv`, `noite-2018-2.csv` e `noite-2026-1.csv`. O `npm run calibracao` os regrava.
+  - Nas noites, cada linha traz a hora (de Brasília, vazia antes da primeira seção), o % de seções e o placar parcial, e, por base (`so_apuracao`, `com_pesquisas` e, em 2022, `com_pesquisas_mais_2_13` e `com_pesquisas_mais_2_22`), o peso das pesquisas, a projeção, a margem de 95% e a chance de vitória do 1º finalista da base, cujo número vai no nome da coluna. As porcentagens vão de 0 a 100, e a margem em pontos percentuais. A primeira linha é antes da primeira seção.
+  - Os números saem das constantes congeladas. A noite de 2026-1 parte de 48,78 na base com pesquisas, e não do agregado de 48,87, porque a base é o 1º turno de 2022 pesado pelos eleitores de 2026 (ver o registro do ticket 28).

@@ -2,23 +2,23 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { lerConstantes } from "../src/index.ts";
 
-// O arquivo de constantes do modelo, versionado no pacote. Os valores provisórios são os das decisões do mapa:
-// Método de projeção só com a apuração (09, decisões 1, 3 e 4), Combinação de pesquisas e apuração (11,
-// decisões 2 e 3) e Sinal de virada (23, decisão 2).
+// O arquivo de constantes do modelo, versionado no pacote e congelado pela calibração de 19/10 (docs/calibracao.md,
+// "Constantes escolhidas"). As provisórias das decisões do mapa ficam no CONSTANTES_PROVISORIAS, para o porte fiel.
 
 const arquivo = JSON.parse(readFileSync(new URL("../constantes.json", import.meta.url), "utf8")) as Record<string, unknown>;
 
 describe("as constantes do modelo", () => {
-  it("estão no arquivo de dados com os valores provisórios das decisões", () => {
+  it("estão no arquivo de dados com os valores que a calibração escolheu", () => {
     expect(lerConstantes(arquivo)).toEqual({
-      incertezaRegional: 1,
-      incertezaNacional: 1,
-      pesoDoMunicipio: 3000,
+      incertezaRegional: 2,
+      incertezaNacional: 2,
+      pesoDoMunicipio: 10000,
       minimoPorNivel: 2000,
       ordemDeChegada: "mistura",
-      sinalDeVirada: { projetada: 0.5, possivel: 0.05 },
-      secoesDasPesquisas: 0.5,
+      sinalDeVirada: { projetada: 0.5, possivel: 0.02 },
+      secoesDasPesquisas: 0.25,
       incertezaLocalDasPesquisas: { uf: 0.13, municipio: 0.15 },
+      zona: false,
     });
   });
 
@@ -35,5 +35,6 @@ describe("as constantes do modelo", () => {
     // com K = 0, o peso das pesquisas antes da primeira seção seria 0 ÷ 0
     expect(() => lerConstantes({ ...arquivo, secoesDasPesquisas: 0 })).toThrow(/secoesDasPesquisas/);
     expect(() => lerConstantes({ ...arquivo, incertezaLocalDasPesquisas: { uf: 0.13 } })).toThrow(/incertezaLocalDasPesquisas.municipio/);
+    expect(() => lerConstantes({ ...arquivo, zona: "não" })).toThrow(/zona/);
   });
 });

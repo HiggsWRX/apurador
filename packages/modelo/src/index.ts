@@ -10,13 +10,14 @@ export {
   type EleicaoDoAgregado,
   type PesquisaDoAgregado,
 } from "./agregado.ts";
-export { lerConstantes, type Constantes, type OrdemDeChegada } from "./constantes.ts";
+export { CONSTANTES_PROVISORIAS, lerConstantes, type Constantes, type OrdemDeChegada } from "./constantes.ts";
 export { curvaProjetada, viradaProjetada, type CurvaDoLugar, type CurvasProjetadas, type PontoDaCurva } from "./curva.ts";
 export { dataEmBrasilia, diasEntre, somarDias } from "./datas.ts";
 export { agregadoDaVespera, historicoDoAgregado, raizDoErroQuadraticoMedio, type AnoDoHistorico, type EleicaoPassada } from "./historico.ts";
 export { indicacaoDasPesquisas, placarEntreFinalistas } from "./indicacao.ts";
 export { phi, Z_95 } from "./normal.ts";
 export {
+  apuracaoAntesDaPrimeiraSecao,
   executarNoite,
   FOTOGRAFIAS,
   momentosDaNoite,

@@ -59,3 +59,9 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
   - No replay de 2022, o agregado é o `agregadoDaNoite` do `pipeline`: Lula com 50,98, no 1º finalista da base do modelo.
   - Com esse agregado, as bases coincidem no Brasil de ~12% das seções até o fim, e não nos ~5% do exemplo do ticket 14 do mapa. As projeções já ficam a menos de 0,1 p.p. desde 3%, mas as chances diferem mais de 1 ponto até 12%.
   - Nas três noites de 2022 (agregado real e deslocado), o "coincidem" do Brasil começa e fica. Numa noite em que ele vá e volte, o evento "as pesquisas deixaram de pesar" ainda sai uma vez só.
+
+- 19/10/2026, do [ticket 28](28-calibracao.md):
+  - As constantes estão congeladas no `packages/modelo/constantes.json` (ler com `lerConstantes`): incertezas de 2 e 2 p.p., peso do próprio município de 10.000 votos, "mistura", K de 0,25% e limite de 2% para "sem sinal de virada". A zona não entra, e a base da noite fica por município.
+  - Com K de 0,25%, as pesquisas pesam metade com 0,25% das seções, e o "coincidem" do Brasil deve vir antes dos ~12% medidos no ticket 08 com K de 0,5%.
+  - A margem média de 5% a 50% das seções fica em ~3,0 p.p., o dobro da provisória, e a cobertura em 100% nas três noites.
+  - O critério do ensaio "sem sinal de virada nunca no Brasil antes das 18:44" passa na calibração, nas noites de 2022 e nas duas bases. A conferência dele nos arquivos publicados é do replay.
