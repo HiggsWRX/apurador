@@ -16,3 +16,4 @@ export {
 } from "./noite.ts";
 export { baseDoModelo, indicadoresDaBase, type BaseDoModelo, type BaseDoMunicipio } from "./base.ts";
 export { finalistas, listaDasPesquisas, pesquisasDoAgregado, type ExtratoDoTse, type Modo, type Pesquisa, type PesquisaDaLista } from "./pesquisas.ts";
+export { cadastroDaNoite, lerCadastro, type Cadastro, type CandidatoDoCadastro, type MunicipioDoCadastro, type UfDoCadastro } from "./cadastro.ts";
