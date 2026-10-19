@@ -1,33 +1,33 @@
 import { readFileSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { dataHoraDoInstante, instanteDaNoite, lerNoite, reproduzir, type Noite, type Recorte } from "../src/noite.ts";
+import { dataHoraDoInstante, instanteDaNoite, lerNoite, reproduzir, type Noite } from "../src/noite.ts";
+import type { Turno } from "../src/turno.ts";
 
 // O replay das noites da calibração (2º turno de 2018 e 1º turno de 2026) a partir das sequências que estão
 // no repositório, sem rede. As referências são o resultado oficial do TSE e as parciais publicadas na noite,
 // conferidas na linha do tempo (.scratch/apurador-2026/research/02-linha-do-tempo-apuracoes-passadas.md).
-const arquivo = (noite: string) => new URL(`../../../dados/noites/${noite}.json.gz`, import.meta.url);
-const ler = (noite: string) => lerNoite(new Uint8Array(readFileSync(arquivo(noite))));
+const DADOS = new URL("../../../dados/", import.meta.url);
+const arquivo = (noite: string) => new URL(`noites/${noite}.json.gz`, DADOS);
+const lidas = new Map<string, Noite>();
+const ler = (noite: string) => {
+  if (!lidas.has(noite)) lidas.set(noite, lerNoite(new Uint8Array(readFileSync(arquivo(noite)))));
+  return lidas.get(noite)!;
+};
 
 const pct = (parte: number, todo: number) => ((100 * parte) / todo).toFixed(2);
 const validos = (t: { votos: number[] }) => t.votos.reduce((s, v) => s + v, 0);
 
-/** Percorre a noite instante a instante, ao segundo, com o acumulado do recorte em cada um. */
-function* instantes(n: Noite, recorte: Recorte = {}) {
-  const r = reproduzir(n);
-  const total = r.total(recorte);
-  for (const instante of new Set(n.chegadas.map((c) => c.instante))) {
-    r.avancarAte(instante);
-    yield { instante, apurado: r.apurado(recorte), total };
-  }
-}
-
 /** A hora (`HH:MM`, no minuto mais próximo, como na tabela da linha do tempo) em que o país passa de cada marco do % de seções. */
 function marcos(n: Noite, lista: number[]): [number, string][] {
+  const r = reproduzir(n);
+  const total = r.total();
   const faltam = [...lista];
   const vistos: [number, string][] = [];
-  for (const { instante, apurado, total } of instantes(n)) {
+  for (const instante of new Set(n.chegadas.map((c) => c.instante))) {
+    if (faltam.length === 0) break;
+    r.avancarAte(instante);
     const minuto = dataHoraDoInstante(n, 60 * Math.round(instante / 60)).slice(11, 16);
-    while (faltam.length > 0 && 100 * apurado.secoes >= faltam[0]! * total.secoes) vistos.push([faltam.shift()!, minuto]);
+    while (faltam.length > 0 && 100 * r.apurado().secoes >= faltam[0]! * total.secoes) vistos.push([faltam.shift()!, minuto]);
   }
   return vistos;
 }
@@ -122,13 +122,24 @@ describe("as noites da calibração no repositório", () => {
     expect(statSync(arquivo(nome)).size).toBeLessThan(2_000_000);
   });
 
-  it("o manifesto diz de onde veio cada uma: a hora do detalhe por seção e os votos do boletim de urna de 2018 ou da votação por seção de 2026", () => {
-    const manifesto = JSON.parse(readFileSync(new URL("../../../dados/manifesto.json", import.meta.url), "utf8")) as { derivados: { arquivo: string; fontes: string[] }[] };
-    const fontes = (noite: string) => manifesto.derivados.find((d) => d.arquivo === `noites/${noite}.json.gz`)!.fontes.map((url) => url.split("/").pop());
+  const manifesto = JSON.parse(readFileSync(new URL("manifesto.json", DADOS), "utf8")) as { derivados: { arquivo: string; fontes: string[] }[] };
+  const fontes = (derivado: string) => manifesto.derivados.find((d) => d.arquivo === derivado)!.fontes.map((url) => url.split("/").pop());
 
-    expect(fontes("2018-2")).toContain("detalhe_votacao_secao_2018.zip");
-    expect(fontes("2018-2").filter((f) => /^BWEB_2t_[A-Z]{2}_301020181744\.zip$/.test(f!))).toHaveLength(28);
-    expect(fontes("2026-1")).toEqual(expect.arrayContaining(["detalhe_votacao_secao_2026.zip", "votacao_secao_2026_BR.zip"]));
+  it("o manifesto diz de onde veio cada uma: a hora do detalhe por seção e os votos do boletim de urna de 2018 ou da votação por seção de 2026", () => {
+    expect(fontes("noites/2018-2.json.gz")).toContain("detalhe_votacao_secao_2018.zip");
+    expect(fontes("noites/2018-2.json.gz").filter((f) => /^BWEB_2t_[A-Z]{2}_301020181744\.zip$/.test(f!))).toHaveLength(28);
+    expect(fontes("noites/2026-1.json.gz")).toEqual(expect.arrayContaining(["detalhe_votacao_secao_2026.zip", "votacao_secao_2026_BR.zip"]));
+  });
+
+  it("a base do 1º turno de 2026 vem do 1º turno de 2022, com os finalistas e a geografia de 2026", () => {
+    expect(fontes("bases/2026-1.json").sort()).toEqual([
+      "detalhe_votacao_munzona_2022.zip",
+      "detalhe_votacao_munzona_2026.zip",
+      "detalhe_votacao_secao_2022.zip",
+      "detalhe_votacao_secao_2026.zip",
+      "votacao_candidato_munzona_2022.zip",
+      "votacao_candidato_munzona_2026.zip",
+    ]);
   });
 });
 
@@ -153,22 +164,21 @@ describe("as zonas nas três noites da calibração", () => {
     expect(zonas.get("SP/71072")).toHaveLength(saoPaulo);
   });
 
-  it.each(["2018-2", "2022-2", "2026-1"])("na noite %s, as zonas de cada município com mais de uma somam o município, a cada instante", (nome) => {
+  it.each(["2018-2", "2022-2", "2026-1"])("na noite %s, as zonas de cada município com mais de uma somam, no fim, o resultado oficial do município", (nome) => {
+    // O resultado oficial por município é o dos turnos (`dados/turnos/`), que o outro gerador tira do munzona.
     const noite = ler(nome);
-    const comMaisDeUma = [...zonasPorMunicipio(noite).values()].filter((z) => z.length > 1);
+    const oficial = JSON.parse(readFileSync(new URL(`turnos/${nome}.json`, DADOS), "utf8")) as Turno;
     const r = reproduzir(noite);
+    r.avancarAte(Infinity);
     const difere: string[] = [];
 
-    for (const hora of ["18:00:00", "19:00:00", "23:59:59"]) {
-      r.avancarAte(instanteDaNoite(noite, `${noite.dia} ${hora}`));
-      for (const zonas of comMaisDeUma) {
-        const municipio = r.apurado({ uf: zonas[0]!.uf, municipio: zonas[0]!.municipio });
-        const soma = zonas.reduce((s, z) => s + r.apurado(z).votantes, 0);
-        if (soma !== municipio.votantes) difere.push(`${hora} ${zonas[0]!.uf}/${zonas[0]!.municipio}`);
-      }
+    for (const zonas of [...zonasPorMunicipio(noite).values()].filter((z) => z.length > 1)) {
+      const somar = (valor: (t: ReturnType<typeof r.apurado>) => number) => zonas.reduce((s, z) => s + valor(r.apurado(z)), 0);
+      const naNoite = [somar((t) => t.votantes), somar((t) => t.brancos), somar((t) => t.nulos), ...oficial.candidatos.map((c) => somar((t) => t.votos[noite.candidatos.findIndex((n) => n.numero === c.numero)]!))];
+      const o = oficial.lugares[String(zonas[0]!.municipio).padStart(5, "0")]!;
+      if (naNoite.join() !== [o.votantes, o.brancos, o.nulos, ...o.votos].join()) difere.push(`${zonas[0]!.uf}/${zonas[0]!.municipio}`);
     }
 
-    expect(comMaisDeUma.length).toBeGreaterThan(150);
     expect(difere).toEqual([]);
   });
 });

@@ -12,9 +12,8 @@ const CR = 0x0d;
  */
 export function* percorrerCsvTse<N extends string>(bytes: Uint8Array, nomes: readonly N[]): Generator<Record<N, string>> {
   const b = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  // Os nomes das colunas vêm sem espaços: o boletim de urna de 2018 traz a de UF como `SG_ UF`.
   const cabecalho: string[] = [];
-  let i = lerLinha(b, 0, (_, valor) => cabecalho.push(valor.replaceAll(" ", "")));
+  let i = lerLinha(b, 0, (_, valor) => cabecalho.push(valor));
   if (cabecalho.length === 0) throw new Error("CSV do TSE vazio");
 
   // A coluna de cada campo da linha no registro devolvido (ou nenhuma, para os campos não pedidos).

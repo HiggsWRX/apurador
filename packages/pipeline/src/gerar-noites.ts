@@ -162,7 +162,8 @@ for (const b of BASES) {
   const daBase = await resultadoPorZona(b.turnoDaBase.ano);
   const detalhe = await detalheDasSecoes(b.turnoDaBase.ano);
   // Os finalistas são os candidatos da noite, quando ela já tem resultado, ou os dois mais votados da base.
-  const daNoite = resultadoDoTurno({ ...b.noite, ...(await resultadoPorZona(b.noite.ano)) }).candidatos;
+  const resultadoDaNoite = await resultadoPorZona(b.noite.ano);
+  const daNoite = resultadoDoTurno({ ...b.noite, ...resultadoDaNoite }).candidatos;
   const finalistas = (daNoite.length > 0 ? daNoite : resultadoDoTurno({ ...b.turnoDaBase, ...daBase }).candidatos).slice(0, 2).map((c) => c.numero);
   // A geografia é a da noite, quando ela foi reconstruída; a de 25/10 só se conhece na noite.
   const noite = reconstruidas.get(`${b.noite.ano}-${b.noite.turno}`);
@@ -171,7 +172,9 @@ for (const b of BASES) {
   const base = baseDoModelo({ ...b, finalistas, candidatos: daBase.candidatos, detalhes: daBase.detalhes, secoes: detalhe.secoes, municipios });
   const arquivo = `bases/${b.noite.ano}-${b.noite.turno}.json`;
   const conteudo = gravarBase(base);
-  gravar(arquivo, conteudo, [...daBase.urls, detalhe.url]);
+  // As fontes são as do turno da base e, numa noite de outro ano, as dos finalistas e da geografia da noite.
+  const daGeografia = noite ? [(await detalheDasSecoes(b.noite.ano)).url] : [];
+  gravar(arquivo, conteudo, [...new Set([...daBase.urls, detalhe.url, ...(daNoite.length > 0 ? resultadoDaNoite.urls : []), ...daGeografia])]);
   console.log(`${arquivo}: ${base.municipios.length} municípios, ${(conteudo.length / 1e6).toFixed(2)} MB`);
 }
 
