@@ -109,16 +109,17 @@ describe("as duas bases coincidem", () => {
     const momentos = [...momentosDaNoite(modelo, noite2022)];
     const lugares = (coincidem: ProjecaoNasDuasBases["coincidem"]) => [coincidem.brasil, ...modelo.ufs.map((uf) => coincidem.ufs[uf]!), ...coincidem.municipios];
 
-    it("dá as duas bases e, em cada lugar, se elas coincidem pela regra", () => {
-      const duas = projetarNasDuasBases(modelo, momentos.find((m) => m.secoes >= 10)!.apuracao, constantes, deslocado);
-      const { soApuracao, comPesquisas, coincidem } = duas;
+    it("dá as duas bases e, em cada lugar, se elas diferem em menos de 0,1 ponto na projeção e de 1 ponto na chance", () => {
+      const { soApuracao, comPesquisas, coincidem } = projetarNasDuasBases(modelo, momentos.find((m) => m.secoes >= 10)!.apuracao, constantes, deslocado);
+      const resultados = (p: typeof soApuracao) => [p.brasil, ...modelo.ufs.map((uf) => p.ufs[uf]!), ...p.municipios];
+      const [doSo, doCom] = [resultados(soApuracao), resultados(comPesquisas)];
 
       expect(soApuracao.pesoDasPesquisas).toBe(0);
       // na série do protótipo da metodologia, as pesquisas pesam 4,8% com 10% das seções
       expect(comPesquisas.pesoDasPesquisas).toBeCloseTo(0.0476, 3);
-      expect(coincidem.brasil).toBe(basesCoincidem(soApuracao.brasil, comPesquisas.brasil));
-      for (const uf of modelo.ufs) expect(coincidem.ufs[uf], uf).toBe(basesCoincidem(soApuracao.ufs[uf]!, comPesquisas.ufs[uf]!));
-      expect(coincidem.municipios).toEqual(soApuracao.municipios.map((r, i) => basesCoincidem(r, comPesquisas.municipios[i]!)));
+      lugares(coincidem).forEach((c, i) =>
+        expect(c, `lugar ${i}`).toBe(Math.abs(doSo[i]!.projecao - doCom[i]!.projecao) < 0.001 && Math.abs(doSo[i]!.chance - doCom[i]!.chance) < 0.01),
+      );
       // com 10% das seções, uns lugares já coincidem, outros ainda não
       expect(new Set(lugares(coincidem))).toEqual(new Set([true, false]));
     });
@@ -140,13 +141,13 @@ describe("a curva projetada antes da apuração", () => {
     const ordens = (["mistura", "primeiro-turno", "ritmo-da-noite"] as const).map((ordemDeChegada) => curvaProjetada(modelo, apuracao, projecao, { ...constantes, ordemDeChegada }));
     return { projecao, curva: ordens[0]!, ordens };
   };
-  const so = curvas();
-  const com = curvas(agregado2022);
+  const soApuracao = curvas();
+  const comPesquisas = curvas(agregado2022);
 
   it("vai de 0% a 100% das seções nas duas bases, na ordem do 1º turno, até a projeção de cada uma", () => {
-    expect(so.projecao.brasil.projecao).toBeCloseTo(0.5286, 4);
-    expect(com.projecao.brasil.projecao).toBeCloseTo(0.5098, 4);
-    for (const { projecao, curva, ordens } of [so, com]) {
+    expect(soApuracao.projecao.brasil.projecao).toBeCloseTo(0.5286, 4);
+    expect(comPesquisas.projecao.brasil.projecao).toBeCloseTo(0.5098, 4);
+    for (const { projecao, curva, ordens } of [soApuracao, comPesquisas]) {
       expect(ordens[1]).toEqual(curva);
       expect(ordens[2]).toEqual(curva);
       expect(curva.brasil.pontos[0]!.x).toBeLessThan(3);
@@ -159,11 +160,11 @@ describe("a curva projetada antes da apuração", () => {
 
   it("dá a virada projetada de Lula nas duas bases, mais tarde com as pesquisas, que o deixam mais perto de 50%", () => {
     // como em 2022, Bolsonaro sai na frente, e Lula sobe com o Nordeste, que chega tarde
-    for (const { curva } of [so, com]) {
+    for (const { curva } of [soApuracao, comPesquisas]) {
       expect(curva.brasil.pontos[0]!.y).toBeLessThan(0.5);
       expect(curva.brasil.virada).toMatchObject({ quem: 0 });
     }
-    expect(so.curva.brasil.virada!.x!).toBeLessThan(com.curva.brasil.virada!.x!);
-    expect(com.curva.brasil.virada!.cedo!).toBeLessThan(com.curva.brasil.virada!.x!);
+    expect(soApuracao.curva.brasil.virada!.x!).toBeLessThan(comPesquisas.curva.brasil.virada!.x!);
+    expect(comPesquisas.curva.brasil.virada!.cedo!).toBeLessThan(comPesquisas.curva.brasil.virada!.x!);
   });
 });

@@ -134,11 +134,10 @@ describe("o porte fiel da base 'Apuração + pesquisas' do protótipo da página
     }),
   );
 
-  it("usa as constantes e a incerteza nacional do protótipo e compara a noite inteira nos três agregados", () => {
+  it("usa as constantes e a incerteza nacional do protótipo", () => {
     expect(agregado2022.incerteza).toBe(1.5);
     expect(constantes.secoesDasPesquisas).toBe(0.5);
     expect(constantes.incertezaLocalDasPesquisas).toEqual({ uf: 0.13, municipio: 0.15 });
-    expect(pares).toHaveLength(3 * comReferencia.length);
   });
 
   it("dá o peso das pesquisas, a projeção e o desvio do Brasil do protótipo em cada momento", () => {

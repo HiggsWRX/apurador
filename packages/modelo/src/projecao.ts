@@ -319,7 +319,8 @@ interface Somas {
 function resultado(somas: Somas, constantes: Constantes, peso: number): ResultadoDoLugar {
   const validos = somas.votos + somas.falta;
   const projecao = validos > 0 ? (somas.votos1 + somas.falta1) / validos : 0.5;
-  // As incertezas das pesquisas entram multiplicadas pelo peso delas, e as da apuração, pelo restante.
+  // Decisão 3 da Combinação, como no protótipo da metodologia: os desvios se somam em quadratura, e por isso a margem
+  // da base com pesquisas fica um pouco mais estreita que a da "Só apuração" enquanto as pesquisas pesam.
   const variancia = peso * peso * somas.varianciaDasPesquisas + (1 - peso) * (1 - peso) * somas.varianciaDaApuracao;
   const desvio = validos > 0 ? Math.sqrt(variancia) / validos : 0;
   const chance = desvio > 0 ? phi((projecao - 0.5) / desvio) : projecao > 0.5 ? 1 : projecao < 0.5 ? 0 : 0.5;
