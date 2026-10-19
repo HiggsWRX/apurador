@@ -78,3 +78,4 @@ Só os votos dos eliminados têm destino incerto. Por isso, a mesma mudança par
   - **Casos**: o 2T de 2022 com o agregado real e deslocado 2 pontos para cada lado; o 2T de 2018 com o agregado real; e o 1T de 2026 com as pesquisas entre os dois finalistas, que erraram 2,8 pontos na margem.
   - **Escolha**: fica o K com o menor erro no pior caso entre 0,1% e 5% das seções, com a cobertura de 95% mantida em todos.
   - **Chave própria**: a base Apuração + pesquisas ganha uma. Se ela for reprovada no ensaio, a noite vai só com "Só apuração".
+- 18/10/2026, de [Página de metodologia](20-pagina-de-metodologia.md) (decisão 3 de lá): a reprodução da noite de 2018 da decisão 4 daqui entra na página, no mesmo gráfico de 2022 ("2022 | 2018"), com as noites que a calibração já roda. O erro das duas bases nas duas noites vai numa tabela com 5%, 25% e 50% das seções.

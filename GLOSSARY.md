@@ -110,6 +110,10 @@ _Avoid_: migração de votos, herança de votos
 A escolha, em noites passadas, das constantes fixas do modelo, entre valores listados antes e por uma regra escrita antes. Não treina nada.
 _Avoid_: treino, aprendizado, ajuste automático
 
+**Histórico de acerto**:
+Quanto a projeção teria errado em noites passadas, com o mesmo modelo rodado sobre a ordem real de chegada daquelas noites. Mostra também como o agregado de pesquisas se saiu nos 2º turnos anteriores.
+_Avoid_: backtest, desempenho, "como a projeção se saiu" (reservado à noite de 2026, depois dela)
+
 ## Produto
 
 **Núcleo ao vivo**:
@@ -117,6 +121,10 @@ A parte do site usada na noite da apuração: placar parcial, curva real, curva 
 
 **Explorador histórico**:
 A parte do site para consultar eleições presidenciais passadas e comparar resultados.
+
+**Página de metodologia**:
+A página do site que explica como a projeção e a chance de vitória são calculadas, com os critérios das pesquisas, o histórico de acerto, a calibração e as limitações. Nunca mostra dados ao vivo da apuração.
+_Avoid_: sobre, FAQ, "como calculamos" (é o nome do link, não da página)
 
 **Narração da noite**:
 A sequência de eventos da apuração num lugar (virada, marcos, mudanças de chance), gerada automaticamente a partir dos dados, com os principais eventos do Brasil intercalados.

@@ -79,10 +79,15 @@ Especificação fechada e com os riscos resolvidos do site Apurador, pronta para
   - **Antes da noite**: meta qui 22/10. Entram o histórico, as pesquisas, o painel de antes das 17h como build estático e a metodologia, com critério de pronto escrito e o de acordo do dono. Se atrasar, o limite é a manhã de 24/10.
   - **Noite**: o núcleo ao vivo, no build aprovado no ensaio 2. O congelamento do ensaio 2 vale para o site todo.
   - **Depois**, a partir de 26/10: "Como a projeção se saiu", o 2º turno de 2026 no histórico (provisório até os arquivos oficiais) e o repositório público. O 3D fica fora deste mapa.
+- [Página de metodologia](issues/20-pagina-de-metodologia.md): **uma página estática, com "Em um minuto" no topo e nove seções numeradas**. Cada seção tem texto simples, e as fórmulas ficam recolhidas em "As contas".
+  - **Gráficos**: o sino, a noite reproduzida (placar parcial × projeção, alternando 2022 e 2018, das noites da calibração) e o agregado × resultado nos 2º turnos de 2002 a 2022. O peso das pesquisas, a transferência de votos e as pesquisas deslocadas são extras, os primeiros a sair.
+  - **Etapas**: em 22/10 entra tudo, menos o histórico de acerto e a calibração, que chegam no build do ensaio 2.
+  - **Para baixar**: pesquisas, histórico das pesquisas, calibração e noites em CSV. O código, a partir de 26/10.
+  - **Também lá**: o tom, as âncoras que a página de lugar usa e o escopo, sem narração nem mapa.
 
 ## Not yet specified
 
-<!-- vazio por ora: a página de metodologia virou o ticket [Página de metodologia](issues/20-pagina-de-metodologia.md) -->
+<!-- vazio -->
 
 ## Out of scope
 
