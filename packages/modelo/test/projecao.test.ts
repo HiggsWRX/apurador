@@ -7,11 +7,10 @@ import {
   projetar,
   sinalDeVirada,
   type Apuracao,
-  type BaseDoModelo,
   type PontoDaCurva,
   type ResultadoDoLugar,
 } from "../src/index.ts";
-import { base2022, base2026, constantes, noite2022 } from "./dados.ts";
+import { antesDaPrimeiraSecao, base2022, base2026, constantes, noite2022, placarEntreFinalistasDos } from "./dados.ts";
 
 // A projeção de cada lugar fora do que o protótipo cobre: antes da primeira seção, o recuo de cada UF, o fim
 // da noite, o sinal de virada e a curva de cada UF e do Exterior. A noite é a do 2º turno de 2022.
@@ -20,13 +19,6 @@ const modelo2026 = prepararModelo(base2026);
 const modelo2022 = prepararModelo(base2022);
 const momentos = [...momentosDaNoite(modelo2022, noite2022)];
 const noMomento = (secoes: number) => momentos.find((m) => m.secoes >= secoes)!;
-
-/** A apuração de 25/10 antes da primeira seção: nada totalizado, com as seções e os eleitores do 1º turno. */
-const antesDaPrimeiraSecao = (base: BaseDoModelo): Apuracao => base.municipios.map((m) => ({ secoes: 0, secoesTotais: m.secoes, aptos: 0, aptosTotais: m.aptos, votos: [0, 0] }));
-
-/** O placar entre finalistas de um conjunto de municípios: a fatia do 1º finalista nos votos dos dois, no 1º turno. */
-const placarEntreFinalistas = (municipios: BaseDoModelo["municipios"]) =>
-  municipios.reduce((s, m) => s + m.votos[0]!, 0) / municipios.reduce((s, m) => s + m.votos[0]! + m.votos[1]!, 0);
 
 describe("antes da primeira seção", () => {
   const projecao = projetar(modelo2026, antesDaPrimeiraSecao(base2026), constantes);
@@ -37,13 +29,13 @@ describe("antes da primeira seção", () => {
   it("projeta o Brasil no placar entre finalistas do 1º turno: Flávio 51,0", () => {
     expect(base2026.finalistas[0]!.numero).toBe(22);
     expect(projecao.brasil.projecao).toBeCloseTo(0.5101, 4);
-    expect(projecao.brasil.projecao).toBeCloseTo(placarEntreFinalistas(base2026.municipios), ATE_UM_DECIMO_MILESIMO_DE_PONTO);
+    expect(projecao.brasil.projecao).toBeCloseTo(placarEntreFinalistasDos(base2026.municipios), ATE_UM_DECIMO_MILESIMO_DE_PONTO);
   });
 
   it("projeta cada UF, o Exterior e cada município no placar entre finalistas dele", () => {
-    for (const uf of modelo2026.ufs) expect(projecao.ufs[uf]!.projecao, uf).toBeCloseTo(placarEntreFinalistas(base2026.municipios.filter((m) => m.uf === uf)), ATE_UM_DECIMO_MILESIMO_DE_PONTO);
+    for (const uf of modelo2026.ufs) expect(projecao.ufs[uf]!.projecao, uf).toBeCloseTo(placarEntreFinalistasDos(base2026.municipios.filter((m) => m.uf === uf)), ATE_UM_DECIMO_MILESIMO_DE_PONTO);
     base2026.municipios.forEach((m, i) => {
-      const placar = placarEntreFinalistas([m]);
+      const placar = placarEntreFinalistasDos([m]);
       // a fatia do voto que falta de um município fica entre 1% e 99%
       if (placar > 0.01 && placar < 0.99) expect(projecao.municipios[i]!.projecao, `${m.uf}/${m.municipio}`).toBeCloseTo(placar, 12);
     });

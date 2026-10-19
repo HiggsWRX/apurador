@@ -42,3 +42,14 @@ Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decis�
 - [ ] **Constantes congeladas**: as escolhidas vão para o arquivo de constantes no fim de 21/10, e o coletor, o simulador e a metodologia passam a usá-las.
 - [ ] **Registro da calibração**: traz os candidatos, os números por noite e o valor escolhido de cada constante.
 - [ ] **Noites momento a momento**: por noite, o % de seções, o placar parcial e a projeção com a incerteza nas duas bases. Em 2022, também com o agregado deslocado. Saem em CSV, para a metodologia.
+
+## Comments
+
+- 19/10/2026, do [ticket 08](08-base-apuracao-mais-pesquisas.md):
+  - O executor roda uma base por chamada: `executarNoite(modelo, noite, constantes)` na "Só apuração" e `executarNoite(modelo, noite, constantes, { agregado })` na "Apuração + pesquisas". Cada uma tem o próprio resumo (erro, cobertura, Brier).
+  - Os momentos são os mesmos nas duas, com o mesmo instante, % de seções e placar parcial. O CSV momento a momento junta as linhas pela posição.
+  - K é `secoesDasPesquisas` nas constantes: um candidato é `{ ...constantes, secoesDasPesquisas: 1 }`.
+  - O agregado deslocado é `{ ...agregado, valor: agregado.valor ± 2 }`. Os agregados das noites saem do `agregadoDaNoite` do `pipeline`, no 1º finalista da base do modelo (2026-1: Flávio 48,87).
+  - Na noite de 2022, com K = 0,5%, o maior erro entre 0,1% e 5% das seções é de 1,74 na "Só apuração", 1,12 com o agregado real, 1,74 com +2 para Lula e 1,03 com +2 para Bolsonaro. A tabela completa está nos comentários do ticket 08.
+  - O executor não tem o momento de 0%. Para ele, use o `projetar` sobre a apuração sem nada totalizado.
+  - O teste do sinal de virada "nas duas bases" tem os municípios da base com pesquisas no mesmo `projetar`. Neles, a incerteza nacional e a da UF das pesquisas não caem com a correção pelo próprio placar, como no protótipo.

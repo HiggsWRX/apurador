@@ -5,5 +5,7 @@
   "pesoDoMunicipio": 3000,
   "minimoPorNivel": 2000,
   "ordemDeChegada": "mistura",
-  "sinalDeVirada": { "projetada": 0.5, "possivel": 0.05 }
+  "sinalDeVirada": { "projetada": 0.5, "possivel": 0.05 },
+  "secoesDasPesquisas": 0.5,
+  "incertezaLocalDasPesquisas": { "uf": 0.13, "municipio": 0.15 }
 }

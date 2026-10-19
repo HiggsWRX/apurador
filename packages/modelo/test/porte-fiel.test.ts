@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { curvaProjetada, momentosDaNoite, prepararModelo, projetar } from "../src/index.ts";
-import { base2022, constantes, dadosDoPrototipo, fotoDoPrototipo, noite2022 } from "./dados.ts";
+import { agregado2022, base2022, constantes, dadosDoPrototipo, fotoDoPrototipo, noite2022 } from "./dados.ts";
+import { comPesquisas } from "./prototipo/combinacao.js";
 import { Projecao } from "./prototipo/projecao.js";
 
 // O porte fiel: no 2º turno de 2022, com base no 1º turno de 2022 e as constantes provisórias, o modelo dá os
@@ -110,5 +111,49 @@ describe("o porte fiel do protótipo no 2º turno de 2022", () => {
         if (p[k] !== null) expect(Math.abs(v[k]! - p[k]), k).toBeLessThan(0.01);
       }
     }
+  });
+});
+
+describe("o porte fiel da base 'Apuração + pesquisas' do protótipo da página de metodologia no 2º turno de 2022", () => {
+  // O agregado de 2022, real e deslocado 2 pontos para cada candidato (Combinação de pesquisas e apuração, decisão 4),
+  // com a incerteza de 1,5 ponto da noite, que o protótipo fixa (test/prototipo/combinacao.js). A diferença deliberada:
+  // o protótipo soma as incertezas locais das UFs e dos municípios ao Brasil como independentes, e o modelo desconta
+  // delas o que se anula em torno do Brasil e da UF (decisão do dono, 19/10/2026).
+  const casos = [agregado2022.valor, agregado2022.valor + 2, agregado2022.valor - 2];
+  const pares = casos.flatMap((valor) =>
+    comReferencia.map((m) => {
+      const foto = fotoDoPrototipo(m.apuracao);
+      const doPrototipo = Projecao.projetar(P, foto, "transferencia", prm);
+      const { shat, ...prototipo } = comPesquisas(P, foto, doPrototipo, valor / 100, constantes.secoesDasPesquisas, prm);
+      const { pesoDasPesquisas, brasil, votoQueFalta, fatiaDoQueFalta } = projetar(modelo, m.apuracao, constantes, { valor, incerteza: agregado2022.incerteza });
+      return {
+        modelo: { pesoDasPesquisas, brasil },
+        prototipo,
+        // o voto que falta de cada município, que é o mesmo nas duas bases, e a fatia dele
+        faltas: maiorDiferenca(Array.from(votoQueFalta, (f, i): [number, number] => [f, doPrototipo.R[i]!])),
+        fatias: maiorDiferenca(Array.from(fatiaDoQueFalta, (f, i): [number, number] => [f, shat[i]!]).filter((_, i) => votoQueFalta[i]! > 0)),
+      };
+    }),
+  );
+
+  it("usa as constantes e a incerteza nacional do protótipo", () => {
+    expect(agregado2022.incerteza).toBe(1.5);
+    expect(constantes.secoesDasPesquisas).toBe(0.5);
+    expect(constantes.incertezaLocalDasPesquisas).toEqual({ uf: 0.13, municipio: 0.15 });
+  });
+
+  it("dá o peso das pesquisas e a projeção do Brasil do protótipo em cada momento", () => {
+    expect(maiorDiferenca(pares.map((p) => [p.modelo.pesoDasPesquisas, p.prototipo.peso]))).toBeLessThan(1e-12);
+    expect(maiorDiferenca(pares.map((p) => [p.modelo.brasil.projecao, p.prototipo.P]))).toBeLessThan(UM_CENTESIMO_DE_PONTO);
+  });
+
+  it("dá um desvio do Brasil que nunca passa o do protótipo e fica a menos de 0,05 ponto dele: só sai o que se anula", () => {
+    for (const p of pares) expect(p.modelo.brasil.desvio).toBeLessThanOrEqual(p.prototipo.s + 1e-15);
+    expect(maiorDiferenca(pares.map((p) => [p.modelo.brasil.desvio, p.prototipo.s]))).toBeLessThan(0.0005);
+  });
+
+  it("estima o voto que falta de cada município e a fatia dele como o protótipo: peso × indicação + (1 − peso) × apuração, corrigido pelo próprio placar", () => {
+    expect(Math.max(...pares.map((p) => p.faltas))).toBeLessThan(1e-6);
+    expect(Math.max(...pares.map((p) => p.fatias))).toBeLessThan(UM_CENTESIMO_DE_PONTO);
   });
 });

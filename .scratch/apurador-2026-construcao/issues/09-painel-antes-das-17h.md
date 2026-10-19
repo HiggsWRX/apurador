@@ -33,3 +33,13 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
 - [ ] O link "Como calculamos →" leva à página de metodologia, e a chance de vitória e o peso das pesquisas levam às âncoras `#chance` e `#juntas`.
 - [ ] A chave da projeção e da curva antes das 17h fica no arquivo de chaves. Desligada, "O que esperar da noite" fica sem números de projeção, só com o texto da ordem de chegada típica, e nenhuma base mostra projeção antes das 17h.
 - [ ] Placar e painel ficam visíveis em até 3 s num Android barato no 4G.
+
+## Comments
+
+- 19/10/2026, do [ticket 08](08-base-apuracao-mais-pesquisas.md):
+  - Os números do painel saem de `projetarNasDuasBases(modelo, apuracao, constantes, agregado)`. A apuração é a de antes da primeira seção: nada totalizado, com as seções e os aptos do 1º turno em `secoesTotais` e `aptosTotais`, como o `antesDaPrimeiraSecao` de `packages/modelo/test/dados.ts`. O agregado é o do dia.
+  - A incerteza do agregado é a nacional das pesquisas, e ela cresce com os dias que faltam. Por isso, passe o agregado inteiro do dia, e não só o valor.
+  - "O que esperar da noite" é o `curvaProjetada` sobre a `Projecao` de cada base. Ela começa no primeiro passo, com ~2% das seções, porque antes da primeira seção não há placar parcial.
+  - Na base com pesquisas, o Brasil fica no valor, na incerteza e na chance de vitória do agregado, porque as partes locais se anulam no Brasil. O bloco do agregado e o da projeção mostram os mesmos números.
+  - "As pesquisas pesam X%" é `comPesquisas.pesoDasPesquisas`, 100% antes da apuração.
+  - A base de 2026 e o agregado têm Flávio como 1º finalista.

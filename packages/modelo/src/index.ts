@@ -26,8 +26,11 @@ export {
   type ResultadoDaNoite,
 } from "./noites.ts";
 export {
+  basesCoincidem,
+  pesoDasPesquisas,
   prepararModelo,
   projetar,
+  projetarNasDuasBases,
   REGIOES,
   sinalDeVirada,
   type Apuracao,
@@ -37,6 +40,7 @@ export {
   type Modelo,
   type MunicipioDaBase,
   type Projecao,
+  type ProjecaoNasDuasBases,
   type ResultadoDaUf,
   type ResultadoDoLugar,
   type ResultadoDoMunicipio,
