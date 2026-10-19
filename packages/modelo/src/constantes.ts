@@ -29,8 +29,8 @@ export interface Constantes {
    */
   incertezaLocalDasPesquisas: { uf: number; municipio: number };
   /**
-   * Se a base do modelo divide em zonas os municípios com mais de uma (Ensaio geral, decisão 16). O modelo não a lê:
-   * quem monta a base, sim.
+   * Se a base do modelo divide em zonas os municípios com mais de uma (Ensaio geral, decisão 16). O modelo não a lê: é a
+   * escolha da calibração para quem montar a base da noite, que sem ela é por município.
    */
   zona: boolean;
 }

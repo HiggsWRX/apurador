@@ -20,7 +20,8 @@ const tabela = (cabecalho: string[], linhas: string[][]) => [`| ${cabecalho.join
 export function resultadosDaCalibracao(c: Calibracao, provisorias: Constantes, data: string): string {
   const e = c.constantes;
   const p1 = c.passo1;
-  const passam1 = p1.candidatos.filter((x) => x.passaCobertura && x.passaChance).sort((a, b) => a.erroMedio - b.erroMedio);
+  const passam1 = p1.candidatos.filter((x) => x.passaCobertura && x.passaChance);
+  const empatados = p1.candidatos.filter((x) => x.empata).sort((a, b) => b.margemMedia - a.margemMedia);
   const escolhido1 = p1.candidatos.find((x) => x.candidato === p1.escolhido);
   const provisorio1 = p1.candidatos.find(
     (x) => x.candidato.incertezaRegional === provisorias.incertezaRegional && x.candidato.incertezaNacional === provisorias.incertezaNacional && x.candidato.pesoDoMunicipio === provisorias.pesoDoMunicipio,
@@ -55,11 +56,13 @@ export function resultadosDaCalibracao(c: Calibracao, provisorias: Constantes, d
     "",
     "### 1. Incertezas e peso do próprio município",
     "",
-    `Passaram ${passam1.length} dos ${p1.candidatos.length} candidatos. Ficaram de fora ${p1.candidatos.filter((x) => !x.passaCobertura).length} pela cobertura e ${p1.candidatos.filter((x) => x.passaCobertura && !x.passaChance).length} só pela chance de quem perdeu. Os dez de menor erro médio, entre os que passaram (média das três noites, momentos de 5% a 50% das seções):`,
+    `Passaram ${passam1.length} dos ${p1.candidatos.length} candidatos. Ficaram de fora ${p1.candidatos.filter((x) => !x.passaCobertura).length} pela cobertura e ${p1.candidatos.filter((x) => x.passaCobertura && !x.passaChance).length} só pela chance de quem perdeu.`,
+    "",
+    `As incertezas regional e nacional mudam a margem, e não a projeção: com o mesmo peso do próprio município, elas dão o mesmo erro médio. Empatam ${empatados.length} candidatos, a menos de 0,05 p.p. do menor erro médio (${empatados.length > 0 ? br(Math.min(...empatados.map((x) => x.erroMedio)), 3) : "—"} p.p.), e entre eles fica o de margem média mais larga. Os dez mais largos entre os que empatam (média das três noites, momentos de 5% a 50% das seções):`,
     "",
     tabela(
       ["Regional (p.p.)", "Nacional (p.p.)", "Peso (votos)", "Erro médio (p.p.)", "Margem média (p.p.)", ""],
-      passam1.slice(0, 10).map((x) => [...incertezas(x), br(x.erroMedio, 3), br(x.margemMedia, 2), x.candidato === p1.escolhido ? "escolhido" : ""]),
+      empatados.slice(0, 10).map((x) => [...incertezas(x), br(x.erroMedio, 3), br(x.margemMedia, 2), x.candidato === p1.escolhido ? "escolhido" : ""]),
     ),
     "",
     "Por noite, o escolhido e o provisório:",
@@ -137,7 +140,7 @@ export function tabelasDaCalibracao(c: Calibracao): Record<string, string> {
   const noites = c.noites.map((n) => n.id);
   return {
     "constantes.csv": csv(
-      ["incerteza_regional", "incerteza_nacional", "peso_do_municipio", ...noites.flatMap((n) => [`cobertura_${n}`, `maior_chance_de_quem_perdeu_${n}`, `erro_medio_${n}`, `margem_media_${n}`]), "erro_medio", "margem_media", "passa", "escolhido"],
+      ["incerteza_regional", "incerteza_nacional", "peso_do_municipio", ...noites.flatMap((n) => [`cobertura_${n}`, `maior_chance_de_quem_perdeu_${n}`, `erro_medio_${n}`, `margem_media_${n}`]), "erro_medio", "margem_media", "passa", "empata", "escolhido"],
       c.passo1.candidatos.map((x) => [
         x.candidato.incertezaRegional,
         x.candidato.incertezaNacional,
@@ -146,6 +149,7 @@ export function tabelasDaCalibracao(c: Calibracao): Record<string, string> {
         num(x.erroMedio),
         num(x.margemMedia),
         x.passaCobertura && x.passaChance ? "sim" : "não",
+        x.empata ? "sim" : "não",
         x.candidato === c.passo1.escolhido ? "sim" : "não",
       ]),
     ),

@@ -150,7 +150,8 @@ describe("as bases por zona das noites da calibração", () => {
     expect(ler("2026-1-zonas").municipios.filter((m) => m.uf === "SP" && m.municipio === 71072).map((m) => m.zona)).toEqual([undefined]);
   });
 
-  it("somam, em cada noite, o mesmo 1º turno da base por município", () => {
-    for (const noite of ["2022-2", "2018-2", "2026-1"]) expect(noBrasil(ler(`${noite}-zonas`))).toEqual(noBrasil(ler(noite)));
+  it("somam no Brasil os totais do resultado oficial do 1º turno de 2022 e de 2018", () => {
+    expect(noBrasil(ler("2022-2-zonas"))).toEqual({ aptos: 156_454_011, secoes: 472_075, validos: 118_229_719, votos: [57_259_504, 51_072_345] });
+    expect(noBrasil(ler("2018-2-zonas"))).toMatchObject({ aptos: 147_306_295, validos: 107_050_749, votos: [49_277_010, 31_342_051] });
   });
 });

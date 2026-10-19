@@ -1,4 +1,4 @@
-import { curvaProjetada, executarNoite, momentosDaNoite, projetar, Z_95, type Agregado, type Apuracao, type Constantes, type OrdemDeChegada, type PontoDaCurva, type ResultadoDaNoite } from "@apurador/modelo";
+import { apuracaoAntesDaPrimeiraSecao, curvaProjetada, executarNoite, momentosDaNoite, projetar, Z_95, type Agregado, type Constantes, type OrdemDeChegada, type PontoDaCurva, type ResultadoDaNoite } from "@apurador/modelo";
 import { dataHoraDoInstante } from "@apurador/pipeline";
 import type { NoiteDaCalibracao } from "./noites-da-calibracao.ts";
 
@@ -10,9 +10,9 @@ import type { NoiteDaCalibracao } from "./noites-da-calibracao.ts";
 
 /** O que a regra olha de um candidato numa noite. */
 export interface MedidaDaNoite {
-  /** A fração dos momentos com mais de 1% das seções com o resultado final dentro da margem de 95%. */
+  /** A fração dos momentos depois da fotografia de 1% das seções com o resultado final dentro da margem de 95%. */
   cobertura: number;
-  /** A maior chance de vitória de quem perdeu a noite, desde a fotografia de 5% das seções. */
+  /** A maior chance de vitória de quem perdeu a noite, nos momentos depois da fotografia de 5% das seções. */
   maiorChanceDeQuemPerdeu: number;
   /** O maior erro nos momentos de 0,1% a 5% das seções, em pontos percentuais: o que o K decide. */
   maiorErroNoComeco: number;
@@ -31,14 +31,18 @@ const media = (valores: number[]) => valores.reduce((s, v) => s + v, 0) / valore
 const desde = (secoes: number, ponto: number) => secoes >= ponto - 0.001;
 /** Se o momento é a fotografia de um ponto ou uma anterior. A fotografia passa do ponto pela chegada que o alcança: a de 50% de 2018 tem 50,0077%. */
 const ate = (secoes: number, ponto: number) => secoes <= ponto + 0.05;
+/** Se o momento vem depois da fotografia de um ponto: "mais de 1%" deixa de fora a fotografia de 1%. */
+const depois = (secoes: number, ponto: number) => !ate(secoes, ponto);
 
 /** As medidas da regra sobre uma noite rodada pelo executor de noites. */
 export function medirNoite(noite: ResultadoDaNoite): MedidaDaNoite {
   const vence = noite.final > 0.5;
   const de5a50 = noite.momentos.filter((m) => desde(m.secoes, 5) && ate(m.secoes, 50));
+  const depoisDe1 = noite.momentos.filter((m) => depois(m.secoes, 1));
   return {
-    cobertura: noite.coberturaDepoisDe1,
-    maiorChanceDeQuemPerdeu: Math.max(0, ...noite.momentos.filter((m) => desde(m.secoes, 5)).map((m) => (vence ? 1 - m.chance : m.chance))),
+    // a cobertura do executor conta "mais de 1%" pelo % de seções, e a fotografia de 1% fica acima ou abaixo de 1 conforme a noite
+    cobertura: depoisDe1.filter((m) => Math.abs(m.projecao - noite.final) <= Z_95 * m.desvio).length / depoisDe1.length,
+    maiorChanceDeQuemPerdeu: Math.max(0, ...noite.momentos.filter((m) => depois(m.secoes, 5)).map((m) => (vence ? 1 - m.chance : m.chance))),
     maiorErroNoComeco: Math.max(0, ...noite.momentos.filter((m) => desde(m.secoes, 0.1) && ate(m.secoes, 5)).map((m) => m.erro)),
     erroMedio: media(de5a50.map((m) => m.erro)),
     margemMedia: media(de5a50.map((m) => 100 * Z_95 * m.desvio)),
@@ -62,6 +66,8 @@ export interface CandidatoDoPasso1<C> {
   /** A média das noites, cada uma com o mesmo peso. */
   erroMedio: number;
   margemMedia: number;
+  /** Passa e fica a menos de 0,05 p.p. do menor erro médio: entre os que empatam, fica a margem mais larga. */
+  empata: boolean;
 }
 
 /**
@@ -69,18 +75,20 @@ export interface CandidatoDoPasso1<C> {
  * erro médio e, no empate, com a margem média mais larga. Sem ninguém que passe, não escolhe.
  */
 export function escolherConstantesDoModelo<C>(avaliacoes: { candidato: C; porNoite: MedidaDaNoite[] }[]): { candidatos: CandidatoDoPasso1<C>[]; escolhido: C | null } {
-  const candidatos = avaliacoes.map(({ candidato, porNoite }) => ({
+  const candidatos: CandidatoDoPasso1<C>[] = avaliacoes.map(({ candidato, porNoite }) => ({
     candidato,
     porNoite,
     passaCobertura: porNoite.every((n) => n.cobertura >= COBERTURA),
     passaChance: porNoite.every((n) => n.maiorChanceDeQuemPerdeu <= CHANCE_DE_QUEM_PERDEU),
     erroMedio: media(porNoite.map((n) => n.erroMedio)),
     margemMedia: media(porNoite.map((n) => n.margemMedia)),
+    empata: false,
   }));
   const passam = candidatos.filter((c) => c.passaCobertura && c.passaChance);
   if (passam.length === 0) return { candidatos, escolhido: null };
   const menor = Math.min(...passam.map((c) => c.erroMedio));
   const empatados = passam.filter((c) => c.erroMedio - menor < EMPATE);
+  for (const c of empatados) c.empata = true;
   const escolhido = empatados.reduce((a, b) => (b.margemMedia > a.margemMedia ? b : a));
   return { candidatos, escolhido: escolhido.candidato };
 }
@@ -313,25 +321,13 @@ export interface LinhaMomentoAMomento {
   bases: { pesoDasPesquisas: number; projecao: number; margem: number; chance: number }[];
 }
 
-/** A apuração antes da primeira seção: nada totalizado, com as seções e os eleitores de cada município na noite. */
-function antesDaPrimeiraSecao({ modelo, noite }: NoiteDaCalibracao): Apuracao {
-  const posicao = new Map(modelo.municipios.map((m, i) => [`${m.uf}/${m.municipio}`, i]));
-  const apuracao: Apuracao = modelo.municipios.map(() => ({ secoes: 0, secoesTotais: 0, aptos: 0, aptosTotais: 0, votos: [0, 0] }));
-  for (const z of noite.zonas) {
-    const a = apuracao[posicao.get(`${z.uf}/${z.municipio}`)!]!;
-    a.secoesTotais += z.secoes;
-    a.aptosTotais += z.aptos;
-  }
-  return apuracao;
-}
-
 /**
  * A noite momento a momento, nas duas bases e, em 2022, com o agregado deslocado (Página de metodologia, decisões 3
  * e 6): antes da primeira seção e em cada fotografia do executor de noites, até o fim.
  */
 export function noiteMomentoAMomento(noite: NoiteDaCalibracao, constantes: Constantes): { bases: string[]; linhas: LinhaMomentoAMomento[] } {
   const execucoes = execucoesDoSinal([noite]);
-  const antes = antesDaPrimeiraSecao(noite);
+  const antes = apuracaoAntesDaPrimeiraSecao(noite.modelo, noite.noite);
   const porBase = execucoes.map(({ agregado }) => ({ antes: projetar(noite.modelo, antes, constantes, agregado), noite: executarNoite(noite.modelo, noite.noite, constantes, { agregado }) }));
   const base = (pesoDasPesquisas: number, { projecao, desvio, chance }: { projecao: number; desvio: number; chance: number }) => ({ pesoDasPesquisas, projecao, margem: Z_95 * desvio, chance });
   return {
@@ -422,7 +418,7 @@ export function calibrar(noites: NoiteDaCalibracao[], provisorias: Constantes, a
 
   aviso("passo 5: zona");
   const passo5 = escolherZona(
-    noites.map((n) => ({ municipio: medirNoite(executarNoite(n.modelo, n.noite, constantes4)), zona: medirNoite(executarNoite(n.modeloPorZona, n.noite, constantes4)) })),
+    noites.map((n) => ({ municipio: medirNoite(executarNoite(n.modelo, n.noite, constantes3)), zona: medirNoite(executarNoite(n.modeloPorZona, n.noite, constantes3)) })),
   );
   const constantes = { ...constantes4, zona: passo5.escolhido };
 

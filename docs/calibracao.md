@@ -112,31 +112,33 @@ Todos os passos escolheram.
 
 ### 1. Incertezas e peso do próprio município
 
-Passaram 39 dos 48 candidatos. Ficaram de fora 9 pela cobertura e 0 só pela chance de quem perdeu. Os dez de menor erro médio, entre os que passaram (média das três noites, momentos de 5% a 50% das seções):
+Passaram 39 dos 48 candidatos. Ficaram de fora 9 pela cobertura e 0 só pela chance de quem perdeu.
+
+As incertezas regional e nacional mudam a margem, e não a projeção: com o mesmo peso do próprio município, elas dão o mesmo erro médio. Empatam 27 candidatos, a menos de 0,05 p.p. do menor erro médio (0,403 p.p.), e entre eles fica o de margem média mais larga. Os dez mais largos entre os que empatam (média das três noites, momentos de 5% a 50% das seções):
 
 | Regional (p.p.) | Nacional (p.p.) | Peso (votos) | Erro médio (p.p.) | Margem média (p.p.) |  |
 |---|---|---|---|---|---|
-| 0,5 | 1,0 | 10.000 | 0,403 | 1,53 |  |
-| 0,5 | 1,5 | 10.000 | 0,403 | 2,21 |  |
-| 0,5 | 2,0 | 10.000 | 0,403 | 2,91 |  |
-| 1,0 | 1,0 | 10.000 | 0,403 | 1,58 |  |
-| 1,0 | 1,5 | 10.000 | 0,403 | 2,24 |  |
-| 1,0 | 2,0 | 10.000 | 0,403 | 2,93 |  |
-| 1,5 | 0,5 | 10.000 | 0,403 | 1,11 |  |
-| 1,5 | 1,0 | 10.000 | 0,403 | 1,66 |  |
-| 1,5 | 1,5 | 10.000 | 0,403 | 2,30 |  |
+| 2,0 | 2,0 | 10.000 | 0,403 | 3,04 | escolhido |
+| 2,0 | 2,0 | 3.000 | 0,443 | 3,04 |  |
 | 1,5 | 2,0 | 10.000 | 0,403 | 2,98 |  |
+| 1,5 | 2,0 | 3.000 | 0,443 | 2,98 |  |
+| 1,0 | 2,0 | 10.000 | 0,403 | 2,93 |  |
+| 1,0 | 2,0 | 3.000 | 0,443 | 2,93 |  |
+| 0,5 | 2,0 | 10.000 | 0,403 | 2,91 |  |
+| 0,5 | 2,0 | 3.000 | 0,443 | 2,90 |  |
+| 2,0 | 1,5 | 10.000 | 0,403 | 2,38 |  |
+| 2,0 | 1,5 | 3.000 | 0,443 | 2,38 |  |
 
 Por noite, o escolhido e o provisório:
 
 | Candidato | Noite | Cobertura | Maior chance de quem perdeu | Erro médio (p.p.) | Margem média (p.p.) |
 |---|---|---|---|---|---|
 | escolhido | 2º turno de 2022 | 100,0% | 38,9% | 0,354 | 3,02 |
-| escolhido | 2º turno de 2018 | 100,0% | 0,4% | 0,745 | 3,02 |
+| escolhido | 2º turno de 2018 | 100,0% | 0,3% | 0,745 | 3,02 |
 | escolhido | 1º turno de 2026 | 100,0% | 40,4% | 0,111 | 3,08 |
 | provisório | 2º turno de 2022 | 98,0% | 30,3% | 0,369 | 1,54 |
 | provisório | 2º turno de 2018 | 98,0% | 0,0% | 0,776 | 1,56 |
-| provisório | 1º turno de 2026 | 96,1% | 32,1% | 0,183 | 1,62 |
+| provisório | 1º turno de 2026 | 96,0% | 32,1% | 0,183 | 1,62 |
 
 ### 2. Ordem de chegada
 

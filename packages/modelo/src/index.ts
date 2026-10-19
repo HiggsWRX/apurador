@@ -17,6 +17,7 @@ export { agregadoDaVespera, historicoDoAgregado, raizDoErroQuadraticoMedio, type
 export { indicacaoDasPesquisas, placarEntreFinalistas } from "./indicacao.ts";
 export { phi, Z_95 } from "./normal.ts";
 export {
+  apuracaoAntesDaPrimeiraSecao,
   executarNoite,
   FOTOGRAFIAS,
   momentosDaNoite,

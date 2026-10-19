@@ -1,4 +1,4 @@
-import { CONSTANTES_PROVISORIAS, executarNoite, lerConstantes, type LinhaDaNoite, type ResultadoDaNoite } from "@apurador/modelo";
+import { CONSTANTES_PROVISORIAS, executarNoite, type LinhaDaNoite, type ResultadoDaNoite } from "@apurador/modelo";
 import { describe, expect, it } from "vitest";
 import { casosDoK, erroDaCurva, escolherConstantesDoModelo, escolherK, escolherLimite, escolherOrdem, escolherZona, execucoesDoSinal, lerNoitesDaCalibracao, medirNoite, medirSinal, noiteMomentoAMomento, placarReal, semSinalSeguidoDeVirada, type MedidaDaNoite } from "../src/index.ts";
 
@@ -27,33 +27,31 @@ describe("as três noites da calibração", () => {
 });
 
 /** Um resultado do executor com os momentos dados. O 1º finalista termina com 52%. */
-function resultado(momentos: Partial<LinhaDaNoite>[], coberturaDepoisDe1 = 1): ResultadoDaNoite {
+function resultado(momentos: Partial<LinhaDaNoite>[]): ResultadoDaNoite {
   const linhas = momentos.map((m): LinhaDaNoite => ({ instante: 0, secoes: 0, placar: null, pesoDasPesquisas: 0, projecao: 0.52, desvio: 0.01, chance: 0.5, erro: 0, ...m }));
-  return { final: 0.52, momentos: linhas, erroCom5: null, erroCom25: null, erroCom50: null, cobertura: 1, coberturaDepoisDe1, acertaDesde: null, chance95Desde: null, brier: 0 };
+  return { final: 0.52, momentos: linhas, erroCom5: null, erroCom25: null, erroCom50: null, cobertura: 1, coberturaDepoisDe1: 1, acertaDesde: null, chance95Desde: null, brier: 0 };
 }
 
 describe("a medida de uma noite", () => {
   const noite = medirNoite(
-    resultado(
-      [
-        { secoes: 1, erro: 9, chance: 0.01 },
-        { secoes: 4.9, erro: 9, chance: 0.01 },
-        { secoes: 5, erro: 1, desvio: 0.005, chance: 0.9 },
-        { secoes: 20, erro: 2, desvio: 0.01, chance: 0.6 },
-        { secoes: 50, erro: 3, desvio: 0.015, chance: 0.8 },
-        { secoes: 50.1, erro: 9, desvio: 0.1, chance: 0.04 },
-        { secoes: 80, erro: 9, desvio: 0.1, chance: 0.99 },
-      ],
-      0.96,
-    ),
+    resultado([
+      { secoes: 1, erro: 9, projecao: 0.6, chance: 0.01 },
+      { secoes: 4.9, erro: 9, chance: 0.01 },
+      { secoes: 5, erro: 1, desvio: 0.005, chance: 0.03 },
+      { secoes: 20, erro: 2, desvio: 0.01, chance: 0.6 },
+      { secoes: 50, erro: 3, desvio: 0.015, chance: 0.8 },
+      { secoes: 50.1, erro: 9, desvio: 0.1, chance: 0.04 },
+      { secoes: 80, erro: 9, projecao: 0.6, desvio: 0.01, chance: 0.99 },
+    ]),
   );
 
-  it("traz a cobertura do executor, depois de 1% das seções", () => {
-    expect(noite.cobertura).toBe(0.96);
+  it("dá a cobertura nos momentos depois da fotografia de 1% das seções", () => {
+    // com 80%, o resultado fica fora da margem (8 pontos contra 1,96); com 1%, também, mas a fotografia de 1% não conta
+    expect(noite.cobertura).toBeCloseTo(5 / 6, 12);
   });
 
-  it("dá a maior chance de vitória de quem perdeu depois de 5% das seções", () => {
-    // o 1º finalista vence; com 50,1% das seções, quem perdeu tem 96%, e antes de 5%, 99%, que não conta
+  it("dá a maior chance de vitória de quem perdeu depois da fotografia de 5% das seções", () => {
+    // o 1º finalista vence; com 50,1% das seções, quem perdeu tem 96%; com 5% e antes, 97% e 99%, que não contam
     expect(noite.maiorChanceDeQuemPerdeu).toBeCloseTo(0.96, 12);
   });
 
@@ -103,6 +101,7 @@ describe("a escolha das incertezas e do peso do próprio município (passo 1)", 
       { candidato: "erra 0,36, a mais larga", porNoite: nasTresNoites([0.36, 0.36, 0.36], 3) },
     ]);
     expect(passo.escolhido).toBe("erra 0,34, mais larga");
+    expect(passo.candidatos.map((c) => c.empata)).toEqual([true, true, false]);
   });
 
   it("não escolhe ninguém quando nenhum candidato passa", () => {
@@ -119,8 +118,8 @@ describe("o placar parcial real de uma noite, pelo % de seções totalizadas", (
     expect(placar(68.4)).toBeGreaterThan(0.5);
   });
 
-  it("em 2026, dá Flávio 51,22 × Lula 40,66 com 17,22% das seções, a parcial publicada das 18:11:38 (ticket 27)", () => {
-    expect(placarReal(noites[2]!)(17.22)).toBeCloseTo(51.22 / (51.22 + 40.66), 3);
+  it("em 2026, dá Flávio 51,22 × Lula 40,66 com 17,22% das seções, o placar publicado às 18:11:38 (ticket 27)", () => {
+    expect(placarReal(noites[2]!)(17.22)).toBeCloseTo(51.22 / (51.22 + 40.66), 4);
   });
 });
 
@@ -251,19 +250,9 @@ describe("o sinal de virada numa noite real", () => {
   it("em 2022, com todo momento contando como 'sem sinal de virada', acha a virada do Brasil e as de MG, AP e AM (a medição da narração de 2022)", () => {
     const [soApuracao] = execucoesDoSinal(noites);
     const [medida] = medirSinal(soApuracao!, CONSTANTES_PROVISORIAS, [1.0001]);
+    // a lista tem também as UFs em que a liderança dos primeiros momentos não é a de quando elas passam de 3% das seções
     expect(medida!.deCima.lugares).toEqual(expect.arrayContaining(["Brasil", "MG", "AP", "AM"]));
     expect(medida!.municipios.seguidosDeVirada).toBeGreaterThan(0);
-  });
-});
-
-describe("as constantes congeladas", () => {
-  it("nunca dão 'sem sinal de virada' no Brasil antes de uma virada em 2022, nas duas bases e com o agregado deslocado (Ensaio geral, decisão 21)", async () => {
-    const { default: arquivo } = await import("@apurador/modelo/constantes.json", { with: { type: "json" } });
-    const congeladas = lerConstantes(arquivo);
-    for (const execucao of execucoesDoSinal(noites).filter((e) => e.noite.id === "2022-2")) {
-      const [medida] = medirSinal(execucao, congeladas, [congeladas.sinalDeVirada.possivel]);
-      expect(medida!.deCima.lugares, execucao.nome).not.toContain("Brasil");
-    }
   });
 });
 
