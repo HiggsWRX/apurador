@@ -27,3 +27,19 @@ Decisões: [Agregado de pesquisas e erro histórico](../../apurador-2026/issues/
 - [ ] As comparações com o 1º turno usam o placar entre finalistas (Brasil: 51,0 × 49,0), nunca o % sobre todos os válidos.
 - [ ] A chave do agregado e da tendência antes das 17h fica no arquivo de chaves. Desligada, ela esconde o agregado e a indicação das pesquisas, que deriva dele, sem código novo.
 - [ ] Nenhum texto diz que o modelo "aprende" ou que é "IA".
+
+## Comments
+
+- 19/10/2026, da construção da [Lista das pesquisas conferida no TSE](03-lista-das-pesquisas.md):
+  - **O teste de 18/10 usa outro número.** O dono decidiu que a Nexus conta como FSB. O teste passa a conferir **Flávio 51,1% (51,09%) com 9 institutos**, incerteza de 1,84 ponto e chance de ~72%, em vez de 51,0% com 8 e ~71%. Ver o comentário de 19/10 no [ticket 10](../../apurador-2026/issues/10-agregado-de-pesquisas.md).
+  - **As 9 pesquisas do agregado de 18/10** (divulgadas até 18/10, campo terminando de 11 a 17/10):
+    - Gerp BR-05187/2026
+    - Veritá BR-01107/2026
+    - Futura BR-03764/2026
+    - Datafolha BR-00466/2026
+    - PoderData BR-04258/2026
+    - MDA BR-00652/2026
+    - Ipespe BR-00223/2026
+    - Quaest BR-08729/2026
+    - Nexus BR-07997/2026
+  - **Instituto da lista.** O `pesquisas.csv` não traz o CNPJ. O instituto da lista de cada pesquisa sai do CNPJ do registro no `dados/pesquisas-tse.json`, cruzado com o `dados/pesquisas-institutos.csv` (coluna `instituto_da_lista`). Futura e Gerp têm dois CNPJs cada, e a Nexus conta como FSB.

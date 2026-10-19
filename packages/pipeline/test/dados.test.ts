@@ -94,8 +94,11 @@ describe("manifesto de origem", () => {
   const sha256 = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 
   it("lista cada arquivo derivado com o hash que ele tem no repositório", () => {
+    // Os arquivos das pesquisas não são derivados dos geradores: o pesquisas.csv e o dos institutos são
+    // preenchidos à mão, e a origem no TSE fica no próprio extrato (pesquisas-tse.json) e no registro das
+    // verificações, que a conferência das pesquisas grava.
     const derivados = readdirSync(DADOS, { recursive: true, withFileTypes: true })
-      .filter((f) => f.isFile() && f.name !== "manifesto.json")
+      .filter((f) => f.isFile() && f.name !== "manifesto.json" && !f.name.startsWith("pesquisas"))
       .map((f) => `${f.parentPath.slice(fileURLToPath(DADOS).length).replaceAll("\\", "/")}/${f.name}`.replace(/^\//, ""));
     expect(manifesto.derivados.map((d) => d.arquivo).sort()).toEqual(derivados.sort());
     for (const d of manifesto.derivados) expect(sha256(ler(d.arquivo)), d.arquivo).toBe(d.sha256);

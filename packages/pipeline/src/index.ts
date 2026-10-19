@@ -15,3 +15,4 @@ export {
   type ZonaDaNoite,
 } from "./noite.ts";
 export { baseDoModelo, indicadoresDaBase, type BaseDoModelo, type BaseDoMunicipio } from "./base.ts";
+export { dataEmBrasilia, finalistas, listaDasPesquisas, type ExtratoDoTse, type Modo, type Pesquisa } from "./pesquisas.ts";

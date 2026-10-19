@@ -16,6 +16,7 @@
     "dados": "npm run gerar -w @apurador/pipeline",
     "noites": "npm run noites -w @apurador/pipeline",
     "conferir": "npm run conferir -w @apurador/pipeline",
+    "pesquisas": "npm run conferir-pesquisas -w @apurador/pipeline",
     "deploy": "npm run deploy -w @apurador/site"
   },
   "devDependencies": {

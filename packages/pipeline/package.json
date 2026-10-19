@@ -9,7 +9,8 @@
   "scripts": {
     "gerar": "tsx src/gerar.ts",
     "noites": "tsx src/gerar-noites.ts",
-    "conferir": "tsx src/conferir.ts"
+    "conferir": "tsx src/conferir.ts",
+    "conferir-pesquisas": "tsx src/conferir-pesquisas.ts"
   },
   "dependencies": {
     "@apurador/tse": "*"

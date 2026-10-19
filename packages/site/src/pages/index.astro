@@ -1,6 +1,9 @@
 ---
+import ListaDasPesquisas from "../components/ListaDasPesquisas.astro";
 import PaginaDeLugar from "../layouts/PaginaDeLugar.astro";
 import { lugar } from "../lib/lugares";
 ---
 
-<PaginaDeLugar lugar={lugar("BR")} />
+<PaginaDeLugar lugar={lugar("BR")}>
+  <ListaDasPesquisas />
+</PaginaDeLugar>
