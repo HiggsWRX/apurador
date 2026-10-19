@@ -39,9 +39,12 @@ export function percentualPreciso(parte: number, todo: number, semTodo = "0"): s
   return `${inteiro},${String(casas).padStart(9, "0")}`;
 }
 
+/** `AAAA-MM-DD` como o TSE escreve, `DD/MM/AAAA`. */
+export const dataDoTse = (data: string) => `${data.slice(8, 10)}/${data.slice(5, 7)}/${data.slice(0, 4)}`;
+
 /** `AAAA-MM-DD HH:MM:SS` como o par do TSE, `DD/MM/AAAA` e `HH:MM:SS`. */
 export function dataEHora(dataHora: string): { data: string; hora: string } {
-  return { data: `${dataHora.slice(8, 10)}/${dataHora.slice(5, 7)}/${dataHora.slice(0, 4)}`, hora: dataHora.slice(11, 19) };
+  return { data: dataDoTse(dataHora), hora: dataHora.slice(11, 19) };
 }
 
 /** `AAAA-MM-DD HH:MM:SS` de Brasília como data HTTP (`Sun, 30 Oct 2022 21:44:04 GMT`). */

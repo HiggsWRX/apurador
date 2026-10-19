@@ -88,6 +88,14 @@ describe("a estrutura dos arquivos servidos", () => {
     expect(estrutura(servido("2022-10-30 19:00:00", caminho))).toEqual(esperado);
   });
 
+  it("com a indicação do TSE, o Brasil é como durante a apuração, mais o campo md depois do andamento", () => {
+    const esperado = semCampos(soComAgremiacoes(estrutura(real("6257", "br-c0001-e006257-u.json")), ["c"]), ["esae", "mnae"]);
+    esperado[""] = esperado[""]!.map((chaves) => chaves.replace(",and,", ",and,md,"));
+    esperado[".md"] = ["string"];
+
+    expect(estrutura(servido("2022-10-30 20:00:00", `${D}/br/br-c0001-e006258-u.json`))).toEqual(Object.fromEntries(Object.entries(esperado).sort(([a], [b]) => a.localeCompare(b))));
+  });
+
   it("a configuração das eleições tem só campos e formas que a real tem, e a eleição 6258 igual à real", () => {
     const oficial = real("comum", "ele-c.json") as { pl: { e: { cd: string }[] }[] };
     const falsa = servido("2022-10-30 16:00:00", "/oficial/comum/config/ele-c.json") as { pl: { e: { cd: string }[] }[] };

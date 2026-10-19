@@ -65,15 +65,15 @@ export function cadastroDaNoite(entrada: {
 }): Cadastro {
   const { noite, candidaturas } = entrada;
 
-  const doTurno = (cargo: number, numero: number) => {
+  const candidaturaDoTurno = (cargo: number, numero: number) => {
     const c = candidaturas.filter((x) => x.ano === noite.ano && x.turno === noite.turno && x.cargo === cargo && x.numero === numero);
     if (c.length !== 1) throw new Error(`${noite.ano}, ${noite.turno}º turno: ${c.length} candidaturas ao cargo ${cargo} com o número ${numero}`);
     return c[0]!;
   };
   const numeroDoPartido = new Map(candidaturas.map((c) => [c.partido.sigla, c.partido.numero]));
   const candidatos = noite.candidatos.map(({ numero }): CandidatoDoCadastro => {
-    const titular = doTurno(1, numero);
-    const vice = doTurno(2, numero);
+    const titular = candidaturaDoTurno(1, numero);
+    const vice = candidaturaDoTurno(2, numero);
     const tipo = TIPO_DA_AGREMIACAO[titular.agremiacao];
     if (!tipo) throw new Error(`Tipo de agremiação desconhecido: ${titular.agremiacao}`);
     const f = titular.federacao;

@@ -1,5 +1,5 @@
 import { dataHoraDoInstante, type Cadastro, type Noite, type Recorte, type Reproducao, type Totais } from "@apurador/pipeline";
-import { dataEHora, JaEscrito, jaEscrito, percentual, percentualPreciso } from "./formato.ts";
+import { dataDoTse, dataEHora, JaEscrito, jaEscrito, percentual, percentualPreciso } from "./formato.ts";
 
 // Os arquivos da divulgação do TSE, escritos a partir de um estado da noite reconstruída, no formato da
 // eleição 6258 (o 2º turno de 2026): a configuração das eleições (EA11), a de municípios e zonas (EA12), os
@@ -58,6 +58,9 @@ export interface Divulgacao {
 
 /** Antes da primeira seção, os arquivos são os zerados, gerados à meia-noite do dia da eleição. */
 const GERACAO_INICIAL = 0;
+
+/** Um percentual com duas e com nove casas, o par de campos do TSE (`pst` e `pstn`, por exemplo). */
+const percentuais = (parte: number, todo: number, semTodo = "0") => [percentual(parte, todo), percentualPreciso(parte, todo, semTodo)] as const;
 
 export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
   if (cadastro.candidatos.map((c) => c.numero).join() !== noite.candidatos.map((c) => c.numero).join())
@@ -157,27 +160,30 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
 
   // O resultado de um lugar (EA20).
 
-  const tpabr = (r: Recorte) => (r.zona !== undefined ? "zona" : r.municipio !== undefined ? "mu" : r.uf !== undefined ? "uf" : "br");
-  const cdabr = (r: Recorte) =>
-    r.zona !== undefined ? String(r.zona).padStart(4, "0") : r.municipio !== undefined ? String(r.municipio).padStart(5, "0") : (r.uf?.toLowerCase() ?? "br");
+  /** O tipo e o código da abrangência de um recorte, como o TSE os escreve. */
+  function abrangencia(r: Recorte): { tpabr: "br" | "uf" | "mu" | "zona"; cdabr: string } {
+    if (r.zona !== undefined) return { tpabr: "zona", cdabr: String(r.zona).padStart(4, "0") };
+    if (r.municipio !== undefined) return { tpabr: "mu", cdabr: String(r.municipio).padStart(5, "0") };
+    if (r.uf !== undefined) return { tpabr: "uf", cdabr: r.uf.toLowerCase() };
+    return { tpabr: "br", cdabr: "br" };
+  }
 
   function andamento(r: Recorte, a: Totais, t: { secoes: number }, estado: Reproducao): string {
     if (a.secoes === 0) return "n";
     // No Brasil, o andamento só termina com a totalização final.
-    if (tpabr(r) === "br") return finalizada(estado) ? "f" : "p";
+    if (abrangencia(r).tpabr === "br") return finalizada(estado) ? "f" : "p";
     return a.secoes === t.secoes ? "f" : "p";
   }
 
   function secoes(a: { secoes: number }, t: { secoes: number }) {
     const [ts, st] = [t.secoes, a.secoes];
     const [snt, si, sni, sa, sna] = [ts - st, st, 0, st, 0];
-    const p = (parte: number, todo: number) => [percentual(parte, todo), percentualPreciso(parte, todo)] as const;
-    const [pst, pstn] = p(st, ts);
-    const [psnt, psntn] = p(snt, ts);
-    const [psi, psin] = p(si, st);
-    const [psni, psnin] = p(sni, st);
-    const [psa, psan] = p(sa, si);
-    const [psna, psnan] = p(sna, si);
+    const [pst, pstn] = percentuais(st, ts);
+    const [psnt, psntn] = percentuais(snt, ts);
+    const [psi, psin] = percentuais(si, st);
+    const [psni, psnin] = percentuais(sni, st);
+    const [psa, psan] = percentuais(sa, si);
+    const [psna, psnan] = percentuais(sna, si);
     return { ts, st, pst, pstn, snt, psnt, psntn, si, psi, psin, sni, psni, psnin, sa, psa, psan, sna, psna, psnan };
   }
 
@@ -185,15 +191,14 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
     const [te, est] = [t.aptos, a.aptos];
     const [esnt, esi, esni, esa, esna, c] = [te - est, est, 0, est, 0, a.votantes];
     const ab = esi - c;
-    const p = (parte: number, todo: number) => [percentual(parte, todo), percentualPreciso(parte, todo)] as const;
-    const [pest, pestn] = p(est, te);
-    const [pesnt, pesntn] = p(esnt, te);
-    const [pesi, pesin] = p(esi, est);
-    const [pesni, pesnin] = p(esni, est);
-    const [pesa, pesan] = p(esa, esi);
-    const [pesna, pesnan] = p(esna, esi);
-    const [pc, pcn] = p(c, esi);
-    const [pa, pan] = p(ab, esi);
+    const [pest, pestn] = percentuais(est, te);
+    const [pesnt, pesntn] = percentuais(esnt, te);
+    const [pesi, pesin] = percentuais(esi, est);
+    const [pesni, pesnin] = percentuais(esni, est);
+    const [pesa, pesan] = percentuais(esa, esi);
+    const [pesna, pesnan] = percentuais(esna, esi);
+    const [pc, pcn] = percentuais(c, esi);
+    const [pa, pan] = percentuais(ab, esi);
     return { te, est, pest, pestn, esnt, pesnt, pesntn, esi, pesi, pesin, esni, pesni, pesnin, esa, pesa, pesan, esna, pesna, pesnan, c, pc, pcn, a: ab, pa, pan };
   }
 
@@ -202,7 +207,7 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
     const vv = a.votos.reduce((s, v) => s + v, 0);
     const [vvc, vnom, van, vansj, vb, tvn, vn, vnt] = [vv, vv, 0, 0, a.brancos, a.nulos, a.nulos, 0];
     // Num arquivo ainda sem voto nenhum, os percentuais de nove casas dos votos vêm como "0,00".
-    const p = (parte: number, todo: number) => [percentual(parte, todo), percentualPreciso(parte, todo, tv === 0 ? "0,00" : "0")] as const;
+    const p = (parte: number, todo: number) => percentuais(parte, todo, tv === 0 ? "0,00" : "0");
     const [pvvc, pvvcn] = p(vvc, tv);
     const [pvv, pvvn] = p(vv, vvc);
     const [pvnom, pvnomn] = p(vnom, vv);
@@ -217,7 +222,7 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
 
   function cargo(r: Recorte, a: Totais, ordem: Ordem, final: boolean) {
     const validos = a.votos.reduce((s, v) => s + v, 0);
-    const doBrasil = tpabr(r) === "br";
+    const doBrasil = abrangencia(r).tpabr === "br";
     const comDestinacao = a.secoes > 0 || final;
     const votosDe = (numeros: number[]) => numeros.reduce((s, n) => s + a.votos[noite.candidatos.findIndex((c) => c.numero === n)]!, 0);
 
@@ -247,7 +252,7 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
               sqcand: c.sequencial,
               nm: c.nome,
               nmu: c.nomeUrna,
-              dt: `${c.nascimento.slice(8, 10)}/${c.nascimento.slice(5, 7)}/${c.nascimento.slice(0, 4)}`,
+              dt: dataDoTse(c.nascimento),
               ...(comDestinacao ? { dvt: "Válido" } : {}),
               seq: posicao,
               e: eleito ? "s" : "n",
@@ -285,21 +290,22 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
     const ordem = ordemEm(final ? totalizacaoFinal : a.ultimaTotalizacao);
     const fim = final ? { esae: "n", mnae: [] } : {};
     const situacao = { tf: final ? "s" : "n", and: andamento(r, a, t, estado) };
-    const indicacaoDoTse = tpabr(r) === "br" && indicada(estado) ? { md: "e" } : {};
+    const { tpabr, cdabr } = abrangencia(r);
+    const indicacaoDoTse = tpabr === "br" && indicada(estado) ? { md: "e" } : {};
     return {
       ele: ELEICAO,
       t: noite.turno,
       f: "o",
       sup: "n",
-      tpabr: tpabr(r),
-      cdabr: cdabr(r),
+      tpabr,
+      cdabr,
       dg: g.data,
       hg: g.hora,
       idg: idg(d, geracao(d, estado)),
       dt: ultima.data,
       ht: ultima.hora,
       // O arquivo de zona traz `dv` depois do andamento; os outros, antes.
-      ...(tpabr(r) === "zona" ? { ...situacao, ...fim, dv: "s" } : { dv: "s", ...situacao, ...indicacaoDoTse, ...fim }),
+      ...(tpabr === "zona" ? { ...situacao, ...fim, dv: "s" } : { dv: "s", ...situacao, ...indicacaoDoTse, ...fim }),
       carg: [cargo(r, a, ordem, final)],
       s: secoes(a, t),
       e: eleitorado(a, t),
@@ -319,7 +325,8 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
     if (antes && antes.ultima === a.ultimaTotalizacao) return antes.item;
     const t = estado.total(r);
     const ultima = quando(a.ultimaTotalizacao);
-    const item = { and: andamento(r, a, t, estado), tpabr: tpabr(r) === "mu" ? "mun" : tpabr(r), cdabr: cdabr(r), dt: ultima.data, ht: ultima.hora, ...contar(), s: secoes(a, t), e: eleitorado(a, t) };
+    const { tpabr, cdabr } = abrangencia(r);
+    const item = { and: andamento(r, a, t, estado), tpabr: tpabr === "mu" ? "mun" : tpabr, cdabr, dt: ultima.data, ht: ultima.hora, ...contar(), s: secoes(a, t), e: eleitorado(a, t) };
     const escrito = jaEscrito(textos(item) as object);
     itensEscritos.set(chave, { ultima: a.ultimaTotalizacao, item: escrito });
     return escrito;
@@ -327,10 +334,11 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
 
   /** Quantos lugares não começaram, estão em andamento e terminaram, com os percentuais. */
   function contagem(prefixo: "mun" | "ufs", recortes: Recorte[], estado: Reproducao) {
-    const [nr, pt, f] = [0, 1, 2].map((fase) =>
+    // O andamento de cada lugar: 0 não iniciado, 1 em andamento, 2 terminado.
+    const [nr, pt, f] = [0, 1, 2].map((andamentoDoLugar) =>
       recortes.filter((r) => {
         const a = estado.apurado(r).secoes;
-        return (a === 0 ? 0 : a === estado.total(r).secoes ? 2 : 1) === fase;
+        return (a === 0 ? 0 : a === estado.total(r).secoes ? 2 : 1) === andamentoDoLugar;
       }).length,
     ) as [number, number, number];
     const n = recortes.length;
@@ -388,7 +396,6 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
 
   function eleicoes() {
     const g = quando(GERACAO_INICIAL);
-    const [ano, mes, dia] = noite.dia.split("-");
     const dir = (tp: string, caminho: string) => ({ tp, dir: `<base>/<ambiente>/<ciclo>/${caminho}` });
     return {
       dg: g.data,
@@ -409,8 +416,8 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
           cd: "3221",
           cdpr: "1219",
           c: "ele2026",
-          dt: `${dia}/${mes}/${ano}`,
-          dtlim: `${dia}/${mes}/${Number(ano) + 8}`,
+          dt: dataDoTse(noite.dia),
+          dtlim: dataDoTse(`${Number(noite.dia.slice(0, 4)) + 8}${noite.dia.slice(4)}`),
           e: [
             {
               cd: ELEICAO,

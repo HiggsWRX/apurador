@@ -14,8 +14,9 @@ export interface Relogio {
 }
 
 /**
- * O relógio da velocidade máxima, para o replay dentro do processo: quem roda a noite o põe em qualquer
- * instante, sem esperar. A hora real anda junto com a da noite (um segundo da noite, mil milissegundos).
+ * O relógio na mão de quem roda a noite: põe o TSE falso em qualquer instante, sem esperar. A hora real anda
+ * junto com a da noite (um segundo da noite, mil milissegundos), e todo pedido feito sem mexer no relógio cai no
+ * mesmo milissegundo: para o limite de pedidos contar o ritmo de um coletor, use o `relogioDoReplay`.
  */
 export interface RelogioManual extends Relogio {
   ajustar(instante: number): void;
@@ -49,10 +50,10 @@ export const RITMO_DO_ENSAIO: Trecho[] = [
   { desde: hora(20, 30), velocidade: 30 },
 ];
 
-/** O ritmo que parte de `inicio`, na velocidade que o ritmo dado tem nessa hora e com os trechos seguintes dele. */
-export function ritmoDesde(inicio: number, ritmo: Trecho[] = RITMO_DO_ENSAIO): Trecho[] {
-  const atual = ritmo.filter((t) => t.desde <= inicio).at(-1) ?? ritmo[0]!;
-  return [{ desde: inicio, velocidade: atual.velocidade }, ...ritmo.filter((t) => t.desde > inicio)];
+/** O ritmo do ensaio a partir de outra hora (`inicio`), na velocidade que ele tem nessa hora. */
+export function ritmoDesde(inicio: number): Trecho[] {
+  const atual = RITMO_DO_ENSAIO.filter((t) => t.desde <= inicio).at(-1) ?? RITMO_DO_ENSAIO[0]!;
+  return [{ desde: inicio, velocidade: atual.velocidade }, ...RITMO_DO_ENSAIO.filter((t) => t.desde > inicio)];
 }
 
 /**
@@ -80,4 +81,13 @@ export function relogioAcelerado(opcoes: { partida: number; ritmo?: Trecho[]; ag
       return { real, instante: Math.floor(instante) };
     },
   };
+}
+
+/**
+ * O relógio do replay, na velocidade máxima: anda com o relógio simulado do coletor (`agoraReal`, em ms), a 1x,
+ * a partir de `inicio`. As esperas do coletor não esperam de verdade, e o limite de pedidos por segundo conta
+ * pelo ritmo em que ele espaça os pedidos, como contaria no TSE.
+ */
+export function relogioDoReplay(inicio: number, agoraReal: () => number): Relogio {
+  return relogioAcelerado({ partida: agoraReal(), ritmo: [{ desde: inicio, velocidade: 1 }], agoraReal });
 }

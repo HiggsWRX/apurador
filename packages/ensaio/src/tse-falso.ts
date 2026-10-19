@@ -7,7 +7,7 @@ import type { Momento, Relogio } from "./relogio.ts";
 
 // O TSE falso: responde como o CDN do TSE, com os arquivos da divulgação no estado da noite reconstruída no
 // instante do relógio dele. Como o CDN, ele dá ETag e 304, gzip e o cabeçalho `Date` (na hora da noite),
-// responde 403 ao `HEAD` e 404 a toda URL fora da configuração, e aplica o limite de 100 pedidos por segundo
+// responde 200 ao preflight de CORS, 403 ao `HEAD` e 404 a toda URL fora da configuração, e aplica o limite de 100 pedidos por segundo
 // por cliente, com os 404 e os 304 contando: quem passa fica bloqueado 10 minutos, e cada pedido no bloqueio
 // recomeça a contagem. Por comando, ele responde 403 a todos por um tempo, para testar o bloqueio.
 
@@ -29,13 +29,13 @@ export interface Resposta {
   corpo: Uint8Array;
 }
 
-/** O que fica registrado: os pedidos que deram 404 ou 403 e as violações do limite. */
-export interface EventoDoRegistro {
+/** Uma entrada do registro: um pedido que deu 404 ou 403, ou uma violação do limite. */
+export interface EntradaDoRegistro {
   tipo: "404" | "403" | "violacao";
   /** A hora real e o instante da noite. */
   momento: Momento;
-  /** A hora da noite, `AAAA-MM-DD HH:MM:SS`. */
-  hora: string;
+  /** A data e hora da noite, `AAAA-MM-DD HH:MM:SS`. */
+  dataHora: string;
   cliente: string;
   url: string;
   /** Na violação, os pedidos do cliente no último segundo; no 403, por que bloqueou. */
@@ -45,9 +45,9 @@ export interface EventoDoRegistro {
 export interface Registro {
   pedidos: number;
   porStatus: Record<number, number>;
-  naoEncontrados: EventoDoRegistro[];
-  violacoes: EventoDoRegistro[];
-  bloqueados: EventoDoRegistro[];
+  naoEncontrados: EntradaDoRegistro[];
+  violacoes: EntradaDoRegistro[];
+  bloqueados: EntradaDoRegistro[];
 }
 
 export interface TseFalso {
@@ -56,22 +56,15 @@ export interface TseFalso {
   bloquear(segundos: number): void;
   desbloquear(): void;
   registro(): Registro;
-  /** O instante da noite agora, e os da indicação do TSE e da totalização final. */
-  estado(): { momento: Momento; hora: string; indicacao: string | null; totalizacaoFinal: string | null; bloqueadoAte: number | null };
-}
-
-export interface Limite {
-  pedidosPorSegundo: number;
-  /** O bloqueio de quem passa do limite. */
-  bloqueioEmSegundos: number;
+  /** A data e hora da noite agora e as da indicação do TSE e da totalização final, `AAAA-MM-DD HH:MM:SS`. */
+  estado(): { momento: Momento; dataHora: string; dataHoraDaIndicacao: string | null; dataHoraDaTotalizacaoFinal: string | null; bloqueadoAte: number | null };
 }
 
 /** O limite do TSE: 100 pedidos por segundo por IP, com bloqueio de 10 minutos. */
-export const LIMITE_DO_TSE: Limite = { pedidosPorSegundo: 100, bloqueioEmSegundos: 600 };
+const LIMITE = { pedidosPorSegundo: 100, bloqueioEmSegundos: 600 };
 
-export function criarTseFalso(opcoes: { noite: Noite; cadastro: Cadastro; relogio: Relogio; limite?: Limite; aoRegistrar?: (evento: EventoDoRegistro) => void }): TseFalso {
+export function criarTseFalso(opcoes: { noite: Noite; cadastro: Cadastro; relogio: Relogio; aoRegistrar?: (entrada: EntradaDoRegistro) => void }): TseFalso {
   const { noite, relogio } = opcoes;
-  const limite = opcoes.limite ?? LIMITE_DO_TSE;
   const divulgacao = criarDivulgacao(noite, opcoes.cadastro);
 
   // O estado da noite anda só para a frente: voltar no tempo refaz a reprodução desde o começo.
@@ -100,11 +93,11 @@ export function criarTseFalso(opcoes: { noite: Noite; cadastro: Cadastro; relogi
   }
 
   const registro: Registro = { pedidos: 0, porStatus: {}, naoEncontrados: [], violacoes: [], bloqueados: [] };
-  const hora = (instante: number) => dataHoraDoInstante(noite, instante);
-  function registrar(evento: Omit<EventoDoRegistro, "hora">) {
-    const completo = { ...evento, hora: hora(evento.momento.instante) };
-    ({ "404": registro.naoEncontrados, "403": registro.bloqueados, violacao: registro.violacoes })[evento.tipo].push(completo);
-    opcoes.aoRegistrar?.(completo);
+  const dataHora = (instante: number) => dataHoraDoInstante(noite, instante);
+  function registrar(entrada: Omit<EntradaDoRegistro, "dataHora">) {
+    const completa = { ...entrada, dataHora: dataHora(entrada.momento.instante) };
+    ({ "404": registro.naoEncontrados, "403": registro.bloqueados, violacao: registro.violacoes })[entrada.tipo].push(completa);
+    opcoes.aoRegistrar?.(completa);
   }
 
   let bloqueadoAte: number | null = null;
@@ -115,7 +108,7 @@ export function criarTseFalso(opcoes: { noite: Noite; cadastro: Cadastro; relogi
     const cliente = pedido.cliente ?? "local";
     const caminho = pedido.url.split("?")[0]!;
     const cabecalhos: Record<string, string> = {
-      date: dataHttp(hora(momento.instante)),
+      date: dataHttp(dataHora(momento.instante)),
       "access-control-allow-origin": pedido.cabecalhos?.["origin"] ?? "*",
       vary: "Origin, Accept-Encoding",
     };
@@ -135,18 +128,26 @@ export function criarTseFalso(opcoes: { noite: Noite; cadastro: Cadastro; relogi
     const c = clientes.get(cliente) ?? { pedidos: [], bloqueadoAte: -Infinity };
     clientes.set(cliente, c);
     if (momento.real < c.bloqueadoAte) {
-      c.bloqueadoAte = momento.real + limite.bloqueioEmSegundos * 1000;
+      c.bloqueadoAte = momento.real + LIMITE.bloqueioEmSegundos * 1000;
       return proibido("bloqueio por excesso de pedidos");
     }
     c.pedidos = c.pedidos.filter((t) => t > momento.real - 1000);
     c.pedidos.push(momento.real);
-    if (c.pedidos.length > limite.pedidosPorSegundo) {
+    if (c.pedidos.length > LIMITE.pedidosPorSegundo) {
       registrar({ tipo: "violacao", momento, cliente, url: pedido.url, detalhe: `${c.pedidos.length} pedidos em 1 s` });
-      c.bloqueadoAte = momento.real + limite.bloqueioEmSegundos * 1000;
+      c.bloqueadoAte = momento.real + LIMITE.bloqueioEmSegundos * 1000;
       return proibido("bloqueio por excesso de pedidos");
     }
 
-    if ((pedido.metodo ?? "GET").toUpperCase() !== "GET") return proibido(`método ${pedido.metodo}`);
+    const metodo = (pedido.metodo ?? "GET").toUpperCase();
+    // O preflight de CORS passa, como no CDN do TSE; fora ele, só o GET.
+    if (metodo === "OPTIONS")
+      return responderCom(200, new Uint8Array(), {
+        "access-control-allow-methods": "GET",
+        "access-control-allow-headers": pedido.cabecalhos?.["access-control-request-headers"] ?? "",
+        "access-control-max-age": "600",
+      });
+    if (metodo !== "GET") return proibido(`método ${metodo}`);
 
     const documento = divulgacao.documento(caminho);
     if (!documento) {
@@ -156,7 +157,7 @@ export function criarTseFalso(opcoes: { noite: Noite; cadastro: Cadastro; relogi
     }
 
     const arquivo = escrito(caminho, documento, estadoEm(momento.instante));
-    const ultimaModificacao = dataHttp(hora(arquivo.geracao));
+    const ultimaModificacao = dataHttp(dataHora(arquivo.geracao));
     const validacao = { etag: arquivo.etag, "last-modified": ultimaModificacao, "cache-control": "max-age=60" };
     const desde = pedido.cabecalhos?.["if-modified-since"];
     const naoMudou =
@@ -185,8 +186,14 @@ export function criarTseFalso(opcoes: { noite: Noite; cadastro: Cadastro; relogi
     registro: () => structuredClone(registro),
     estado() {
       const momento = relogio.agora();
-      const ou = (i: number | null) => (i === null ? null : hora(i));
-      return { momento, hora: hora(momento.instante), indicacao: ou(divulgacao.indicacao), totalizacaoFinal: ou(divulgacao.totalizacaoFinal), bloqueadoAte };
+      const ou = (i: number | null) => (i === null ? null : dataHora(i));
+      return {
+        momento,
+        dataHora: dataHora(momento.instante),
+        dataHoraDaIndicacao: ou(divulgacao.indicacao),
+        dataHoraDaTotalizacaoFinal: ou(divulgacao.totalizacaoFinal),
+        bloqueadoAte,
+      };
     },
   };
 }

@@ -1,6 +1,6 @@
 import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { criarTseFalso, relogioManual, type EventoDoRegistro, type Pedido } from "../src/index.ts";
+import { criarTseFalso, relogioManual, type EntradaDoRegistro, type Pedido } from "../src/index.ts";
 import { cadastro, instante, noite } from "./noite-2022.ts";
 
 // O TSE falso responde como o CDN do TSE (.scratch/apurador-2026/research/01-api-ao-vivo-tse.md, seções 4 e
@@ -13,9 +13,9 @@ const ACRELANDIA = `${BASE}/dados/ac/ac01120-c0001-e006258-u.json`;
 
 function tseFalsoAs(dataHora: string) {
   const relogio = relogioManual(instante(dataHora));
-  const eventos: EventoDoRegistro[] = [];
-  const tse = criarTseFalso({ noite, cadastro, relogio, aoRegistrar: (e) => eventos.push(e) });
-  return { relogio, tse, eventos, pedir: (url: string, extra: Omit<Pedido, "url"> = {}) => tse.responder({ url, ...extra }) };
+  const entradas: EntradaDoRegistro[] = [];
+  const tse = criarTseFalso({ noite, cadastro, relogio, aoRegistrar: (e) => entradas.push(e) });
+  return { relogio, tse, entradas, pedir: (url: string, extra: Omit<Pedido, "url"> = {}) => tse.responder({ url, ...extra }) };
 }
 
 describe("ETag, 304 e Last-Modified", () => {
@@ -79,6 +79,20 @@ describe("gzip, Date, HEAD e query string", () => {
     expect(pedir(BRASIL).cabecalhos["date"]).toBe("Sun, 30 Oct 2022 22:01:00 GMT");
   });
 
+  it("responde 200 ao preflight de CORS, com o GET liberado por 10 min, como o CDN do TSE", () => {
+    const { pedir } = tseFalsoAs("2022-10-30 19:00:00");
+
+    const r = pedir(BRASIL, { metodo: "OPTIONS", cabecalhos: { origin: "https://exemplo.pages.dev", "access-control-request-headers": "cache-control" } });
+
+    expect(r.status).toBe(200);
+    expect(r.cabecalhos).toMatchObject({
+      "access-control-allow-origin": "https://exemplo.pages.dev",
+      "access-control-allow-methods": "GET",
+      "access-control-allow-headers": "cache-control",
+      "access-control-max-age": "600",
+    });
+  });
+
   it("responde 403 ao HEAD, como o CDN do TSE, e ignora a query string", () => {
     const { pedir } = tseFalsoAs("2022-10-30 19:00:00");
 
@@ -99,11 +113,11 @@ describe("URLs fora da configuração", () => {
     ["versão assinada", `${BASE}/dados/br/br-c0001-e006258-u.jws`],
     ["município de 2026 que não votou em 2022", `${BASE}/dados/mt/mt73709-c0001-e006258-u.json`],
   ])("%s responde 404, e o pedido fica registrado", (_, url) => {
-    const { pedir, tse, eventos } = tseFalsoAs("2022-10-30 19:00:00");
+    const { pedir, tse, entradas } = tseFalsoAs("2022-10-30 19:00:00");
 
     expect(pedir(url, { cliente: "10.0.0.1" }).status).toBe(404);
-    expect(tse.registro().naoEncontrados).toMatchObject([{ tipo: "404", url, cliente: "10.0.0.1", hora: "2022-10-30 19:00:00" }]);
-    expect(eventos).toHaveLength(1);
+    expect(tse.registro().naoEncontrados).toMatchObject([{ tipo: "404", url, cliente: "10.0.0.1", dataHora: "2022-10-30 19:00:00" }]);
+    expect(entradas).toHaveLength(1);
   });
 
   it("um replay que só pede URLs da configuração não deixa nenhum 404 no registro", () => {
@@ -130,7 +144,7 @@ describe("o limite de 100 pedidos por segundo por cliente", () => {
     const excesso = pedir(BRASIL, { cliente: "1.2.3.4" });
 
     expect(excesso.status).toBe(403);
-    expect(tse.registro().violacoes).toMatchObject([{ tipo: "violacao", cliente: "1.2.3.4", hora: "2022-10-30 19:00:00", detalhe: "101 pedidos em 1 s" }]);
+    expect(tse.registro().violacoes).toMatchObject([{ tipo: "violacao", cliente: "1.2.3.4", dataHora: "2022-10-30 19:00:00", detalhe: "101 pedidos em 1 s" }]);
     // Outro cliente não é afetado.
     expect(pedir(BRASIL, { cliente: "5.6.7.8" }).status).toBe(200);
   });
@@ -170,8 +184,8 @@ describe("o bloqueio por comando", () => {
     expect(pedir(BRASIL, { cliente: "1.2.3.4" }).status).toBe(200);
 
     expect(tse.registro().bloqueados).toMatchObject([
-      { tipo: "403", cliente: "1.2.3.4", url: BRASIL, hora: "2022-10-30 19:00:00", detalhe: "bloqueio por comando" },
-      { tipo: "403", cliente: "5.6.7.8", url: ACRELANDIA, hora: "2022-10-30 19:00:59", detalhe: "bloqueio por comando" },
+      { tipo: "403", cliente: "1.2.3.4", url: BRASIL, dataHora: "2022-10-30 19:00:00", detalhe: "bloqueio por comando" },
+      { tipo: "403", cliente: "5.6.7.8", url: ACRELANDIA, dataHora: "2022-10-30 19:00:59", detalhe: "bloqueio por comando" },
     ]);
   });
 

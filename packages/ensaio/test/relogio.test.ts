@@ -1,6 +1,6 @@
 import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { criarTseFalso, relogioAcelerado, relogioManual, ritmoDesde } from "../src/index.ts";
+import { criarTseFalso, relogioAcelerado, relogioDoReplay, relogioManual, ritmoDesde } from "../src/index.ts";
 import { cadastro, instante, noite } from "./noite-2022.ts";
 
 // O relógio do TSE falso: no ensaio geral, 3x das 16:50 às 20:30 de 2022 e 30x até a totalização final
@@ -54,6 +54,40 @@ describe("o relógio do ensaio geral", () => {
 });
 
 describe("a velocidade máxima, para o replay", () => {
+  // O pico de 2022: ~630 pedidos numa rodada (os 29 índices e ~600 municípios), como no ticket 12.
+  const pedidosDaRodada = [
+    "br/br-e006258-ab.json",
+    ...cadastro.ufs.map((uf) => `${uf.sigla.toLowerCase()}/${uf.sigla.toLowerCase()}-e006258-ab.json`),
+    ...cadastro.ufs.flatMap((uf) => uf.municipios.slice(0, 22).map((m) => `${uf.sigla.toLowerCase()}/${uf.sigla.toLowerCase()}${String(m.codigo).padStart(5, "0")}-c0001-e006258-u.json`)),
+  ].map((caminho) => `/oficial/ele2026/6258/dados/${caminho}`);
+
+  it("no relógio do replay, o limite conta pelo relógio do coletor: espaçados a 50 por segundo, 630 pedidos numa rodada não violam", () => {
+    let coletor = 0; // o relógio simulado do coletor, em ms: as esperas dele não esperam de verdade
+    const tse = criarTseFalso({ noite, cadastro, relogio: relogioDoReplay(instante("2022-10-30 18:40:00"), () => coletor) });
+
+    // Três rodadas de 20 s, cada uma com os pedidos a cada 20 ms (12,6 s).
+    for (let rodada = 0; rodada < 3; rodada++) {
+      for (const url of pedidosDaRodada) {
+        expect(tse.responder({ url }).status).toBe(200);
+        coletor += 20;
+      }
+      coletor = (rodada + 1) * 20_000;
+    }
+
+    expect(tse.registro().violacoes).toEqual([]);
+    // A noite anda com o relógio do coletor, a 1x.
+    expect(tse.estado().dataHora).toBe("2022-10-30 18:41:00");
+  });
+
+  it("os mesmos pedidos de uma vez, sem espaçar, violam o limite", () => {
+    const coletor = 0;
+    const tse = criarTseFalso({ noite, cadastro, relogio: relogioDoReplay(instante("2022-10-30 18:40:00"), () => coletor) });
+
+    for (const url of pedidosDaRodada) tse.responder({ url });
+
+    expect(tse.registro().violacoes).toHaveLength(1);
+  });
+
   it("roda a noite inteira em rodadas de 20 s, sem esperar, do zerado até a totalização final", () => {
     const relogio = relogioManual(instante("2022-10-30 16:59:00"));
     const tse = criarTseFalso({ noite, cadastro, relogio });

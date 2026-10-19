@@ -46,6 +46,7 @@ export async function membroComCache(url: string, nome: string, opcoes: { atuali
 export async function arquivoComCache(url: string, opcoes: { atualizar: boolean }): Promise<FonteBaixada> {
   const nome = url.split("/").pop()!;
   const arquivo = new URL(nome, CACHE);
+  // O arquivo já é um .json: o registro da origem leva .meta.json, para não ter o mesmo nome dele.
   const meta = new URL(`${nome.replace(/\.[^.]+$/, "")}.meta.json`, CACHE);
 
   if (opcoes.atualizar || !existsSync(arquivo) || !existsSync(meta)) {

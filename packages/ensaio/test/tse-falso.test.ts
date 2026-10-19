@@ -26,8 +26,8 @@ function tseFalsoAs(dataHora: string) {
   return { relogio, tse: criarTseFalso({ noite, cadastro, relogio }) };
 }
 
-/** Um arquivo do TSE, lido campo a campo. */
-type Arquivo = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+/** Um arquivo do TSE, lido campo a campo: nos testes, `any` deixa ler o JSON como os campos do TSE são. */
+type Arquivo = Record<string, any>;
 
 const corpo = (r: Resposta): Arquivo => JSON.parse(new TextDecoder().decode(r.cabecalhos["content-encoding"] === "gzip" ? gunzipSync(r.corpo) : r.corpo));
 
@@ -143,7 +143,9 @@ describe("os arquivos de UF, município e zona", () => {
 });
 
 describe("a indicação do TSE e a totalização final", () => {
-  it("o Brasil marca a eleição matematicamente definida (md = e) às 19:56:23, com 98,81% das seções, como o TSE em 2022", () => {
+  it("às 19:56:23, quando o TSE indicou Lula eleito em 2022, com 98,81% das seções, o Brasil já traz md = e", () => {
+    // A regra (a vantagem de quem lidera passa dos eleitores das seções que faltam) marca a chegada das 19:56:20;
+    // o TSE a anunciou com a das 19:56:23. Às 19:56:00 a eleição ainda não está definida.
     expect(arquivo(tseFalsoAs("2022-10-30 19:56:00").tse, BRASIL).md).toBeUndefined();
 
     const brasil = arquivo(tseFalsoAs("2022-10-30 19:56:23").tse, BRASIL);
