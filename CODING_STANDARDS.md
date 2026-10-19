@@ -1,0 +1,23 @@
+# Coding standards
+
+Judgement calls the reviewer checks in every diff. Mechanical rules live in the checks instead (`npm run typecheck`, `npm run lint`, `npm test`).
+
+## Vocabulary
+
+- Identifiers, comments, test names and messages are in Brazilian Portuguese, in the terms of `GLOSSARY.md`.
+- A word the glossary lists under _Avoid_ stays out of names too: the clock that never waits is `relogioSemEspera`, because "simulado" is the TSE's and "simulação" the simulator's.
+- An exported name means one thing across the packages. A new type or function takes a name no other package already exports with another meaning (`Recorte` is the pipeline's slice of the night; the coletor's tracked file is `Acompanhado`).
+
+## Shape of a module
+
+- Each module opens with a comment saying what it does and why it is built that way: the rule from the TSE, the decision ticket, the measurement.
+- Exported types and functions carry a one-line doc comment; fields carry one when the unit, the time zone or the source is not obvious (`AAAA-MM-DD HH:MM:SS`, em Brasília; ms do relógio do coletor).
+- Comment density follows the surrounding code: the reason behind a choice and the gotcha no type confesses, never a restatement of the line.
+
+## Tests
+
+The spec's "Decisões de teste" (`.scratch/apurador-2026-construcao/spec.md`) is the rule: behaviour at the boundary, expected values from an outside reference (official results, the research notes, the real TSE samples in `packages/ensaio/test/amostras/tse`), injected clock and transport. In review, look for:
+
+- an expected value computed by the code under test, or by the same reader on both sides, where a literal from a reference exists;
+- a test that asserts on internal state where a published file or a module's public interface shows the same behaviour;
+- a test that only passes by construction (a limit asserted against the same constant that enforces it).

@@ -16,6 +16,7 @@ Issues, specs and comments are written in Brazilian Portuguese, using the terms 
 - Implementation issues are one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`, never a single combined tickets file
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading
+- Resolving a build ticket: what a later ticket needs to know (an interface, a file format, a gotcha, what was left for it) goes in that ticket's own `## Comments`, dated and linked back: `- 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): ...`. The resolved ticket keeps only its own record, so the next implementer finds the note by reading just the ticket in front of them.
 
 ## When a skill says "publish to the issue tracker"
 

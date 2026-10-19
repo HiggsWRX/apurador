@@ -11,24 +11,27 @@
   ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && npm run typecheck -w @apurador/site",
+    "lint": "eslint .",
     "test": "vitest run",
-    "build": "npm run build -w @apurador/site",
-    "dados": "npm run gerar -w @apurador/pipeline",
-    "noites": "npm run noites -w @apurador/pipeline",
-    "historico": "npm run historico -w @apurador/pipeline",
-    "cadastros": "npm run cadastros -w @apurador/pipeline",
+    "build": "npm run build -w @apurador/site --",
+    "dados": "npm run gerar -w @apurador/pipeline --",
+    "noites": "npm run noites -w @apurador/pipeline --",
+    "historico": "npm run historico -w @apurador/pipeline --",
+    "cadastros": "npm run cadastros -w @apurador/pipeline --",
     "tse-falso": "npm run tse-falso -w @apurador/ensaio --",
     "coletor": "npm run coletor -w @apurador/coletor --",
     "replay": "vitest run packages/ensaio/test/replay.test.ts",
-    "conferir": "npm run conferir -w @apurador/pipeline",
-    "pesquisas": "npm run conferir-pesquisas -w @apurador/pipeline",
-    "deploy": "npm run deploy -w @apurador/site"
+    "conferir": "npm run conferir -w @apurador/pipeline --",
+    "pesquisas": "npm run conferir-pesquisas -w @apurador/pipeline --",
+    "deploy": "npm run deploy -w @apurador/site --"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
+    "eslint": "^10.12.0",
     "fflate": "^0.8.3",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1",
     "vitest": "^5.0.5"
   }
 }

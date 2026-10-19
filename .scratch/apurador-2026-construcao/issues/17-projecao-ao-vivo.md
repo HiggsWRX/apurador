@@ -46,3 +46,7 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
   - resultado dentro da margem de 95% depois de 1%;
   - "sem sinal de virada" nunca aparece no Brasil antes das 18:44;
   - "as pesquisas deixaram de pesar" acontece uma vez só.
+
+## Comments
+
+- 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): o modelo lê o que o coletor guarda por `coletor.resultado(abrangencia)`: Brasil, UFs, municípios e as 725 zonas dos 190 municípios com mais de uma, que não são publicadas. Cada resultado é um `ResultadoDoTse` (`packages/tse/src/ao-vivo.ts`), com seções, eleitorado, válidos, brancos, nulos e os votos de cada candidato. Os arquivos ao vivo são montados em `publicar()`, em `packages/coletor/src/coletor.ts`.

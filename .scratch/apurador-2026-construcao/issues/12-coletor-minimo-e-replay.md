@@ -88,10 +88,4 @@ Decisões: [Arquitetura e tecnologia](../../apurador-2026/issues/08-arquitetura-
   - Depois, cada rodada fez 29 pedidos, todos 304, e só gravou o arquivo de rodada.
   - Candidatos: FLAVIO BOLSONARO e LULA. 499.248 seções.
 - **Scripts**: os da raiz `tse-falso` e `coletor` agora repassam as opções (faltava o `--`).
-- **Para o 14**:
-  - `totalizacao` é a hora do TSE, em Brasília.
-  - `rodada` e `novidade.vista` são ISO, no relógio do coletor.
-  - Para desenvolver, a pasta local sai de `npm run tse-falso` mais `npm run coletor -- --tse http://127.0.0.1:8022/oficial`.
-- **Para o 20**: `Destino { gravar(caminho, bytes) }` é a interface única. Hoje só existe `pastaLocal`.
-- **Para o 22**: o estado fica em memória, em `coletor.ts`: ETags, hashes, curvas, novidade e resultados.
-- **Para o 23**: num 403, o coletor hoje só registra a falha e segue pedindo. O teto de gravações e a parada 30 min depois da final também ficam para lá.
+- As notas para os tickets 14, 17, 20, 21, 22, 23 e 30 estão nos comentários deles.
