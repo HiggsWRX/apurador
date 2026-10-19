@@ -1,10 +1,12 @@
+import type { Agregado } from "./agregado.ts";
 import type { Constantes } from "./constantes.ts";
 import { Z_95 } from "./normal.ts";
 import { projetar, type Apuracao, type Modelo } from "./projecao.ts";
 
-// O executor de noites: roda o modelo sobre uma noite reconstruída (a sequência de estados da apuração) e
-// resume o erro, a cobertura e a chance honesta. Serve à calibração, ao histórico de acerto e a "Como a
-// projeção se saiu".
+// O executor de noites: roda o modelo sobre uma noite reconstruída (a sequência de estados da apuração), numa das
+// duas bases, e resume o erro, a cobertura e a chance honesta. Serve à calibração, ao histórico de acerto e a "Como a
+// projeção se saiu". As duas bases andam nos mesmos momentos, então a noite momento a momento nas duas é uma linha
+// de cada execução.
 
 /** Uma noite reconstruída, no que o modelo usa (a `Noite` do `@apurador/pipeline` serve). */
 export interface NoiteDoModelo {
@@ -77,6 +79,8 @@ export interface LinhaDaNoite {
   /** O % de seções totalizadas. */
   secoes: number;
   placar: number | null;
+  /** O peso das pesquisas na base "Apuração + pesquisas", 0 na "Só apuração". */
+  pesoDasPesquisas: number;
   projecao: number;
   desvio: number;
   chance: number;
@@ -104,8 +108,16 @@ export interface ResultadoDaNoite {
   brier: number;
 }
 
-/** Roda o modelo em cada momento da noite e resume o erro, a cobertura e a chance honesta no Brasil. */
-export function executarNoite(modelo: Modelo, noite: NoiteDoModelo, constantes: Constantes, pontos: number[] = FOTOGRAFIAS): ResultadoDaNoite {
+/**
+ * Roda o modelo em cada momento da noite e resume o erro, a cobertura e a chance honesta no Brasil: na base "Só
+ * apuração" ou, com o agregado de pesquisas da noite (no 1º finalista da base), na "Apuração + pesquisas".
+ */
+export function executarNoite(
+  modelo: Modelo,
+  noite: NoiteDoModelo,
+  constantes: Constantes,
+  { agregado, pontos = FOTOGRAFIAS }: { agregado?: Pick<Agregado, "valor" | "incerteza">; pontos?: number[] } = {},
+): ResultadoDaNoite {
   const lista = [...momentosDaNoite(modelo, noite, pontos)];
   const fim = lista.at(-1)!.apuracao;
   const votos1 = fim.reduce((s, a) => s + a.votos[0]!, 0);
@@ -113,8 +125,9 @@ export function executarNoite(modelo: Modelo, noite: NoiteDoModelo, constantes: 
   const vence = final > 0.5;
 
   const momentos = lista.map(({ instante, secoes, apuracao }): LinhaDaNoite => {
-    const { placar, projecao, desvio, chance } = projetar(modelo, apuracao, constantes).brasil;
-    return { instante, secoes, placar, projecao, desvio, chance, erro: 100 * Math.abs(projecao - final) };
+    const { pesoDasPesquisas, brasil } = projetar(modelo, apuracao, constantes, agregado);
+    const { placar, projecao, desvio, chance } = brasil;
+    return { instante, secoes, placar, pesoDasPesquisas, projecao, desvio, chance, erro: 100 * Math.abs(projecao - final) };
   });
   const erroCom = (secoes: number) => momentos.find((m) => m.secoes >= secoes)?.erro ?? null;
   /** O % de seções desde o qual a condição vale em todos os momentos até o fim. */

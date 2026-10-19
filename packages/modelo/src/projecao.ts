@@ -1,10 +1,15 @@
+import type { Agregado } from "./agregado.ts";
 import type { Constantes } from "./constantes.ts";
+import { indicacaoDasPesquisas } from "./indicacao.ts";
 import { phi, Z_95 } from "./normal.ts";
 
-// A projeção da base "Só apuração", portada do módulo `Projecao` do protótipo do método (branch
+// A projeção nas duas bases. A "Só apuração" é portada do módulo `Projecao` do protótipo do método (branch
 // `prototipo/metodo-projecao`): transferência de votos estimada por UF nos municípios já apurados, corrigida
-// pelo placar parcial do próprio município, com incerteza analítica e normal. Funções puras sobre dados
-// simples, sem rede nem DOM: o coletor, o simulador no navegador, o pipeline e a calibração usam o mesmo código.
+// pelo placar parcial do próprio município, com incerteza analítica e normal. A "Apuração + pesquisas" é o mesmo
+// modelo com outro ponto de partida (Combinação de pesquisas e apuração, decisões 1 a 3): o voto que falta de cada
+// município parte da indicação das pesquisas com o peso das pesquisas, e da estimativa da apuração com o restante.
+// Funções puras sobre dados simples, sem rede nem DOM: o coletor, o simulador no navegador, o pipeline e a
+// calibração usam o mesmo código.
 //
 // As fatias são frações, de 0 a 1, do 1º finalista da base nos votos válidos dos dois finalistas. O % de seções
 // totalizadas vai de 0 a 100.
@@ -65,6 +70,10 @@ export interface Modelo {
   fatiaDosEliminados: Float64Array;
   /** Por município, no 1º turno: os válidos por eleitor apto. */
   validosPorApto: Float64Array;
+  /** No 1º turno, o placar entre finalistas do Brasil: a mudança que o agregado mostra é medida a partir dele. */
+  placarEntreFinalistasDoBrasil: number;
+  /** Por UF, no 1º turno: a fatia dos eliminados nos válidos, que dá a incerteza local da indicação das pesquisas. */
+  fatiaDosEliminadosDaUf: Float64Array;
   /** O perfil de chegada: a fração das seções do município que tinha chegado com cada % inteiro das seções do país, 101 por município. */
   perfil: Float64Array;
 }
@@ -99,14 +108,22 @@ export function prepararModelo(base: BaseDoModelo): Modelo {
     fatiaNosValidos: new Float64Array(n),
     fatiaDosEliminados: new Float64Array(n),
     validosPorApto: new Float64Array(n),
+    placarEntreFinalistasDoBrasil: 0.5,
+    fatiaDosEliminadosDaUf: new Float64Array(ufs.length),
     perfil: new Float64Array(n * 101),
   };
+  const noBrasil = { primeiro: 0, finalistas: 0 };
+  const validosDaUf = new Float64Array(ufs.length);
   base.municipios.forEach((m, i) => {
     const [a, b] = m.votos as [number, number];
     modelo.placarEntreFinalistas[i] = a + b > 0 ? a / (a + b) : 0.5;
     modelo.fatiaNosValidos[i] = m.validos > 0 ? a / m.validos : 0.5;
     modelo.fatiaDosEliminados[i] = m.validos > 0 ? (m.validos - a - b) / m.validos : 0;
     modelo.validosPorApto[i] = m.aptos > 0 ? m.validos / m.aptos : 0.8;
+    noBrasil.primeiro += a;
+    noBrasil.finalistas += a + b;
+    validosDaUf[modelo.ufDoMunicipio[i]!]! += m.validos;
+    modelo.fatiaDosEliminadosDaUf[modelo.ufDoMunicipio[i]!]! += m.validos - a - b;
     let degrau = 0;
     let chegadas = 0;
     for (let x = 0; x <= 100; x++) {
@@ -114,6 +131,8 @@ export function prepararModelo(base: BaseDoModelo): Modelo {
       modelo.perfil[i * 101 + x] = m.secoes > 0 ? chegadas / m.secoes : 0;
     }
   });
+  if (noBrasil.finalistas > 0) modelo.placarEntreFinalistasDoBrasil = noBrasil.primeiro / noBrasil.finalistas;
+  validosDaUf.forEach((validos, u) => (modelo.fatiaDosEliminadosDaUf[u] = validos > 0 ? modelo.fatiaDosEliminadosDaUf[u]! / validos : 0));
   return modelo;
 }
 
@@ -163,6 +182,8 @@ export interface ResultadoDoMunicipio extends ResultadoDoLugar {
 }
 
 export interface Projecao {
+  /** Quanto a indicação das pesquisas pesa no voto que falta: o peso das pesquisas na base "Apuração + pesquisas", 0 na "Só apuração". */
+  pesoDasPesquisas: number;
   brasil: ResultadoDoLugar;
   ufs: Record<string, ResultadoDaUf>;
   /** Na ordem da base. */
@@ -259,7 +280,26 @@ export function sinalDeVirada(chanceDeVirada: number, constantes: Pick<Constante
   return chanceDeVirada >= projetada ? "virada projetada" : chanceDeVirada >= possivel ? "virada possível" : "sem sinal de virada";
 }
 
-/** As somas de um lugar: o apurado, o voto que falta e a variância do que o voto que falta dá ao 1º finalista. */
+/**
+ * O peso das pesquisas com um % de seções totalizadas no Brasil: K ÷ (K + %), um número só para o país, porque o erro
+ * das pesquisas é sobretudo nacional (Combinação de pesquisas e apuração, decisão 2).
+ */
+export function pesoDasPesquisas(secoes: number, constantes: Pick<Constantes, "secoesDasPesquisas">): number {
+  return constantes.secoesDasPesquisas / (constantes.secoesDasPesquisas + secoes);
+}
+
+/**
+ * Se as duas bases coincidem num lugar: diferem em menos de 0,1 p.p. na projeção e de 1 ponto na chance de vitória
+ * (Combinação de pesquisas e apuração, decisão 5). No Brasil, é o evento "as pesquisas deixaram de pesar".
+ */
+export function basesCoincidem(soApuracao: Pick<ResultadoDoLugar, "projecao" | "chance">, comPesquisas: Pick<ResultadoDoLugar, "projecao" | "chance">): boolean {
+  return Math.abs(soApuracao.projecao - comPesquisas.projecao) < 0.001 && Math.abs(soApuracao.chance - comPesquisas.chance) < 0.01;
+}
+
+/**
+ * As somas de um lugar: o apurado, o voto que falta e a variância do que o voto que falta dá ao 1º finalista, a da
+ * estimativa da apuração e a da indicação das pesquisas.
+ */
 interface Somas {
   votos1: number;
   votos: number;
@@ -268,13 +308,16 @@ interface Somas {
   falta: number;
   falta1: number;
   variancia: number;
+  varianciaDasPesquisas: number;
 }
 
-/** Os números de um lugar, a partir das somas dos seus municípios. */
-function resultado(somas: Somas, constantes: Constantes): ResultadoDoLugar {
+/** Os números de um lugar, a partir das somas dos seus municípios, com o peso das pesquisas da base. */
+function resultado(somas: Somas, constantes: Constantes, peso: number): ResultadoDoLugar {
   const validos = somas.votos + somas.falta;
   const projecao = validos > 0 ? (somas.votos1 + somas.falta1) / validos : 0.5;
-  const desvio = validos > 0 ? Math.sqrt(somas.variancia) / validos : 0;
+  // As incertezas das pesquisas entram multiplicadas pelo peso delas, e as da apuração, pelo restante.
+  const variancia = peso * peso * somas.varianciaDasPesquisas + (1 - peso) * (1 - peso) * somas.variancia;
+  const desvio = validos > 0 ? Math.sqrt(variancia) / validos : 0;
   const chance = desvio > 0 ? phi((projecao - 0.5) / desvio) : projecao > 0.5 ? 1 : projecao < 0.5 ? 0 : 0.5;
   const placar = somas.votos > 0 ? somas.votos1 / somas.votos : null;
   const atras = placar === null || placar === 0.5 ? null : placar > 0.5 ? 1 : 0;
@@ -313,13 +356,29 @@ function viradaDoMunicipio(a: ApuracaoDoMunicipio, falta: number, fatia: number,
   return { x, cedo: cruza(Z_95), tarde: x === null ? null : cruza(-Z_95), quem: x === null ? lider : 1 - lider };
 }
 
-/** A projeção de cada lugar (Brasil, UFs, Exterior e municípios) para a apuração de agora. */
-export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constantes): Projecao {
+/**
+ * A projeção de cada lugar (Brasil, UFs, Exterior e municípios) para a apuração de agora: na base "Só apuração" ou,
+ * com o agregado de pesquisas (o valor em % do 1º finalista da base e a incerteza em pontos), na "Apuração + pesquisas".
+ */
+export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constantes, agregado?: Pick<Agregado, "valor" | "incerteza">): Projecao {
   const n = modelo.municipios.length;
   if (apuracao.length !== n) throw new Error(`a apuração tem ${apuracao.length} municípios, e a base, ${n}`);
   const referencias = estimarReferencias(modelo, apuracao, constantes.minimoPorNivel);
   const regional = constantes.incertezaRegional / 100;
   const nacional = constantes.incertezaNacional / 100;
+
+  // A base "Apuração + pesquisas": o peso das pesquisas sai do % de seções do Brasil, e cada município parte da
+  // indicação das pesquisas dele. A incerteza das pesquisas é a nacional do agregado, comum a todos os lugares, mais
+  // as locais da UF e do município, independentes entre lugares.
+  const secoesTotais = apuracao.reduce((s, a) => s + a.secoesTotais, 0);
+  const secoesDoBrasil = secoesTotais > 0 ? (100 * apuracao.reduce((s, a) => s + a.secoes, 0)) / secoesTotais : 0;
+  const peso = agregado ? pesoDasPesquisas(secoesDoBrasil, constantes) : 0;
+  const indicacao = (m: number, valor: number) =>
+    indicacaoDasPesquisas({ placarEntreFinalistasDoLugar: 100 * modelo.placarEntreFinalistas[m]!, placarEntreFinalistasDoBrasil: 100 * modelo.placarEntreFinalistasDoBrasil, agregado: valor }) / 100;
+  const nacionalDasPesquisas = agregado ? agregado.incerteza / 100 : 0;
+  const { uf: localDaUf, municipio: localDoMunicipio } = constantes.incertezaLocalDasPesquisas;
+  /** A parte local da UF na incerteza das pesquisas, comum a todo o voto que falta dela. */
+  const varianciaDaUf = (falta: number, u: number) => (falta * localDaUf * modelo.fatiaDosEliminadosDaUf[u]!) ** 2;
 
   // Os válidos esperados por eleitor apto, do 1º turno. No recuo "1º turno" (o Brasil ainda sem o mínimo de votos,
   // e então todas as UFs nele), contam só os votos dos dois finalistas: cada lugar parte assim do próprio placar
@@ -343,7 +402,7 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
 
   const votoQueFalta = new Float64Array(n);
   const fatiaDoQueFalta = new Float64Array(n);
-  const somaVazia = (): Somas => ({ votos1: 0, votos: 0, secoes: 0, secoesTotais: 0, falta: 0, falta1: 0, variancia: 0 });
+  const somaVazia = (): Somas => ({ votos1: 0, votos: 0, secoes: 0, secoesTotais: 0, falta: 0, falta1: 0, variancia: 0, varianciaDasPesquisas: 0 });
   const acumular = (a: Somas, b: Somas) => {
     a.votos1 += b.votos1;
     a.votos += b.votos;
@@ -352,31 +411,37 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
     a.falta += b.falta;
     a.falta1 += b.falta1;
     a.variancia += b.variancia;
+    a.varianciaDasPesquisas += b.varianciaDasPesquisas;
   };
   const porUf = modelo.ufs.map(somaVazia);
   const municipios = apuracao.map((a, m): ResultadoDoMunicipio => {
     const u = modelo.ufDoMunicipio[m]!;
     const ref = referencias[u]!;
     const votos = a.votos[0]! + a.votos[1]!;
-    const somas: Somas = { votos1: a.votos[0]!, votos, secoes: a.secoes, secoesTotais: a.secoesTotais, falta: 0, falta1: 0, variancia: 0 };
+    const somas: Somas = { ...somaVazia(), votos1: a.votos[0]!, votos, secoes: a.secoes, secoesTotais: a.secoesTotais };
     const aptosQueFaltam = Math.max(0, a.aptosTotais - a.aptos);
     if (aptosQueFaltam > 0) {
       // Os válidos que faltam, pelos válidos por apto já apurados no próprio município quando ele tem eleitores bastantes.
       const falta = aptosQueFaltam * (a.aptos >= 300 && votos > 0 ? votos / a.aptos : validosPorApto(m) * validosSobreEsperados);
-      // A estimativa da referência, misturada com o placar parcial do município, que pesa metade com `pesoDoMunicipio` votos.
+      // O ponto de partida (a estimativa da referência e, com pesquisas, a indicação delas), misturado com o placar
+      // parcial do município, que pesa metade com `pesoDoMunicipio` votos.
       const estimativa = estimar(modelo, m, ref.transferencia);
-      const peso = votos > 0 ? votos / (votos + constantes.pesoDoMunicipio) : 0;
-      const fatia = clamp(votos > 0 ? estimativa + peso * (a.votos[0]! / votos - estimativa) : estimativa, 0.01, 0.99);
+      const partida = agregado ? peso * indicacao(m, agregado.valor) + (1 - peso) * estimativa : estimativa;
+      const proprio = votos > 0 ? votos / (votos + constantes.pesoDoMunicipio) : 0;
+      const fatia = clamp(votos > 0 ? partida + proprio * (a.votos[0]! / votos - partida) : partida, 0.01, 0.99);
       votoQueFalta[m] = falta;
       fatiaDoQueFalta[m] = fatia;
       somas.falta = falta;
       somas.falta1 = falta * fatia;
-      somas.variancia = falta * falta * (1 - peso) * ref.dispersao * ref.dispersao;
+      somas.variancia = falta * falta * (1 - proprio) * ref.dispersao * ref.dispersao;
+      // A parte local do município na incerteza das pesquisas, que o placar parcial dele também reduz.
+      somas.varianciaDasPesquisas = (falta * (1 - proprio) * localDoMunicipio * modelo.fatiaDosEliminados[m]!) ** 2;
     }
     acumular(porUf[u]!, somas);
     // No município, a mesma fórmula restrita ao voto que falta dele.
     somas.variancia += varianciaComum(somas.falta, ref);
-    const r = resultado(somas, constantes) as ResultadoDoMunicipio;
+    somas.varianciaDasPesquisas += (somas.falta * nacionalDasPesquisas) ** 2 + varianciaDaUf(somas.falta, u);
+    const r = resultado(somas, constantes, peso) as ResultadoDoMunicipio;
     r.virada = viradaDoMunicipio(a, somas.falta, fatiaDoQueFalta[m]!, r.desvio * r.validos);
     return r;
   });
@@ -389,13 +454,19 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
     const ref = referencias[u]!;
     acumular(brasil, somas);
     brasil.variancia += (somas.falta * regional) ** 2;
+    brasil.varianciaDasPesquisas += varianciaDaUf(somas.falta, u);
     const g = grupos.get(ref.grupo) ?? { falta: 0, erro: ref.erro };
     g.falta += somas.falta;
     grupos.set(ref.grupo, g);
-    ufs[sigla] = { ...resultado({ ...somas, variancia: somas.variancia + varianciaComum(somas.falta, ref) }, constantes), referencia: ref.fonte };
+    const variancias = {
+      variancia: somas.variancia + varianciaComum(somas.falta, ref),
+      varianciaDasPesquisas: somas.varianciaDasPesquisas + (somas.falta * nacionalDasPesquisas) ** 2 + varianciaDaUf(somas.falta, u),
+    };
+    ufs[sigla] = { ...resultado({ ...somas, ...variancias }, constantes, peso), referencia: ref.fonte };
   });
   brasil.variancia += (brasil.falta * nacional) ** 2;
   for (const g of grupos.values()) brasil.variancia += (g.falta * g.erro) ** 2;
+  brasil.varianciaDasPesquisas += (brasil.falta * nacionalDasPesquisas) ** 2;
 
-  return { brasil: resultado(brasil, constantes), ufs, municipios, votoQueFalta, fatiaDoQueFalta };
+  return { pesoDasPesquisas: peso, brasil: resultado(brasil, constantes, peso), ufs, municipios, votoQueFalta, fatiaDoQueFalta };
 }

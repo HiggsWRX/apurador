@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { curvaProjetada, momentosDaNoite, prepararModelo, projetar } from "../src/index.ts";
-import { base2022, constantes, dadosDoPrototipo, fotoDoPrototipo, noite2022 } from "./dados.ts";
+import { agregado2022, base2022, constantes, dadosDoPrototipo, fotoDoPrototipo, noite2022 } from "./dados.ts";
+import { comPesquisas } from "./prototipo/combinacao.js";
 import { Projecao } from "./prototipo/projecao.js";
 
 // O porte fiel: no 2º turno de 2022, com base no 1º turno de 2022 e as constantes provisórias, o modelo dá os
@@ -110,5 +111,33 @@ describe("o porte fiel do protótipo no 2º turno de 2022", () => {
         if (p[k] !== null) expect(Math.abs(v[k]! - p[k]), k).toBeLessThan(0.01);
       }
     }
+  });
+});
+
+describe("o porte fiel da base 'Apuração + pesquisas' do protótipo da página de metodologia no 2º turno de 2022", () => {
+  // O agregado de 2022, real e deslocado 2 pontos para cada candidato (Combinação de pesquisas e apuração, decisão 4),
+  // com a incerteza de 1,5 ponto da noite, que o protótipo fixa (test/prototipo/combinacao.js).
+  const casos = [agregado2022.valor, agregado2022.valor + 2, agregado2022.valor - 2];
+  const pares = casos.flatMap((valor) =>
+    comReferencia.map((m) => {
+      const foto = fotoDoPrototipo(m.apuracao);
+      return {
+        modelo: projetar(modelo, m.apuracao, constantes, { valor, incerteza: agregado2022.incerteza }),
+        prototipo: comPesquisas(P, foto, Projecao.projetar(P, foto, "transferencia", prm), valor / 100, constantes.secoesDasPesquisas, prm),
+      };
+    }),
+  );
+
+  it("usa as constantes e a incerteza nacional do protótipo e compara a noite inteira nos três agregados", () => {
+    expect(agregado2022.incerteza).toBe(1.5);
+    expect(constantes.secoesDasPesquisas).toBe(0.5);
+    expect(constantes.incertezaLocalDasPesquisas).toEqual({ uf: 0.13, municipio: 0.15 });
+    expect(pares).toHaveLength(3 * comReferencia.length);
+  });
+
+  it("dá o peso das pesquisas, a projeção e o desvio do Brasil do protótipo em cada momento", () => {
+    expect(maiorDiferenca(pares.map((p) => [p.modelo.pesoDasPesquisas, p.prototipo.peso]))).toBeLessThan(1e-12);
+    expect(maiorDiferenca(pares.map((p) => [p.modelo.brasil.projecao, p.prototipo.P]))).toBeLessThan(UM_CENTESIMO_DE_PONTO);
+    expect(maiorDiferenca(pares.map((p) => [p.modelo.brasil.desvio, p.prototipo.s]))).toBeLessThan(UM_CENTESIMO_DE_PONTO);
   });
 });

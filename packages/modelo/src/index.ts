@@ -26,6 +26,8 @@ export {
   type ResultadoDaNoite,
 } from "./noites.ts";
 export {
+  basesCoincidem,
+  pesoDasPesquisas,
   prepararModelo,
   projetar,
   REGIOES,

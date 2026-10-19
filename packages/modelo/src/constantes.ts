@@ -21,6 +21,13 @@ export interface Constantes {
   ordemDeChegada: OrdemDeChegada;
   /** A partir de que chance de virada a virada é projetada e possível. Abaixo de `possivel`, não há sinal de virada. */
   sinalDeVirada: { projetada: number; possivel: number };
+  /** K: o % de seções totalizadas no Brasil que as pesquisas valem na base "Apuração + pesquisas". Com ele, elas pesam metade. */
+  secoesDasPesquisas: number;
+  /**
+   * A incerteza local da indicação das pesquisas, independente entre lugares, por unidade da fatia dos eliminados no 1º
+   * turno: a da UF e a do município em torno da UF. A nacional é a do agregado.
+   */
+  incertezaLocalDasPesquisas: { uf: number; municipio: number };
 }
 
 const ORDENS: OrdemDeChegada[] = ["mistura", "primeiro-turno", "ritmo-da-noite"];
@@ -34,6 +41,7 @@ export function lerConstantes(dados: unknown): Constantes {
   };
   if (!ORDENS.includes(d.ordemDeChegada as OrdemDeChegada)) throw new Error(`constantes do modelo: ordemDeChegada deve ser ${ORDENS.join(", ")}, e é ${JSON.stringify(d.ordemDeChegada)}`);
   const sinal = (d.sinalDeVirada ?? {}) as Record<string, unknown>;
+  const local = (d.incertezaLocalDasPesquisas ?? {}) as Record<string, unknown>;
   const constantes: Constantes = {
     incertezaRegional: numero(d.incertezaRegional, "incertezaRegional", 0, 10),
     incertezaNacional: numero(d.incertezaNacional, "incertezaNacional", 0, 10),
@@ -41,6 +49,12 @@ export function lerConstantes(dados: unknown): Constantes {
     minimoPorNivel: numero(d.minimoPorNivel, "minimoPorNivel", 0, 1e6),
     ordemDeChegada: d.ordemDeChegada as OrdemDeChegada,
     sinalDeVirada: { projetada: numero(sinal.projetada, "sinalDeVirada.projetada", 0, 1), possivel: numero(sinal.possivel, "sinalDeVirada.possivel", 0, 1) },
+    // com K = 0, o peso das pesquisas antes da primeira seção seria 0 ÷ 0
+    secoesDasPesquisas: numero(d.secoesDasPesquisas, "secoesDasPesquisas", 0.01, 100),
+    incertezaLocalDasPesquisas: {
+      uf: numero(local.uf, "incertezaLocalDasPesquisas.uf", 0, 1),
+      municipio: numero(local.municipio, "incertezaLocalDasPesquisas.municipio", 0, 1),
+    },
   };
   if (constantes.sinalDeVirada.possivel > constantes.sinalDeVirada.projetada) throw new Error("constantes do modelo: o limite da virada possível passa o da virada projetada");
   return constantes;

@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { lerConstantes } from "../src/index.ts";
 
 // O arquivo de constantes do modelo, versionado no pacote. Os valores provisórios são os das decisões do mapa:
-// Método de projeção só com a apuração (09, decisões 1, 3 e 4) e Sinal de virada (23, decisão 2).
+// Método de projeção só com a apuração (09, decisões 1, 3 e 4), Combinação de pesquisas e apuração (11,
+// decisões 2 e 3) e Sinal de virada (23, decisão 2).
 
 const arquivo = JSON.parse(readFileSync(new URL("../constantes.json", import.meta.url), "utf8")) as Record<string, unknown>;
 
@@ -16,6 +17,8 @@ describe("as constantes do modelo", () => {
       minimoPorNivel: 2000,
       ordemDeChegada: "mistura",
       sinalDeVirada: { projetada: 0.5, possivel: 0.05 },
+      secoesDasPesquisas: 0.5,
+      incertezaLocalDasPesquisas: { uf: 0.13, municipio: 0.15 },
     });
   });
 
@@ -29,5 +32,8 @@ describe("as constantes do modelo", () => {
     expect(() => lerConstantes({ ...arquivo, pesoDoMunicipio: "3000" })).toThrow(/pesoDoMunicipio/);
     expect(() => lerConstantes({ ...arquivo, sinalDeVirada: { projetada: 0.5 } })).toThrow(/sinalDeVirada.possivel/);
     expect(() => lerConstantes({ ...arquivo, sinalDeVirada: { projetada: 0.05, possivel: 0.5 } })).toThrow(/virada possível/);
+    // com K = 0, o peso das pesquisas antes da primeira seção seria 0 ÷ 0
+    expect(() => lerConstantes({ ...arquivo, secoesDasPesquisas: 0 })).toThrow(/secoesDasPesquisas/);
+    expect(() => lerConstantes({ ...arquivo, incertezaLocalDasPesquisas: { uf: 0.13 } })).toThrow(/incertezaLocalDasPesquisas.municipio/);
   });
 });
