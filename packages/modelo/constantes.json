@@ -1,0 +1,9 @@
+{
+  "nota": "Valores provisórios das decisões do mapa (tickets 09, 11 e 23). A calibração (ticket 28) escolhe os definitivos entre candidatos escritos antes e congela este arquivo no fim de 21/10. Nada aqui é treinado.",
+  "incertezaRegional": 1,
+  "incertezaNacional": 1,
+  "pesoDoMunicipio": 3000,
+  "minimoPorNivel": 2000,
+  "ordemDeChegada": "mistura",
+  "sinalDeVirada": { "projetada": 0.5, "possivel": 0.05 }
+}
