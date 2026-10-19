@@ -15,6 +15,7 @@
     "build": "npm run build -w @apurador/site",
     "dados": "npm run gerar -w @apurador/pipeline",
     "noites": "npm run noites -w @apurador/pipeline",
+    "cadastros": "npm run cadastros -w @apurador/pipeline",
     "conferir": "npm run conferir -w @apurador/pipeline",
     "pesquisas": "npm run conferir-pesquisas -w @apurador/pipeline",
     "deploy": "npm run deploy -w @apurador/site"

@@ -10,7 +10,8 @@
     "gerar": "tsx src/gerar.ts",
     "noites": "tsx src/gerar-noites.ts",
     "conferir": "tsx src/conferir.ts",
-    "conferir-pesquisas": "tsx src/conferir-pesquisas.ts"
+    "conferir-pesquisas": "tsx src/conferir-pesquisas.ts",
+    "cadastros": "tsx src/gerar-cadastros.ts"
   },
   "dependencies": {
     "@apurador/modelo": "*",

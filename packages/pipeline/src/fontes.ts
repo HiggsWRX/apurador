@@ -39,6 +39,26 @@ export async function membroComCache(url: string, nome: string, opcoes: { atuali
     writeFileSync(meta, JSON.stringify({ url, membro: membro.nome, baixadoEm: new Date().toISOString() }, null, 2));
   }
 
+  return doCache(url, arquivo, meta);
+}
+
+/** Um arquivo do TSE que não vem num zip (como a configuração de municípios da divulgação), do cache ou da rede. */
+export async function arquivoComCache(url: string, opcoes: { atualizar: boolean }): Promise<FonteBaixada> {
+  const nome = url.split("/").pop()!;
+  const arquivo = new URL(nome, CACHE);
+  const meta = new URL(`${nome.replace(/\.[^.]+$/, "")}.meta.json`, CACHE);
+
+  if (opcoes.atualizar || !existsSync(arquivo) || !existsSync(meta)) {
+    const resposta = await fetch(url);
+    if (!resposta.ok) throw new Error(`${url}: HTTP ${resposta.status}`);
+    mkdirSync(CACHE, { recursive: true });
+    writeFileSync(arquivo, new Uint8Array(await resposta.arrayBuffer()));
+    writeFileSync(meta, JSON.stringify({ url, membro: nome, baixadoEm: new Date().toISOString() }, null, 2));
+  }
+  return doCache(url, arquivo, meta);
+}
+
+function doCache(url: string, arquivo: URL, meta: URL): FonteBaixada {
   // Uma vista sobre o mesmo buffer, sem cópia: os arquivos por seção têm centenas de MB.
   const lido = readFileSync(arquivo);
   const dados = new Uint8Array(lido.buffer, lido.byteOffset, lido.byteLength);

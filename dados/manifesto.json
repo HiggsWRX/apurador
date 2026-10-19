@@ -669,6 +669,26 @@
       "geracao": [
         "06/10/2026 14:03:43"
       ]
+    },
+    {
+      "url": "https://resultados.tse.jus.br/oficial/ele2026/6258/config/mun-e006258-cm.json",
+      "membro": "mun-e006258-cm.json",
+      "sha256": "e4a2f2d45bac325f486e1866973fd65ae86744896d0f19e791b0bbb58d86e839",
+      "bytes": 534026,
+      "baixadoEm": "2026-10-19T14:47:49.717Z",
+      "geracao": [
+        "15/10/2026 09:38:00"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/consulta_cand_2022.zip",
+      "membro": "consulta_cand_2022_BRASIL.csv",
+      "sha256": "93b9cf81d987f2ebd938794a9f21b7f42f8cc5ac24d99b84a4b1e84dc425aaf4",
+      "bytes": 15769082,
+      "baixadoEm": "2026-10-19T14:47:50.956Z",
+      "geracao": [
+        "18/10/2026 03:16:38"
+      ]
     }
   ],
   "derivados": [
@@ -843,6 +863,16 @@
         "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip",
         "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2026.zip",
         "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2026.zip"
+      ]
+    },
+    {
+      "arquivo": "cadastros/2022-2.json",
+      "sha256": "f2f4c51617f4e695031e52de9956abc5998603d8077ea164a920dde9807faa16",
+      "fontes": [
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/consulta_cand_2022.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2022.zip",
+        "https://resultados.tse.jus.br/oficial/ele2026/6258/config/mun-e006258-cm.json",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/municipio_tse_ibge/municipio_tse_ibge.zip"
       ]
     }
   ]
