@@ -204,6 +204,22 @@ _Avoid_: teste, simulado (o simulado é do TSE)
 O servidor que imita o TSE: serve uma noite reconstruída nos arquivos da divulgação ao vivo, com relógio próprio, para o replay e o ensaio geral. O coletor lê dele só trocando a URL base.
 _Avoid_: mock, simulador do TSE, simulado (o simulado é do TSE)
 
+**Coletor**:
+O processo, no computador do dono, que lê os arquivos do TSE e publica os arquivos ao vivo que a página lê. Só faz conexões de saída: nenhum visitante fala com ele.
+_Avoid_: servidor, backend, robô
+
+**Rodada**:
+Uma passagem do coletor, a cada 20 s: lê os índices do TSE, baixa os lugares que mudaram e publica o que mudou.
+_Avoid_: ciclo, iteração, polling
+
+**Arquivo de rodada**:
+O arquivo ao vivo que o coletor publica a cada rodada com o que é nacional: a hora da rodada, a fase, a última novidade do TSE e os candidatos. É por ele que a página muda de fase e sabe se a atualização parou.
+_Avoid_: heartbeat, status
+
+**Replay automático**:
+Uma noite reconstruída passada pelo coletor inteiro sobre o TSE falso, sem rede e na velocidade máxima, nos testes de cada push. Confere, rodada a rodada, o que o coletor publica.
+_Avoid_: simulação, teste da noite, ensaio (o ensaio geral é com gente e infraestrutura reais)
+
 **Plano zero**:
 O estado do site em que nenhum dado ao vivo vai ao ar e a página manda o visitante para o app oficial do TSE. É reversível na própria noite.
 _Avoid_: site fora do ar, modo de emergência
