@@ -17,7 +17,7 @@ const UM_CENTESIMO_DE_PONTO = 0.0001;
 /** Os momentos em que todas as UFs têm uma referência apurada: o Brasil já passou do mínimo de votos válidos. */
 const comReferencia = momentos.filter((m) => m.apuracao.reduce((s, a) => s + a.votos[0]! + a.votos[1]!, 0) >= constantes.minimoPorNivel);
 
-const maiorDiferenca = (pares: [number, number][]) => Math.max(...pares.map(([a, b]) => Math.abs(a - b)));
+const maiorDiferenca = (pares: [number, number][]) => pares.reduce((maior, [a, b]) => Math.max(maior, Math.abs(a - b)), 0);
 
 describe("o porte fiel do protótipo no 2º turno de 2022", () => {
   it("usa o mesmo mínimo de votos por nível que o protótipo e compara a noite inteira", () => {
@@ -35,11 +35,23 @@ describe("o porte fiel do protótipo no 2º turno de 2022", () => {
     expect(maiorDiferenca(pares.map((p) => [p.modelo.validos, p.prototipo.Vp]))).toBeLessThan(1);
   });
 
+  it("estima o voto que falta de cada município e a fatia dele como o protótipo, em cada momento", () => {
+    const pares = comReferencia.flatMap((m) => {
+      const { votoQueFalta, fatiaDoQueFalta } = projetar(modelo, m.apuracao, constantes);
+      const { R, shat } = Projecao.projetar(P, fotoDoPrototipo(m.apuracao), "transferencia", prm);
+      return Array.from(R, (r, i) => ({ modelo: { falta: votoQueFalta[i]!, fatia: fatiaDoQueFalta[i]! }, prototipo: { falta: r, fatia: shat[i]! } }));
+    });
+
+    expect(pares.length).toBe(comReferencia.length * base2022.municipios.length);
+    expect(maiorDiferenca(pares.map((p) => [p.modelo.falta, p.prototipo.falta]))).toBeLessThan(1e-6);
+    expect(maiorDiferenca(pares.map((p) => [p.modelo.fatia, p.prototipo.fatia]))).toBeLessThan(UM_CENTESIMO_DE_PONTO);
+  });
+
   it("dá em cada UF os números do protótipo rodado só sobre ela, a mesma fórmula restrita ao voto que falta da UF", () => {
     // O protótipo só projeta o país. Rodado só sobre os municípios de uma UF, ele dá a fórmula restrita a ela,
     // desde que nada da UF venha do país: ela usa a própria referência, tem ao menos 5 municípios com votos (com
     // menos, a dispersão é a do país), e todo município com voto que falta já tem votos e 300 eleitores
-    // apurados (com menos, o comparecimento é o do país).
+    // apurados (com menos, os válidos por apto saem do país).
     const daUf = (uf: string) => (_: unknown, i: number) => modelo.municipios[i]!.uf === uf;
     const comVotos = (a: { votos: number[] }) => a.votos[0]! + a.votos[1]! > 0;
     const casos = comReferencia.flatMap((m) => {

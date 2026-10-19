@@ -27,9 +27,11 @@ describe("o executor de noites no 2º turno de 2022", () => {
     expect(Math.abs(noite.erroCom50! - 0.47)).toBeLessThan(0.05);
   });
 
-  it("tem o resultado final dentro da margem de 95% em ~98% dos momentos", () => {
-    expect(noite.cobertura).toBeGreaterThanOrEqual(0.96);
-    expect(noite.cobertura).toBeLessThanOrEqual(1);
+  it("tem o resultado final dentro da margem de 95% em ~98% dos momentos, também depois de 1% das seções", () => {
+    for (const cobertura of [noite.cobertura, noite.coberturaDepoisDe1]) {
+      expect(cobertura).toBeGreaterThanOrEqual(0.96);
+      expect(cobertura).toBeLessThanOrEqual(1);
+    }
   });
 
   it("tem a chance honesta: acerta o vencedor desde o começo, dá 95% a ele desde ~68% das seções e Brier de ~0,03", () => {

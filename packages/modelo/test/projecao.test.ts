@@ -139,7 +139,8 @@ describe("o sinal de virada", () => {
         if (r.placar === null || r.placar === 0.5) continue;
         // o 1º finalista da base de 2022 é Lula: quando ele está atrás, a chance de virada é a chance dele
         expect(r.chanceDeVirada).toBe(r.placar < 0.5 ? r.chance : 1 - r.chance);
-        expect(r.sinalDeVirada).toBe(sinalDeVirada(r.chanceDeVirada!, constantes));
+        // os limites provisórios do Sinal de virada (.scratch/apurador-2026/issues/23, decisão 2)
+        expect(r.sinalDeVirada).toBe(r.chanceDeVirada! >= 0.5 ? "virada projetada" : r.chanceDeVirada! >= 0.05 ? "virada possível" : "sem sinal de virada");
       }
     }
   });
@@ -195,13 +196,15 @@ describe("a curva projetada de cada UF e do Exterior", () => {
     }
   });
 
-  it("antes da apuração usa a ordem de chegada do 1º turno, de 0% a 100% das seções", () => {
+  it("antes da apuração usa a ordem de chegada do 1º turno, de 0% a 100% das seções, qualquer que seja a ordem das constantes", () => {
     const apuracao = antesDaPrimeiraSecao(base2026);
     const projecao = projetar(modelo2026, apuracao, constantes);
     const mistura = curvaProjetada(modelo2026, apuracao, projecao, constantes);
     const primeiroTurno = curvaProjetada(modelo2026, apuracao, projecao, { ...constantes, ordemDeChegada: "primeiro-turno" });
+    const ritmoDaNoite = curvaProjetada(modelo2026, apuracao, projecao, { ...constantes, ordemDeChegada: "ritmo-da-noite" });
 
     expect(mistura).toEqual(primeiroTurno);
+    expect(ritmoDaNoite).toEqual(primeiroTurno);
     expect(mistura.brasil.pontos[0]!.x).toBeLessThan(3);
     expect(mistura.brasil.pontos.at(-1)).toMatchObject({ x: 100 });
     expect(mistura.brasil.pontos.at(-1)!.y).toBeCloseTo(projecao.brasil.projecao, 12);
@@ -231,6 +234,8 @@ describe("a virada projetada de cada município", () => {
 });
 
 describe("o desempenho", () => {
+  // O único teste com o relógio real: ele não decide nenhum número, só mede. Leva ~4 ms numa máquina de
+  // desenvolvimento; o teto de 20 ms pega uma regressão de ordem de grandeza sem depender da máquina do CI.
   it("faz uma projeção completa, com as curvas, sobre todos os municípios em poucos milissegundos", () => {
     const { apuracao } = noMomento(30);
     const rodar = () => curvaProjetada(modelo2022, apuracao, projetar(modelo2022, apuracao, constantes), constantes);
@@ -242,6 +247,6 @@ describe("o desempenho", () => {
     }).sort((a, b) => a - b);
 
     expect(modelo2022.municipios.length).toBe(5751);
-    expect(tempos[7]).toBeLessThan(10);
+    expect(tempos[7]).toBeLessThan(20);
   });
 });

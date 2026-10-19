@@ -94,6 +94,8 @@ export interface ResultadoDaNoite {
   erroCom50: number | null;
   /** A fração dos momentos com o resultado final dentro da margem de 95%. */
   cobertura: number;
+  /** A mesma fração, só nos momentos depois de 1% das seções. */
+  coberturaDepoisDe1: number;
   /** O % de seções desde o qual a projeção aponta o vencedor até o fim da noite. */
   acertaDesde: number | null;
   /** O % de seções desde o qual o vencedor tem 95% de chance ou mais até o fim da noite. */
@@ -122,13 +124,15 @@ export function executarNoite(modelo: Modelo, noite: NoiteDoModelo, constantes: 
     return inicio;
   };
   const chanceDoVencedor = (m: LinhaDaNoite) => (vence ? m.chance : 1 - m.chance);
+  const cobertura = (lista: LinhaDaNoite[]) => lista.filter((m) => Math.abs(m.projecao - final) <= Z_95 * m.desvio).length / lista.length;
   return {
     final,
     momentos,
     erroCom5: erroCom(5),
     erroCom25: erroCom(25),
     erroCom50: erroCom(50),
-    cobertura: momentos.filter((m) => Math.abs(m.projecao - final) <= Z_95 * m.desvio).length / momentos.length,
+    cobertura: cobertura(momentos),
+    coberturaDepoisDe1: cobertura(momentos.filter((m) => m.secoes > 1)),
     acertaDesde: desde((m) => m.projecao > 0.5 === vence),
     chance95Desde: desde((m) => chanceDoVencedor(m) >= 0.95),
     brier: momentos.reduce((s, m) => s + (chanceDoVencedor(m) - 1) ** 2, 0) / momentos.length,

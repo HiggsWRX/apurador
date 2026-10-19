@@ -76,9 +76,9 @@ export function curvaProjetada(modelo: Modelo, apuracao: Apuracao, projecao: Pro
   const soma = (v: Float64Array) => v.reduce((s, x) => s + x, 0);
   const p0 = soma(secoesTotais) > 0 ? (100 * soma(secoes)) / soma(secoesTotais) : 0;
 
-  // Antes de 2% das seções, o ritmo da noite ainda não diz nada: a "mistura" fica só com o 1º turno, e o
-  // "ritmo da noite" supõe que o que falta chega misturado, cada município na mesma proporção.
-  const ordem = p0 >= 2 ? constantes.ordemDeChegada : constantes.ordemDeChegada === "ritmo-da-noite" ? "proporcional" : "primeiro-turno";
+  // Antes da apuração, e até 2% das seções, o ritmo da noite ainda não diz nada: vale a ordem do 1º turno. O
+  // protótipo fazia isso na "mistura" e, no "ritmo da noite", supunha o que falta chegando misturado.
+  const ordem = p0 >= 2 ? constantes.ordemDeChegada : "primeiro-turno";
 
   // O ritmo da noite em cada UF: a fração do que falta nela que chega a cada ponto percentual do país.
   const ritmo = Float64Array.from(modelo.ufs, (_, u) => {
@@ -121,15 +121,13 @@ export function curvaProjetada(modelo: Modelo, apuracao: Apuracao, projecao: Pro
   const chega = (k: 0 | 1 | 2, u: number, x: number): number => {
     const total = falta[k][u]!;
     if (total === 0) return 0;
-    const proporcao = (x - p0) / (100 - p0);
-    if (ordem === "proporcional") return proporcao * total;
     const noRitmo = Math.min(1, (ritmo[u]! * (x - p0)) / 100) * total;
     if (ordem === "ritmo-da-noite") return noRitmo;
     // no 1º turno: de 0 em p0, linear até o primeiro ponto inteiro; depois, entre os pontos inteiros
     const k1 = noPrimeiroTurno[k];
     const i = Math.min(99, Math.floor(x));
     const ate = x <= primeiro ? ((x - p0) / (primeiro - p0)) * k1[u * 101 + primeiro]! : k1[u * 101 + i]! * (1 - (x - i)) + k1[u * 101 + i + 1]! * (x - i);
-    const noPrimeiro = ate + proporcao * misturado[k][u]!;
+    const noPrimeiro = ate + ((x - p0) / (100 - p0)) * misturado[k][u]!;
     return ordem === "primeiro-turno" ? noPrimeiro : (noPrimeiro + noRitmo) / 2;
   };
   const chegaAte = (u: number, x: number, ultimo: boolean): [number, number, number] =>
@@ -172,7 +170,7 @@ export function curvaProjetada(modelo: Modelo, apuracao: Apuracao, projecao: Pro
       const nos = [p0];
       for (let j = primeiro; j < 100; j++) nos.push(j);
       const joelho = p0 + 100 / ritmo[u]!;
-      if (ordem !== "primeiro-turno" && ordem !== "proporcional" && joelho > p0 && joelho < 100) nos.push(joelho);
+      if (ordem !== "primeiro-turno" && joelho > p0 && joelho < 100) nos.push(joelho);
       nos.push(100);
       nos.sort((a, b) => a - b);
       const chegadas = nos.map((x) => chega(0, u, x));

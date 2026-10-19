@@ -328,7 +328,8 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
   const semReferencia = referencias.every((r) => r.transferencia === null);
   const validosPorApto = (m: number) => modelo.validosPorApto[m]! * (semReferencia ? 1 - modelo.fatiaDosEliminados[m]! : 1);
 
-  // Os válidos do 2º turno em relação aos esperados, onde a apuração já chegou: estima os válidos de quem ainda não tem votos.
+  // Os válidos do 2º turno em relação aos esperados pelo 1º, onde a apuração já chegou: estima os válidos de quem
+  // ainda não tem votos.
   let apurados = 0;
   let esperados = 0;
   apuracao.forEach((a, m) => {
@@ -336,7 +337,9 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
     apurados += a.votos[0]! + a.votos[1]!;
     esperados += a.aptos * validosPorApto(m);
   });
-  const comparecimento = esperados > 0 ? apurados / esperados : 1;
+  const validosSobreEsperados = esperados > 0 ? apurados / esperados : 1;
+  /** A parte da variância comum a todo o voto que falta de um lugar: a nacional, a regional e o erro da referência. */
+  const varianciaComum = (falta: number, ref: Referencia) => falta * falta * (nacional * nacional + regional * regional + ref.erro * ref.erro);
 
   const votoQueFalta = new Float64Array(n);
   const fatiaDoQueFalta = new Float64Array(n);
@@ -358,8 +361,8 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
     const somas: Somas = { votos1: a.votos[0]!, votos, secoes: a.secoes, secoesTotais: a.secoesTotais, falta: 0, falta1: 0, variancia: 0 };
     const aptosQueFaltam = Math.max(0, a.aptosTotais - a.aptos);
     if (aptosQueFaltam > 0) {
-      // Os válidos que faltam, pelo comparecimento do próprio município quando ele já tem eleitores bastantes.
-      const falta = aptosQueFaltam * (a.aptos >= 300 && votos > 0 ? votos / a.aptos : validosPorApto(m) * comparecimento);
+      // Os válidos que faltam, pelos válidos por apto já apurados no próprio município quando ele tem eleitores bastantes.
+      const falta = aptosQueFaltam * (a.aptos >= 300 && votos > 0 ? votos / a.aptos : validosPorApto(m) * validosSobreEsperados);
       // A estimativa da referência, misturada com o placar parcial do município, que pesa metade com `pesoDoMunicipio` votos.
       const estimativa = estimar(modelo, m, ref.transferencia);
       const peso = votos > 0 ? votos / (votos + constantes.pesoDoMunicipio) : 0;
@@ -372,7 +375,7 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
     }
     acumular(porUf[u]!, somas);
     // No município, a mesma fórmula restrita ao voto que falta dele.
-    somas.variancia += somas.falta * somas.falta * (nacional * nacional + regional * regional + ref.erro * ref.erro);
+    somas.variancia += varianciaComum(somas.falta, ref);
     const r = resultado(somas, constantes) as ResultadoDoMunicipio;
     r.virada = viradaDoMunicipio(a, somas.falta, fatiaDoQueFalta[m]!, r.desvio * r.validos);
     return r;
@@ -389,8 +392,7 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
     const g = grupos.get(ref.grupo) ?? { falta: 0, erro: ref.erro };
     g.falta += somas.falta;
     grupos.set(ref.grupo, g);
-    const variancia = somas.variancia + somas.falta * somas.falta * (nacional * nacional + regional * regional + ref.erro * ref.erro);
-    ufs[sigla] = { ...resultado({ ...somas, variancia }, constantes), referencia: ref.fonte };
+    ufs[sigla] = { ...resultado({ ...somas, variancia: somas.variancia + varianciaComum(somas.falta, ref) }, constantes), referencia: ref.fonte };
   });
   brasil.variancia += (brasil.falta * nacional) ** 2;
   for (const g of grupos.values()) brasil.variancia += (g.falta * g.erro) ** 2;
