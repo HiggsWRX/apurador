@@ -94,4 +94,76 @@ O modelo aceita zonas nos municípios com mais de uma: cada zona entra como uma 
 
 ## Resultados
 
-Entram depois de rodar, num commit seguinte a este.
+Rodada em 19/10/2026 com `npm run calibracao`, sobre o código e os dados deste commit. Os números completos estão nos CSVs de `docs/calibracao/`.
+
+### Constantes escolhidas
+
+| Constante | Provisória | Escolhida |
+|---|---|---|
+| Incerteza regional | 1,0 p.p. | 2,0 p.p. |
+| Incerteza nacional | 1,0 p.p. | 2,0 p.p. |
+| Peso do próprio município | 3.000 votos | 10.000 votos |
+| Ordem de chegada | "mistura" | "mistura" |
+| K | 0,50% | 0,25% |
+| Limite de "sem sinal de virada" | 5% | 2% |
+
+Todos os passos escolheram.
+
+### 1. Incertezas e peso do próprio município
+
+Passaram 39 dos 48 candidatos. Ficaram de fora 9 pela cobertura e 0 só pela chance de quem perdeu. Os dez de menor erro médio, entre os que passaram (média das três noites, momentos de 5% a 50% das seções):
+
+| Regional (p.p.) | Nacional (p.p.) | Peso (votos) | Erro médio (p.p.) | Margem média (p.p.) |  |
+|---|---|---|---|---|---|
+| 0,5 | 1,0 | 10.000 | 0,403 | 1,53 |  |
+| 0,5 | 1,5 | 10.000 | 0,403 | 2,21 |  |
+| 0,5 | 2,0 | 10.000 | 0,403 | 2,91 |  |
+| 1,0 | 1,0 | 10.000 | 0,403 | 1,58 |  |
+| 1,0 | 1,5 | 10.000 | 0,403 | 2,24 |  |
+| 1,0 | 2,0 | 10.000 | 0,403 | 2,93 |  |
+| 1,5 | 0,5 | 10.000 | 0,403 | 1,11 |  |
+| 1,5 | 1,0 | 10.000 | 0,403 | 1,66 |  |
+| 1,5 | 1,5 | 10.000 | 0,403 | 2,30 |  |
+| 1,5 | 2,0 | 10.000 | 0,403 | 2,98 |  |
+
+Por noite, o escolhido e o provisório:
+
+| Candidato | Noite | Cobertura | Maior chance de quem perdeu | Erro médio (p.p.) | Margem média (p.p.) |
+|---|---|---|---|---|---|
+| escolhido | 2º turno de 2022 | 100,0% | 38,9% | 0,354 | 3,02 |
+| escolhido | 2º turno de 2018 | 100,0% | 0,4% | 0,745 | 3,02 |
+| escolhido | 1º turno de 2026 | 100,0% | 40,4% | 0,111 | 3,08 |
+| provisório | 2º turno de 2022 | 98,0% | 30,3% | 0,369 | 1,54 |
+| provisório | 2º turno de 2018 | 98,0% | 0,0% | 0,776 | 1,56 |
+| provisório | 1º turno de 2026 | 96,1% | 32,1% | 0,183 | 1,62 |
+
+### 2. Ordem de chegada
+
+O erro da curva projetada do Brasil contra a curva real, em pontos percentuais (momentos de 5% a 50% das seções):
+
+| Ordem | 2º turno de 2022 | 2º turno de 2018 | 1º turno de 2026 | Média |  |
+|---|---|---|---|---|---|
+| "mistura" | 0,544 | 0,750 | 0,717 | 0,670 | escolhida |
+| "1º turno" | 1,201 | 1,580 | 0,228 | 1,003 |  |
+| "ritmo da noite" | 0,304 | 0,637 | 1,150 | 0,697 |  |
+
+### 3. K
+
+O maior erro de 0,1% a 5% das seções, em pontos percentuais, na base "Apuração + pesquisas", e a menor cobertura entre os casos:
+
+| K | 2º turno de 2022 | 2º turno de 2022, +2 para LULA | 2º turno de 2022, +2 para JAIR BOLSONARO | 2º turno de 2018 | 1º turno de 2026 | Pior caso | Menor cobertura |  |
+|---|---|---|---|---|---|---|---|---|
+| 0,25% | 1,32 | 1,76 | 1,24 | 1,35 | 2,00 | 2,00 | 100,0% | escolhido |
+| 0,50% | 1,09 | 1,76 | 1,60 | 1,91 | 2,02 | 2,02 | 100,0% |  |
+| 1,00% | 0,80 | 1,81 | 1,82 | 2,27 | 2,03 | 2,27 | 100,0% |  |
+| 2,00% | 0,52 | 1,85 | 1,96 | 2,47 | 2,05 | 2,47 | 100,0% |  |
+
+### 4. Sinal de virada
+
+Nas oito execuções, os lugares de cima (Brasil, UFs e Exterior) com algum momento "sem sinal de virada" seguido de virada, e a maior fração dos momentos "sem sinal de virada" de municípios seguidos de virada:
+
+| Limite | Lugares de cima com virada depois | Municípios (maior fração) |  |
+|---|---|---|---|
+| 5% | Brasil | 0,45% | falha |
+| 2% | nenhum | 0,33% | escolhido |
+| 1% | nenhum | 0,22% |  |
