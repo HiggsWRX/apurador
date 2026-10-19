@@ -315,6 +315,30 @@ interface Somas {
   varianciaDasPesquisas: number;
 }
 
+/**
+ * Desvios locais independentes, de variância s², que se anulam sobre todo o voto do lugar de cima (Σ V·x = 0, com V os
+ * válidos finais de cada parte). Sobre o voto que falta (Σ a·x), sobra a variância condicionada a isso:
+ * Σ a²s² − (Σ a·V·s²)² ÷ Σ V²s². É zero antes da apuração, quando o que falta é todo o voto.
+ */
+interface DesviosQueSeAnulam {
+  aa: number;
+  av: number;
+  vv: number;
+}
+
+const desviosQueSeAnulam = (): DesviosQueSeAnulam => ({ aa: 0, av: 0, vv: 0 });
+
+/** Soma uma parte com `a` votos que faltam, `v` válidos finais e desvio local `s`. */
+function somarDesvio(d: DesviosQueSeAnulam, a: number, v: number, s: number): void {
+  const s2 = s * s;
+  d.aa += a * a * s2;
+  d.av += a * v * s2;
+  d.vv += v * v * s2;
+}
+
+/** A variância que os desvios deixam sobre o voto que falta, já descontado o que se anula. */
+const oQueNaoSeAnula = (d: DesviosQueSeAnulam) => (d.vv > 0 ? Math.max(0, d.aa - (d.av * d.av) / d.vv) : 0);
+
 /** Os números de um lugar, a partir das somas dos seus municípios, com o peso das pesquisas da base. */
 function resultado(somas: Somas, constantes: Constantes, peso: number): ResultadoDoLugar {
   const validos = somas.votos + somas.falta;
@@ -374,7 +398,10 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
 
   // A base "Apuração + pesquisas": o peso das pesquisas sai do % de seções do Brasil, e cada município parte da
   // indicação das pesquisas dele. A incerteza das pesquisas é a nacional do agregado, comum a todos os lugares, mais
-  // as locais da UF e do município, independentes entre lugares.
+  // as locais: a da UF, em torno do Brasil, e a do município, em torno da UF. Por serem desvios em torno do lugar de
+  // cima, as locais se anulam nele: antes da apuração, o Brasil fica só com a nacional, e cada UF, com a nacional e a
+  // dela (decisão 3: 1,5, ~1,8 na UF média e ~2,5 em Goiás). Um município sozinho na UF, o Distrito Federal, não se
+  // afasta dela.
   const secoesTotais = apuracao.reduce((s, a) => s + a.secoesTotais, 0);
   const secoesDoBrasil = secoesTotais > 0 ? (100 * apuracao.reduce((s, a) => s + a.secoes, 0)) / secoesTotais : 0;
   const peso = agregado ? pesoDasPesquisas(secoesDoBrasil, constantes) : 0;
@@ -386,6 +413,11 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
   const localDaUfDe = (u: number) => localDaUf * modelo.fatiaDosEliminadosDaUf[u]!;
   /** A parte da variância das pesquisas comum a todo o voto que falta de um lugar dentro de uma UF: a nacional e a local da UF. */
   const varianciaComumDasPesquisas = (falta: number, u: number) => falta * falta * (nacionalDasPesquisas ** 2 + localDaUfDe(u) ** 2);
+  const municipiosDaUf = new Int32Array(modelo.ufs.length);
+  modelo.ufDoMunicipio.forEach((u) => municipiosDaUf[u]!++);
+  // Os desvios locais dos municípios de cada UF e os das UFs no Brasil, que se anulam sobre todo o voto do lugar de cima.
+  const municipiosQueSeAnulam = modelo.ufs.map(desviosQueSeAnulam);
+  const ufsQueSeAnulam = desviosQueSeAnulam();
 
   // Os válidos esperados por eleitor apto, do 1º turno. No recuo "1º turno" (o Brasil ainda sem o mínimo de votos,
   // e então todas as UFs nele), contam só os votos dos dois finalistas: cada lugar parte assim do próprio placar
@@ -410,6 +442,7 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
   const votoQueFalta = new Float64Array(n);
   const fatiaDoQueFalta = new Float64Array(n);
   const somaVazia = (): Somas => ({ votos1: 0, votos: 0, secoes: 0, secoesTotais: 0, falta: 0, falta1: 0, varianciaDaApuracao: 0, varianciaDasPesquisas: 0 });
+  // A variância das pesquisas de cada lugar é montada à parte, porque as locais não se somam de um lugar para o de cima.
   const acumular = (a: Somas, b: Somas) => {
     a.votos1 += b.votos1;
     a.votos += b.votos;
@@ -418,7 +451,6 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
     a.falta += b.falta;
     a.falta1 += b.falta1;
     a.varianciaDaApuracao += b.varianciaDaApuracao;
-    a.varianciaDasPesquisas += b.varianciaDasPesquisas;
   };
   const porUf = modelo.ufs.map(somaVazia);
   const municipios = apuracao.map((a, m): ResultadoDoMunicipio => {
@@ -442,7 +474,9 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
       somas.falta1 = falta * fatia;
       somas.varianciaDaApuracao = falta * falta * (1 - pesoDoPlacar) * ref.dispersao * ref.dispersao;
       // A parte local do município na incerteza das pesquisas, que o placar parcial dele também reduz.
-      somas.varianciaDasPesquisas = (falta * (1 - pesoDoPlacar) * localDoMunicipio * modelo.fatiaDosEliminados[m]!) ** 2;
+      const local = municipiosDaUf[u]! > 1 ? localDoMunicipio * modelo.fatiaDosEliminados[m]! : 0;
+      somarDesvio(municipiosQueSeAnulam[u]!, falta * (1 - pesoDoPlacar), votos + falta, local);
+      somas.varianciaDasPesquisas = (falta * (1 - pesoDoPlacar) * local) ** 2;
     }
     acumular(porUf[u]!, somas);
     // No município, a mesma fórmula restrita ao voto que falta dele.
@@ -461,19 +495,21 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
     const ref = referencias[u]!;
     acumular(brasil, somas);
     brasil.varianciaDaApuracao += (somas.falta * regional) ** 2;
-    brasil.varianciaDasPesquisas += (somas.falta * localDaUfDe(u)) ** 2;
+    const dosMunicipios = oQueNaoSeAnula(municipiosQueSeAnulam[u]!);
+    brasil.varianciaDasPesquisas += dosMunicipios;
+    somarDesvio(ufsQueSeAnulam, somas.falta, somas.votos + somas.falta, localDaUfDe(u));
     const g = grupos.get(ref.grupo) ?? { falta: 0, erro: ref.erro };
     g.falta += somas.falta;
     grupos.set(ref.grupo, g);
     const variancias = {
       varianciaDaApuracao: somas.varianciaDaApuracao + varianciaComumDaApuracao(somas.falta, ref),
-      varianciaDasPesquisas: somas.varianciaDasPesquisas + varianciaComumDasPesquisas(somas.falta, u),
+      varianciaDasPesquisas: dosMunicipios + varianciaComumDasPesquisas(somas.falta, u),
     };
     ufs[sigla] = { ...resultado({ ...somas, ...variancias }, constantes, peso), referencia: ref.fonte };
   });
   brasil.varianciaDaApuracao += (brasil.falta * nacional) ** 2;
   for (const g of grupos.values()) brasil.varianciaDaApuracao += (g.falta * g.erro) ** 2;
-  brasil.varianciaDasPesquisas += (brasil.falta * nacionalDasPesquisas) ** 2;
+  brasil.varianciaDasPesquisas += oQueNaoSeAnula(ufsQueSeAnulam) + (brasil.falta * nacionalDasPesquisas) ** 2;
 
   return { pesoDasPesquisas: peso, brasil: resultado(brasil, constantes, peso), ufs, municipios, votoQueFalta, fatiaDoQueFalta };
 }

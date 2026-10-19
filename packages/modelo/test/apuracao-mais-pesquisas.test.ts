@@ -40,14 +40,17 @@ describe("antes da primeira seção, em 25/10", () => {
   // Como na "Só apuração", a fatia do voto que falta de cada município fica entre 1% e 99%: os postos do Exterior
   // em que um finalista teve quase todos os votos afastam a soma da indicação exata.
   const ATE_UM_MILESIMO_DE_PONTO = 5;
+  /** A fatia dos eliminados nos válidos do 1º turno de um conjunto de municípios. */
+  const eliminados = (municipios: typeof base2026.municipios) =>
+    municipios.reduce((s, m) => s + m.validos - m.votos[0]! - m.votos[1]!, 0) / municipios.reduce((s, m) => s + m.validos, 0);
+  const daUf = (uf: string) => base2026.municipios.filter((m) => m.uf === uf);
 
   it("dá às pesquisas peso 100% e projeta o Brasil no agregado", () => {
     expect(base2026.finalistas[0]!.numero).toBe(22);
     expect(projecao.pesoDasPesquisas).toBe(1);
     expect(projecao.brasil.projecao).toBeCloseTo(0.52, ATE_UM_MILESIMO_DE_PONTO);
-    // A chance do agregado é Φ((52 − 50) ÷ 1,5) = 90,9%. A da projeção fica a menos de 1 ponto dela: as partes locais
-    // das UFs e dos municípios somam um pouco à incerteza nacional.
-    expect(Math.abs(projecao.brasil.chance - 0.909)).toBeLessThan(0.01);
+    // a chance do agregado, Φ((52 − 50) ÷ 1,5): as partes locais das UFs e dos municípios se anulam no Brasil
+    expect(projecao.brasil.chance).toBeCloseTo(0.9088, 4);
   });
 
   it("projeta cada UF, o Exterior e cada município na indicação das pesquisas dele", () => {
@@ -60,29 +63,30 @@ describe("antes da primeira seção, em 25/10", () => {
 
   it("tem a incerteza das pesquisas: 1,5 ponto no Brasil, ~1,8 na UF média e ~2,5 em Goiás", () => {
     // Decisão 3: 1,5 nacional, mais 0,13 × a fatia dos eliminados da UF, que é de ~7,8% em média e de 15,3% em Goiás.
-    // A decisão arredonda sem as partes locais dos municípios, que somam até ~0,06 ponto.
+    // Os desvios dos municípios em torno da UF se anulam nela, e os das UFs em torno do Brasil, no Brasil.
     const ufs = modelo.ufs.filter((uf) => uf !== "ZZ");
     const media = ufs.reduce((s, uf) => s + projecao.ufs[uf]!.desvio, 0) / ufs.length;
 
     expect(ufs).toHaveLength(27);
-    expect(Math.abs(projecao.brasil.desvio - 0.015)).toBeLessThan(0.0005);
-    expect(Math.abs(media - 0.018)).toBeLessThan(0.001);
-    expect(Math.abs(projecao.ufs.GO!.desvio - 0.025)).toBeLessThan(0.001);
+    expect(projecao.brasil.desvio).toBeCloseTo(0.015, 12);
+    for (const uf of modelo.ufs) expect(projecao.ufs[uf]!.desvio, uf).toBeCloseTo(Math.hypot(0.015, 0.13 * eliminados(daUf(uf))), 12);
+    expect(Math.abs(media - 0.018)).toBeLessThan(0.0005);
+    expect(Math.abs(projecao.ufs.GO!.desvio - 0.025)).toBeLessThan(0.0005);
     // e a "Só apuração", que parte do 1º turno sem pesquisas, tem a margem bem mais larga
     expect(projetar(modelo, apuracao, constantes).brasil.desvio).toBeGreaterThan(2 * projecao.brasil.desvio);
   });
 
   it("dá a cada município a incerteza nacional, a local da UF e a local dele, 0,15 × a fatia dos eliminados no 1º turno dele", () => {
-    const eliminados = (municipios: typeof base2026.municipios) =>
-      municipios.reduce((s, m) => s + m.validos - m.votos[0]! - m.votos[1]!, 0) / municipios.reduce((s, m) => s + m.validos, 0);
-    const daUf = new Map(modelo.ufs.map((uf) => [uf, eliminados(base2026.municipios.filter((m) => m.uf === uf))]));
     base2026.municipios.forEach((m, i) => {
       if (m.validos <= 0) return;
-      const esperado = Math.sqrt(0.015 ** 2 + (0.13 * daUf.get(m.uf)!) ** 2 + (0.15 * eliminados([m])) ** 2);
-      expect(projecao.municipios[i]!.desvio, `${m.uf}/${m.municipio}`).toBeCloseTo(esperado, 12);
+      // o Distrito Federal é um município só, que não se afasta da própria UF
+      const proprio = m.uf === "DF" ? 0 : 0.15 * eliminados([m]);
+      expect(projecao.municipios[i]!.desvio, `${m.uf}/${m.municipio}`).toBeCloseTo(Math.hypot(0.015, 0.13 * eliminados(daUf(m.uf)), proprio), 12);
     });
-    // o Distrito Federal é um município só: as duas partes locais, com 10,6% de eliminados, dão ~2,6 pontos
-    expect(projecao.ufs.DF!.desvio).toBeCloseTo(0.0258, 4);
+    // com 10,6% de eliminados, o Distrito Federal fica com ~2,04 pontos, na página da UF e na do município
+    const brasilia = base2026.municipios.findIndex((m) => m.uf === "DF");
+    expect(projecao.ufs.DF!.desvio).toBeCloseTo(0.0204, 4);
+    expect(projecao.municipios[brasilia]!.desvio).toBeCloseTo(projecao.ufs.DF!.desvio, 12);
   });
 });
 
