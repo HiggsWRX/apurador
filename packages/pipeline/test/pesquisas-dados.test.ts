@@ -12,12 +12,48 @@ const entrada = {
   pesquisas: ler("pesquisas.csv"),
   institutos: ler("pesquisas-institutos.csv"),
   extrato: JSON.parse(ler("pesquisas-tse.json")) as ExtratoDoTse,
+  verificacoes: ler("pesquisas-verificacoes.csv"),
   turno: JSON.parse(ler("turnos/2026-1.json")) as Turno,
 };
 
 describe("pesquisas.csv", () => {
   it("bate, linha a linha, com o extrato do TSE da última conferência", () => {
     expect(listaDasPesquisas(entrada).length).toBeGreaterThan(0);
+  });
+
+  it("dá a cada pesquisa um dos 14 institutos da lista", () => {
+    const daLista = new Set(lerInstitutos(entrada.institutos).map((i) => i.institutoDaLista));
+    for (const p of listaDasPesquisas(entrada)) expect(daLista, p.registro).toContain(p.institutoDaLista);
+  });
+
+  describe("depois do congelamento às 23h de 24/10", () => {
+    // Uma conferência em 25/10, às 8h, com todas as pesquisas da lista de novo.
+    const conferidoEm = "2026-10-25T11:00:00.000Z";
+    const [cabecalho, ...linhas] = lerCsv(entrada.verificacoes);
+    const registro = cabecalho!.indexOf("registro");
+    const reconferencia = linhas.filter((l) => l[0] === entrada.extrato.fonte.conferidoEm).map((l) => [conferidoEm, ...l.slice(1)]);
+    const depois = (verificacoes: string[][]) => ({
+      ...entrada,
+      extrato: { ...entrada.extrato, fonte: { ...entrada.extrato.fonte, conferidoEm } },
+      verificacoes: escreverCsv([cabecalho!, ...verificacoes]),
+    });
+
+    it("aceita as pesquisas que já estavam na lista", () => {
+      expect(listaDasPesquisas(depois([...linhas, ...reconferencia])).length).toBeGreaterThan(0);
+    });
+
+    it("recusa uma pesquisa que entra na lista depois dele", () => {
+      const nova = reconferencia[0]![registro]!;
+      const semAntes = linhas.filter((l) => l[registro] !== nova);
+      expect(() => listaDasPesquisas(depois([...semAntes, ...reconferencia]))).toThrow(new RegExp(`${nova}.*depois do congelamento`));
+    });
+
+    it("recusa uma pesquisa que, antes dele, só tinha sido conferida como divergente", () => {
+      const corrigida = reconferencia[0]![registro]!;
+      const resultado = cabecalho!.indexOf("resultado");
+      const divergenteAntes = linhas.map((l) => (l[registro] === corrigida ? l.map((v, i) => (i === resultado ? "divergente: entrevistas" : v)) : l));
+      expect(() => listaDasPesquisas(depois([...divergenteAntes, ...reconferencia]))).toThrow(new RegExp(`${corrigida}.*depois do congelamento`));
+    });
   });
 
   it("quebra com uma linha que não bate, dizendo qual", () => {

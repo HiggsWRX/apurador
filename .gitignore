@@ -11,3 +11,5 @@ dist/
 # protótipos vivem em branches descartáveis (prototipo/*), fora da main
 prototipos/
 .claude/launch.json
+# o build dos testes com as chaves desligadas (packages/site/test/chaves-desligadas)
+dist-chaves-desligadas/

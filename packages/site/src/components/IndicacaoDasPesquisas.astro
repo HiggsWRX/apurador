@@ -1,0 +1,54 @@
+---
+import type { Lugar } from "@apurador/pipeline";
+import { formatarCalculo, formatarDia, umaCasa } from "../lib/formato";
+import { AGREGADO, entreOsFinalistas, indicacaoDoLugar } from "../lib/pesquisas";
+import ValoresDosFinalistas from "./ValoresDosFinalistas.astro";
+
+// A indicação das pesquisas numa UF, no Exterior ou num município (Agregado de pesquisas e erro histórico, decisões 6
+// e 7): não há pesquisa do 2º turno por lugar, então ela é o placar entre finalistas do lugar no 1º turno somado à
+// mudança que o agregado mostra para o Brasil. Deriva do agregado e desliga com a chave dele. A mudança não aparece
+// em número aqui: arredondada à parte, ela nem sempre fecharia a conta com os números do lugar.
+
+interface Props {
+  lugar: Lugar;
+}
+const { lugar } = Astro.props;
+const indicacao = indicacaoDoLugar(lugar.id);
+
+function explicacao(i: { placarEntreFinalistas: number; indicacao: number }): string {
+  const placar = entreOsFinalistas(umaCasa(i.placarEntreFinalistas))
+    .map((c) => `${c.candidato.nomeUrna} ${formatarCalculo(c.pct)}%`)
+    .join(", ");
+  const limitada = i.indicacao === 0 || i.indicacao === 100 ? ", limitado a 0–100%" : "";
+  return (
+    "Não há pesquisas do 2º turno por estado ou município. Aqui, a indicação das pesquisas é o placar entre finalistas no " +
+    `1º turno (${placar}) somado à mudança que o agregado de pesquisas mostra para o Brasil desde o 1º turno${limitada}.`
+  );
+}
+---
+
+{
+  indicacao && (
+    <section class="cartao indicacao" data-bloco="indicacao-das-pesquisas" aria-labelledby="indicacao-titulo">
+      <h2 id="indicacao-titulo">Indicação das pesquisas</h2>
+      {indicacao.tipo === "indicacao" ? (
+        <>
+          <ValoresDosFinalistas valores={entreOsFinalistas(umaCasa(indicacao.indicacao))} />
+          <p>{explicacao(indicacao)}</p>
+          <p class="nota">Cálculo do Apurador com dados do TSE e o agregado de pesquisas de {formatarDia(AGREGADO!.dia)}. Não é uma pesquisa própria.</p>
+        </>
+      ) : (
+        <p>
+          Não há indicação das pesquisas aqui:{" "}
+          {indicacao.tipo === "sem-votacao" ? "este lugar não teve votação no 1º turno de 2026." : "nenhum dos dois finalistas teve voto aqui no 1º turno de 2026."}
+        </p>
+      )}
+    </section>
+  )
+}
+
+<style>
+  p {
+    margin: 0.5rem 0 0;
+  }
+</style>

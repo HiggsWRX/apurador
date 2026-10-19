@@ -5,6 +5,12 @@ import { existsSync, readFileSync } from "node:fs";
 
 export const DIST = new URL("../dist/", import.meta.url);
 
+/** O build do mesmo código com o arquivo de chaves de `test/chaves-desligadas/`, que desliga todas as chaves. */
+export const DIST_CHAVES_DESLIGADAS = new URL("../dist-chaves-desligadas/", import.meta.url);
+
+/** O relógio dos builds dos testes, nunca o real: o agregado da página é o deste instante. */
+export const AGORA = "2026-10-19T12:00:00-03:00";
+
 export const existe = (caminho: string) => existsSync(new URL(`.${caminho}`, DIST));
 
 /** O HTML da página no caminho do site ("/", "/sp/", "/sp/campinas/"). */

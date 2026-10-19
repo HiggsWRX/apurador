@@ -1,0 +1,155 @@
+---
+import { DIA_DA_ELEICAO, diasEntre, INICIO_DO_2O_TURNO } from "@apurador/modelo";
+import { formatarCalculo, formatarDia, formatarPontos, umaCasa } from "../lib/formato";
+import { corDoPartido } from "../lib/identidade";
+import { AGREGADO, entreOsFinalistas, FINALISTAS, PLACAR_ENTRE_FINALISTAS_DO_BRASIL, quemGanhou, TENDENCIA } from "../lib/pesquisas";
+import ValoresDosFinalistas from "./ValoresDosFinalistas.astro";
+
+// O agregado de pesquisas do Brasil antes das 17h (Agregado de pesquisas e erro histórico, decisão 9b): o valor do
+// dia com a faixa de 95% e a tendência desde 05/10, num bloco separado da lista das pesquisas, com o aviso. A chance
+// de vitória fica fora daqui: ela é da projeção, que tem a sua própria chave.
+
+const pct = (n: number) => `${formatarCalculo(n)}%`;
+const [primeiro, segundo] = FINALISTAS;
+const primeiroTurno = entreOsFinalistas(umaCasa(PLACAR_ENTRE_FINALISTAS_DO_BRASIL));
+// A mudança desde o 1º turno entre os números como a página os mostra, para a conta fechar: 51,0%, +0,1, 51,1%.
+const ganhou = AGREGADO && quemGanhou(umaCasa(umaCasa(AGREGADO.valor) - umaCasa(PLACAR_ENTRE_FINALISTAS_DO_BRASIL)));
+const regra =
+  AGREGADO &&
+  `Média simples, em votos válidos, de ${AGREGADO.pesquisas.length} pesquisas: a mais recente de cada instituto da lista, com campo terminando nos ` +
+    `${AGREGADO.janela} dias anteriores (${formatarDia(AGREGADO.campoEntre[0])} a ${formatarDia(AGREGADO.campoEntre[1])})` +
+    `${AGREGADO.janela > 7 ? ", porque os 7 dias anteriores tinham menos de 4 institutos" : ""}. ` +
+    "Os válidos de cada pesquisa saem dos votos totais publicados, sem peso por amostra, data ou modo. " +
+    (AGREGADO.dia === DIA_DA_ELEICAO ? "É o agregado da noite, congelado às 23h de 24/10." : "O agregado congela às 23h de 24/10.");
+
+// O gráfico da tendência: de 05/10 a 25/10, o dia da eleição, no eixo horizontal e, no vertical, uma faixa simétrica
+// em torno de 50% que cabe a faixa de 95% de todos os dias. Desenhado para a largura do celular: no computador, ele
+// cresce até 30rem.
+const LARGURA = 340;
+const ALTURA = 180;
+const MARGEM = { esq: 34, dir: 10, topo: 8, base: 22 };
+const largura = LARGURA - MARGEM.esq - MARGEM.dir;
+const altura = ALTURA - MARGEM.topo - MARGEM.base;
+const desvio = Math.max(5, ...TENDENCIA.flatMap((a) => a.faixa.map((f) => Math.ceil(Math.abs(f - 50) / 5) * 5)));
+const x = (dia: string) => MARGEM.esq + (diasEntre(INICIO_DO_2O_TURNO, dia) / diasEntre(INICIO_DO_2O_TURNO, DIA_DA_ELEICAO)) * largura;
+const y = (v: number) => MARGEM.topo + altura / 2 - ((v - 50) / desvio) * (altura / 2);
+const ponto = (dia: string, v: number) => `${x(dia).toFixed(1)},${y(v).toFixed(1)}`;
+const linha = (valor: (a: (typeof TENDENCIA)[number]) => number) => TENDENCIA.map((a, i) => `${i ? "L" : "M"}${ponto(a.dia, valor(a))}`).join("");
+const faixa =
+  TENDENCIA.map((a, i) => `${i ? "L" : "M"}${ponto(a.dia, a.faixa[1])}`).join("") +
+  [...TENDENCIA].reverse().map((a) => `L${ponto(a.dia, a.faixa[0])}`).join("") +
+  "Z";
+const marcas = [INICIO_DO_2O_TURNO, "2026-10-15", DIA_DA_ELEICAO];
+const [primeiroDia, ultimoDia] = [TENDENCIA[0], TENDENCIA.at(-1)];
+const descricao =
+  primeiroDia && ultimoDia
+    ? `Tendência do agregado de pesquisas, dia a dia, de ${formatarDia(primeiroDia.dia)} a ${formatarDia(ultimoDia.dia)}: ` +
+      entreOsFinalistas(primeiroDia.valor)
+        .map((c, i) => `${c.candidato.nomeUrna} ${i ? "de" : "foi de"} ${pct(c.pct)} a ${pct(entreOsFinalistas(ultimoDia.valor)[i]!.pct)}`)
+        .join(", e ") +
+      "."
+    : "";
+---
+
+<section class="cartao agregado" data-bloco="agregado-de-pesquisas" aria-labelledby="agregado-titulo">
+  <h2 id="agregado-titulo">Agregado de pesquisas</h2>
+  {
+    !AGREGADO ? (
+      <p>Ainda não há agregado: nenhuma pesquisa da lista tem campo terminando nos 14 dias anteriores.</p>
+    ) : (
+      <>
+        <ValoresDosFinalistas valores={entreOsFinalistas(umaCasa(AGREGADO.valor))} />
+        <p>
+          Em votos válidos, em {formatarDia(AGREGADO.dia)}. Faixa de 95%: de {pct(AGREGADO.faixa[0])} a {pct(AGREGADO.faixa[1])} para {primeiro.nomeUrna}.
+        </p>
+        <figure>
+          <svg class="tendencia" viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={descricao}>
+            {[50 - desvio, 50, 50 + desvio].map((v) => (
+              <>
+                <line class:list={["grade", { meio: v === 50 }]} x1={MARGEM.esq} x2={LARGURA - MARGEM.dir} y1={y(v)} y2={y(v)} />
+                <text class="eixo" x={MARGEM.esq - 5} y={y(v) + 3} text-anchor="end">
+                  {v}%
+                </text>
+              </>
+            ))}
+            {marcas.map((dia, i) => (
+              <text class="eixo" x={x(dia)} y={ALTURA - 6} text-anchor={i === 0 ? "start" : i === marcas.length - 1 ? "end" : "middle"}>
+                {formatarDia(dia)}
+              </text>
+            ))}
+            <path class="faixa" data-cor={corDoPartido(primeiro.partido)} d={faixa} />
+            <path class="linha" data-cor={corDoPartido(segundo.partido)} d={linha((a) => 100 - a.valor)} />
+            <path class="linha" data-cor={corDoPartido(primeiro.partido)} d={linha((a) => a.valor)} />
+            {TENDENCIA.map((a) => (
+              <circle class="ponto" data-cor={corDoPartido(segundo.partido)} cx={x(a.dia).toFixed(1)} cy={y(100 - a.valor).toFixed(1)} r="2" />
+            ))}
+            {TENDENCIA.map((a) => (
+              <circle class="ponto" data-cor={corDoPartido(primeiro.partido)} data-dia={a.dia} cx={x(a.dia).toFixed(1)} cy={y(a.valor).toFixed(1)} r="2" />
+            ))}
+          </svg>
+          <figcaption class="nota">Tendência desde 05/10, recalculada dia a dia com a mesma regra, com a faixa de 95% de {primeiro.nomeUrna}.</figcaption>
+        </figure>
+        <p>
+          No 1º turno, entre os dois finalistas: {primeiroTurno.map((c) => `${c.candidato.nomeUrna} ${pct(c.pct)}`).join(", ")}.{" "}
+          {ganhou ? `Desde então: ${ganhou.candidato.nomeUrna} +${formatarPontos(ganhou.pontos)}.` : "Sem mudança desde então."}
+        </p>
+        <p class="nota">{regra}</p>
+        <p class="aviso">Média calculada pelo Apurador sobre pesquisas registradas no TSE. Não é uma pesquisa própria.</p>
+      </>
+    )
+  }
+</section>
+
+<style>
+  p {
+    margin: 0.5rem 0 0;
+  }
+  figure {
+    margin: 0.75rem 0 0;
+  }
+  .tendencia {
+    display: block;
+    width: 100%;
+    max-width: 30rem;
+    height: auto;
+  }
+  .grade {
+    stroke: var(--trilho);
+  }
+  .grade.meio {
+    stroke: var(--borda-forte);
+  }
+  .eixo {
+    fill: var(--texto-suave);
+    font-size: 10px;
+  }
+  .faixa {
+    opacity: 0.15;
+  }
+  .faixa[data-cor="flavio"] {
+    fill: var(--cor-flavio);
+  }
+  .faixa[data-cor="lula"] {
+    fill: var(--cor-lula);
+  }
+  .linha {
+    fill: none;
+    stroke-width: 2;
+  }
+  .linha[data-cor="flavio"] {
+    stroke: var(--cor-flavio);
+  }
+  .linha[data-cor="lula"] {
+    stroke: var(--cor-lula);
+  }
+  .ponto[data-cor="flavio"] {
+    fill: var(--cor-flavio);
+  }
+  .ponto[data-cor="lula"] {
+    fill: var(--cor-lula);
+  }
+  .aviso {
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+</style>

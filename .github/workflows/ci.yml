@@ -4,6 +4,12 @@ on:
   pull_request:
   push:
     branches: [main]
+  # O agregado de pesquisas é o do dia em que o site é construído: um deploy logo depois da meia-noite de Brasília o
+  # põe em dia mesmo sem pesquisa nova, e o das 23h05 de 24/10 põe no ar o agregado da noite, congelado às 23h.
+  schedule:
+    - cron: "5 3 * * *"
+    - cron: "5 2 25 10 *"
+  workflow_dispatch:
 
 jobs:
   testes:
@@ -22,7 +28,7 @@ jobs:
 
   deploy:
     needs: testes
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

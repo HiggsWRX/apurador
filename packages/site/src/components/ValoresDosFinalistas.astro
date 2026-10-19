@@ -1,0 +1,40 @@
+---
+import { formatarCalculo } from "../lib/formato";
+import { corDoPartido } from "../lib/identidade";
+import type { PctDoCandidato } from "../lib/pesquisas";
+
+// O par de números de um cálculo do Apurador, um por finalista, na cor de cada um e com uma casa.
+
+interface Props {
+  valores: PctDoCandidato[];
+}
+const { valores } = Astro.props;
+---
+
+<p class="valores">
+  {
+    valores.map((c) => (
+      <span data-cor={corDoPartido(c.candidato.partido)}>
+        {c.candidato.nomeUrna} <strong>{formatarCalculo(c.pct)}%</strong>
+      </span>
+    ))
+  }
+</p>
+
+<style>
+  .valores {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.25rem;
+    margin: 0.5rem 0;
+  }
+  strong {
+    font-size: 1.5rem;
+  }
+  [data-cor="flavio"] strong {
+    color: var(--cor-flavio);
+  }
+  [data-cor="lula"] strong {
+    color: var(--cor-lula);
+  }
+</style>
