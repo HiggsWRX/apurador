@@ -21,6 +21,13 @@ describe("o executor de noites no 2º turno de 2022", () => {
     for (let i = 1; i < noite.momentos.length; i++) expect(noite.momentos[i]!.secoes).toBeGreaterThan(noite.momentos[i - 1]!.secoes);
   });
 
+  it("dá a cada momento o ponto da fotografia, que o % de seções arredondado à seção não diz", () => {
+    // a fotografia de 0,1% fica meia seção abaixo do ponto, com 0,09998% (ticket 28)
+    expect(noite.momentos[0]).toMatchObject({ ponto: 0.1, secoes: expect.closeTo(0.09998, 5) });
+    expect(noite.momentos.map((m) => m.ponto).slice(0, 6)).toEqual([0.1, 0.25, 0.5, 0.75, 1, 2]);
+    expect(noite.momentos.at(-1)!.ponto).toBe(100);
+  });
+
   it("erra ~0,11, ~0,37 e ~0,47 ponto com 5, 25 e 50% das seções", () => {
     expect(Math.abs(noite.erroCom5! - 0.11)).toBeLessThan(0.05);
     expect(Math.abs(noite.erroCom25! - 0.37)).toBeLessThan(0.05);

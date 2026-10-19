@@ -26,10 +26,10 @@ describe("as três noites da calibração", () => {
   });
 });
 
-/** Um resultado do executor com os momentos dados. O 1º finalista termina com 52%. */
-function resultado(momentos: Partial<LinhaDaNoite>[]): ResultadoDaNoite {
-  const linhas = momentos.map((m): LinhaDaNoite => ({ instante: 0, secoes: 0, placar: null, pesoDasPesquisas: 0, projecao: 0.52, desvio: 0.01, chance: 0.5, erro: 0, ...m }));
-  return { final: 0.52, momentos: linhas, erroCom5: null, erroCom25: null, erroCom50: null, cobertura: 1, coberturaDepoisDe1: 1, acertaDesde: null, chance95Desde: null, brier: 0 };
+/** Um resultado do executor com os momentos dados, cada um na fotografia do seu % de seções. O 1º finalista termina com 52%. */
+function resultado(momentos: Partial<LinhaDaNoite>[], coberturaDepoisDe1 = 1): ResultadoDaNoite {
+  const linhas = momentos.map((m): LinhaDaNoite => ({ instante: 0, secoes: 0, placar: null, pesoDasPesquisas: 0, projecao: 0.52, desvio: 0.01, chance: 0.5, erro: 0, ...m, ponto: m.ponto ?? m.secoes ?? 0 }));
+  return { final: 0.52, momentos: linhas, erroCom5: null, erroCom25: null, erroCom50: null, cobertura: 1, coberturaDepoisDe1, acertaDesde: null, chance95Desde: null, brier: 0 };
 }
 
 describe("a medida de uma noite", () => {
@@ -42,16 +42,15 @@ describe("a medida de uma noite", () => {
       { secoes: 50, erro: 3, desvio: 0.015, chance: 0.8 },
       { secoes: 50.1, erro: 9, desvio: 0.1, chance: 0.04 },
       { secoes: 80, erro: 9, projecao: 0.6, desvio: 0.01, chance: 0.99 },
-    ]),
+    ], 0.96),
   );
 
-  it("dá a cobertura nos momentos depois da fotografia de 1% das seções", () => {
-    // com 80%, o resultado fica fora da margem (8 pontos contra 1,96); com 1%, também, mas a fotografia de 1% não conta
-    expect(noite.cobertura).toBeCloseTo(5 / 6, 12);
+  it("traz a cobertura do executor, depois da fotografia de 1% das seções", () => {
+    expect(noite.cobertura).toBe(0.96);
   });
 
   it("dá a maior chance de vitória de quem perdeu depois da fotografia de 5% das seções", () => {
-    // o 1º finalista vence; com 50,1% das seções, quem perdeu tem 96%; com 5% e antes, 97% e 99%, que não contam
+    // o 1º finalista vence; com 50,1% das seções, quem perdeu tem 96%; na fotografia de 5% e antes, 97% e 99%, que não contam
     expect(noite.maiorChanceDeQuemPerdeu).toBeCloseTo(0.96, 12);
   });
 

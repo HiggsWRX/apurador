@@ -40,6 +40,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx vitest run --project @apurador/ensaio
+      # A calibração gerada de novo (~1 min) tem de sair igual à do repositório: uma mudança no modelo que mexa nos
+      # números do registro ou dos CSVs falha aqui, e não na página de metodologia.
+      - run: npm run calibracao
+      - run: git diff --exit-code docs/calibracao.md docs/calibracao/
 
   deploy:
     needs: [testes, replay]
