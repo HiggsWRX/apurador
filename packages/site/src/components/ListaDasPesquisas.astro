@@ -1,25 +1,18 @@
 ---
-import { dataEmBrasilia, finalistas, listaDasPesquisas, type ExtratoDoTse, type Modo, type Turno } from "@apurador/pipeline";
-import institutos from "../../../../dados/pesquisas-institutos.csv?raw";
-import extrato from "../../../../dados/pesquisas-tse.json";
-import pesquisasCsv from "../../../../dados/pesquisas.csv?raw";
-import primeiroTurno from "../../../../dados/turnos/2026-1.json";
+import { dataEmBrasilia, finalistas, type Modo } from "@apurador/pipeline";
 import { formatarData, formatarNumero } from "../lib/formato";
+import { EXTRATO, PESQUISAS, TURNO } from "../lib/pesquisas";
 
 // A lista das pesquisas nacionais do 2º turno, cada uma com os seis dados do art. 10 da Res. 23.600 e o link
 // para a fonte. Uma linha do pesquisas.csv que não bata com o extrato do TSE quebra o build: nunca vai ao ar.
-const turno = primeiroTurno as Turno;
-const extratoDoTse = extrato as ExtratoDoTse;
-const pesquisas = listaDasPesquisas({ pesquisas: pesquisasCsv, institutos, extrato: extratoDoTse, turno }).sort(
-  (a, b) => b.campoFim.localeCompare(a.campoFim) || b.divulgacao.localeCompare(a.divulgacao),
-);
+const pesquisas = [...PESQUISAS].sort((a, b) => b.campoFim.localeCompare(a.campoFim) || b.divulgacao.localeCompare(a.divulgacao));
 // Sempre na mesma ordem, a alfabética.
-const candidatos = turno.candidatos.filter((c) => finalistas(turno).includes(c.numero)).sort((a, b) => a.nomeUrna.localeCompare(b.nomeUrna));
+const candidatos = TURNO.candidatos.filter((c) => finalistas(TURNO).includes(c.numero)).sort((a, b) => a.nomeUrna.localeCompare(b.nomeUrna));
 
 const pct = (n: number) => `${formatarNumero(n)}%`;
 const margem = (n: number) => `${formatarNumero(n)} ${n < 2 ? "ponto percentual" : "pontos percentuais"}`;
 const MODOS: Record<Modo, string> = { presencial: "presenciais", telefone: "por telefone", internet: "pela internet", misto: "por mais de um meio" };
-const conferidoEm = dataEmBrasilia(new Date(extratoDoTse.fonte.conferidoEm));
+const conferidoEm = dataEmBrasilia(new Date(EXTRATO.fonte.conferidoEm));
 ---
 
 <section class="pesquisas" data-bloco="lista-das-pesquisas">

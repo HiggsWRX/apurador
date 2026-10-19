@@ -1,9 +1,12 @@
 ---
+import AgregadoDePesquisas from "../components/AgregadoDePesquisas.astro";
 import ListaDasPesquisas from "../components/ListaDasPesquisas.astro";
 import PaginaDeLugar from "../layouts/PaginaDeLugar.astro";
+import { CHAVES } from "../lib/chaves";
 import { lugar } from "../lib/lugares";
 ---
 
 <PaginaDeLugar lugar={lugar("BR")}>
+  {CHAVES.antesDas17h.agregado && <AgregadoDePesquisas />}
   <ListaDasPesquisas />
 </PaginaDeLugar>

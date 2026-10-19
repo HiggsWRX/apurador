@@ -1,7 +1,9 @@
 ---
 import { nomeCompleto } from "@apurador/pipeline";
 import type { GetStaticPaths } from "astro";
+import IndicacaoDasPesquisas from "../components/IndicacaoDasPesquisas.astro";
 import PaginaDeLugar from "../layouts/PaginaDeLugar.astro";
+import { CHAVES } from "../lib/chaves";
 import { caminhoDe, LUGARES, lugar } from "../lib/lugares";
 
 // As páginas das UFs, do Exterior e dos municípios. A do Brasil é `index.astro`.
@@ -20,4 +22,6 @@ export const getStaticPaths = (() => {
 const { id } = Astro.props;
 ---
 
-<PaginaDeLugar lugar={lugar(id)} />
+<PaginaDeLugar lugar={lugar(id)}>
+  {CHAVES.antesDas17h.agregado && <IndicacaoDasPesquisas lugar={lugar(id)} />}
+</PaginaDeLugar>

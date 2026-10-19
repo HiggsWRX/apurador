@@ -1,3 +1,4 @@
+import { CONGELAMENTO } from "@apurador/modelo";
 import { abrangenciaDoRegistro, type RegistroDePesquisa } from "@apurador/tse";
 import { lerCsv } from "./csv.ts";
 import type { Turno } from "./turno.ts";
@@ -53,9 +54,14 @@ export interface ExtratoDoTse {
 export interface ConferenciaDaPesquisa {
   pesquisa: Pesquisa;
   registro: RegistroDePesquisa | undefined;
+  /** O instituto da lista fechada a que o CNPJ do registro pertence. */
+  institutoDaLista: string | undefined;
   /** Vazio quando a pesquisa bate com o registro e cumpre o critério de inclusão. */
   divergencias: string[];
 }
+
+/** Uma pesquisa da lista que vai ao site, com o instituto da lista, que sai do CNPJ do registro. */
+export type PesquisaDaLista = Pesquisa & { institutoDaLista: string };
 
 export function verificarPesquisas(entrada: {
   pesquisas: Pesquisa[];
@@ -63,11 +69,17 @@ export function verificarPesquisas(entrada: {
   institutos: CnpjDaLista[];
   /** Os números dos dois candidatos do 2º turno. */
   finalistas: number[];
-  /** A data da conferência, `aaaa-mm-dd`. */
-  dataDaConferencia: string;
+  /** O instante da conferência, ISO 8601. */
+  conferidoEm: string;
+  /**
+   * O instante da primeira conferência de cada registro, do `pesquisas-verificacoes.csv`: é quando a pesquisa entrou
+   * na lista. Um registro que não está aqui entra na lista nesta conferência.
+   */
+  primeiraConferencia?: ReadonlyMap<string, string>;
 }): ConferenciaDaPesquisa[] {
   const porRegistro = new Map(entrada.registros.map((r) => [r.registro, r]));
   const porCnpj = new Map(entrada.institutos.map((i) => [i.cnpj, i]));
+  const dataDaConferencia = dataEmBrasilia(new Date(entrada.conferidoEm));
   const vistos = new Set<string>();
   return entrada.pesquisas.map((pesquisa) => {
     const divergencias: string[] = [];
@@ -79,12 +91,18 @@ export function verificarPesquisas(entrada: {
     }
     if (pesquisa.campoFim >= DIA_DA_ELEICAO) divergencias.push("o campo vai até o dia da eleição: boca de urna nunca entra");
     if (pesquisa.divulgacao >= DIA_DA_ELEICAO) divergencias.push(`a divulgação (${dataBr(pesquisa.divulgacao)}) é do dia da eleição ou depois; o agregado congela em 24/10`);
-    else if (pesquisa.divulgacao > entrada.dataDaConferencia) {
-      divergencias.push(`a divulgação (${dataBr(pesquisa.divulgacao)}) é posterior à conferência no TSE (${dataBr(entrada.dataDaConferencia)})`);
+    else if (pesquisa.divulgacao > dataDaConferencia) {
+      divergencias.push(`a divulgação (${dataBr(pesquisa.divulgacao)}) é posterior à conferência no TSE (${dataBr(dataDaConferencia)})`);
+    }
+    const entrouNaLista = entrada.primeiraConferencia?.get(pesquisa.registro) ?? entrada.conferidoEm;
+    if (Date.parse(entrouNaLista) >= Date.parse(CONGELAMENTO)) {
+      divergencias.push("a pesquisa entrou na lista depois do congelamento do agregado, às 23h de 24/10/2026: depois dele, só se retira pesquisa");
     }
 
     const registro = porRegistro.get(pesquisa.registro);
-    if (!registro) return { pesquisa, registro, divergencias: [...divergencias, `o registro ${pesquisa.registro} não está no CSV do TSE`] };
+    if (!registro) {
+      return { pesquisa, registro, institutoDaLista: undefined, divergencias: [...divergencias, `o registro ${pesquisa.registro} não está no CSV do TSE`] };
+    }
 
     if (!registro.cargo.split(", ").includes("Presidente")) divergencias.push(`o registro é para ${registro.cargo}, não para Presidente`);
     const abrangencia = abrangenciaDoRegistro(registro);
@@ -107,28 +125,45 @@ export function verificarPesquisas(entrada: {
     if (Math.abs(pesquisa.entrevistas - registro.entrevistas) > TOLERANCIA_DAS_ENTREVISTAS * registro.entrevistas) {
       divergencias.push(`as entrevistas divulgadas (${pesquisa.entrevistas}) diferem mais de ${100 * TOLERANCIA_DAS_ENTREVISTAS}% das registradas no TSE (${registro.entrevistas})`);
     }
-    return { pesquisa, registro, divergencias };
+    return { pesquisa, registro, institutoDaLista: instituto?.institutoDaLista, divergencias };
   });
 }
 
 /**
  * A lista que vai ao site: o `pesquisas.csv` conferido contra o extrato do TSE do repositório, na data da última
- * conferência. Falha, em vez de esconder a linha, se qualquer pesquisa não bater: o build e o CI quebram.
+ * conferência, e contra o registro das conferências, que diz quando cada pesquisa entrou na lista. Falha, em vez de
+ * esconder a linha, se qualquer pesquisa não bater: o build e o CI quebram.
  */
-export function listaDasPesquisas(entrada: { pesquisas: string; institutos: string; extrato: ExtratoDoTse; turno: Turno }): Pesquisa[] {
+export function listaDasPesquisas(entrada: { pesquisas: string; institutos: string; extrato: ExtratoDoTse; verificacoes: string; turno: Turno }): PesquisaDaLista[] {
   const conferencias = verificarPesquisas({
     pesquisas: lerPesquisas(entrada.pesquisas),
     registros: entrada.extrato.registros,
     institutos: lerInstitutos(entrada.institutos),
     finalistas: finalistas(entrada.turno),
-    dataDaConferencia: dataEmBrasilia(new Date(entrada.extrato.fonte.conferidoEm)),
+    conferidoEm: entrada.extrato.fonte.conferidoEm,
+    primeiraConferencia: primeiraConferencia(entrada.verificacoes),
   });
   const divergentes = conferencias.filter((c) => c.divergencias.length > 0);
   if (divergentes.length > 0) {
     const linhas = divergentes.map((c) => `- ${c.pesquisa.registro} (${c.pesquisa.instituto}): ${c.divergencias.join("; ")}`);
     throw new Error(`pesquisas.csv não bate com o extrato do TSE de ${entrada.extrato.fonte.conferidoEm}:\n${linhas.join("\n")}`);
   }
-  return conferencias.map((c) => c.pesquisa);
+  return conferencias.map((c) => ({ ...c.pesquisa, institutoDaLista: c.institutoDaLista! }));
+}
+
+/** O instante da primeira conferência de cada registro, no texto do `pesquisas-verificacoes.csv`. */
+export function primeiraConferencia(verificacoes: string): Map<string, string> {
+  const [cabecalho = [], ...linhas] = lerCsv(verificacoes);
+  const conferidoEm = cabecalho.indexOf("conferido_em");
+  const registro = cabecalho.indexOf("registro");
+  if (conferidoEm < 0 || registro < 0) throw new Error("pesquisas-verificacoes.csv: faltam as colunas conferido_em e registro");
+  const primeira = new Map<string, string>();
+  for (const linha of linhas) {
+    const [r, em] = [linha[registro]!, linha[conferidoEm]!];
+    const antes = primeira.get(r);
+    if (antes === undefined || Date.parse(em) < Date.parse(antes)) primeira.set(r, em);
+  }
+  return primeira;
 }
 
 /** Os números dos dois candidatos do 2º turno: os mais votados no Brasil no 1º turno. */

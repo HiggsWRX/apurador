@@ -1,7 +1,11 @@
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { AGORA } from "./html";
 
-// Os testes do site conferem o resultado do build, então o build roda antes deles.
+// Os testes do site conferem o resultado do build, então o build roda antes deles: uma vez como vai ao ar e outra
+// com as chaves desligadas, para conferir que uma chave muda o site sem código novo.
 export default function construir() {
-  execSync("npx astro build", { cwd: fileURLToPath(new URL("..", import.meta.url)), stdio: "inherit" });
+  const opcoes = { cwd: fileURLToPath(new URL("..", import.meta.url)), stdio: "inherit", env: { ...process.env, APURADOR_AGORA: AGORA } } as const;
+  execSync("npx astro build", opcoes);
+  execSync("npx astro build --config test/chaves-desligadas/astro.config.mjs", opcoes);
 }

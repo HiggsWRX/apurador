@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { lerMembroRemoto, lerRegistrosDePesquisas, membroDoBrasil, urlRegistrosDePesquisas, type Buscar } from "@apurador/tse";
 import { escreverCsv } from "./csv.ts";
-import { dataEmBrasilia, finalistas, lerInstitutos, lerPesquisas, verificarPesquisas, type ConferenciaDaPesquisa, type ExtratoDoTse } from "./pesquisas.ts";
+import { finalistas, lerInstitutos, lerPesquisas, primeiraConferencia, verificarPesquisas, type ConferenciaDaPesquisa, type ExtratoDoTse } from "./pesquisas.ts";
 import type { Turno } from "./turno.ts";
 
 // A conferência diária do `pesquisas.csv` contra o CSV de registros do TSE do dia. Ela guarda no repositório o
@@ -23,7 +23,16 @@ export async function conferirNoTse(opcoes: { dados: URL; agora: Date; buscar?: 
   const membro = await lerMembroRemoto({ url, membro: membroDoBrasil, buscar: opcoes.buscar });
   const registros = lerRegistrosDePesquisas(membro.dados);
 
-  const conferencias = verificarPesquisas({ pesquisas, registros, institutos, finalistas: finalistas(turno), dataDaConferencia: dataEmBrasilia(agora) });
+  // O registro das conferências diz quando cada pesquisa entrou na lista: depois do congelamento, nenhuma entra.
+  const verificacoes = new URL("pesquisas-verificacoes.csv", dados);
+  const conferencias = verificarPesquisas({
+    pesquisas,
+    registros,
+    institutos,
+    finalistas: finalistas(turno),
+    conferidoEm: agora.toISOString(),
+    primeiraConferencia: existsSync(verificacoes) ? primeiraConferencia(readFileSync(verificacoes, "utf8")) : new Map(),
+  });
 
   const extrato: ExtratoDoTse = {
     fonte: {
@@ -38,7 +47,6 @@ export async function conferirNoTse(opcoes: { dados: URL; agora: Date; buscar?: 
   };
   writeFileSync(new URL("pesquisas-tse.json", dados), `${JSON.stringify(extrato, null, 2)}\n`);
 
-  const verificacoes = new URL("pesquisas-verificacoes.csv", dados);
   const linhas = conferencias.map((c) => [
     extrato.fonte.conferidoEm,
     c.pesquisa.registro,

@@ -1,0 +1,78 @@
+---
+import type { Lugar } from "@apurador/pipeline";
+import { formatarCalculo, formatarDia, formatarPontos, umaCasa } from "../lib/formato";
+import { corDoPartido } from "../lib/identidade";
+import { AGREGADO, entreOsFinalistas, indicacaoDoLugar, MUDANCA_MOSTRADA, quemGanhou } from "../lib/pesquisas";
+
+// A indicação das pesquisas numa UF, no Exterior ou num município (Agregado de pesquisas e erro histórico, decisões 6
+// e 7): não há pesquisa do 2º turno por lugar, então ela é o placar entre finalistas do lugar no 1º turno somado à
+// mudança que o agregado mostra para o Brasil. Deriva do agregado e desliga com a chave dele.
+
+interface Props {
+  lugar: Lugar;
+}
+const { lugar } = Astro.props;
+const indicacao = indicacaoDoLugar(lugar.id);
+const pct = (n: number) => `${formatarCalculo(n)}%`;
+const valores = indicacao?.tipo === "indicacao" ? entreOsFinalistas(umaCasa(indicacao.indicacao)) : undefined;
+
+function explicacao(i: { placar: number; limitada: boolean }): string {
+  const placar = entreOsFinalistas(umaCasa(i.placar))
+    .map((c) => `${c.candidato.nomeUrna} ${pct(c.pct)}`)
+    .join(", ");
+  const ganhou = quemGanhou(MUDANCA_MOSTRADA!);
+  const mudanca = ganhou ? `${ganhou.candidato.nomeUrna} +${formatarPontos(ganhou.pontos)}` : "sem mudança";
+  return (
+    "Não há pesquisas do 2º turno por estado ou município. Aqui, a indicação das pesquisas é o placar entre finalistas no " +
+    `1º turno (${placar}) somado à mudança que o agregado de pesquisas mostra para o Brasil desde o 1º turno (${mudanca})` +
+    `${i.limitada ? ", limitado a 0–100%" : ""}.`
+  );
+}
+---
+
+{
+  indicacao && (
+    <section class="cartao indicacao" data-bloco="indicacao-das-pesquisas" aria-labelledby="indicacao-titulo">
+      <h2 id="indicacao-titulo">Indicação das pesquisas</h2>
+      {indicacao.tipo === "indicacao" && valores ? (
+        <>
+          <p class="valores">
+            {valores.map((c) => (
+              <span data-cor={corDoPartido(c.candidato.partido)}>
+                {c.candidato.nomeUrna} <strong>{pct(c.pct)}</strong>
+              </span>
+            ))}
+          </p>
+          <p>{explicacao(indicacao)}</p>
+          <p class="nota">Cálculo do Apurador com dados do TSE e o agregado de pesquisas de {formatarDia(AGREGADO!.dia)}. Não é uma pesquisa própria.</p>
+        </>
+      ) : (
+        <p>
+          Não há indicação das pesquisas aqui:{" "}
+          {indicacao.tipo === "sem-votacao" ? "este lugar não teve votação no 1º turno de 2026." : "nenhum dos dois finalistas teve voto aqui no 1º turno de 2026."}
+        </p>
+      )}
+    </section>
+  )
+}
+
+<style>
+  .valores {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.25rem;
+    margin: 0.5rem 0;
+  }
+  .valores strong {
+    font-size: 1.5rem;
+  }
+  .valores [data-cor="flavio"] strong {
+    color: var(--cor-flavio);
+  }
+  .valores [data-cor="lula"] strong {
+    color: var(--cor-lula);
+  }
+  p {
+    margin: 0.5rem 0 0;
+  }
+</style>

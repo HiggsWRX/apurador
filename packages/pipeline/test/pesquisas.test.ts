@@ -33,12 +33,28 @@ const datafolha: Pesquisa = {
   divulgacao: "2026-10-15",
 };
 
-const conferir = (...pesquisas: Pesquisa[]) => verificarPesquisas({ pesquisas, registros, institutos, finalistas: [22, 13], dataDaConferencia: "2026-10-18" });
+const conferir = (...pesquisas: Pesquisa[]) => verificarPesquisas({ pesquisas, registros, institutos, finalistas: [22, 13], conferidoEm: "2026-10-18T12:00:00Z" });
 const divergencias = (p: Partial<Pesquisa>) => conferir({ ...datafolha, ...p })[0]!.divergencias;
 
 describe("verificarPesquisas", () => {
   it("aceita uma pesquisa que bate com o registro do TSE", () => {
-    expect(conferir(datafolha)).toEqual([{ pesquisa: datafolha, registro: expect.objectContaining({ registro: "BR-00466/2026" }), divergencias: [] }]);
+    expect(conferir(datafolha)).toEqual([
+      { pesquisa: datafolha, registro: expect.objectContaining({ registro: "BR-00466/2026" }), institutoDaLista: "Datafolha", divergencias: [] },
+    ]);
+  });
+
+  it("dá o instituto da lista pelo CNPJ do registro: a Nexus conta como FSB", () => {
+    const nexus = { institutoDaLista: "FSB", instituto: "Nexus", cnpj: "11077560000160", origem: "IPRI, Instituto FSB Pesquisa" };
+    const doIpri = registros.map((r) => (r.registro === datafolha.registro ? { ...r, cnpj: nexus.cnpj } : r));
+    const [conferencia] = verificarPesquisas({
+      pesquisas: [{ ...datafolha, instituto: "Nexus" }],
+      registros: doIpri,
+      institutos: [...institutos, nexus],
+      finalistas: [22, 13],
+      conferidoEm: "2026-10-18T12:00:00Z",
+    });
+    expect(conferencia!.divergencias).toEqual([]);
+    expect(conferencia!.institutoDaLista).toBe("FSB");
   });
 
   it("recusa um registro que não está no CSV do TSE", () => {
@@ -74,14 +90,41 @@ describe("verificarPesquisas", () => {
   });
 
   it("deixa de fora as pesquisas divulgadas em 25/10", () => {
-    const naEleicao = verificarPesquisas({ pesquisas: [{ ...datafolha, divulgacao: "2026-10-25" }], registros, institutos, finalistas: [22, 13], dataDaConferencia: "2026-10-25" });
+    const naEleicao = verificarPesquisas({
+      pesquisas: [{ ...datafolha, divulgacao: "2026-10-25" }],
+      registros,
+      institutos,
+      finalistas: [22, 13],
+      conferidoEm: "2026-10-25T12:00:00Z",
+      primeiraConferencia: new Map([[datafolha.registro, "2026-10-24T12:00:00Z"]]),
+    });
     expect(naEleicao[0]!.divergencias).toEqual(["a divulgação (25/10/2026) é do dia da eleição ou depois; o agregado congela em 24/10"]);
+  });
+
+  describe("congelamento às 23h de 24/10", () => {
+    // Cada pesquisa entra na lista na primeira conferência em que aparece. Depois do congelamento, só se retira.
+    const conferirEm = (conferidoEm: string, primeiraConferencia?: Map<string, string>) =>
+      verificarPesquisas({ pesquisas: [datafolha], registros, institutos, finalistas: [22, 13], conferidoEm, primeiraConferencia })[0]!.divergencias;
+    const RECUSA = "a pesquisa entrou na lista depois do congelamento do agregado, às 23h de 24/10/2026: depois dele, só se retira pesquisa";
+
+    it("aceita uma pesquisa incluída até as 23h de 24/10", () => {
+      expect(conferirEm("2026-10-24T22:59:00-03:00")).toEqual([]);
+    });
+
+    it("aceita, depois do congelamento, uma pesquisa já conferida antes dele", () => {
+      expect(conferirEm("2026-10-25T08:00:00-03:00", new Map([[datafolha.registro, "2026-10-24T20:00:00-03:00"]]))).toEqual([]);
+    });
+
+    it("recusa uma pesquisa que entra na lista depois do congelamento", () => {
+      expect(conferirEm("2026-10-24T23:00:00-03:00")).toEqual([RECUSA]);
+      expect(conferirEm("2026-10-25T08:00:00-03:00", new Map([[datafolha.registro, "2026-10-24T23:30:00-03:00"]]))).toEqual([RECUSA]);
+    });
   });
 
   describe("só entram pesquisas nacionais de Presidente do 2º turno, nunca boca de urna", () => {
     const comRegistro = (mudanca: Partial<(typeof registros)[number]>, p: Partial<Pesquisa> = {}) => {
       const alterados = registros.map((r) => (r.registro === datafolha.registro ? { ...r, ...mudanca } : r));
-      return verificarPesquisas({ pesquisas: [{ ...datafolha, ...p }], registros: alterados, institutos, finalistas: [22, 13], dataDaConferencia: "2026-10-18" })[0]!.divergencias;
+      return verificarPesquisas({ pesquisas: [{ ...datafolha, ...p }], registros: alterados, institutos, finalistas: [22, 13], conferidoEm: "2026-10-18T12:00:00Z" })[0]!.divergencias;
     };
 
     it("recusa outro cargo", () => {
@@ -91,7 +134,7 @@ describe("verificarPesquisas", () => {
     it("recusa uma pesquisa estadual, pelo plano amostral registrado", () => {
       // A Paraná Pesquisas de 14 a 17/10 é do Tocantins, embora o registro diga UF "BR".
       const parana: Pesquisa = { ...datafolha, registro: "BR-09051/2026", instituto: "Paraná Pesquisas", campoInicio: "2026-10-14", campoFim: "2026-10-17", entrevistas: 1500, divulgacao: "2026-10-19" };
-      const [conferencia] = verificarPesquisas({ pesquisas: [parana], registros, institutos, finalistas: [22, 13], dataDaConferencia: "2026-10-19" });
+      const [conferencia] = verificarPesquisas({ pesquisas: [parana], registros, institutos, finalistas: [22, 13], conferidoEm: "2026-10-19T12:00:00Z" });
       expect(conferencia!.divergencias).toEqual(["o plano amostral registrado no TSE é de uma UF: só entram pesquisas nacionais"]);
     });
 
