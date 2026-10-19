@@ -17,6 +17,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      # Os totais de cada turno, no Brasil e em cada UF, contra os arquivos do TSE baixados agora.
+      - run: npm run conferir
 
   deploy:
     needs: testes

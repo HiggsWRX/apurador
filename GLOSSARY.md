@@ -191,7 +191,7 @@ Um recorte consultável: Brasil, estado (UF), Exterior ou município. Não há r
 _Avoid_: região (reservado às cinco regiões do IBGE), localidade
 
 **Exterior**:
-O lugar que reúne os votos dados fora do país. Fica no mesmo nível das UFs, entra no total do Brasil e não aparece no mapa.
+O lugar que reúne os votos dados fora do país. Fica no mesmo nível das UFs, entra no total do Brasil e não aparece no mapa. As cidades com posto de votação, que o TSE trata como municípios, são lugares no nível dos municípios ("Lisboa (Exterior)").
 _Avoid_: ZZ, UF exterior
 
 ## Operação

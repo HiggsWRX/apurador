@@ -8,7 +8,8 @@
   },
   "scripts": {
     "gerar": "tsx src/gerar.ts",
-    "noites": "tsx src/gerar-noites.ts"
+    "noites": "tsx src/gerar-noites.ts",
+    "conferir": "tsx src/conferir.ts"
   },
   "dependencies": {
     "@apurador/tse": "*"

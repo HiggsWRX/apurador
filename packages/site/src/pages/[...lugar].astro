@@ -1,0 +1,23 @@
+---
+import { nomeCompleto } from "@apurador/pipeline";
+import type { GetStaticPaths } from "astro";
+import PaginaDeLugar from "../layouts/PaginaDeLugar.astro";
+import { caminhoDe, LUGARES, lugar } from "../lib/lugares";
+
+// As páginas das UFs, do Exterior e dos municípios. A do Brasil é `index.astro`.
+export const getStaticPaths = (() => {
+  const paginas = new Map<string, string>();
+  for (const l of LUGARES) {
+    if (l.tipo === "brasil") continue;
+    const caminho = caminhoDe(l).slice(1, -1);
+    const outro = paginas.get(caminho);
+    if (outro) throw new Error(`${nomeCompleto(l)} e ${nomeCompleto(lugar(outro))} teriam a mesma página, /${caminho}/`);
+    paginas.set(caminho, l.id);
+  }
+  return [...paginas].map(([caminho, id]) => ({ params: { lugar: caminho }, props: { id } }));
+}) satisfies GetStaticPaths;
+
+const { id } = Astro.props;
+---
+
+<PaginaDeLugar lugar={lugar(id)} />
