@@ -136,6 +136,43 @@ describe("agregado de pesquisas", () => {
     });
   });
 
+  describe("numa eleição passada", () => {
+    // O 2º turno de 2018, em 28/10, com Bolsonaro como primeiro finalista: as pesquisas finais da tabela 2.3 da
+    // pesquisa do ticket 06 do mapa (votos totais publicados), mais duas anteriores dos mesmos institutos.
+    const de2018 = [
+      pesquisa("BR-02460/2018", "Datafolha", "2018-10-27", "2018-10-27", 47, 39),
+      pesquisa("BR-05743/2018", "Datafolha", "2018-10-25", "2018-10-25", 48, 38),
+      pesquisa("BR-02934/2018", "Ibope", "2018-10-27", "2018-10-27", 47, 41),
+      pesquisa("BR-07272/2018", "Ibope", "2018-10-23", "2018-10-23", 50, 37),
+      pesquisa("BR-06933/2018", "MDA", "2018-10-27", "2018-10-27", 48.5, 37),
+      pesquisa("BR-06785/2018", "Paraná Pesquisas", "2018-10-25", "2018-10-26", 53, 35),
+      pesquisa("BR-08980/2018", "Real Time Big Data", "2018-10-24", "2018-10-25", 49, 38),
+      pesquisa("BR-08283/2018", "Ipespe", "2018-10-24", "2018-10-25", 51, 37),
+      pesquisa("BR-03689/2018", "FSB", "2018-10-21", "2018-10-22", 52, 35),
+    ];
+    const eleicao = { dia: "2018-10-28", incerteza: 1.5 };
+
+    it("aplica a mesma regra na véspera, com o dia e a incerteza daquela eleição: Bolsonaro com 57,0% e ~100% de chance", () => {
+      const agregado = agregadoDePesquisas(de2018, "2018-10-28", eleicao)!;
+      expect(agregado.valor).toBeCloseTo(57.0, 1);
+      expect(agregado.janela).toBe(7);
+      expect(agregado.pesquisas.map((p) => p.registro).sort()).toEqual(
+        ["BR-02460/2018", "BR-02934/2018", "BR-06933/2018", "BR-06785/2018", "BR-08980/2018", "BR-08283/2018", "BR-03689/2018"].sort(),
+      );
+      expect(agregado.incerteza).toBe(1.5);
+      expect(agregado.chance).toBeGreaterThan(0.9999);
+    });
+
+    it("não aceita a pesquisa divulgada no dia daquela eleição", () => {
+      const doDia = pesquisa("BR-09614/2018", "Vox Populi", "2018-10-27", "2018-10-28", 30, 70);
+      expect(agregadoDePesquisas([...de2018, doDia], "2018-10-28", eleicao)!.pesquisas.map((p) => p.instituto)).not.toContain("Vox Populi");
+    });
+
+    it("soma 0,4² por dia que falta àquela eleição, não a 25/10/2026", () => {
+      expect(agregadoDePesquisas(de2018, "2018-10-24", eleicao)!.incerteza).toBeCloseTo(Math.sqrt(1.5 ** 2 + 0.4 ** 2 * 4), 10);
+    });
+  });
+
   it("usa a pesquisa de campo mais recente de cada instituto e, no empate, a divulgada por último", () => {
     const anterior = pesquisa("BR-00001/2026", "Datafolha", "2026-10-20", "2026-10-21", 60, 40);
     const empatada = pesquisa("BR-00002/2026", "Datafolha", "2026-10-22", "2026-10-23", 40, 60);

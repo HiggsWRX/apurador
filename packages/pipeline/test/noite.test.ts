@@ -221,8 +221,8 @@ describe("conferências da noite contra o TSE", () => {
   it("o fim da noite bate com o resultado oficial de cada zona, e aponta a zona que não bate", () => {
     const doTurno = { geracao: "", ano: 2022, turno: 2, cargo: 1, uf: "AC", municipio: 1392, nomeMunicipio: "RIO BRANCO" };
     const votos = (zona: number, lula: number, bolsonaro: number) => [
-      { ...doTurno, zona, numero: 13, nome: "", nomeUrna: "LULA", partido: "PT", votos: lula },
-      { ...doTurno, zona, numero: 22, nome: "", nomeUrna: "JAIR BOLSONARO", partido: "PL", votos: bolsonaro },
+      { ...doTurno, zona, numero: 13, nome: "", nomeUrna: "LULA", partido: "PT", votos: lula, dia: "2022-10-30" },
+      { ...doTurno, zona, numero: 22, nome: "", nomeUrna: "JAIR BOLSONARO", partido: "PL", votos: bolsonaro, dia: "2022-10-30" },
     ];
     const detalhe = (zona: number, aptos: number, votantes: number, validos: number, brancos: number, nulos: number) => ({ ...doTurno, zona, aptos, votantes, abstencoes: aptos - votantes, validos, brancos, nulos, secoes: 0 });
     const oficial = { candidatos: [...votos(1, 48, 92), ...votos(2, 21, 9)], detalhes: [detalhe(1, 185, 147, 140, 3, 4), detalhe(2, 150, 30, 30, 0, 0)] };

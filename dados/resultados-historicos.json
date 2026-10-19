@@ -1,0 +1,11 @@
+{
+  "eleicoes": [
+    {"ano":2002,"turno":2,"dia":"2002-10-27","geracao":["18/03/2022 13:18:59"],"finalistas":[{"numero":13,"nome":"LUIZ INACIO LULA DA SILVA","nomeUrna":"LULA","partido":"PT","votos":52793364},{"numero":45,"nome":"JOSÉ SERRA","nomeUrna":"JOSÉ SERRA","partido":"PSDB","votos":33370739}],"validos":86164103},
+    {"ano":2006,"turno":2,"dia":"2006-10-29","geracao":["13/05/2022 19:53:47"],"finalistas":[{"numero":13,"nome":"LUIZ INACIO LULA DA SILVA","nomeUrna":"LULA","partido":"PT","votos":58295042},{"numero":45,"nome":"GERALDO JOSÉ RODRIGUES ALCKMIN FILHO","nomeUrna":"GERALDO ALCKMIN","partido":"PSDB","votos":37543178}],"validos":95838220},
+    {"ano":2010,"turno":2,"dia":"2010-10-31","geracao":["19/07/2021 10:55:45"],"finalistas":[{"numero":13,"nome":"DILMA VANA ROUSSEFF","nomeUrna":"DILMA","partido":"PT","votos":55752529},{"numero":45,"nome":"JOSÉ SERRA","nomeUrna":"JOSÉ SERRA","partido":"PSDB","votos":43711388}],"validos":99463917},
+    {"ano":2014,"turno":2,"dia":"2014-10-26","geracao":["28/07/2021 11:54:31"],"finalistas":[{"numero":13,"nome":"DILMA VANA ROUSSEFF","nomeUrna":"DILMA","partido":"PT","votos":54501118},{"numero":45,"nome":"AÉCIO NEVES DA CUNHA","nomeUrna":"AÉCIO NEVES","partido":"PSDB","votos":51041155}],"validos":105542273},
+    {"ano":2018,"turno":2,"dia":"2018-10-28","geracao":["13/11/2024 10:56:11"],"finalistas":[{"numero":17,"nome":"JAIR MESSIAS BOLSONARO","nomeUrna":"JAIR BOLSONARO","partido":"PSL","votos":57797847},{"numero":13,"nome":"FERNANDO HADDAD","nomeUrna":"FERNANDO HADDAD","partido":"PT","votos":47040906}],"validos":104838753},
+    {"ano":2022,"turno":2,"dia":"2022-10-30","geracao":["18/10/2026 03:16:50"],"finalistas":[{"numero":13,"nome":"LUIZ INÁCIO LULA DA SILVA","nomeUrna":"LULA","partido":"PT","votos":60345999},{"numero":22,"nome":"JAIR MESSIAS BOLSONARO","nomeUrna":"JAIR BOLSONARO","partido":"PL","votos":58206354}],"validos":118552353},
+    {"ano":2026,"turno":1,"dia":"2026-10-04","geracao":["18/10/2026 19:31:39"],"finalistas":[{"numero":22,"nome":"FLAVIO NANTES BOLSONARO","nomeUrna":"FLAVIO BOLSONARO","partido":"PL","votos":56104503},{"numero":13,"nome":"LUIZ INÁCIO LULA DA SILVA","nomeUrna":"LULA","partido":"PT","votos":53879538}],"validos":119300788}
+  ]
+}

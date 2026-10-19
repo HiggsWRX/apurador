@@ -2,7 +2,7 @@ import type { DetalheMunzona, VotoCandidatoMunzona } from "@apurador/tse";
 import { describe, expect, it } from "vitest";
 import { resultadoDoTurno } from "../src/turno.ts";
 
-const base = { geracao: "18/10/2026 19:31:39", ano: 2026, turno: 1, cargo: 1, nomeMunicipio: "" };
+const base = { geracao: "18/10/2026 19:31:39", ano: 2026, turno: 1, cargo: 1, nomeMunicipio: "", dia: "2026-10-04" };
 
 const voto = (uf: string, municipio: number, zona: number, numero: number, nomeUrna: string, partido: string, votos: number): VotoCandidatoMunzona => ({
   ...base,
