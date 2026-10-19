@@ -27,4 +27,5 @@ export {
   type EleicaoDaDivulgacao,
   type ItemDoAcompanhamento,
   type ResultadoDoTse,
+  type SecoesDoTse,
 } from "./ao-vivo.ts";

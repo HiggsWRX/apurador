@@ -1,5 +1,5 @@
 // O relógio do coletor: a hora real, em milissegundos, e as esperas entre as rodadas e entre os pedidos ao TSE.
-// Entra por parâmetro, para o replay rodar as mesmas rodadas com um relógio simulado, sem esperar de verdade.
+// Entra por parâmetro, para o replay rodar as mesmas rodadas sem esperar de verdade.
 
 export interface RelogioDoColetor {
   agora(): number;
@@ -12,7 +12,7 @@ export const relogioReal: RelogioDoColetor = {
 };
 
 /** O relógio do replay: começa em `inicio` e só anda nas esperas, na hora, sem esperar de verdade. */
-export function relogioSimulado(inicio: number): RelogioDoColetor {
+export function relogioSemEspera(inicio: number): RelogioDoColetor {
   let agora = inicio;
   return {
     agora: () => agora,

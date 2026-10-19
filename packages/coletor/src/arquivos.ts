@@ -7,7 +7,7 @@ import type { CandidatoDoResultado, ResultadoDoTse } from "@apurador/tse";
 /** O momento da noite que a página mostra. */
 export type Fase = "antes-das-17h" | "ao-vivo" | "encerrada";
 
-export interface ArquivoDaRodada {
+export interface ArquivoDeRodada {
   /** A hora da rodada, ISO, pelo relógio do coletor: a página a compara com o `Date` da CDN. */
   rodada: string;
   fase: Fase;
@@ -18,7 +18,7 @@ export interface ArquivoDaRodada {
 }
 
 /** Um ponto da curva real: o % de seções totalizadas e o % de cada candidato, como o TSE os publica. */
-export type PontoDaCurva = number[];
+export type PontoDaCurvaReal = number[];
 
 export interface ArquivoDoLugar {
   /** `BR`, a sigla da UF, `ZZ` (o Exterior) ou o código do TSE do município, com 5 dígitos. */
@@ -31,13 +31,13 @@ export interface ArquivoDoLugar {
     percentuais: number[];
     final: boolean;
   };
-  curva: PontoDaCurva[];
+  curva: PontoDaCurvaReal[];
 }
 
 /** Os candidatos na ordem fixa do site: alfabética pelo nome de urna. */
 export const emOrdem = (candidatos: CandidatoDoResultado[]) => [...candidatos].sort((a, b) => a.nomeUrna.localeCompare(b.nomeUrna, "pt-BR"));
 
-/** Os candidatos do resultado de um lugar na ordem dada pelos números. */
+/** Os candidatos do resultado de um lugar na ordem dada pelos números. O coletor só guarda arquivos com os candidatos do Brasil. */
 function naOrdem(resultado: ResultadoDoTse, ordem: number[]): CandidatoDoResultado[] {
   return ordem.map((numero) => {
     const c = resultado.candidatos.find((x) => x.numero === numero);
@@ -46,11 +46,11 @@ function naOrdem(resultado: ResultadoDoTse, ordem: number[]): CandidatoDoResulta
   });
 }
 
-export function pontoDaCurva(resultado: ResultadoDoTse, ordem: number[]): PontoDaCurva {
+export function pontoDaCurvaReal(resultado: ResultadoDoTse, ordem: number[]): PontoDaCurvaReal {
   return [resultado.secoes.percentual, ...naOrdem(resultado, ordem).map((c) => c.percentual)];
 }
 
-export function arquivoDoLugar(lugar: string, resultado: ResultadoDoTse, ordem: number[], curva: PontoDaCurva[]): ArquivoDoLugar {
+export function arquivoDoLugar(lugar: string, resultado: ResultadoDoTse, ordem: number[], curva: PontoDaCurvaReal[]): ArquivoDoLugar {
   const candidatos = naOrdem(resultado, ordem);
   return {
     lugar,
@@ -65,7 +65,7 @@ export function arquivoDoLugar(lugar: string, resultado: ResultadoDoTse, ordem: 
   };
 }
 
-export function arquivoDaRodada(rodada: number, fase: Fase, novidade: { totalizacao: string | null; vista: number | null }, candidatos: CandidatoDoResultado[]): ArquivoDaRodada {
+export function arquivoDeRodada(rodada: number, fase: Fase, novidade: { totalizacao: string | null; vista: number | null }, candidatos: CandidatoDoResultado[]): ArquivoDeRodada {
   return {
     rodada: new Date(rodada).toISOString(),
     fase,

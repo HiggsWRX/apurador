@@ -19,14 +19,3 @@ export function pastaLocal(pasta: string): Destino {
     },
   };
 }
-
-/** Os arquivos na memória, com o último conteúdo de cada caminho. */
-export function destinoEmMemoria(): Destino & { arquivos: Map<string, Uint8Array> } {
-  const arquivos = new Map<string, Uint8Array>();
-  return {
-    arquivos,
-    async gravar(caminho, bytes) {
-      arquivos.set(caminho, bytes);
-    },
-  };
-}

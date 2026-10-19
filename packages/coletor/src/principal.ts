@@ -6,7 +6,7 @@ import { pastaLocal } from "./destino.ts";
 import { relogioReal } from "./relogio.ts";
 
 // O coletor no terminal, publicando na pasta local (o R2 e o plano B entram no ticket 20).
-// Uso: npm run coletor -- [--tse <base>] [--eleicao 6258] [--pasta <pasta>] [--pedidos-por-segundo 50] [--minutos 15]
+// Uso: npm run coletor -- [--tse <base>] [--eleicao 6258] [--pasta <pasta>] [--pedidos-por-segundo 45] [--minutos 15]
 //   --tse: a base do TSE; padrão, o TSE de verdade (https://resultados.tse.jus.br/oficial). Para o TSE falso,
 //          a base que `npm run tse-falso` mostra (http://127.0.0.1:8022/oficial).
 //   --minutos: para sozinho depois desse tempo; sem ele, roda até Ctrl+C.
@@ -17,7 +17,7 @@ const { values: opcoes } = parseArgs({
     tse: { type: "string", default: "https://resultados.tse.jus.br/oficial" },
     eleicao: { type: "string", default: "6258" },
     pasta: { type: "string" },
-    "pedidos-por-segundo": { type: "string", default: "50" },
+    "pedidos-por-segundo": { type: "string", default: "45" },
     minutos: { type: "string" },
   },
 });
@@ -26,7 +26,8 @@ const RAIZ = new URL("../../../", import.meta.url);
 const CACHE = new URL(".cache/coletor/", RAIZ);
 const pasta = opcoes.pasta ?? fileURLToPath(new URL("publicado/", CACHE));
 const pedidosPorSegundo = Number(opcoes["pedidos-por-segundo"]);
-if (!(pedidosPorSegundo > 0 && pedidosPorSegundo <= 80)) throw new Error(`--pedidos-por-segundo deve ficar entre 0 e 80 (o limite do TSE é 100), e não ${opcoes["pedidos-por-segundo"]}`);
+// Acima de 50 pedidos num segundo o dono recebe um alerta, e a fila do coletor recupera até 4 pedidos atrasados.
+if (!(pedidosPorSegundo > 0 && pedidosPorSegundo <= 45)) throw new Error(`--pedidos-por-segundo deve ficar entre 0 e 45, e não ${opcoes["pedidos-por-segundo"]}`);
 const fim = opcoes.minutos === undefined ? Infinity : Date.now() + Number(opcoes.minutos) * 60_000;
 if (Number.isNaN(fim)) throw new Error(`--minutos deve ser um número, e não ${opcoes.minutos}`);
 

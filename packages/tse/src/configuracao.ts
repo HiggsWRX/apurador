@@ -2,6 +2,8 @@
 // com o Exterior (`zz`), e os municípios de cada uma, com o código do IBGE, a capital e as zonas. É dela
 // que saem as URLs dos arquivos de município e de zona, nunca adivinhadas.
 
+import { ArquivoDoTseInvalido } from "./ao-vivo.ts";
+
 export interface MunicipioDaConfiguracao {
   /** O código do TSE, como inteiro (o arquivo o escreve com 5 dígitos). */
   codigo: number;
@@ -24,13 +26,13 @@ type Bruto = Record<string, unknown>;
 
 function campo<T>(objeto: unknown, nome: string, tipo: "string" | "array"): T {
   const valor = (objeto as Bruto | null)?.[nome];
-  if (tipo === "array" ? !Array.isArray(valor) : typeof valor !== tipo) throw new Error(`Configuração de municípios do TSE: campo "${nome}" ausente ou de outro tipo`);
+  if (tipo === "array" ? !Array.isArray(valor) : typeof valor !== tipo) throw new ArquivoDoTseInvalido(`Configuração de municípios do TSE: campo "${nome}" ausente ou de outro tipo`);
   return valor as T;
 }
 
 function numero(texto: string, nome: string): number {
   const n = Number(texto);
-  if (texto === "" || !Number.isInteger(n)) throw new Error(`Configuração de municípios do TSE: "${nome}" inválido: ${texto}`);
+  if (texto === "" || !Number.isInteger(n)) throw new ArquivoDoTseInvalido(`Configuração de municípios do TSE: "${nome}" inválido: ${texto}`);
   return n;
 }
 

@@ -20,6 +20,13 @@ export interface CandidatoDoResultado {
   percentual: number;
 }
 
+/** As seções de um lugar: as totalizadas, o total e o percentual com as duas casas do TSE (`pst`). */
+export interface SecoesDoTse {
+  totalizadas: number;
+  total: number;
+  percentual: number;
+}
+
 export interface ResultadoDoTse {
   eleicao: string;
   abrangencia: { tipo: "br" | "uf" | "mu" | "zona"; codigo: string };
@@ -28,8 +35,7 @@ export interface ResultadoDoTse {
   totalizacaoFinal: boolean;
   /** A indicação do TSE (`md = "e"`): a eleição matematicamente definida, com eleito. Só no Brasil. */
   indicacao: boolean;
-  /** O percentual com as duas casas do TSE (`pst`). */
-  secoes: { totalizadas: number; total: number; percentual: number };
+  secoes: SecoesDoTse;
   /** Os aptos do lugar, os das seções totalizadas e quantos deles votaram. */
   eleitorado: { total: number; totalizado: number; comparecimento: number };
   /** Os nulos incluem os técnicos. */
@@ -81,6 +87,10 @@ function dataHora(objeto: unknown, nomeDaData: string, nomeDaHora: string): stri
   return `${data(objeto, nomeDaData)} ${hora}`;
 }
 
+function secoes(objeto: unknown): SecoesDoTse {
+  return { totalizadas: inteiro(objeto, "st"), total: inteiro(objeto, "ts"), percentual: percentual(objeto, "pst") };
+}
+
 const TIPOS = ["br", "uf", "mu", "zona"] as const;
 
 function abrangencia(objeto: unknown): ResultadoDoTse["abrangencia"] {
@@ -125,7 +135,7 @@ export function lerResultado(bytes: Uint8Array): ResultadoDoTse {
     ultimaTotalizacao: dataHora(raiz, "dt", "ht"),
     totalizacaoFinal: campo(raiz, "tf") === "s",
     indicacao: (raiz as Bruto)["md"] === "e",
-    secoes: { totalizadas: inteiro(s, "st"), total: inteiro(s, "ts"), percentual: percentual(s, "pst") },
+    secoes: secoes(s),
     eleitorado: { total: inteiro(e, "te"), totalizado: inteiro(e, "est"), comparecimento: inteiro(e, "c") },
     votos: { validos: inteiro(v, "vv"), brancos: inteiro(v, "vb"), nulos: inteiro(v, "tvn") },
     candidatos,
@@ -136,7 +146,7 @@ export interface ItemDoAcompanhamento {
   abrangencia: { tipo: "br" | "uf" | "mu"; codigo: string };
   /** `AAAA-MM-DD HH:MM:SS`, em Brasília, ou `null` antes da primeira totalização. */
   ultimaTotalizacao: string | null;
-  secoes: { totalizadas: number; total: number; percentual: number };
+  secoes: SecoesDoTse;
 }
 
 export interface AcompanhamentoDoTse {
@@ -153,12 +163,11 @@ export function lerAcompanhamento(bytes: Uint8Array): AcompanhamentoDoTse {
     itens: lista(raiz, "abr").map((item) => {
       const tipo = campo(item, "tpabr");
       if (!["br", "uf", "mun"].includes(tipo)) throw new ArquivoDoTseInvalido(`Acompanhamento do TSE: abrangência desconhecida: ${tipo}`);
-      const s = (item as Bruto)["s"];
       return {
         // O índice escreve o município como `mun`; o resultado, como `mu`.
         abrangencia: { tipo: tipo === "mun" ? "mu" : (tipo as "br" | "uf"), codigo: campo(item, "cdabr") },
         ultimaTotalizacao: dataHora(item, "dt", "ht"),
-        secoes: { totalizadas: inteiro(s, "st"), total: inteiro(s, "ts"), percentual: percentual(s, "pst") },
+        secoes: secoes((item as Bruto)["s"]),
       };
     }),
   };
