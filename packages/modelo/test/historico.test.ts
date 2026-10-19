@@ -35,6 +35,11 @@ describe("histórico do agregado", () => {
     expect(raizDoErroQuadraticoMedio([2, -1, 2])).toBeCloseTo(Math.sqrt(3), 10);
   });
 
+  it("precisa de ao menos dois anos, para a incerteza de cada um sair dos outros", () => {
+    expect(() => historicoDoAgregado([ELEICOES[0]!])).toThrow(/dois anos/);
+    expect(() => raizDoErroQuadraticoMedio([])).toThrow();
+  });
+
   it("quebra se um ano não tem pesquisa na janela", () => {
     const semPesquisa = { ...ELEICOES[1]!, pesquisas: [] };
     expect(() => historicoDoAgregado([ELEICOES[0]!, semPesquisa, ELEICOES[2]!])).toThrow(/2014/);

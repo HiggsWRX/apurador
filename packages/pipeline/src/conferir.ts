@@ -26,14 +26,19 @@ const historicos = (JSON.parse(readFileSync(new URL("dados/resultados-historicos
 const baixar = async (arquivo: ArquivoHistorico, ano: number) =>
   (await lerMembroRemoto({ url: urlDadosAbertos(arquivo, ano), membro: membroDePresidente })).dados;
 
-const oficiais = new Map(
-  await Promise.all(
-    [...new Set(turnos.map((t) => t.ano))].map(async (ano) => {
+// Os anos de 2002 a 2014 só servem ao histórico das pesquisas: basta o arquivo dos candidatos, baixado junto com os
+// dos turnos.
+const anosDosTurnos = [...new Set(turnos.map((t) => t.ano))];
+const anosSoDoHistorico = [...new Set(historicos.map((r) => r.ano))].filter((ano) => !anosDosTurnos.includes(ano));
+const [oficiais, soDoHistorico] = await Promise.all([
+  Promise.all(
+    anosDosTurnos.map(async (ano) => {
       const [candidatos, detalhes] = await Promise.all([baixar("votacao_candidato_munzona", ano), baixar("detalhe_votacao_munzona", ano)]);
       return [ano, { candidatos: lerVotacaoCandidatoMunzona(candidatos), detalhes: lerDetalheVotacaoMunzona(detalhes) }] as const;
     }),
-  ),
-);
+  ).then((anos) => new Map(anos)),
+  Promise.all(anosSoDoHistorico.map(async (ano) => [ano, lerVotacaoCandidatoMunzona(await baixar("votacao_candidato_munzona", ano))] as const)),
+]);
 
 let divergencias = 0;
 for (const turno of turnos) {
@@ -47,14 +52,7 @@ if (divergencias > 0) {
   process.exitCode = 1;
 }
 
-// Os anos de 2002 a 2014 só servem ao histórico das pesquisas: basta o arquivo dos candidatos.
-const candidatosPorAno = new Map(
-  await Promise.all(
-    [...new Set(historicos.map((r) => r.ano))].map(
-      async (ano) => [ano, oficiais.get(ano)?.candidatos ?? lerVotacaoCandidatoMunzona(await baixar("votacao_candidato_munzona", ano))] as const,
-    ),
-  ),
-);
+const candidatosPorAno = new Map([...[...oficiais].map(([ano, o]) => [ano, o.candidatos] as const), ...soDoHistorico]);
 const doHistorico = conferirResultadosHistoricos(historicos, candidatosPorAno);
 console.log(`Resultados do histórico das pesquisas: ${doHistorico.length === 0 ? `as ${historicos.length} eleições batem com o TSE` : `${doHistorico.length} divergência(s)`}`);
 for (const d of doHistorico) console.log(`  ${d}`);

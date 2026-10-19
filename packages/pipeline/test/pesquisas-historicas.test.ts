@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { lerPesquisasHistoricas } from "../src/pesquisas-historicas.ts";
+import { agregadoDaNoite, eleicoesPassadas, lerPesquisasHistoricas } from "../src/pesquisas-historicas.ts";
+import type { ResultadoHistorico } from "../src/resultados-historicos.ts";
 
 const CABECALHO =
   "ano,turno,instituto,contratante,registro,campo_inicio,campo_fim,divulgacao,entrevistas,base,votos_13,votos_22,votos_45,votos_outros,fonte,observacao";
@@ -45,6 +46,24 @@ describe("lerPesquisasHistoricas", () => {
     expect(() => ler(trocar("votos_outros", "6"))).toThrow(/linha 2: votos_outros inválido: 6/);
     expect(() => ler(trocar("turno", "1"))).toThrow(/linha 2: votos_outros inválido/);
     expect(ler(trocar("turno", "1").replace(",45,,,", ",45,,6,"))[0]!.outros).toBe(6);
+  });
+
+  it("não deixa de fora, calada, a pesquisa de uma eleição sem resultado", () => {
+    // O resultado de 2022 do repositório, que a outra pesquisa não tem: um ano digitado errado.
+    const resultado2022: ResultadoHistorico = {
+      ano: 2022,
+      turno: 2,
+      dia: "2022-10-30",
+      geracao: [],
+      finalistas: [
+        { numero: 13, nome: "", nomeUrna: "LULA", partido: "PT", votos: 60345999 },
+        { numero: 22, nome: "", nomeUrna: "JAIR BOLSONARO", partido: "PL", votos: 58206354 },
+      ],
+      validos: 118552353,
+    };
+    const pesquisas = ler(DATAFOLHA, trocar("ano", "2021"));
+    expect(() => eleicoesPassadas(pesquisas, [resultado2022])).toThrow(/2021, 2º turno.*Datafolha.*sem resultado/);
+    expect(() => agregadoDaNoite(pesquisas, [resultado2022], { ano: 2022, turno: 2 }, [13, 22])).toThrow(/2021, 2º turno.*sem resultado/);
   });
 
   it("recusa divulgação antes do fim do campo, base desconhecida e fonte que não é endereço", () => {

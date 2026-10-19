@@ -13,7 +13,7 @@ export {
 export { lerConstantes, type Constantes, type OrdemDeChegada } from "./constantes.ts";
 export { curvaProjetada, viradaProjetada, type CurvaDoLugar, type CurvasProjetadas, type PontoDaCurva } from "./curva.ts";
 export { dataEmBrasilia, diasEntre, somarDias } from "./datas.ts";
-export { historicoDoAgregado, raizDoErroQuadraticoMedio, type AnoDoHistorico, type EleicaoPassada } from "./historico.ts";
+export { agregadoDaVespera, historicoDoAgregado, raizDoErroQuadraticoMedio, type AnoDoHistorico, type EleicaoPassada } from "./historico.ts";
 export { indicacaoDasPesquisas, placarEntreFinalistas } from "./indicacao.ts";
 export { phi, Z_95 } from "./normal.ts";
 export {

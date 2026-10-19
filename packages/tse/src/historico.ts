@@ -77,15 +77,16 @@ const COLUNAS_CANDIDATO = [
 // e para Presidente todos são válidos: nenhum candidato do 2º turno teve votos anulados.
 const VOTOS_VALIDOS = "QT_VOTOS_NOMINAIS_VALIDOS";
 const VOTOS_NOMINAIS = "QT_VOTOS_NOMINAIS";
+const PRIMEIRO_ANO_COM_VALIDOS = 2018;
 
 export function lerVotacaoCandidatoMunzona(bytes: Uint8Array): VotoCandidatoMunzona[] {
   const { cabecalho, linhas } = lerCsvTse(bytes);
   const c = colunas(cabecalho, COLUNAS_CANDIDATO);
-  const coluna = cabecalho.includes(VOTOS_VALIDOS) ? VOTOS_VALIDOS : VOTOS_NOMINAIS;
+  const coluna = cabecalho.some((n) => n.replaceAll(" ", "") === VOTOS_VALIDOS) ? VOTOS_VALIDOS : VOTOS_NOMINAIS;
   const votos = colunas(cabecalho, [coluna])[coluna];
   return linhas.map((l) => ({
     geracao: `${l[c.DT_GERACAO]} ${l[c.HH_GERACAO]}`,
-    ano: inteiro(l[c.ANO_ELEICAO], "ANO_ELEICAO"),
+    ano: anoComAColunaDosVotos(inteiro(l[c.ANO_ELEICAO], "ANO_ELEICAO"), coluna),
     turno: inteiro(l[c.NR_TURNO], "NR_TURNO"),
     cargo: inteiro(l[c.CD_CARGO], "CD_CARGO"),
     uf: l[c.SG_UF] ?? "",
@@ -99,6 +100,12 @@ export function lerVotacaoCandidatoMunzona(bytes: Uint8Array): VotoCandidatoMunz
     votos: inteiro(l[votos], coluna),
     dia: diaIso(l[c.DT_ELEICAO]),
   }));
+}
+
+/** O ano da linha, desde que a coluna dos votos sirva para ele: de 2018 em diante, os nominais incluem os anulados. */
+function anoComAColunaDosVotos(ano: number, coluna: string): number {
+  if (coluna !== VOTOS_VALIDOS && ano >= PRIMEIRO_ANO_COM_VALIDOS) throw new Error(`Coluna ${VOTOS_VALIDOS} não encontrada no arquivo do TSE de ${ano}`);
+  return ano;
 }
 
 /** `dd/mm/aaaa` → `aaaa-mm-dd`. */

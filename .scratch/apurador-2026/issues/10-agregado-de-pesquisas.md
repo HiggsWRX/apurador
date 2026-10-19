@@ -82,3 +82,11 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
   - **O agregado de 18/10 muda.** Pela regra da decisão 3 sobre o `pesquisas.csv` conferido (divulgadas até 18/10, campo terminando de 11 a 17/10), ele passa a **9 institutos e 51,09%** (51,1%), não 51,0% com 8. Entra a BTG/Nexus de 10 a 12/10 (BR-07997/2026), com 51,6% nos válidos. Sem ela, daria 51,02% com 8.
   - **Incerteza e chance.** A incerteza segue em 1,84 ponto (decisão 5), e a chance de Flávio passa de ~71% a ~72%.
   - **CNPJs novos.** Três institutos da lista registram as pesquisas de 2026 com CNPJ diferente do das pesquisas finais de 2018/2022 e entram pelos dois: Futura (100% Cidades), Gerp (Gerp Mercadologia) e Real Time Big Data (Real Time Mídia). A lista, com a origem de cada CNPJ, fica em `dados/pesquisas-institutos.csv`.
+- 19/10/2026, da construção do [Histórico das pesquisas de 2002 a 2022](../../apurador-2026-construcao/issues/05-historico-das-pesquisas.md):
+  - **O erro histórico da média é de 1,30 ponto, não 1,2.**
+    - A regra da decisão 3, aplicada aos seis 2º turnos com os resultados conferidos no TSE, pega também a Veritá de 17 a 20/10/2014 (nacional, BR-01144/2014), que faltou na tabela da pesquisa. Com ela, 2014 erra −1,5, não −0,8.
+    - Os 1,5 da decisão 5 continuam de pé (√(1,3² + 0,7²) = 1,48), quase sem folga.
+  - **A conta prévia da decisão 10 confere**, com a incerteza de cada ano calculada sem aquele ano: Bolsonaro com ~100% em 2018 (57,0 contra 55,1) e Lula com 75,5% em 2022 (51,0 contra 50,9).
+  - **O viés do 1º turno de 2026.**
+    - Pela mesma regra, as pesquisas finais do 1º turno são as de 12 institutos, com campo terminando de 27/09 a 03/10, não 8. Com elas, o erro na margem nos válidos é de −3,8 pontos contra Flávio, não −2,8.
+    - Os −2,8 são o das 8 com campo terminando de 1 a 3/10.

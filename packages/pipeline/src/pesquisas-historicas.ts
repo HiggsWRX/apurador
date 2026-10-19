@@ -1,4 +1,4 @@
-import { agregadoDePesquisas, ELEICAO_DE_2026, type Agregado, type EleicaoPassada, type PesquisaDoAgregado } from "@apurador/modelo";
+import { agregadoDaVespera, ELEICAO_DE_2026, type Agregado, type EleicaoPassada, type PesquisaDoAgregado } from "@apurador/modelo";
 import { ehData, ehDecimal, lerTabela, naoVazio } from "./csv.ts";
 import type { ResultadoHistorico } from "./resultados-historicos.ts";
 
@@ -67,9 +67,10 @@ export function lerPesquisasHistoricas(texto: string): PesquisaHistorica[] {
       entrevistas: valor("entrevistas", ou((v) => /^\d+$/.test(v)), (v) => (v === "" ? null : Number(v))),
       base: valor("base", (v) => (BASES as readonly string[]).includes(v), (v) => v as PesquisaHistorica["base"]),
       votos: new Map(
-        extras
-          .filter((c) => c !== "votos_outros" && valor(c, ou(ehDecimal), String) !== "")
-          .map((c) => [Number(c.slice("votos_".length)), valor(c, ehDecimal, Number)]),
+        extras.flatMap((c) => {
+          const votos = valor(c, ou(ehDecimal), textoOuNulo);
+          return votos === null ? [] : [[Number(c.slice("votos_".length)), Number(votos)] as const];
+        }),
       ),
       // Só o 1º turno tem outros candidatos, e a margem nos válidos precisa deles.
       outros: valor("votos_outros", turno === 1 ? ehDecimal : (v) => v === "", (v) => (v === "" ? null : Number(v))),
@@ -86,6 +87,7 @@ export function lerPesquisasHistoricas(texto: string): PesquisaHistorica[] {
 
 /** Os 2º turnos do histórico, na ordem dos anos, com as pesquisas e o resultado no primeiro finalista do 1º turno. */
 export function eleicoesPassadas(pesquisas: readonly PesquisaHistorica[], resultados: readonly ResultadoHistorico[]): EleicaoPassada[] {
+  exigirResultados(pesquisas, resultados);
   return resultados
     .filter((r) => r.turno === 2)
     .sort((a, b) => a.ano - b.ano)
@@ -110,11 +112,18 @@ export function agregadoDaNoite(
   noite: { ano: number; turno: number },
   finalistas: readonly [number, number],
 ): Agregado {
+  exigirResultados(pesquisas, resultados);
   const resultado = resultados.find((r) => r.ano === noite.ano && r.turno === noite.turno);
   if (!resultado) throw new Error(`${noite.ano}, ${noite.turno}º turno: sem resultado em resultados-historicos.json`);
-  const agregado = agregadoDePesquisas(pesquisasDaEleicao(pesquisas, resultado, finalistas), resultado.dia, { ...ELEICAO_DE_2026, dia: resultado.dia });
-  if (!agregado) throw new Error(`${noite.ano}, ${noite.turno}º turno: nenhuma pesquisa cabe na janela do agregado de ${resultado.dia}`);
-  return agregado;
+  return agregadoDaVespera(pesquisasDaEleicao(pesquisas, resultado, finalistas), resultado.dia, ELEICAO_DE_2026.incerteza);
+}
+
+/** Toda pesquisa tem de ser de uma eleição com resultado: um ano digitado errado não some da conta calado. */
+function exigirResultados(pesquisas: readonly PesquisaHistorica[], resultados: readonly ResultadoHistorico[]): void {
+  const semResultado = pesquisas.filter((p) => !resultados.some((r) => r.ano === p.ano && r.turno === p.turno));
+  if (semResultado.length > 0) {
+    throw new Error(`${semResultado.map((p) => `${p.ano}, ${p.turno}º turno, ${p.instituto}`).join("; ")}: sem resultado em resultados-historicos.json`);
+  }
 }
 
 /** As pesquisas de uma eleição como o agregado as lê, com os votos na ordem dos finalistas dados. */

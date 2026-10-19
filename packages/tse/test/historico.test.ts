@@ -63,6 +63,14 @@ describe("lerVotacaoCandidatoMunzona", () => {
       },
     ]);
   });
+
+  it("acha a coluna dos válidos com espaço no nome e não troca pelos nominais num arquivo de 2018 em diante", () => {
+    const comEspaco = CABECALHO_CANDIDATO.replace('"QT_VOTOS_NOMINAIS_VALIDOS"', '"QT_VOTOS_NOMINAIS_VALIDOS "');
+    const anulado = LINHA_CANDIDATO.replace('"N";2478;"Válido";2478', '"N";2478;"Anulado";0');
+    expect(lerVotacaoCandidatoMunzona(latin1(`${comEspaco}\n${anulado}\n`))[0]!.votos).toBe(0);
+    const semValidos = CABECALHO_CANDIDATO.replace('"QT_VOTOS_NOMINAIS_VALIDOS"', '"QT_OUTRA_COISA"');
+    expect(() => lerVotacaoCandidatoMunzona(latin1(`${semValidos}\n${LINHA_CANDIDATO}\n`))).toThrow(/QT_VOTOS_NOMINAIS_VALIDOS/);
+  });
 });
 
 describe("lerDetalheVotacaoMunzona", () => {

@@ -1,5 +1,5 @@
 import type { VotoCandidatoMunzona } from "@apurador/tse";
-import { doTurno, type CandidatoDoTurno } from "./turno.ts";
+import { doTurno, votosPorCandidato, type CandidatoDoTurno } from "./turno.ts";
 
 // O resultado nacional das eleições com que o histórico das pesquisas é medido (`dados/resultados-historicos.json`):
 // os dois finalistas e os votos válidos no Brasil, somados do `votacao_candidato_munzona` do TSE, e a conferência
@@ -29,25 +29,29 @@ export function resultadoHistorico(candidatos: readonly VotoCandidatoMunzona[], 
   const doTurnoPedido = candidatos.filter(doTurno(ano, turno));
   if (doTurnoPedido.length === 0) throw new Error(`O arquivo do TSE não tem o ${turno}º turno de ${ano} para Presidente`);
 
-  const noTurno = somarPorCandidato(doTurnoPedido);
-  const noPrimeiroTurno = somarPorCandidato(candidatos.filter(doTurno(ano, 1)));
+  const noTurno = votosPorCandidato(doTurnoPedido);
+  const noPrimeiroTurno = votosPorCandidato(candidatos.filter(doTurno(ano, 1)));
   const ordem = (n: number) => -(noPrimeiroTurno.get(n)?.votos ?? 0);
   const [primeiro, segundo] = [...noTurno.keys()].sort((a, b) => ordem(a) - ordem(b));
   if (segundo === undefined) throw new Error(`${ano}, ${turno}º turno: menos de dois candidatos com voto`);
+  const finalista = (n: number): FinalistaDoResultado => {
+    const { candidato, votos } = noTurno.get(n)!;
+    return { ...candidato, votos };
+  };
 
   return {
     ano,
     turno,
     dia: unico(doTurnoPedido.map((v) => v.dia), `${ano}, ${turno}º turno: mais de um dia da eleição`),
     geracao: [...new Set(doTurnoPedido.map((v) => v.geracao))].sort(),
-    finalistas: [noTurno.get(primeiro!)!, noTurno.get(segundo)!],
+    finalistas: [finalista(primeiro!), finalista(segundo)],
     validos: doTurnoPedido.reduce((s, v) => s + v.votos, 0),
   };
 }
 
 /**
- * O que o repositório guarda contra o arquivo do TSE de cada ano, lido agora: os votos dos finalistas, os válidos e
- * o dia. A data de geração não conta, porque o TSE regera os arquivos sem mudar os votos.
+ * O que o repositório guarda contra o arquivo do TSE de cada ano, lido agora: os finalistas (número, nome e partido)
+ * e os votos deles, os válidos e o dia. A data de geração não conta, porque o TSE regera os arquivos sem mudar os votos.
  */
 export function conferirResultadosHistoricos(repositorio: readonly ResultadoHistorico[], candidatosPorAno: ReadonlyMap<number, readonly VotoCandidatoMunzona[]>): string[] {
   return repositorio.flatMap((r) => {
@@ -59,22 +63,15 @@ export function conferirResultadosHistoricos(repositorio: readonly ResultadoHist
     if (tse.dia !== r.dia) divergencias.push(`${rotulo}: o dia é ${r.dia} no repositório e ${tse.dia} no TSE`);
     r.finalistas.forEach((f, i) => {
       const doTse = tse.finalistas[i]!;
+      const quem = (c: FinalistaDoResultado) => `${c.nomeUrna} (${c.partido})`;
       if (doTse.numero !== f.numero) divergencias.push(`${rotulo}: o ${i + 1}º finalista é o ${f.numero} no repositório e o ${doTse.numero} no TSE`);
-      else if (doTse.votos !== f.votos) divergencias.push(`${rotulo}: ${f.nomeUrna} (${f.numero}) tem ${f.votos} votos no repositório e ${doTse.votos} no TSE`);
+      else if (doTse.nome !== f.nome || quem(doTse) !== quem(f)) {
+        divergencias.push(`${rotulo}: o ${i + 1}º finalista (${f.numero}) é ${quem(f)} no repositório e ${quem(doTse)} no TSE`);
+      } else if (doTse.votos !== f.votos) divergencias.push(`${rotulo}: ${f.nomeUrna} (${f.numero}) tem ${f.votos} votos no repositório e ${doTse.votos} no TSE`);
     });
     if (tse.validos !== r.validos) divergencias.push(`${rotulo}: os válidos são ${r.validos} no repositório e ${tse.validos} no TSE`);
     return divergencias;
   });
-}
-
-function somarPorCandidato(votos: readonly VotoCandidatoMunzona[]): Map<number, FinalistaDoResultado> {
-  const porNumero = new Map<number, FinalistaDoResultado>();
-  for (const v of votos) {
-    const c = porNumero.get(v.numero) ?? { numero: v.numero, nome: v.nome, nomeUrna: v.nomeUrna, partido: v.partido, votos: 0 };
-    c.votos += v.votos;
-    porNumero.set(v.numero, c);
-  }
-  return porNumero;
 }
 
 function unico<T>(valores: readonly T[], erro: string): T {
