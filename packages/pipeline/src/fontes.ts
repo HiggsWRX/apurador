@@ -24,13 +24,16 @@ export async function membroDePresidenteComCache(url: string, opcoes: { atualiza
   return membroComCache(url, `${base}_BR.csv`, opcoes);
 }
 
-/** O membro `nome` de um zip do TSE, do cache ou, se não estiver lá (ou com `atualizar`), da rede. */
-export async function membroComCache(url: string, nome: string, opcoes: { atualizar: boolean }): Promise<FonteBaixada> {
+/**
+ * O membro `nome` de um zip do TSE, do cache ou, se não estiver lá (ou com `atualizar`), da rede. Quando o
+ * nome do membro não se sabe antes (`casa`), `nome` é só o do arquivo no cache.
+ */
+export async function membroComCache(url: string, nome: string, opcoes: { atualizar: boolean; casa?: (membro: string) => boolean }): Promise<FonteBaixada> {
   const arquivo = new URL(nome, CACHE);
   const meta = new URL(`${nome.replace(/\.csv$/, "")}.json`, CACHE);
 
   if (opcoes.atualizar || !existsSync(arquivo) || !existsSync(meta)) {
-    const membro = await lerMembroRemoto({ url, membro: (n) => n === nome });
+    const membro = await lerMembroRemoto({ url, membro: opcoes.casa ?? ((n) => n === nome) });
     mkdirSync(CACHE, { recursive: true });
     writeFileSync(arquivo, membro.dados);
     writeFileSync(meta, JSON.stringify({ url, membro: membro.nome, baixadoEm: new Date().toISOString() }, null, 2));

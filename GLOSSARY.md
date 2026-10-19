@@ -51,7 +51,7 @@ A curva real de um turno passado, sobreposta à curva real atual no mesmo eixo d
 _Avoid_: curva de 2022 (é qualquer turno)
 
 **Noite reconstruída**:
-Uma apuração passada refeita seção por seção: cada seção entra no placar parcial no instante em que o TSE a totalizou, com os votos do boletim de urna. Dá o estado da apuração em qualquer instante, por zona, município, UF e Brasil. É o que o replay, o ensaio geral e a calibração reproduzem.
+Uma apuração passada refeita seção por seção: cada seção entra no placar parcial no instante em que o TSE a totalizou, com os votos do boletim de urna (ou da votação por seção, no 1º turno de 2026). Dá o estado da apuração em qualquer instante, por zona, município, UF e Brasil. É o que o replay, o ensaio geral e a calibração reproduzem.
 _Avoid_: noite simulada, simulação (é do simulador "e se")
 
 ## Previsão

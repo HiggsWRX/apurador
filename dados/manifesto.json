@@ -369,6 +369,306 @@
       "geracao": [
         "18/10/2026 09:00:10"
       ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2018.zip",
+      "membro": "detalhe_votacao_secao_2018_BR.csv",
+      "sha256": "f72e5fd4caa0b793a6f29bef0064f5203abb4ad6b46bafed5a9c4edf303af950",
+      "bytes": 313345987,
+      "baixadoEm": "2026-10-19T13:48:05.969Z",
+      "geracao": [
+        "15/02/2024 16:19:02"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_AC_301020181744.zip",
+      "membro": "bweb_2t_AC_301020181744.csv",
+      "sha256": "7149bf3b58b7f4da03b77c0767cd3576356953da573fe4080909a5169ff4ce5d",
+      "bytes": 3189765,
+      "baixadoEm": "2026-10-19T13:48:06.612Z",
+      "geracao": [
+        "30/10/2018 17:44:27"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_AL_301020181744.zip",
+      "membro": "bweb_2t_AL_301020181745.csv",
+      "sha256": "df77c569aeb9f20c61ef745f295a2307919fc0059e2645ae1912b72b9737c400",
+      "bytes": 10786019,
+      "baixadoEm": "2026-10-19T13:53:26.960Z",
+      "geracao": [
+        "30/10/2018 17:45:06"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_AM_301020181744.zip",
+      "membro": "bweb_2t_AM_301020181745.csv",
+      "sha256": "a619601c8dce6d26d612300c0b5cac01f88299afeac00c6972659f65cf1462fe",
+      "bytes": 23185473,
+      "baixadoEm": "2026-10-19T13:53:27.244Z",
+      "geracao": [
+        "30/10/2018 17:45:40"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_AP_301020181744.zip",
+      "membro": "bweb_2t_AP_301020181746.csv",
+      "sha256": "d70cdc35fcb5ac1c9d1da3bba07ad96d8163cacacded0842b4150a1656f4379b",
+      "bytes": 5434562,
+      "baixadoEm": "2026-10-19T13:53:27.529Z",
+      "geracao": [
+        "30/10/2018 17:46:11"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_BA_301020181744.zip",
+      "membro": "bweb_2t_BA_301020181746.csv",
+      "sha256": "97423ac2cb2fa29c905b5153fcf30c1bfc5406a21d0b4644d6f8f1d871986501",
+      "bytes": 52307687,
+      "baixadoEm": "2026-10-19T13:53:27.937Z",
+      "geracao": [
+        "30/10/2018 17:46:38"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_CE_301020181744.zip",
+      "membro": "bweb_2t_CE_301020181747.csv",
+      "sha256": "6b7567d550d9ba4e9aba84204869b83f5c8a44448d409622a67210c7a6dcb4e6",
+      "bytes": 35854415,
+      "baixadoEm": "2026-10-19T13:53:28.689Z",
+      "geracao": [
+        "30/10/2018 17:47:07"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_DF_301020181744.zip",
+      "membro": "bweb_2t_DF_301020181747.csv",
+      "sha256": "e5fb14b50439e07dd47291b86c75c52c519dc99a316d607633a0a09fe31d4312",
+      "bytes": 23063474,
+      "baixadoEm": "2026-10-19T13:53:29.255Z",
+      "geracao": [
+        "30/10/2018 17:47:36"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_ES_301020181744.zip",
+      "membro": "bweb_2t_ES_301020181748.csv",
+      "sha256": "758f37fa2c7152f95f173d0face4ed7d93ca7a0a8c80f6eb6b11af0826d47487",
+      "bytes": 14832089,
+      "baixadoEm": "2026-10-19T13:55:04.677Z",
+      "geracao": [
+        "30/10/2018 17:48:04"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_GO_301020181744.zip",
+      "membro": "bweb_2t_GO_301020181748.csv",
+      "sha256": "e5d7381b566096b57e044cc7eb1f980e1d1a84ba078f85228a8c84ac81f72a9e",
+      "bytes": 23760155,
+      "baixadoEm": "2026-10-19T13:55:06.030Z",
+      "geracao": [
+        "30/10/2018 17:48:31"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_MA_301020181744.zip",
+      "membro": "bweb_2t_MA_301020181749.csv",
+      "sha256": "47edc0bc81e22cfcb1454ef3bd7d89ad22d21b4f674f86e8f62522b2dc2dab5b",
+      "bytes": 25765087,
+      "baixadoEm": "2026-10-19T13:55:06.727Z",
+      "geracao": [
+        "30/10/2018 17:49:00"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_MG_301020181744.zip",
+      "membro": "bweb_2t_MG_301020181749.csv",
+      "sha256": "e0bd1728470e8e09c01eac68f07624504174d84d1a07cdc43cd3a493e3609375",
+      "bytes": 165642972,
+      "baixadoEm": "2026-10-19T13:55:08.133Z",
+      "geracao": [
+        "30/10/2018 17:49:29"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_MS_301020181744.zip",
+      "membro": "bweb_2t_MS_301020181750.csv",
+      "sha256": "c4cd4a41127479a3f8bdbe8c4ead3b79fe07ef0b6eee174cbb9002645975816f",
+      "bytes": 22394017,
+      "baixadoEm": "2026-10-19T13:55:09.767Z",
+      "geracao": [
+        "30/10/2018 17:50:10"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_MT_301020181744.zip",
+      "membro": "bweb_2t_MT_301020181750.csv",
+      "sha256": "33a49d034313816a583a2c4dfcb0160b24a5ec902c09057129606c609e516061",
+      "bytes": 12164369,
+      "baixadoEm": "2026-10-19T13:55:10.364Z",
+      "geracao": [
+        "30/10/2018 17:50:42"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_PA_301020181744.zip",
+      "membro": "bweb_2t_PA_301020181751.csv",
+      "sha256": "b3504843f20d7ff141304a10fe7b4fd6b4a97c870fbc6326dcca66bf704b8482",
+      "bytes": 57575993,
+      "baixadoEm": "2026-10-19T13:55:10.987Z",
+      "geracao": [
+        "30/10/2018 17:51:10"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_PB_301020181744.zip",
+      "membro": "bweb_2t_PB_301020181751.csv",
+      "sha256": "b8ded50a2819f3acd6b676d8941bc9b55a88c583fa656533a704d76adc52b044",
+      "bytes": 16799331,
+      "baixadoEm": "2026-10-19T13:55:12.062Z",
+      "geracao": [
+        "30/10/2018 17:51:42"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_PE_301020181744.zip",
+      "membro": "bweb_2t_PE_301020181752.csv",
+      "sha256": "1ffedcf724880bc49b82d3ffdd2033dcba3fb7c3f4d15c58966a0c5fe70f21b4",
+      "bytes": 33421152,
+      "baixadoEm": "2026-10-19T13:55:12.700Z",
+      "geracao": [
+        "30/10/2018 17:52:07"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_PI_301020181744.zip",
+      "membro": "bweb_2t_PI_301020181752.csv",
+      "sha256": "23fd501b8c592cb959a9c30fc107f1f6c0168ee6260348a5d7ea9266bc55ec92",
+      "bytes": 14573320,
+      "baixadoEm": "2026-10-19T13:55:13.647Z",
+      "geracao": [
+        "30/10/2018 17:52:38"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_PR_301020181744.zip",
+      "membro": "bweb_2t_PR_301020181753.csv",
+      "sha256": "74e29f9dc839881f41bdb03d4608339552deb6d61aad5cc83da25cf3aa7a84dd",
+      "bytes": 44422609,
+      "baixadoEm": "2026-10-19T13:55:14.239Z",
+      "geracao": [
+        "30/10/2018 17:53:06"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_RJ_301020181744.zip",
+      "membro": "bweb_2t_RJ_301020181753.csv",
+      "sha256": "f6df47c18c7ee0e2e9bbdcd337b72dcc6a8225cd41dba047c587e07c29e3702b",
+      "bytes": 116730743,
+      "baixadoEm": "2026-10-19T13:55:15.659Z",
+      "geracao": [
+        "30/10/2018 17:53:35"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_RN_301020181744.zip",
+      "membro": "bweb_2t_RN_301020181754.csv",
+      "sha256": "e8a36c81870a2ea0aa6bd2358ad850208e5b7382d0db3d2fc85ec1a7ca189d0f",
+      "bytes": 25188036,
+      "baixadoEm": "2026-10-19T13:55:17.105Z",
+      "geracao": [
+        "30/10/2018 17:54:09"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_RO_301020181744.zip",
+      "membro": "bweb_2t_RO_301020181754.csv",
+      "sha256": "3babdadcb8217385dd092cb8aeca2671851311cb8c1243c8a2acb17d8af8218b",
+      "bytes": 14361871,
+      "baixadoEm": "2026-10-19T13:55:17.792Z",
+      "geracao": [
+        "30/10/2018 17:54:39"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_RR_301020181744.zip",
+      "membro": "bweb_2t_RR_301020181755.csv",
+      "sha256": "1345f82a4fe52503e2331683410b54e95baf8669e3312ec61b6578ca7c3d5202",
+      "bytes": 3886297,
+      "baixadoEm": "2026-10-19T13:55:18.178Z",
+      "geracao": [
+        "30/10/2018 17:55:03"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_RS_301020181744.zip",
+      "membro": "bweb_2t_RS_301020181755.csv",
+      "sha256": "b7cb7fc6f672f5b593a0af989abc9593e9819bb8ed761d22777528affb9931e8",
+      "bytes": 94456230,
+      "baixadoEm": "2026-10-19T13:55:18.877Z",
+      "geracao": [
+        "30/10/2018 17:55:31"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_SC_301020181744.zip",
+      "membro": "bweb_2t_SC_301020181756.csv",
+      "sha256": "69f0d05993a366c103b9aead9d0922b53c720da6dd0e2af922c735a46008ceda",
+      "bytes": 53385839,
+      "baixadoEm": "2026-10-19T13:55:20.202Z",
+      "geracao": [
+        "30/10/2018 17:56:00"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_SE_301020181744.zip",
+      "membro": "bweb_2t_SE_301020181756.csv",
+      "sha256": "9d5ea106b0582727ec42b1a8a127e4eaa41fa3e6f4def437a86cd33e128f5b5c",
+      "bytes": 17598426,
+      "baixadoEm": "2026-10-19T13:55:21.241Z",
+      "geracao": [
+        "30/10/2018 17:56:28"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_SP_301020181744.zip",
+      "membro": "bweb_2t_SP_301020181756.csv",
+      "sha256": "19c47f5a609506d3c04083173ff3bf3afeb8d6239216be4022e9453fd61f1546",
+      "bytes": 332700635,
+      "baixadoEm": "2026-10-19T13:55:23.059Z",
+      "geracao": [
+        "30/10/2018 17:56:56"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_TO_301020181744.zip",
+      "membro": "bweb_2t_TO_301020181757.csv",
+      "sha256": "2d26d99bbb8ef4c6d9573a574dde2ad2c619c6a48236667984394e06090cc05e",
+      "bytes": 6243385,
+      "baixadoEm": "2026-10-19T13:55:25.975Z",
+      "geracao": [
+        "30/10/2018 17:57:53"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_ZZ_301020181744.zip",
+      "membro": "bweb_2t_ZZ_301020181758.csv",
+      "sha256": "d4429a99c16ff53a4f7467c02be783bedd6b4c10ae80e34f39dbda7db63fa1e9",
+      "bytes": 1253701,
+      "baixadoEm": "2026-10-19T13:55:26.359Z",
+      "geracao": [
+        "30/10/2018 17:58:23"
+      ]
+    },
+    {
+      "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2026_BR.zip",
+      "membro": "votacao_secao_2026_BR.csv",
+      "sha256": "7bb56772992f6a448494331e6a1191a2f3cbd4dd1ed25efe4e84c998af265a3c",
+      "bytes": 1052510851,
+      "baixadoEm": "2026-10-19T13:47:56.144Z",
+      "geracao": [
+        "06/10/2026 14:03:43"
+      ]
     }
   ],
   "derivados": [
@@ -475,6 +775,74 @@
         "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2018.zip",
         "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2022.zip",
         "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2026.zip"
+      ]
+    },
+    {
+      "arquivo": "noites/2018-2.json.gz",
+      "sha256": "cf1021c7987161c5d8aa314e78abe78797df0419ddc81771a7868bbee5ac2c14",
+      "fontes": [
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2018.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_AC_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_AL_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_AM_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_AP_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_BA_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_CE_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_DF_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_ES_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_GO_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_MA_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_MG_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_MS_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_MT_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_PA_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_PB_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_PE_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_PI_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_PR_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_RJ_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_RN_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_RO_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_RR_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_RS_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_SC_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_SE_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_SP_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_TO_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_ZZ_301020181744.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2018.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2018.zip"
+      ]
+    },
+    {
+      "arquivo": "noites/2026-1.json.gz",
+      "sha256": "7355b36b281a3bc3443f696d00aea7c47477d7959e4ddb4399fdb7431a01a710",
+      "fontes": [
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2026.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2026_BR.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2026.zip"
+      ]
+    },
+    {
+      "arquivo": "bases/2018-2.json",
+      "sha256": "f097f69e889e68c0f347eda6f3ead54125bb9d951badff260673c32b27683114",
+      "fontes": [
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2018.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2018.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2018.zip"
+      ]
+    },
+    {
+      "arquivo": "bases/2026-1.json",
+      "sha256": "0db504551a21442a2351e43ef57fc20a8ff83bbe846418aa72868e5b1a0f353b",
+      "fontes": [
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2022.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2022.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2022.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2026.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2026.zip"
       ]
     }
   ]

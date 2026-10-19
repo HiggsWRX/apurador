@@ -40,11 +40,15 @@ export function lerCsvTse(bytes: Uint8Array): { cabecalho: string[]; linhas: str
   return { cabecalho, linhas: resto };
 }
 
-/** Acesso às colunas pelo nome, que falha cedo, com o nome da coluna, se o TSE mudar o formato. */
+/**
+ * Acesso às colunas pelo nome, que falha cedo, com o nome da coluna, se o TSE mudar o formato. Os nomes do
+ * cabeçalho valem sem espaços: o boletim de urna de 2018 traz a coluna de UF como `SG_ UF`.
+ */
 export function colunas<N extends string>(cabecalho: string[], nomes: readonly N[]): Record<N, number> {
+  const semEspacos = cabecalho.map((c) => c.replaceAll(" ", ""));
   const indices = {} as Record<N, number>;
   for (const nome of nomes) {
-    const i = cabecalho.indexOf(nome);
+    const i = semEspacos.indexOf(nome);
     if (i < 0) throw new Error(`Coluna ${nome} não encontrada no arquivo do TSE`);
     indices[nome] = i;
   }
