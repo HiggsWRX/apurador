@@ -8,3 +8,4 @@ export {
   type DetalheMunzona,
   type VotoCandidatoMunzona,
 } from "./historico.ts";
+export { abrangenciaDoRegistro, lerRegistrosDePesquisas, membroDoBrasil, urlRegistrosDePesquisas, type RegistroDePesquisa } from "./pesquisas.ts";

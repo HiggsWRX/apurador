@@ -1,0 +1,107 @@
+---
+import { dataEmBrasilia, finalistas, listaDasPesquisas, type ExtratoDoTse, type Modo, type Turno } from "@apurador/pipeline";
+import institutos from "../../../../dados/pesquisas-institutos.csv?raw";
+import extrato from "../../../../dados/pesquisas-tse.json";
+import pesquisasCsv from "../../../../dados/pesquisas.csv?raw";
+import primeiroTurno from "../../../../dados/turnos/2026-1.json";
+import { formatarData, formatarNumero } from "../lib/formato";
+
+// A lista das pesquisas nacionais do 2º turno, cada uma com os seis dados do art. 10 da Res. 23.600 e o link
+// para a fonte. Uma linha do pesquisas.csv que não bata com o extrato do TSE quebra o build: nunca vai ao ar.
+const turno = primeiroTurno as Turno;
+const extratoDoTse = extrato as ExtratoDoTse;
+const pesquisas = listaDasPesquisas({ pesquisas: pesquisasCsv, institutos, extrato: extratoDoTse, turno }).sort(
+  (a, b) => b.campoFim.localeCompare(a.campoFim) || b.divulgacao.localeCompare(a.divulgacao),
+);
+// Sempre na mesma ordem, a alfabética.
+const candidatos = turno.candidatos.filter((c) => finalistas(turno).includes(c.numero)).sort((a, b) => a.nomeUrna.localeCompare(b.nomeUrna));
+
+const pct = (n: number) => `${formatarNumero(n)}%`;
+const margem = (n: number) => `${formatarNumero(n)} ${n < 2 ? "ponto percentual" : "pontos percentuais"}`;
+const MODOS: Record<Modo, string> = { presencial: "presenciais", telefone: "por telefone", internet: "pela internet", misto: "por mais de um meio" };
+const conferidoEm = dataEmBrasilia(new Date(extratoDoTse.fonte.conferidoEm));
+---
+
+<section class="pesquisas" data-bloco="lista-das-pesquisas">
+  <details>
+    <summary><h2>Pesquisas registradas no TSE ({pesquisas.length})</h2></summary>
+    <p class="nota">
+      Pesquisas nacionais do 2º turno, de institutos que fizeram pesquisa final no 2º turno de 2018 ou de 2022, conferidas no
+      registro do TSE em {formatarData(conferidoEm)}. Votos totais, como a fonte divulgou.
+    </p>
+    <ol>
+      {
+        pesquisas.map((p) => (
+          <li data-pesquisa={p.registro}>
+            <h3>{p.instituto}</h3>
+            <p class="votos">
+              {candidatos.map((c) => (
+                <span>
+                  {c.nomeUrna} <strong>{pct(p.votos.get(c.numero)!)}</strong>
+                </span>
+              ))}
+              {p.brancosNulos !== null && <span>Brancos e nulos {pct(p.brancosNulos)}</span>}
+              {p.indecisos !== null && <span>Indecisos {pct(p.indecisos)}</span>}
+            </p>
+            <ul class="ficha">
+              <li>Período de coleta: {formatarData(p.campoInicio)} a {formatarData(p.campoFim)}</li>
+              <li>Entrevistas: {formatarNumero(p.entrevistas)}, {MODOS[p.modo]}</li>
+              <li>Margem de erro: {margem(p.margem)}, para mais ou para menos</li>
+              <li>Nível de confiança: {pct(p.confianca)}</li>
+              <li>Contratante: {p.contratante}</li>
+              <li>Registro no TSE: {p.registro}</li>
+            </ul>
+            <p class="fonte">
+              Divulgada em {formatarData(p.divulgacao)}. <a href={p.fonte}>Fonte</a>
+            </p>
+          </li>
+        ))
+      }
+    </ol>
+  </details>
+</section>
+
+<style>
+  .pesquisas {
+    margin-top: 2rem;
+  }
+  summary {
+    cursor: pointer;
+  }
+  summary h2 {
+    display: inline;
+    font-size: 1.1rem;
+  }
+  ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  ol > li {
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--trilho);
+  }
+  h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+  }
+  .votos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    margin: 0 0 0.25rem;
+  }
+  .ficha {
+    margin: 0;
+    padding-left: 1.1rem;
+  }
+  .nota,
+  .ficha,
+  .fonte {
+    color: var(--texto-suave);
+    font-size: 0.85rem;
+  }
+  .fonte {
+    margin: 0.25rem 0 0;
+  }
+</style>

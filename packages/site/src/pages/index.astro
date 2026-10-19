@@ -2,6 +2,7 @@
 import type { Turno } from "@apurador/pipeline";
 import dados from "../../../../dados/turnos/2026-1.json";
 import BarrasDoTurno from "../components/BarrasDoTurno.astro";
+import ListaDasPesquisas from "../components/ListaDasPesquisas.astro";
 import Base from "../layouts/Base.astro";
 
 const turno = dados as Turno;
@@ -10,4 +11,5 @@ const turno = dados as Turno;
 <Base titulo="Brasil">
   <h1>Brasil</h1>
   <BarrasDoTurno turno={turno} lugar="BR" />
+  <ListaDasPesquisas />
 </Base>
