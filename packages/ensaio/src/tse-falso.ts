@@ -84,14 +84,17 @@ export function criarTseFalso(opcoes: { noite: Noite; cadastro: Cadastro; relogi
     return estado;
   }
 
-  // O que já foi escrito, por caminho, enquanto a versão do arquivo não muda.
-  const escritos = new Map<string, { versao: string; corpo: Uint8Array; gzip: Uint8Array; etag: string; geracao: number }>();
-  function escrito(caminho: string, documento: Documento, e: Reproducao) {
+  // O que já foi escrito, por caminho, enquanto a versão do arquivo não muda. A ETag sai do caminho e da versão,
+  // que muda junto com o conteúdo, sem passar o hash pelo corpo inteiro (os índices das UFs somam ~6 MB). O gzip
+  // só é feito quando alguém pede com gzip.
+  type Escrito = { versao: string; corpo: Uint8Array; gzip?: Uint8Array; etag: string; geracao: number };
+  const escritos = new Map<string, Escrito>();
+  function escrito(caminho: string, documento: Documento, e: Reproducao): Escrito {
     const versao = divulgacao.versao(documento, e);
     const antes = escritos.get(caminho);
     if (antes?.versao === versao) return antes;
     const corpo = new TextEncoder().encode(escreverComoTse(divulgacao.escrever(documento, e)));
-    const novo = { versao, corpo, gzip: new Uint8Array(gzipSync(corpo)), etag: `"${createHash("md5").update(corpo).digest("hex")}"`, geracao: divulgacao.geracao(documento, e) };
+    const novo: Escrito = { versao, corpo, etag: `"${createHash("md5").update(`${caminho}@${versao}`).digest("hex")}"`, geracao: divulgacao.geracao(documento, e) };
     escritos.set(caminho, novo);
     return novo;
   }
@@ -163,7 +166,8 @@ export function criarTseFalso(opcoes: { noite: Noite; cadastro: Cadastro; relogi
     if (naoMudou) return responderCom(304, new Uint8Array(), validacao);
 
     const comGzip = /\bgzip\b/.test(pedido.cabecalhos?.["accept-encoding"] ?? "");
-    return responderCom(200, comGzip ? arquivo.gzip : arquivo.corpo, {
+    if (comGzip) arquivo.gzip ??= new Uint8Array(gzipSync(arquivo.corpo));
+    return responderCom(200, comGzip ? arquivo.gzip! : arquivo.corpo, {
       ...validacao,
       "content-type": "application/json",
       ...(comGzip ? { "content-encoding": "gzip" } : {}),

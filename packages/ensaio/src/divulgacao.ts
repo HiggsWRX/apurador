@@ -1,5 +1,5 @@
 import { dataHoraDoInstante, type Cadastro, type Noite, type Recorte, type Reproducao, type Totais } from "@apurador/pipeline";
-import { dataEHora, percentual, percentualPreciso } from "./formato.ts";
+import { dataEHora, JaEscrito, jaEscrito, percentual, percentualPreciso } from "./formato.ts";
 
 // Os arquivos da divulgação do TSE, escritos a partir de um estado da noite reconstruída, no formato da
 // eleição 6258 (o 2º turno de 2026): a configuração das eleições (EA11), a de municípios e zonas (EA12), os
@@ -275,12 +275,12 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
     };
   }
 
-  function resultado(d: { recorte: Recorte }, estado: Reproducao) {
+  function resultado(d: Extract<Documento, { tipo: "resultado" }>, estado: Reproducao) {
     const r = d.recorte;
     const a = estado.apurado(r);
     const t = estado.total(r);
     const final = finalizada(estado);
-    const g = quando(geracao(d as Documento, estado));
+    const g = quando(geracao(d, estado));
     const ultima = quando(final ? totalizacaoFinal : a.ultimaTotalizacao);
     const ordem = ordemEm(final ? totalizacaoFinal : a.ultimaTotalizacao);
     const fim = final ? { esae: "n", mnae: [] } : {};
@@ -295,7 +295,7 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
       cdabr: cdabr(r),
       dg: g.data,
       hg: g.hora,
-      idg: idg(d as Documento, geracao(d as Documento, estado)),
+      idg: idg(d, geracao(d, estado)),
       dt: ultima.data,
       ht: ultima.hora,
       // O arquivo de zona traz `dv` depois do andamento; os outros, antes.
@@ -309,11 +309,20 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
 
   // Os acompanhamentos (EA14 do Brasil, com as UFs; EA15 de cada UF, com os municípios).
 
-  function itemDoAcompanhamento(r: Recorte, estado: Reproducao, contagem: Record<string, string | number>) {
+  // Um item do índice só muda quando o lugar recebe seções: fica escrito até lá. Num índice de UF grande, como o
+  // de Minas Gerais, com 853 municípios, poucos mudam de uma rodada para outra.
+  const itensEscritos = new Map<string, { ultima: number | null; item: JaEscrito }>();
+  function itemDoAcompanhamento(r: Recorte, estado: Reproducao, contar: () => Record<string, string | number> = () => ({})) {
     const a = estado.apurado(r);
+    const chave = `${r.uf ?? ""}/${r.municipio ?? ""}`;
+    const antes = itensEscritos.get(chave);
+    if (antes && antes.ultima === a.ultimaTotalizacao) return antes.item;
     const t = estado.total(r);
     const ultima = quando(a.ultimaTotalizacao);
-    return { and: andamento(r, a, t, estado), tpabr: tpabr(r) === "mu" ? "mun" : tpabr(r), cdabr: cdabr(r), dt: ultima.data, ht: ultima.hora, ...contagem, s: secoes(a, t), e: eleitorado(a, t) };
+    const item = { and: andamento(r, a, t, estado), tpabr: tpabr(r) === "mu" ? "mun" : tpabr(r), cdabr: cdabr(r), dt: ultima.data, ht: ultima.hora, ...contar(), s: secoes(a, t), e: eleitorado(a, t) };
+    const escrito = jaEscrito(textos(item) as object);
+    itensEscritos.set(chave, { ultima: a.ultimaTotalizacao, item: escrito });
+    return escrito;
   }
 
   /** Quantos lugares não começaram, estão em andamento e terminaram, com os percentuais. */
@@ -340,18 +349,17 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
 
   const municipios = (uf: string): Recorte[] => municipiosDaUf.get(uf)!.map((municipio) => ({ uf, municipio }));
 
-  function acompanhamento(d: { uf: string | null }, estado: Reproducao) {
-    const g = quando(geracao(d as Documento, estado));
-    const cabecalho = { ele: ELEICAO, t: noite.turno, f: "o", dg: g.data, hg: g.hora, idg: idg(d as Documento, geracao(d as Documento, estado)) };
+  function acompanhamento(d: Extract<Documento, { tipo: "acompanhamento" }>, estado: Reproducao) {
+    const g = quando(geracao(d, estado));
+    const cabecalho = { ele: ELEICAO, t: noite.turno, f: "o", dg: g.data, hg: g.hora, idg: idg(d, geracao(d, estado)) };
     if (d.uf !== null) {
       const uf = d.uf;
-      const itens = municipios(uf).map((m) => itemDoAcompanhamento(m, estado, {}));
-      return { ...cabecalho, abr: [...itens, itemDoAcompanhamento({ uf }, estado, contagem("mun", municipios(uf), estado))] };
+      const itens = municipios(uf).map((m) => itemDoAcompanhamento(m, estado));
+      return { ...cabecalho, abr: [...itens, itemDoAcompanhamento({ uf }, estado, () => contagem("mun", municipios(uf), estado))] };
     }
     const porSigla = [...ufs].sort((a, b) => a.localeCompare(b));
-    const itens = porSigla.map((uf) => itemDoAcompanhamento({ uf }, estado, contagem("mun", municipios(uf), estado)));
-    const brasil = itemDoAcompanhamento({}, estado, contagem("ufs", ufs.map((uf) => ({ uf })), estado));
-    // No índice do Brasil, a hora do Brasil na totalização final é a da final, como no arquivo de resultado.
+    const itens = porSigla.map((uf) => itemDoAcompanhamento({ uf }, estado, () => contagem("mun", municipios(uf), estado)));
+    const brasil = itemDoAcompanhamento({}, estado, () => contagem("ufs", ufs.map((uf) => ({ uf })), estado));
     return { ...cabecalho, abr: [...itens, brasil] };
   }
 
@@ -439,6 +447,7 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
 /** No arquivo do TSE, todo número é texto. */
 function textos(v: unknown): unknown {
   if (typeof v === "number") return String(v);
+  if (v instanceof JaEscrito) return v;
   if (Array.isArray(v)) return v.map(textos);
   if (typeof v === "object" && v !== null) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, textos(x)]));
   return v;

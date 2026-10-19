@@ -25,7 +25,7 @@ export interface RelogioManual extends Relogio {
 export function relogioManual(instante: number): RelogioManual {
   let agora = instante;
   return {
-    agora: () => ({ real: agora * 1000, instante: agora }),
+    agora: () => ({ real: Math.round(agora * 1000), instante: agora }),
     ajustar(i) {
       agora = i;
     },
@@ -48,6 +48,12 @@ export const RITMO_DO_ENSAIO: Trecho[] = [
   { desde: hora(16, 50), velocidade: 3 },
   { desde: hora(20, 30), velocidade: 30 },
 ];
+
+/** O ritmo que parte de `inicio`, na velocidade que o ritmo dado tem nessa hora e com os trechos seguintes dele. */
+export function ritmoDesde(inicio: number, ritmo: Trecho[] = RITMO_DO_ENSAIO): Trecho[] {
+  const atual = ritmo.filter((t) => t.desde <= inicio).at(-1) ?? ritmo[0]!;
+  return [{ desde: inicio, velocidade: atual.velocidade }, ...ritmo.filter((t) => t.desde > inicio)];
+}
 
 /**
  * O relógio do ensaio geral, que anda sozinho com a hora real: no instante real `partida`, a noite está no

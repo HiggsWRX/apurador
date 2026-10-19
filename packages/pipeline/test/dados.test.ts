@@ -110,8 +110,11 @@ describe("manifesto de origem", () => {
       for (const url of d.fontes) {
         const fonte = manifesto.fontes.find((f) => f.url === url);
         expect(fonte, url).toBeDefined();
-        expect(fonte!.url).toMatch(/^https:\/\/cdn\.tse\.jus\.br\/.+\.zip$/);
-        expect(fonte!.membro).toMatch(/\.csv$/);
+        // Do portal de dados abertos vem um CSV de dentro de um zip; da divulgação ao vivo, um JSON solto (a
+        // configuração de municípios, de onde o cadastro tira as capitais).
+        const doPortal = /^https:\/\/cdn\.tse\.jus\.br\/.+\.zip$/.test(fonte!.url) && /\.csv$/.test(fonte!.membro);
+        const daDivulgacao = /^https:\/\/resultados\.tse\.jus\.br\/oficial\/.+\.json$/.test(fonte!.url) && fonte!.url.endsWith(`/${fonte!.membro}`);
+        expect(doPortal || daDivulgacao, url).toBe(true);
         expect(fonte!.geracao.length).toBeGreaterThan(0);
         expect(fonte!.sha256).toMatch(/^[0-9a-f]{64}$/);
       }

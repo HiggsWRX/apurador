@@ -22,10 +22,21 @@ export function percentualPreciso(parte: number, todo: number, semTodo = "0"): s
   if (todo === 0) return semTodo;
   if (parte === 0) return "0";
   if (parte === todo) return "100";
-  const p = BigInt(parte);
-  const t = BigInt(todo);
-  const bilionesimos = (p * 10n ** 11n * 2n + t) / (2n * t);
-  return `${bilionesimos / 10n ** 9n},${String(bilionesimos % 10n ** 9n).padStart(9, "0")}`;
+  // A divisão longa, três casas por vez, fica exata com inteiros de até 15 dígitos, sem BigInt.
+  let inteiro = Math.floor((parte * 100) / todo);
+  let resto = parte * 100 - inteiro * todo;
+  let casas = 0;
+  for (let i = 0; i < 3; i++) {
+    const x = resto * 1000;
+    const digitos = Math.floor(x / todo);
+    resto = x - digitos * todo;
+    casas = casas * 1000 + digitos;
+  }
+  if (2 * resto >= todo && ++casas === 1e9) {
+    casas = 0;
+    inteiro++;
+  }
+  return `${inteiro},${String(casas).padStart(9, "0")}`;
 }
 
 /** `AAAA-MM-DD HH:MM:SS` como o par do TSE, `DD/MM/AAAA` e `HH:MM:SS`. */
@@ -36,9 +47,15 @@ export function dataEHora(dataHora: string): { data: string; hora: string } {
 /** `AAAA-MM-DD HH:MM:SS` de Brasília como data HTTP (`Sun, 30 Oct 2022 21:44:04 GMT`). */
 export const dataHttp = (dataHora: string) => new Date(`${dataHora.replace(" ", "T")}-03:00`).toUTCString();
 
-const eObjeto = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+/** Um objeto já escrito no formato do TSE, que `escreverComoTse` copia como está. */
+export class JaEscrito {
+  constructor(readonly texto: string) {}
+}
+
+const eObjeto = (v: unknown): v is Record<string, unknown> | JaEscrito => typeof v === "object" && v !== null && !Array.isArray(v);
 
 function escrever(v: unknown): string {
+  if (v instanceof JaEscrito) return v.texto;
   if (Array.isArray(v)) return `[ ${v.map((x) => (eObjeto(x) ? `\n${escrever(x)}` : escrever(x))).join(", ")} ]`;
   if (eObjeto(v)) return `{ ${Object.entries(v).map(([k, x]) => `${JSON.stringify(k)} : ${eObjeto(x) ? "\n" : ""}${escrever(x)}`).join(", ")} }`;
   return JSON.stringify(v);
@@ -46,3 +63,6 @@ function escrever(v: unknown): string {
 
 /** O JSON com o espaçamento do TSE: espaços em volta dos dois-pontos e uma quebra de linha antes de cada objeto. */
 export const escreverComoTse = (documento: unknown) => `\n${escrever(documento)}`;
+
+/** Um objeto escrito uma vez, para entrar em vários documentos sem ser escrito de novo. */
+export const jaEscrito = (objeto: object) => new JaEscrito(escrever(objeto));
