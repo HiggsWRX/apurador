@@ -20,4 +20,5 @@ The spec's "Decisões de teste" (`.scratch/apurador-2026-construcao/spec.md`) is
 
 - an expected value computed by the code under test, or by the same reader on both sides, where a literal from a reference exists;
 - a test that asserts on internal state where a published file or a module's public interface shows the same behaviour;
-- a test that only passes by construction (a limit asserted against the same constant that enforces it).
+- a test that only passes by construction (a limit asserted against the same constant that enforces it, a length asserted against the loop that built the list);
+- a tolerance wide enough to pass a number the ticket states otherwise (1,54 against the ticket's "1,5"), or a comment explaining the gap away: the code or the ticket is wrong, and the owner decides which.

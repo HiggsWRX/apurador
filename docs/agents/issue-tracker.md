@@ -16,7 +16,12 @@ Issues, specs and comments are written in Brazilian Portuguese, using the terms 
 - Implementation issues are one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`, never a single combined tickets file
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading
-- Resolving a build ticket: what a later ticket needs to know (an interface, a file format, a gotcha, what was left for it) goes in that ticket's own `## Comments`, dated and linked back: `- 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): ...`. The resolved ticket keeps only its own record, so the next implementer finds the note by reading just the ticket in front of them.
+
+## Working a build ticket
+
+- **Next ticket**: the frontier is every `ready-for-agent` ticket whose `Blocked by` tickets are all `resolved`. Pick from it by the spec's `## Notas`: first a ticket that `Calendário` dates before the others (the calibração on 20 and 21/10), then the one highest in `Prioridade` (núcleo mínimo first), then the lowest number.
+- **Where**: `git worktree add ../apurador-wt/NN -b ticket/NN-<slug> main`, then `npm ci` inside it. That branch is the "current branch" a skill commits to; the owner reviews it and merges it into `main` (`Junta …`).
+- **Resolving**: the last commit marks the criteria, sets `Status: resolved` and leaves the ticket's own record in its `## Comments`. What a later ticket needs to know (an interface, a file format, a gotcha, what was left for it) goes in that ticket's own `## Comments`, dated and linked back: `- 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): ...`. The resolved ticket keeps only its own record, so the next implementer finds the note by reading just the ticket in front of them.
 
 ## When a skill says "publish to the issue tracker"
 
@@ -24,7 +29,7 @@ Create a new file under `.scratch/<feature-slug>/` (creating the directory if ne
 
 ## When a skill says "fetch the relevant ticket"
 
-Read the file at the referenced path. The user will normally pass the path or the issue number directly.
+Read the file at the referenced path. The user will normally pass the path or the issue number directly; "the next ticket" follows **Next ticket** above.
 
 ## Wayfinding operations
 
