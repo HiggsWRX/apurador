@@ -70,9 +70,9 @@ describe("o executor de noites na base 'Apuração + pesquisas', no 2º turno de
   });
 
   it("erra com 5% das seções como no protótipo: ~0,10 ponto com o agregado real, ~0,23 deslocado para Lula e ~0,03 para Bolsonaro", () => {
-    expect(Math.abs(real.erroCom5! - 0.1)).toBeLessThan(0.05);
-    expect(Math.abs(comLula.erroCom5! - 0.23)).toBeLessThan(0.05);
-    expect(Math.abs(comBolsonaro.erroCom5! - 0.03)).toBeLessThan(0.05);
+    expect(Math.abs(real.erroCom5! - 0.1)).toBeLessThan(0.02);
+    expect(Math.abs(comLula.erroCom5! - 0.23)).toBeLessThan(0.02);
+    expect(Math.abs(comBolsonaro.erroCom5! - 0.03)).toBeLessThan(0.02);
   });
 
   it("com o agregado deslocado, fica a menos de 0,1 ponto da 'Só apuração' a partir de ~7% das seções, como no protótipo", () => {

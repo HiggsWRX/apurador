@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { basesCoincidem, curvaProjetada, indicacaoDasPesquisas, momentosDaNoite, pesoDasPesquisas, prepararModelo, projetar } from "../src/index.ts";
+import {
+  basesCoincidem,
+  curvaProjetada,
+  momentosDaNoite,
+  pesoDasPesquisas,
+  prepararModelo,
+  projetar,
+  projetarNasDuasBases,
+  type ProjecaoNasDuasBases,
+} from "../src/index.ts";
 import { agregado2022, antesDaPrimeiraSecao, base2022, base2026, constantes, noite2022, placarEntreFinalistasDos } from "./dados.ts";
 
 // A base "Apuração + pesquisas" (Combinação de pesquisas e apuração, .scratch/apurador-2026/issues/11): o mesmo
@@ -24,9 +33,10 @@ describe("antes da primeira seção, em 25/10", () => {
   // incerteza do agregado na eleição (Agregado de pesquisas e erro histórico, decisão 5).
   const agregado = { valor: 52, incerteza: 1.5 };
   const projecao = projetar(modelo, apuracao, constantes, agregado);
-  const doBrasil = 100 * placarEntreFinalistasDos(base2026.municipios);
-  const indicacao = (municipios: typeof base2026.municipios) =>
-    indicacaoDasPesquisas({ placarEntreFinalistasDoLugar: 100 * placarEntreFinalistasDos(municipios), placarEntreFinalistasDoBrasil: doBrasil, agregado: agregado.valor }) / 100;
+  // A indicação das pesquisas, pela definição do glossário: o placar entre finalistas do lugar no 1º turno, somado à
+  // mudança que o agregado mostra para o Brasil, entre 0 e 100%.
+  const mudanca = agregado.valor / 100 - placarEntreFinalistasDos(base2026.municipios);
+  const indicacao = (municipios: typeof base2026.municipios) => Math.min(1, Math.max(0, placarEntreFinalistasDos(municipios) + mudanca));
   // Como na "Só apuração", a fatia do voto que falta de cada município fica entre 1% e 99%: os postos do Exterior
   // em que um finalista teve quase todos os votos afastam a soma da indicação exata.
   const ATE_UM_MILESIMO_DE_PONTO = 5;
@@ -76,45 +86,6 @@ describe("antes da primeira seção, em 25/10", () => {
   });
 });
 
-describe("durante a apuração, na noite de 2022", () => {
-  const modelo = prepararModelo(base2022);
-  const momentos = [...momentosDaNoite(modelo, noite2022)];
-  const noMomento = (secoes: number) => momentos.find((m) => m.secoes >= secoes)!;
-  // o agregado deslocado 2 pontos para Lula, para a diferença entre as bases aparecer
-  const agregado = { ...agregado2022, valor: agregado2022.valor + 2 };
-
-  it("estima o voto que falta de cada município com peso × indicação das pesquisas + (1 − peso) × a estimativa da apuração, corrigido pelo próprio placar", () => {
-    const { apuracao } = noMomento(1);
-    const soApuracao = projetar(modelo, apuracao, constantes);
-    const comPesquisas = projetar(modelo, apuracao, constantes, agregado);
-    const peso = comPesquisas.pesoDasPesquisas;
-    const doBrasil = 100 * placarEntreFinalistasDos(base2022.municipios);
-    let conferidos = 0;
-    let corrigidos = 0;
-
-    expect(peso).toBeCloseTo(1 / 3, 2);
-    base2022.municipios.forEach((m, i) => {
-      const fatia = soApuracao.fatiaDoQueFalta[i]!;
-      if (comPesquisas.votoQueFalta[i]! <= 0 || fatia <= 0.01 || fatia >= 0.99) return;
-      // Na "Só apuração", fatia = (1 − w) × estimativa + w × placar, com w = votos ÷ (votos + 3.000). Com pesquisas, o
-      // ponto de partida passa a ser peso × indicação + (1 − peso) × estimativa, e a correção w fica por cima.
-      const votos = apuracao[i]!.votos[0]! + apuracao[i]!.votos[1]!;
-      const w = votos / (votos + constantes.pesoDoMunicipio);
-      const placar = votos > 0 ? apuracao[i]!.votos[0]! / votos : 0;
-      const indicacao = indicacaoDasPesquisas({ placarEntreFinalistasDoLugar: 100 * placarEntreFinalistasDos([m]), placarEntreFinalistasDoBrasil: doBrasil, agregado: agregado.valor }) / 100;
-      const esperada = peso * ((1 - w) * indicacao + w * placar) + (1 - peso) * fatia;
-      if (esperada <= 0.01 || esperada >= 0.99) return;
-      expect(comPesquisas.fatiaDoQueFalta[i], `${m.uf}/${m.municipio}`).toBeCloseTo(esperada, 12);
-      expect(comPesquisas.votoQueFalta[i]).toBe(soApuracao.votoQueFalta[i]);
-      conferidos++;
-      if (votos > 0) corrigidos++;
-    });
-
-    expect(conferidos).toBeGreaterThan(5000);
-    expect(corrigidos).toBeGreaterThan(100);
-  });
-});
-
 describe("as duas bases coincidem", () => {
   // Decisão 5: menos de 0,1 p.p. na projeção e menos de 1 ponto na chance de vitória.
   const lugar = { projecao: 0.5, chance: 0.5 };
@@ -132,16 +103,30 @@ describe("as duas bases coincidem", () => {
     expect(basesCoincidem(lugar, { projecao: 0.5, chance: 0.4899 })).toBe(false);
   });
 
-  it("não coincidem no Brasil antes da primeira seção com as pesquisas deslocadas, e coincidem em todo lugar no fim da noite de 2022", () => {
+  describe("em cada lugar, na noite de 2022 com o agregado deslocado 2 pontos para Bolsonaro", () => {
     const modelo = prepararModelo(base2022);
-    const fim = [...momentosDaNoite(modelo, noite2022)].at(-1)!.apuracao;
     const deslocado = { ...agregado2022, valor: agregado2022.valor - 2 };
-    const [so, com] = [projetar(modelo, fim, constantes), projetar(modelo, fim, constantes, deslocado)];
-    const lugares = (p: typeof so) => [p.brasil, ...modelo.ufs.map((uf) => p.ufs[uf]!), ...p.municipios];
-    const antes = antesDaPrimeiraSecao(base2022);
+    const momentos = [...momentosDaNoite(modelo, noite2022)];
+    const lugares = (coincidem: ProjecaoNasDuasBases["coincidem"]) => [coincidem.brasil, ...modelo.ufs.map((uf) => coincidem.ufs[uf]!), ...coincidem.municipios];
 
-    expect(basesCoincidem(projetar(modelo, antes, constantes).brasil, projetar(modelo, antes, constantes, deslocado).brasil)).toBe(false);
-    lugares(so).forEach((r, i) => expect(basesCoincidem(r, lugares(com)[i]!)).toBe(true));
+    it("dá as duas bases e, em cada lugar, se elas coincidem pela regra", () => {
+      const duas = projetarNasDuasBases(modelo, momentos.find((m) => m.secoes >= 10)!.apuracao, constantes, deslocado);
+      const { soApuracao, comPesquisas, coincidem } = duas;
+
+      expect(soApuracao.pesoDasPesquisas).toBe(0);
+      // na série do protótipo da metodologia, as pesquisas pesam 4,8% com 10% das seções
+      expect(comPesquisas.pesoDasPesquisas).toBeCloseTo(0.0476, 3);
+      expect(coincidem.brasil).toBe(basesCoincidem(soApuracao.brasil, comPesquisas.brasil));
+      for (const uf of modelo.ufs) expect(coincidem.ufs[uf], uf).toBe(basesCoincidem(soApuracao.ufs[uf]!, comPesquisas.ufs[uf]!));
+      expect(coincidem.municipios).toEqual(soApuracao.municipios.map((r, i) => basesCoincidem(r, comPesquisas.municipios[i]!)));
+      // com 10% das seções, uns lugares já coincidem, outros ainda não
+      expect(new Set(lugares(coincidem))).toEqual(new Set([true, false]));
+    });
+
+    it("não coincidem no Brasil antes da primeira seção, e coincidem em todo lugar no fim da noite", () => {
+      expect(projetarNasDuasBases(modelo, antesDaPrimeiraSecao(base2022), constantes, deslocado).coincidem.brasil).toBe(false);
+      expect(lugares(projetarNasDuasBases(modelo, momentos.at(-1)!.apuracao, constantes, deslocado).coincidem).every((c) => c)).toBe(true);
+    });
   });
 });
 

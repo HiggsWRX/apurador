@@ -4,9 +4,9 @@ import { Z_95 } from "./normal.ts";
 import { projetar, type Apuracao, type Modelo } from "./projecao.ts";
 
 // O executor de noites: roda o modelo sobre uma noite reconstruída (a sequência de estados da apuração), numa das
-// duas bases, e resume o erro, a cobertura e a chance honesta. Serve à calibração, ao histórico de acerto e a "Como a
-// projeção se saiu". As duas bases andam nos mesmos momentos, então a noite momento a momento nas duas é uma linha
-// de cada execução.
+// duas bases da projeção, e resume o erro, a cobertura e a chance honesta. Serve à calibração, ao histórico de acerto
+// e a "Como a projeção se saiu". Cada base tem o próprio resumo, e as duas andam nos mesmos momentos: a noite momento
+// a momento nas duas bases é uma linha de cada execução.
 
 /** Uma noite reconstruída, no que o modelo usa (a `Noite` do `@apurador/pipeline` serve). */
 export interface NoiteDoModelo {
@@ -73,7 +73,7 @@ export function* momentosDaNoite(modelo: Modelo, noite: NoiteDoModelo, pontos: n
   }
 }
 
-/** Um momento da noite no Brasil. As fatias são do 1º finalista da base. */
+/** Um momento da noite no Brasil. As fatias são do 1º finalista da base do modelo. */
 export interface LinhaDaNoite {
   instante: number;
   /** O % de seções totalizadas. */
@@ -110,7 +110,7 @@ export interface ResultadoDaNoite {
 
 /**
  * Roda o modelo em cada momento da noite e resume o erro, a cobertura e a chance honesta no Brasil: na base "Só
- * apuração" ou, com o agregado de pesquisas da noite (no 1º finalista da base), na "Apuração + pesquisas".
+ * apuração" ou, com o agregado de pesquisas da noite (no 1º finalista da base do modelo), na "Apuração + pesquisas".
  */
 export function executarNoite(
   modelo: Modelo,

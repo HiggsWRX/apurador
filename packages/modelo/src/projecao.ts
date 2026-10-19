@@ -70,7 +70,10 @@ export interface Modelo {
   fatiaDosEliminados: Float64Array;
   /** Por município, no 1º turno: os válidos por eleitor apto. */
   validosPorApto: Float64Array;
-  /** No 1º turno, o placar entre finalistas do Brasil: a mudança que o agregado mostra é medida a partir dele. */
+  /**
+   * No 1º turno, o placar entre finalistas do Brasil, como fração (a fatia do 1º finalista nos votos dos dois): a mudança
+   * que o agregado mostra é medida a partir dele.
+   */
   placarEntreFinalistasDoBrasil: number;
   /** Por UF, no 1º turno: a fatia dos eliminados nos válidos, que dá a incerteza local da indicação das pesquisas. */
   fatiaDosEliminadosDaUf: Float64Array;
@@ -114,6 +117,7 @@ export function prepararModelo(base: BaseDoModelo): Modelo {
   };
   const noBrasil = { primeiro: 0, finalistas: 0 };
   const validosDaUf = new Float64Array(ufs.length);
+  const eliminadosDaUf = new Float64Array(ufs.length);
   base.municipios.forEach((m, i) => {
     const [a, b] = m.votos as [number, number];
     modelo.placarEntreFinalistas[i] = a + b > 0 ? a / (a + b) : 0.5;
@@ -123,7 +127,7 @@ export function prepararModelo(base: BaseDoModelo): Modelo {
     noBrasil.primeiro += a;
     noBrasil.finalistas += a + b;
     validosDaUf[modelo.ufDoMunicipio[i]!]! += m.validos;
-    modelo.fatiaDosEliminadosDaUf[modelo.ufDoMunicipio[i]!]! += m.validos - a - b;
+    eliminadosDaUf[modelo.ufDoMunicipio[i]!]! += m.validos - a - b;
     let degrau = 0;
     let chegadas = 0;
     for (let x = 0; x <= 100; x++) {
@@ -132,7 +136,7 @@ export function prepararModelo(base: BaseDoModelo): Modelo {
     }
   });
   if (noBrasil.finalistas > 0) modelo.placarEntreFinalistasDoBrasil = noBrasil.primeiro / noBrasil.finalistas;
-  validosDaUf.forEach((validos, u) => (modelo.fatiaDosEliminadosDaUf[u] = validos > 0 ? modelo.fatiaDosEliminadosDaUf[u]! / validos : 0));
+  validosDaUf.forEach((validos, u) => (modelo.fatiaDosEliminadosDaUf[u] = validos > 0 ? eliminadosDaUf[u]! / validos : 0));
   return modelo;
 }
 
@@ -307,7 +311,7 @@ interface Somas {
   secoesTotais: number;
   falta: number;
   falta1: number;
-  variancia: number;
+  varianciaDaApuracao: number;
   varianciaDasPesquisas: number;
 }
 
@@ -316,7 +320,7 @@ function resultado(somas: Somas, constantes: Constantes, peso: number): Resultad
   const validos = somas.votos + somas.falta;
   const projecao = validos > 0 ? (somas.votos1 + somas.falta1) / validos : 0.5;
   // As incertezas das pesquisas entram multiplicadas pelo peso delas, e as da apuração, pelo restante.
-  const variancia = peso * peso * somas.varianciaDasPesquisas + (1 - peso) * (1 - peso) * somas.variancia;
+  const variancia = peso * peso * somas.varianciaDasPesquisas + (1 - peso) * (1 - peso) * somas.varianciaDaApuracao;
   const desvio = validos > 0 ? Math.sqrt(variancia) / validos : 0;
   const chance = desvio > 0 ? phi((projecao - 0.5) / desvio) : projecao > 0.5 ? 1 : projecao < 0.5 ? 0 : 0.5;
   const placar = somas.votos > 0 ? somas.votos1 / somas.votos : null;
@@ -377,8 +381,10 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
     indicacaoDasPesquisas({ placarEntreFinalistasDoLugar: 100 * modelo.placarEntreFinalistas[m]!, placarEntreFinalistasDoBrasil: 100 * modelo.placarEntreFinalistasDoBrasil, agregado: valor }) / 100;
   const nacionalDasPesquisas = agregado ? agregado.incerteza / 100 : 0;
   const { uf: localDaUf, municipio: localDoMunicipio } = constantes.incertezaLocalDasPesquisas;
-  /** A parte local da UF na incerteza das pesquisas, comum a todo o voto que falta dela. */
-  const varianciaDaUf = (falta: number, u: number) => (falta * localDaUf * modelo.fatiaDosEliminadosDaUf[u]!) ** 2;
+  /** A incerteza local da UF na indicação das pesquisas, comum a todo o voto que falta dela. */
+  const localDaUfDe = (u: number) => localDaUf * modelo.fatiaDosEliminadosDaUf[u]!;
+  /** A parte da variância das pesquisas comum a todo o voto que falta de um lugar dentro de uma UF: a nacional e a local da UF. */
+  const varianciaComumDasPesquisas = (falta: number, u: number) => falta * falta * (nacionalDasPesquisas ** 2 + localDaUfDe(u) ** 2);
 
   // Os válidos esperados por eleitor apto, do 1º turno. No recuo "1º turno" (o Brasil ainda sem o mínimo de votos,
   // e então todas as UFs nele), contam só os votos dos dois finalistas: cada lugar parte assim do próprio placar
@@ -397,12 +403,12 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
     esperados += a.aptos * validosPorApto(m);
   });
   const validosSobreEsperados = esperados > 0 ? apurados / esperados : 1;
-  /** A parte da variância comum a todo o voto que falta de um lugar: a nacional, a regional e o erro da referência. */
-  const varianciaComum = (falta: number, ref: Referencia) => falta * falta * (nacional * nacional + regional * regional + ref.erro * ref.erro);
+  /** A parte da variância da apuração comum a todo o voto que falta de um lugar: a nacional, a regional e o erro da referência. */
+  const varianciaComumDaApuracao = (falta: number, ref: Referencia) => falta * falta * (nacional * nacional + regional * regional + ref.erro * ref.erro);
 
   const votoQueFalta = new Float64Array(n);
   const fatiaDoQueFalta = new Float64Array(n);
-  const somaVazia = (): Somas => ({ votos1: 0, votos: 0, secoes: 0, secoesTotais: 0, falta: 0, falta1: 0, variancia: 0, varianciaDasPesquisas: 0 });
+  const somaVazia = (): Somas => ({ votos1: 0, votos: 0, secoes: 0, secoesTotais: 0, falta: 0, falta1: 0, varianciaDaApuracao: 0, varianciaDasPesquisas: 0 });
   const acumular = (a: Somas, b: Somas) => {
     a.votos1 += b.votos1;
     a.votos += b.votos;
@@ -410,7 +416,7 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
     a.secoesTotais += b.secoesTotais;
     a.falta += b.falta;
     a.falta1 += b.falta1;
-    a.variancia += b.variancia;
+    a.varianciaDaApuracao += b.varianciaDaApuracao;
     a.varianciaDasPesquisas += b.varianciaDasPesquisas;
   };
   const porUf = modelo.ufs.map(somaVazia);
@@ -427,20 +433,20 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
       // parcial do município, que pesa metade com `pesoDoMunicipio` votos.
       const estimativa = estimar(modelo, m, ref.transferencia);
       const partida = agregado ? peso * indicacao(m, agregado.valor) + (1 - peso) * estimativa : estimativa;
-      const proprio = votos > 0 ? votos / (votos + constantes.pesoDoMunicipio) : 0;
-      const fatia = clamp(votos > 0 ? partida + proprio * (a.votos[0]! / votos - partida) : partida, 0.01, 0.99);
+      const pesoDoPlacar = votos > 0 ? votos / (votos + constantes.pesoDoMunicipio) : 0;
+      const fatia = clamp(votos > 0 ? partida + pesoDoPlacar * (a.votos[0]! / votos - partida) : partida, 0.01, 0.99);
       votoQueFalta[m] = falta;
       fatiaDoQueFalta[m] = fatia;
       somas.falta = falta;
       somas.falta1 = falta * fatia;
-      somas.variancia = falta * falta * (1 - proprio) * ref.dispersao * ref.dispersao;
+      somas.varianciaDaApuracao = falta * falta * (1 - pesoDoPlacar) * ref.dispersao * ref.dispersao;
       // A parte local do município na incerteza das pesquisas, que o placar parcial dele também reduz.
-      somas.varianciaDasPesquisas = (falta * (1 - proprio) * localDoMunicipio * modelo.fatiaDosEliminados[m]!) ** 2;
+      somas.varianciaDasPesquisas = (falta * (1 - pesoDoPlacar) * localDoMunicipio * modelo.fatiaDosEliminados[m]!) ** 2;
     }
     acumular(porUf[u]!, somas);
     // No município, a mesma fórmula restrita ao voto que falta dele.
-    somas.variancia += varianciaComum(somas.falta, ref);
-    somas.varianciaDasPesquisas += (somas.falta * nacionalDasPesquisas) ** 2 + varianciaDaUf(somas.falta, u);
+    somas.varianciaDaApuracao += varianciaComumDaApuracao(somas.falta, ref);
+    somas.varianciaDasPesquisas += varianciaComumDasPesquisas(somas.falta, u);
     const r = resultado(somas, constantes, peso) as ResultadoDoMunicipio;
     r.virada = viradaDoMunicipio(a, somas.falta, fatiaDoQueFalta[m]!, r.desvio * r.validos);
     return r;
@@ -453,20 +459,44 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
     const somas = porUf[u]!;
     const ref = referencias[u]!;
     acumular(brasil, somas);
-    brasil.variancia += (somas.falta * regional) ** 2;
-    brasil.varianciaDasPesquisas += varianciaDaUf(somas.falta, u);
+    brasil.varianciaDaApuracao += (somas.falta * regional) ** 2;
+    brasil.varianciaDasPesquisas += (somas.falta * localDaUfDe(u)) ** 2;
     const g = grupos.get(ref.grupo) ?? { falta: 0, erro: ref.erro };
     g.falta += somas.falta;
     grupos.set(ref.grupo, g);
     const variancias = {
-      variancia: somas.variancia + varianciaComum(somas.falta, ref),
-      varianciaDasPesquisas: somas.varianciaDasPesquisas + (somas.falta * nacionalDasPesquisas) ** 2 + varianciaDaUf(somas.falta, u),
+      varianciaDaApuracao: somas.varianciaDaApuracao + varianciaComumDaApuracao(somas.falta, ref),
+      varianciaDasPesquisas: somas.varianciaDasPesquisas + varianciaComumDasPesquisas(somas.falta, u),
     };
     ufs[sigla] = { ...resultado({ ...somas, ...variancias }, constantes, peso), referencia: ref.fonte };
   });
-  brasil.variancia += (brasil.falta * nacional) ** 2;
-  for (const g of grupos.values()) brasil.variancia += (g.falta * g.erro) ** 2;
+  brasil.varianciaDaApuracao += (brasil.falta * nacional) ** 2;
+  for (const g of grupos.values()) brasil.varianciaDaApuracao += (g.falta * g.erro) ** 2;
   brasil.varianciaDasPesquisas += (brasil.falta * nacionalDasPesquisas) ** 2;
 
   return { pesoDasPesquisas: peso, brasil: resultado(brasil, constantes, peso), ufs, municipios, votoQueFalta, fatiaDoQueFalta };
+}
+
+/** As duas bases da projeção sobre a mesma apuração, como a página as mostra lado a lado. */
+export interface ProjecaoNasDuasBases {
+  soApuracao: Projecao;
+  /** Com o peso das pesquisas de agora. */
+  comPesquisas: Projecao;
+  /** Em cada lugar, se as duas bases já coincidem. Os municípios vão na ordem da base do modelo. */
+  coincidem: { brasil: boolean; ufs: Record<string, boolean>; municipios: boolean[] };
+}
+
+/** A projeção de cada lugar nas duas bases, para a apuração de agora e o agregado de pesquisas, e onde elas já coincidem. */
+export function projetarNasDuasBases(modelo: Modelo, apuracao: Apuracao, constantes: Constantes, agregado: Pick<Agregado, "valor" | "incerteza">): ProjecaoNasDuasBases {
+  const soApuracao = projetar(modelo, apuracao, constantes);
+  const comPesquisas = projetar(modelo, apuracao, constantes, agregado);
+  return {
+    soApuracao,
+    comPesquisas,
+    coincidem: {
+      brasil: basesCoincidem(soApuracao.brasil, comPesquisas.brasil),
+      ufs: Object.fromEntries(modelo.ufs.map((uf) => [uf, basesCoincidem(soApuracao.ufs[uf]!, comPesquisas.ufs[uf]!)])),
+      municipios: soApuracao.municipios.map((r, m) => basesCoincidem(r, comPesquisas.municipios[m]!)),
+    },
+  };
 }

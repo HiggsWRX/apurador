@@ -121,9 +121,15 @@ describe("o porte fiel da base 'Apuração + pesquisas' do protótipo da página
   const pares = casos.flatMap((valor) =>
     comReferencia.map((m) => {
       const foto = fotoDoPrototipo(m.apuracao);
+      const doPrototipo = Projecao.projetar(P, foto, "transferencia", prm);
+      const { shat, ...prototipo } = comPesquisas(P, foto, doPrototipo, valor / 100, constantes.secoesDasPesquisas, prm);
+      const { pesoDasPesquisas, brasil, votoQueFalta, fatiaDoQueFalta } = projetar(modelo, m.apuracao, constantes, { valor, incerteza: agregado2022.incerteza });
       return {
-        modelo: projetar(modelo, m.apuracao, constantes, { valor, incerteza: agregado2022.incerteza }),
-        prototipo: comPesquisas(P, foto, Projecao.projetar(P, foto, "transferencia", prm), valor / 100, constantes.secoesDasPesquisas, prm),
+        modelo: { pesoDasPesquisas, brasil },
+        prototipo,
+        // o voto que falta de cada município, que é o mesmo nas duas bases, e a fatia dele
+        faltas: maiorDiferenca(Array.from(votoQueFalta, (f, i): [number, number] => [f, doPrototipo.R[i]!])),
+        fatias: maiorDiferenca(Array.from(fatiaDoQueFalta, (f, i): [number, number] => [f, shat[i]!]).filter((_, i) => votoQueFalta[i]! > 0)),
       };
     }),
   );
@@ -139,5 +145,10 @@ describe("o porte fiel da base 'Apuração + pesquisas' do protótipo da página
     expect(maiorDiferenca(pares.map((p) => [p.modelo.pesoDasPesquisas, p.prototipo.peso]))).toBeLessThan(1e-12);
     expect(maiorDiferenca(pares.map((p) => [p.modelo.brasil.projecao, p.prototipo.P]))).toBeLessThan(UM_CENTESIMO_DE_PONTO);
     expect(maiorDiferenca(pares.map((p) => [p.modelo.brasil.desvio, p.prototipo.s]))).toBeLessThan(UM_CENTESIMO_DE_PONTO);
+  });
+
+  it("estima o voto que falta de cada município e a fatia dele como o protótipo: peso × indicação + (1 − peso) × apuração, corrigido pelo próprio placar", () => {
+    expect(Math.max(...pares.map((p) => p.faltas))).toBeLessThan(1e-6);
+    expect(Math.max(...pares.map((p) => p.fatias))).toBeLessThan(UM_CENTESIMO_DE_PONTO);
   });
 });

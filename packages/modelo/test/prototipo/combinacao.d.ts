@@ -10,4 +10,4 @@ export declare function comPesquisas(
   A: number,
   K: number,
   PRM: { k: number },
-): { peso: number; P: number; s: number };
+): { peso: number; P: number; s: number; shat: Float64Array };
