@@ -374,6 +374,8 @@ export interface Calibracao {
   /** As execuções, na ordem das medidas por execução. */
   execucoes: { nome: string }[];
   passo4: ReturnType<typeof escolherLimite>;
+  /** Na ordem das noites. */
+  passo5: ReturnType<typeof escolherZona>;
   /**
    * As constantes escolhidas. Num passo que não escolheu, os passos seguintes seguem com o valor provisório, para o
    * registro ter os números, e o passo entra em `semEscolha`, para o dono decidir.
@@ -382,7 +384,7 @@ export interface Calibracao {
   semEscolha: string[];
 }
 
-/** Roda os passos da regra nas noites, na ordem, cada um com as constantes dos anteriores. `aviso` recebe o andamento. */
+/** Roda os cinco passos da regra nas noites, na ordem, cada um com as constantes dos anteriores. `aviso` recebe o andamento. */
 export function calibrar(noites: NoiteDaCalibracao[], provisorias: Constantes, aviso: (texto: string) => void = () => {}): Calibracao {
   const semEscolha: string[] = [];
 
@@ -416,7 +418,13 @@ export function calibrar(noites: NoiteDaCalibracao[], provisorias: Constantes, a
   const porExecucao = execucoes.map((e) => medirSinal(e, constantes3, CANDIDATOS.semSinalDeVirada));
   const passo4 = escolherLimite(CANDIDATOS.semSinalDeVirada.map((candidato, i) => ({ candidato, porExecucao: porExecucao.map((limites) => limites[i]!) })));
   if (passo4.escolhido === null) semEscolha.push("passo 4: limite de 'sem sinal de virada'");
-  const constantes = { ...constantes3, sinalDeVirada: { ...constantes3.sinalDeVirada, possivel: passo4.escolhido ?? provisorias.sinalDeVirada.possivel } };
+  const constantes4 = { ...constantes3, sinalDeVirada: { ...constantes3.sinalDeVirada, possivel: passo4.escolhido ?? provisorias.sinalDeVirada.possivel } };
+
+  aviso("passo 5: zona");
+  const passo5 = escolherZona(
+    noites.map((n) => ({ municipio: medirNoite(executarNoite(n.modelo, n.noite, constantes4)), zona: medirNoite(executarNoite(n.modeloPorZona, n.noite, constantes4)) })),
+  );
+  const constantes = { ...constantes4, zona: passo5.escolhido };
 
   return {
     noites: noites.map(({ id, nome }) => ({ id, nome })),
@@ -426,7 +434,26 @@ export function calibrar(noites: NoiteDaCalibracao[], provisorias: Constantes, a
     passo3,
     execucoes: execucoes.map(({ nome }) => ({ nome })),
     passo4,
+    passo5,
     constantes,
     semEscolha,
   };
+}
+
+/** A redução mínima do erro médio para a zona entrar, em pontos percentuais (Ensaio geral, decisão 16). */
+const GANHO_DA_ZONA = 0.05;
+
+/**
+ * O passo 5 da regra: a zona entra só se, em cada noite, reduzir o erro médio em pelo menos 0,05 p.p. sem baixar a
+ * cobertura, na base "Só apuração".
+ */
+export function escolherZona(porNoite: { municipio: MedidaDaNoite; zona: MedidaDaNoite }[]): {
+  porNoite: { municipio: MedidaDaNoite; zona: MedidaDaNoite; reducao: number; passa: boolean }[];
+  escolhido: boolean;
+} {
+  const noites = porNoite.map(({ municipio, zona }) => {
+    const reducao = municipio.erroMedio - zona.erroMedio;
+    return { municipio, zona, reducao, passa: reducao >= GANHO_DA_ZONA && zona.cobertura >= municipio.cobertura };
+  });
+  return { porNoite: noites, escolhido: noites.every((n) => n.passa) };
 }

@@ -1,6 +1,6 @@
-import { CONSTANTES_PROVISORIAS, executarNoite, type LinhaDaNoite, type ResultadoDaNoite } from "@apurador/modelo";
+import { CONSTANTES_PROVISORIAS, executarNoite, lerConstantes, type LinhaDaNoite, type ResultadoDaNoite } from "@apurador/modelo";
 import { describe, expect, it } from "vitest";
-import { casosDoK, erroDaCurva, escolherConstantesDoModelo, escolherK, escolherLimite, escolherOrdem, execucoesDoSinal, lerNoitesDaCalibracao, medirNoite, medirSinal, noiteMomentoAMomento, placarReal, semSinalSeguidoDeVirada, type MedidaDaNoite } from "../src/index.ts";
+import { casosDoK, erroDaCurva, escolherConstantesDoModelo, escolherK, escolherLimite, escolherOrdem, escolherZona, execucoesDoSinal, lerNoitesDaCalibracao, medirNoite, medirSinal, noiteMomentoAMomento, placarReal, semSinalSeguidoDeVirada, type MedidaDaNoite } from "../src/index.ts";
 
 // A calibração (docs/calibracao.md): as regras de escolha de cada passo, sobre medidas feitas à mão a partir do texto
 // da regra, e as medidas, sobre resultados feitos à mão e sobre as três noites reais, com as referências dos tickets.
@@ -256,6 +256,17 @@ describe("o sinal de virada numa noite real", () => {
   });
 });
 
+describe("as constantes congeladas", () => {
+  it("nunca dão 'sem sinal de virada' no Brasil antes de uma virada em 2022, nas duas bases e com o agregado deslocado (Ensaio geral, decisão 21)", async () => {
+    const { default: arquivo } = await import("@apurador/modelo/constantes.json", { with: { type: "json" } });
+    const congeladas = lerConstantes(arquivo);
+    for (const execucao of execucoesDoSinal(noites).filter((e) => e.noite.id === "2022-2")) {
+      const [medida] = medirSinal(execucao, congeladas, [congeladas.sinalDeVirada.possivel]);
+      expect(medida!.deCima.lugares, execucao.nome).not.toContain("Brasil");
+    }
+  });
+});
+
 describe("as execuções do sinal de virada", () => {
   it("são as três noites nas duas bases e 2022 com o agregado deslocado para cada lado: oito", () => {
     expect(execucoesDoSinal(noites).map((e) => e.nome)).toEqual([
@@ -293,5 +304,18 @@ describe("a noite momento a momento", () => {
     // o fim às 00:18:04 de 31/10, Lula com 50,90%
     expect(fim.hora).toBe("2022-10-31 00:18:04");
     for (const base of fim.bases) expect(100 * base.projecao).toBeCloseTo(50.9, 2);
+  });
+});
+
+describe("a escolha da zona (passo 5)", () => {
+  const medida = (erroMedio: number, cobertura: number): MedidaDaNoite => ({ cobertura, maiorChanceDeQuemPerdeu: 0.9, maiorErroNoComeco: 1, erroMedio, margemMedia: 2 });
+
+  it("entra só se reduzir o erro médio em pelo menos 0,05 p.p. em todas as noites, sem baixar a cobertura", () => {
+    const passa = (municipio: MedidaDaNoite, zona: MedidaDaNoite) => ({ municipio, zona });
+    expect(escolherZona([passa(medida(0.4, 0.98), medida(0.34, 0.98)), passa(medida(0.7, 0.97), medida(0.6, 0.99))]).escolhido).toBe(true);
+    // numa noite, a redução é de 0,04
+    expect(escolherZona([passa(medida(0.4, 0.98), medida(0.36, 0.98)), passa(medida(0.7, 0.97), medida(0.6, 0.99))]).escolhido).toBe(false);
+    // numa noite, a cobertura cai
+    expect(escolherZona([passa(medida(0.4, 0.98), medida(0.3, 0.97)), passa(medida(0.7, 0.97), medida(0.6, 0.99))]).escolhido).toBe(false);
   });
 });

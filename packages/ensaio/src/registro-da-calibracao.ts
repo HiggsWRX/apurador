@@ -45,6 +45,7 @@ export function resultadosDaCalibracao(c: Calibracao, provisorias: Constantes, d
         ["Ordem de chegada", ORDENS[provisorias.ordemDeChegada]!, ORDENS[e.ordemDeChegada]!],
         ["K", `${br(provisorias.secoesDasPesquisas, 2)}%`, `${br(e.secoesDasPesquisas, 2)}%`],
         ['Limite de "sem sinal de virada"', pctBr(provisorias.sinalDeVirada.possivel, 0), pctBr(e.sinalDeVirada.possivel, 0)],
+        ["Zona", provisorias.zona ? "sim" : "não", e.zona ? "sim" : "não"],
       ],
     ),
     "",
@@ -105,6 +106,25 @@ export function resultadosDaCalibracao(c: Calibracao, provisorias: Constantes, d
       }),
     ),
     "",
+    "### 5. Zona",
+    "",
+    'Na base "Só apuração", com as constantes dos passos anteriores, o erro médio de 5% a 50% das seções e a cobertura com o município inteiro e com as zonas:',
+    "",
+    tabela(
+      ["Noite", "Erro médio, município (p.p.)", "Erro médio, zonas (p.p.)", "Redução (p.p.)", "Cobertura, município", "Cobertura, zonas", ""],
+      c.passo5.porNoite.map((x, i) => [
+        c.noites[i]!.nome,
+        br(x.municipio.erroMedio, 3),
+        br(x.zona.erroMedio, 3),
+        br(x.reducao, 3),
+        pctBr(x.municipio.cobertura, 1),
+        pctBr(x.zona.cobertura, 1),
+        x.passa ? "passa" : "não passa",
+      ]),
+    ),
+    "",
+    c.passo5.escolhido ? "A zona entra." : "A zona não entra: fica o município.",
+    "",
   ].join("\n");
 }
 
@@ -142,6 +162,10 @@ export function tabelasDaCalibracao(c: Calibracao): Record<string, string> {
         x.passaCobertura ? "sim" : "não",
         x.candidato === c.passo3.escolhido ? "sim" : "não",
       ]),
+    ),
+    "zona.csv": csv(
+      ["noite", "erro_medio_municipio", "erro_medio_zonas", "reducao", "cobertura_municipio", "cobertura_zonas", "passa"],
+      c.passo5.porNoite.map((x, i) => [noites[i]!, num(x.municipio.erroMedio), num(x.zona.erroMedio), num(x.reducao), num(100 * x.municipio.cobertura, 2), num(100 * x.zona.cobertura, 2), x.passa ? "sim" : "não"]),
     ),
     "sinal-de-virada.csv": csv(
       ["limite", "execucao", "de_cima_sem_sinal", "de_cima_seguidos_de_virada", "lugares_de_cima_com_virada", "municipios_sem_sinal", "municipios_seguidos_de_virada", "passa", "escolhido"],

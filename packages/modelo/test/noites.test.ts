@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { executarNoite, prepararModelo, type ResultadoDaNoite } from "../src/index.ts";
-import { agregado2022, base2022, constantes, noite2022 } from "./dados.ts";
+import { agregado2022, base2022, base2022PorZona, constantes, noite2022 } from "./dados.ts";
 
 // O executor de noites no 2º turno de 2022, com base no 1º turno de 2022 e as constantes provisórias. A
 // referência é a tabela do Método de projeção só com a apuração (.scratch/apurador-2026/issues/09), que o
@@ -78,5 +78,23 @@ describe("o executor de noites na base 'Apuração + pesquisas', no 2º turno de
   it("com o agregado deslocado, fica a menos de 0,1 ponto da 'Só apuração' a partir de ~7% das seções, como no protótipo", () => {
     expect(juntaDesde(real)).toBeLessThan(juntaDesde(comLula)!);
     expect(Math.abs(Math.max(juntaDesde(comLula)!, juntaDesde(comBolsonaro)!) - 7)).toBeLessThan(1);
+  });
+});
+
+describe("o executor de noites com a base dividida em zonas, no 2º turno de 2022", () => {
+  // O teste da zona da calibração: cada zona dos 189 municípios com mais de uma entra como uma parte do município.
+  const modelo = prepararModelo(base2022PorZona);
+  const noite = executarNoite(modelo, noite2022, constantes);
+
+  it("tem uma parte para cada zona da noite nos municípios divididos", () => {
+    // as 6.283 zonas da noite, todas com a sua parte
+    expect(modelo.municipios).toHaveLength(6283);
+    expect(modelo.municipios.filter((m) => m.uf === "SP" && m.municipio === 71072)).toHaveLength(58);
+  });
+
+  it("termina no resultado oficial, com as mesmas fotografias", () => {
+    expect(noite.final).toBeCloseTo(0.509, 4);
+    expect(noite.momentos).toHaveLength(106);
+    expect(noite.momentos.at(-1)).toMatchObject({ secoes: 100, projecao: noite.final, erro: 0 });
   });
 });

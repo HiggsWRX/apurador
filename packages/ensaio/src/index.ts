@@ -11,6 +11,7 @@ export {
   escolherK,
   escolherLimite,
   escolherOrdem,
+  escolherZona,
   execucoesDoSinal,
   medirNoite,
   medirOrdem,

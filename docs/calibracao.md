@@ -106,6 +106,7 @@ Rodada em 19/10/2026 com `npm run calibracao`, sobre o código e os dados deste 
 | Ordem de chegada | "mistura" | "mistura" |
 | K | 0,50% | 0,25% |
 | Limite de "sem sinal de virada" | 5% | 2% |
+| Zona | não | não |
 
 Todos os passos escolheram.
 
@@ -167,3 +168,15 @@ Nas oito execuções, os lugares de cima (Brasil, UFs e Exterior) com algum mome
 | 5% | Brasil | 0,45% | falha |
 | 2% | nenhum | 0,33% | escolhido |
 | 1% | nenhum | 0,22% |  |
+
+### 5. Zona
+
+Na base "Só apuração", com as constantes dos passos anteriores, o erro médio de 5% a 50% das seções e a cobertura com o município inteiro e com as zonas:
+
+| Noite | Erro médio, município (p.p.) | Erro médio, zonas (p.p.) | Redução (p.p.) | Cobertura, município | Cobertura, zonas |  |
+|---|---|---|---|---|---|---|
+| 2º turno de 2022 | 0,354 | 0,443 | -0,089 | 100,0% | 100,0% | não passa |
+| 2º turno de 2018 | 0,745 | 0,718 | 0,027 | 100,0% | 100,0% | não passa |
+| 1º turno de 2026 | 0,111 | 0,148 | -0,037 | 100,0% | 100,0% | não passa |
+
+A zona não entra: fica o município.

@@ -10,6 +10,8 @@ import type { CandidatoDoTurno } from "./turno.ts";
 export interface BaseDoMunicipio {
   uf: string;
   municipio: number;
+  /** Só num município dividido em zonas: a zona desta parte dele. */
+  zona?: number;
   aptos: number;
   /**
    * As seções principais do município, inclusive as não instaladas, como no % de seções totalizadas (as
@@ -57,14 +59,39 @@ export function baseDoModelo(entrada: {
    * da base entram zerados, e os que a noite não tem ficam de fora. Sem eles, vale a geografia da base.
    */
   municipios?: { uf: string; municipio: number }[];
+  /**
+   * As zonas da noite, para o teste da zona (Ensaio geral, decisão 16). Com elas, o município com mais de uma zona na
+   * noite e as mesmas no turno da base entra dividido em zonas, cada uma com o seu 1º turno e o seu perfil de chegada.
+   * O que mudou de zonas fica inteiro. Sem `municipios`, elas dão também a geografia da noite.
+   */
+  zonas?: { uf: string; municipio: number; zona: number }[];
 }): BaseDoModelo {
   const { ano, turno } = entrada.turnoDaBase;
   const doTurno = doTurnoDePresidente(entrada.turnoDaBase);
-  const chave = (l: { uf: string; municipio: number }) => `${l.uf}/${l.municipio}`;
-  const zerado = (l: { uf: string; municipio: number }): BaseDoMunicipio => ({ uf: l.uf, municipio: l.municipio, aptos: 0, secoes: 0, validos: 0, votos: entrada.finalistas.map(() => 0), degrausDeChegada: [] });
+  const doMunicipioDe = (l: { uf: string; municipio: number }) => `${l.uf}/${l.municipio}`;
+  const zonasPorMunicipio = (lista: { uf: string; municipio: number; zona: number }[]) => {
+    const zonas = new Map<string, Set<number>>();
+    for (const l of lista) zonas.set(doMunicipioDe(l), (zonas.get(doMunicipioDe(l)) ?? new Set()).add(l.zona));
+    return zonas;
+  };
+  const daNoite = entrada.zonas && zonasPorMunicipio(entrada.zonas);
+  const doTurnoDaBase = zonasPorMunicipio(entrada.detalhes.filter(doTurno));
+  const mesmas = (a: Set<number>, b: Set<number> | undefined) => b !== undefined && a.size === b.size && [...a].every((z) => b.has(z));
+  const divididos = new Map([...(daNoite ?? [])].filter(([m, zonas]) => zonas.size > 1 && mesmas(zonas, doTurnoDaBase.get(m))));
+  const chave = (l: { uf: string; municipio: number; zona?: number }) => (divididos.has(doMunicipioDe(l)) ? `${doMunicipioDe(l)}/${l.zona}` : doMunicipioDe(l));
+  const zerado = (l: { uf: string; municipio: number; zona?: number }): BaseDoMunicipio => ({
+    uf: l.uf,
+    municipio: l.municipio,
+    ...(divididos.has(doMunicipioDe(l)) ? { zona: l.zona! } : {}),
+    aptos: 0,
+    secoes: 0,
+    validos: 0,
+    votos: entrada.finalistas.map(() => 0),
+    degrausDeChegada: [],
+  });
   const geracao = new Set<string>();
   const municipios = new Map<string, BaseDoMunicipio>();
-  const doMunicipio = (l: { uf: string; municipio: number }) => {
+  const doMunicipio = (l: { uf: string; municipio: number; zona?: number }) => {
     let m = municipios.get(chave(l));
     if (!m) municipios.set(chave(l), (m = zerado(l)));
     return m;
@@ -108,14 +135,17 @@ export function baseDoModelo(entrada: {
     else degraus.push([x, (ultimo?.[1] ?? 0) + 1]);
   });
 
-  const daNoite = entrada.municipios?.map((m) => municipios.get(chave(m)) ?? zerado(m)) ?? [...municipios.values()];
+  // A geografia da noite, com as partes de cada município dividido em zonas.
+  const geografia = entrada.municipios ?? (daNoite && [...daNoite.keys()].map((m) => entrada.zonas!.find((z) => doMunicipioDe(z) === m)!));
+  const partes = (m: { uf: string; municipio: number }) => [...(divididos.get(doMunicipioDe(m)) ?? [undefined])].map((zona) => ({ ...m, zona }));
+  const daGeografia = geografia?.flatMap(partes).map((m) => municipios.get(chave(m)) ?? zerado(m)) ?? [...municipios.values()];
   return {
     noite: entrada.noite,
     turnoDaBase: entrada.turnoDaBase,
     geracao: [...geracao].sort(),
     finalistas: finalistas as CandidatoDoTurno[],
     secoes: n,
-    municipios: daNoite.sort((a, b) => cmp(a.uf, b.uf) || a.municipio - b.municipio),
+    municipios: daGeografia.sort((a, b) => cmp(a.uf, b.uf) || a.municipio - b.municipio || (a.zona ?? 0) - (b.zona ?? 0)),
   };
 }
 

@@ -927,6 +927,36 @@
         "https://resultados.tse.jus.br/oficial/ele2026/6258/config/mun-e006258-cm.json",
         "https://cdn.tse.jus.br/estatistica/sead/odsele/municipio_tse_ibge/municipio_tse_ibge.zip"
       ]
+    },
+    {
+      "arquivo": "bases/2022-2-zonas.json",
+      "sha256": "5a0b195dfa0cbba5cd503bcb415e2d80aa91a584ddf1d71a13b96266243e7883",
+      "fontes": [
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2022.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2022.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2022.zip"
+      ]
+    },
+    {
+      "arquivo": "bases/2018-2-zonas.json",
+      "sha256": "9d80662c7e08102039fa6fd432f7695e34c84e05fb5dfaf2600022cb13d02399",
+      "fontes": [
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2018.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2018.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2018.zip"
+      ]
+    },
+    {
+      "arquivo": "bases/2026-1-zonas.json",
+      "sha256": "df040637e2f4a611845ecadc34c71bcd8a7b56c248e35898983f2f2c4b0d81dd",
+      "fontes": [
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2022.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2022.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2022.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2026.zip",
+        "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2026.zip"
+      ]
     }
   ]
 }

@@ -12,7 +12,7 @@ import { projetar, type Apuracao, type Modelo } from "./projecao.ts";
 export interface NoiteDoModelo {
   candidatos: { numero: number }[];
   /** As zonas (ou postos do Exterior) de cada município, com o total de seções e de eleitores da noite. */
-  zonas: { uf: string; municipio: number; secoes: number; aptos: number }[];
+  zonas: { uf: string; municipio: number; zona: number; secoes: number; aptos: number }[];
   /** As seções de uma zona totalizadas num mesmo instante, somadas, em ordem de instante. */
   chegadas: { instante: number; zona: number; secoes: number; aptos: number; votos: number[] }[];
 }
@@ -33,14 +33,15 @@ export const FOTOGRAFIAS = [0.1, 0.25, 0.5, 0.75, ...Array.from({ length: 99 }, 
 
 /** Os momentos da noite em que o % de seções totalizadas no Brasil alcança cada ponto, mais o fim da noite. */
 export function* momentosDaNoite(modelo: Modelo, noite: NoiteDoModelo, pontos: number[] = FOTOGRAFIAS): Generator<MomentoDaNoite> {
-  const posicao = new Map(modelo.municipios.map((m, i) => [`${m.uf}/${m.municipio}`, i]));
+  // Uma zona da noite vai para a parte dela, num município dividido em zonas, ou para o município inteiro.
+  const posicao = new Map(modelo.municipios.map((m, i) => [m.zona === undefined ? `${m.uf}/${m.municipio}` : `${m.uf}/${m.municipio}/${m.zona}`, i]));
   const finalistas = modelo.finalistas.map((numero) => {
     const i = noite.candidatos.findIndex((c) => c.numero === numero);
     if (i < 0) throw new Error(`o finalista ${numero} da base não é candidato na noite`);
     return i;
   });
   const municipioDaZona = noite.zonas.map((z) => {
-    const m = posicao.get(`${z.uf}/${z.municipio}`);
+    const m = posicao.get(`${z.uf}/${z.municipio}/${z.zona}`) ?? posicao.get(`${z.uf}/${z.municipio}`);
     if (m === undefined) throw new Error(`${z.uf}/${z.municipio} está na noite e não na base do modelo`);
     return m;
   });

@@ -31,8 +31,8 @@ if (calibracao.semEscolha.length > 0) console.log("sem escolha, para o dono deci
 if (process.argv.includes("--congelar")) {
   if (calibracao.semEscolha.length > 0) throw new Error("um passo não escolheu: o dono decide antes do congelamento");
   const arquivo = new URL("packages/modelo/constantes.json", raiz);
-  const atual = JSON.parse(readFileSync(arquivo, "utf8")) as Record<string, unknown>;
-  const congeladas = { nota: atual.nota, ...lerConstantes(calibracao.constantes) };
+  const nota = `Escolhidas pela calibração de ${data} (ticket 28, docs/calibracao.md), entre candidatos escritos antes e pela regra escrita antes, e congeladas para a noite. Nada aqui é treinado. As provisórias das decisões do mapa são o CONSTANTES_PROVISORIAS do modelo.`;
+  const congeladas = { nota, ...lerConstantes(calibracao.constantes) };
   writeFileSync(arquivo, JSON.stringify(congeladas, null, 2) + "\n");
   console.log("congeladas em packages/modelo/constantes.json");
 }

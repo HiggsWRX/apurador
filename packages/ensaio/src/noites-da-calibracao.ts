@@ -4,7 +4,8 @@ import { agregadoDaNoite, lerNoite, lerPesquisasHistoricas, type Noite, type Res
 
 // As três noites da calibração (Ensaio geral, decisão 14), como estão no repositório, sem rede: a noite reconstruída
 // do `dados/noites`, a base do modelo do `dados/bases` e o agregado de pesquisas da véspera, pela regra do agregado,
-// no 1º finalista da base. As bases são do 1º turno de cada ano, e a do 1º turno de 2026 é o de 2022.
+// no 1º finalista da base. As bases são do 1º turno de cada ano, e a do 1º turno de 2026 é o de 2022, cada uma também
+// com os municípios de mais de uma zona divididos nas zonas da noite.
 
 /** Uma noite da calibração, pronta para o executor de noites. */
 export interface NoiteDaCalibracao {
@@ -13,6 +14,8 @@ export interface NoiteDaCalibracao {
   /** "2º turno de 2022". */
   nome: string;
   modelo: Modelo;
+  /** O modelo com a base por zona (`dados/bases/<id>-zonas.json`), para o teste da zona. */
+  modeloPorZona: Modelo;
   noite: Noite;
   /** O agregado da véspera, em % do 1º finalista da base, com a incerteza de 1,5 ponto da noite. */
   agregado: Pick<Agregado, "valor" | "incerteza">;
@@ -44,6 +47,7 @@ export function lerNoitesDaCalibracao(raiz: URL): NoiteDaCalibracao[] {
       id,
       nome: `${turno}º turno de ${ano}`,
       modelo: prepararModelo(base),
+      modeloPorZona: prepararModelo(JSON.parse(ler(`dados/bases/${id}-zonas.json`).toString("utf8")) as BaseDoModelo),
       noite,
       agregado: agregadoDaNoite(pesquisas, resultados, { ano, turno }, numeros),
       finalistas: [nomeUrna(numeros[0]), nomeUrna(numeros[1])],
