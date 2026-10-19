@@ -24,7 +24,7 @@ Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decis�
 - [x] Um arquivo pedido no instante t traz o estado da reconstrução no instante t: votos por candidato, brancos, nulos, comparecimento, seções totalizadas e total, hora da última totalização e andamento.
 - [x] Os candidatos (Bolsonaro e Lula) e a geografia de 2022 vêm só dos arquivos. Nada a jusante pode tê-los fixos.
 - [x] A indicação do TSE aparece no mesmo campo do EA20 que o TSE usa, conferido no dicionário do EA20. A totalização final marca `tf="s"`.
-  - O campo (`md`) foi conferido no código do app oficial de resultados, não no PDF do dicionário, que o site do TSE bloqueia para robôs. Falta abrir o PDF num navegador para fechar a conferência (ver Comments).
+  - O campo (`md`) foi conferido no código do app oficial de resultados e, em 19/10, também no dicionário do EA20 (versão de 10/07/2026, trazida pelo dono; cópia fora do Git em `.cache/docs/`). Lá, `md` é "Matematicamente definido", com `e` (eleito), `s` (segundo turno) ou `n` (não definido), só para Presidente, Governador e Prefeito e só enquanto `tf=n`.
 - [x] O relógio é configurável:
   - velocidade máxima para o replay;
   - para o ensaio, 3x das 16:50 às 20:30 de 2022 e 30x até a totalização final.

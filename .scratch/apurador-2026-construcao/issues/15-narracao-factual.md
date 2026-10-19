@@ -47,3 +47,7 @@ Decisões: [Narração da noite](../../apurador-2026/issues/14-narracao-da-noite
 - [ ] **Antes das 17h**: "A narração começa às 17h, com as primeiras seções totalizadas". Depois da noite, a narração fica como registro e para de crescer na totalização final.
 - [ ] **Replay de 2022**: a narração do Brasil tem ~50 eventos, uma única virada às ~18:44 (sem a troca de 0,26%) e as 4 viradas em UF (MG duas vezes, AP e AM).
 - [ ] **Fases do relógio**: o replay roda em várias fases do relógio do coletor e dá sempre uma virada só no Brasil.
+
+## Comments
+
+- 19/10/2026, do [ticket 11](11-tse-falso.md), conferido no dicionário do EA20 (cópia fora do Git em `.cache/docs/`): a indicação do TSE é o campo `md` na raiz do arquivo do Brasil. Só `md = "e"` é a indicação. O TSE de verdade pode mandar `md = "n"` (não definido) antes dela, e o campo some na totalização final (`tf = "s"`). Ausente ou `"n"` não é evento. O TSE falso só escreve `md = "e"`, então o teste do `"n"` precisa de um arquivo à parte.
