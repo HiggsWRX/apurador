@@ -53,18 +53,23 @@ export const doTurno =
 /** O id de um turno nos dados e no site: "2026-1". */
 export const idDoTurno = (t: { ano: number; turno: number }) => `${t.ano}-${t.turno}`;
 
-export function resultadoDoTurno(entrada: { ano: number; turno: number; candidatos: VotoCandidatoMunzona[]; detalhes: DetalheMunzona[] }): Turno {
-  const { ano, turno } = entrada;
-  const votos = entrada.candidatos.filter(doTurno(ano, turno));
-  const detalhes = entrada.detalhes.filter(doTurno(ano, turno));
-
+/** Os votos de cada candidato somados nas linhas do TSE dadas, pelo número do candidato. */
+export function votosPorCandidato(votos: readonly VotoCandidatoMunzona[]): Map<number, { candidato: CandidatoDoTurno; votos: number }> {
   const porNumero = new Map<number, { candidato: CandidatoDoTurno; votos: number }>();
   for (const v of votos) {
     const c = porNumero.get(v.numero) ?? { candidato: { numero: v.numero, nome: v.nome, nomeUrna: v.nomeUrna, partido: v.partido }, votos: 0 };
     c.votos += v.votos;
     porNumero.set(v.numero, c);
   }
-  const ordenados = [...porNumero.values()].sort((a, b) => b.votos - a.votos);
+  return porNumero;
+}
+
+export function resultadoDoTurno(entrada: { ano: number; turno: number; candidatos: VotoCandidatoMunzona[]; detalhes: DetalheMunzona[] }): Turno {
+  const { ano, turno } = entrada;
+  const votos = entrada.candidatos.filter(doTurno(ano, turno));
+  const detalhes = entrada.detalhes.filter(doTurno(ano, turno));
+
+  const ordenados = [...votosPorCandidato(votos).values()].sort((a, b) => b.votos - a.votos);
   const posicao = new Map(ordenados.map((c, i) => [c.candidato.numero, i]));
 
   // Cada linha do TSE (um município e zona) soma no Brasil, na UF (ou no Exterior) e no município.

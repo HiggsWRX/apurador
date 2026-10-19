@@ -16,3 +16,5 @@ export {
 } from "./noite.ts";
 export { baseDoModelo, indicadoresDaBase, type BaseDoModelo, type BaseDoMunicipio } from "./base.ts";
 export { finalistas, listaDasPesquisas, pesquisasDoAgregado, type ExtratoDoTse, type Modo, type Pesquisa, type PesquisaDaLista } from "./pesquisas.ts";
+export { agregadoDaNoite, eleicoesPassadas, lerPesquisasHistoricas, type PesquisaHistorica } from "./pesquisas-historicas.ts";
+export { conferirResultadosHistoricos, resultadoHistorico, type FinalistaDoResultado, type ResultadoHistorico } from "./resultados-historicos.ts";

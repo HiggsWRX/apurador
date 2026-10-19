@@ -56,24 +56,37 @@ export function diaDoAgregado(instante: Date): string {
   return instante.getTime() >= Date.parse(CONGELAMENTO) ? DIA_DA_ELEICAO : dataEmBrasilia(instante);
 }
 
-// Decisão 5: 1,5 ponto na eleição, mais 0,4² por dia que falta, na variância.
-const INCERTEZA_NA_ELEICAO = 1.5;
+/**
+ * A eleição de um agregado: o dia dela e a incerteza no próprio dia. A regra é uma só, a de 2026 e a dos 2º turnos
+ * de 2002 a 2022 (decisão 10), que só mudam nestes dois valores.
+ */
+export interface EleicaoDoAgregado {
+  /** O dia da eleição, `aaaa-mm-dd`. Pesquisa divulgada nele ou depois nunca entra. */
+  dia: string;
+  /** O desvio padrão no dia da eleição, em pontos, sem os dias que faltam. */
+  incerteza: number;
+}
+
+/** O 2º turno de 2026. Decisão 5: 1,5 ponto na eleição. */
+export const ELEICAO_DE_2026: EleicaoDoAgregado = { dia: DIA_DA_ELEICAO, incerteza: 1.5 };
+
+// Decisão 5: antes da eleição, mais 0,4² por dia que falta, na variância.
 const INCERTEZA_POR_DIA = 0.4;
 // Decisão 3: 7 dias, ou 14 com menos de 4 institutos.
 const JANELA = 7;
 const JANELA_LARGA = 14;
 const MINIMO_DE_INSTITUTOS = 4;
 
-/** O agregado num dia, ou `undefined` se nenhuma pesquisa da lista cabe na janela. */
-export function agregadoDePesquisas(pesquisas: readonly PesquisaDoAgregado[], dia: string): Agregado | undefined {
+/** O agregado num dia, ou `undefined` se nenhuma pesquisa da lista cabe na janela. A eleição é a de 2026, salvo outra. */
+export function agregadoDePesquisas(pesquisas: readonly PesquisaDoAgregado[], dia: string, eleicao = ELEICAO_DE_2026): Agregado | undefined {
   let janela = JANELA;
-  let usadas = maisRecentePorInstituto(pesquisas, dia, janela);
-  if (usadas.length < MINIMO_DE_INSTITUTOS) usadas = maisRecentePorInstituto(pesquisas, dia, (janela = JANELA_LARGA));
+  let usadas = maisRecentePorInstituto(pesquisas, dia, janela, eleicao.dia);
+  if (usadas.length < MINIMO_DE_INSTITUTOS) usadas = maisRecentePorInstituto(pesquisas, dia, (janela = JANELA_LARGA), eleicao.dia);
   if (usadas.length === 0) return undefined;
 
   const valor = usadas.reduce((s, p) => s + validosDoPrimeiro(p), 0) / usadas.length;
-  const dias = Math.max(0, diasEntre(dia, DIA_DA_ELEICAO));
-  const incerteza = Math.sqrt(INCERTEZA_NA_ELEICAO ** 2 + INCERTEZA_POR_DIA ** 2 * dias);
+  const dias = Math.max(0, diasEntre(dia, eleicao.dia));
+  const incerteza = Math.sqrt(eleicao.incerteza ** 2 + INCERTEZA_POR_DIA ** 2 * dias);
   return {
     dia,
     valor,
@@ -97,11 +110,11 @@ export function tendenciaDoAgregado(pesquisas: readonly PesquisaDoAgregado[], at
 }
 
 /** A pesquisa de campo mais recente de cada instituto, entre as divulgadas até o dia, com campo terminando na janela. */
-function maisRecentePorInstituto(pesquisas: readonly PesquisaDoAgregado[], dia: string, janela: number): PesquisaDoAgregado[] {
+function maisRecentePorInstituto(pesquisas: readonly PesquisaDoAgregado[], dia: string, janela: number, diaDaEleicao: string): PesquisaDoAgregado[] {
   const inicio = somarDias(dia, -janela);
   const maisRecente = new Map<string, PesquisaDoAgregado>();
   for (const p of pesquisas) {
-    if (p.divulgacao > dia || p.divulgacao >= DIA_DA_ELEICAO || p.campoFim < inicio || p.campoFim >= dia) continue;
+    if (p.divulgacao > dia || p.divulgacao >= diaDaEleicao || p.campoFim < inicio || p.campoFim >= dia) continue;
     const outra = maisRecente.get(p.instituto);
     if (!outra || p.campoFim > outra.campoFim || (p.campoFim === outra.campoFim && p.divulgacao > outra.divulgacao)) maisRecente.set(p.instituto, p);
   }

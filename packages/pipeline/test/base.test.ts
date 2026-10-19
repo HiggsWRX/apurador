@@ -2,7 +2,7 @@ import type { DetalheMunzona, DetalheSecao, VotoCandidatoMunzona } from "@apurad
 import { describe, expect, it } from "vitest";
 import { baseDoModelo, indicadoresDaBase } from "../src/base.ts";
 
-const doTurno = { geracao: "17/10/2026 03:16:00", ano: 2022, turno: 1, cargo: 1, nomeMunicipio: "" };
+const doTurno = { geracao: "17/10/2026 03:16:00", ano: 2022, turno: 1, cargo: 1, nomeMunicipio: "", dia: "2022-10-02" };
 
 const voto = (uf: string, municipio: number, zona: number, numero: number, nomeUrna: string, partido: string, votos: number): VotoCandidatoMunzona => ({
   ...doTurno,

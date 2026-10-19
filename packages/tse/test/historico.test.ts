@@ -33,8 +33,43 @@ describe("lerVotacaoCandidatoMunzona", () => {
         nomeUrna: "LULA",
         partido: "PT",
         votos: 2478,
+        dia: "2026-10-04",
       },
     ]);
+  });
+
+  it("lê os arquivos de 2002 a 2014, que só têm QT_VOTOS_NOMINAIS: todo voto nominal para Presidente é válido", () => {
+    // Cabeçalho e linha copiados do `votacao_candidato_munzona_2002_BR.csv` gerado em 18/03/2022.
+    const cabecalho =
+      '"DT_GERACAO";"HH_GERACAO";"ANO_ELEICAO";"CD_TIPO_ELEICAO";"NM_TIPO_ELEICAO";"NR_TURNO";"CD_ELEICAO";"DS_ELEICAO";"DT_ELEICAO";"TP_ABRANGENCIA";"SG_UF";"SG_UE";"NM_UE";"CD_MUNICIPIO";"NM_MUNICIPIO";"NR_ZONA";"CD_CARGO";"DS_CARGO";"SQ_CANDIDATO";"NR_CANDIDATO";"NM_CANDIDATO";"NM_URNA_CANDIDATO";"NM_SOCIAL_CANDIDATO";"CD_SITUACAO_CANDIDATURA";"DS_SITUACAO_CANDIDATURA";"CD_DETALHE_SITUACAO_CAND";"DS_DETALHE_SITUACAO_CAND";"TP_AGREMIACAO";"NR_PARTIDO";"SG_PARTIDO";"NM_PARTIDO";"SQ_COLIGACAO";"NM_COLIGACAO";"DS_COMPOSICAO_COLIGACAO";"CD_SIT_TOT_TURNO";"DS_SIT_TOT_TURNO";"ST_VOTO_EM_TRANSITO";"QT_VOTOS_NOMINAIS"';
+    const linha =
+      '"18/03/2022";"13:18:59";"2002";2;"Eleição Ordinária";1;200201;"ELEIÇÕES GERAIS 2002 PRIMEIRO TURNO";"06/10/2002";"F";"AC";"BR";"BRASIL";"01120";"ACRELANDIA";8;1;"Presidente";9568;23;"CIRO FERREIRA GOMES";"CIRO";"#NE";12;"APTO";2;"DEFERIDO";"Coligação";23;"PPS";"Partido Popular Socialista";9;"COLIGAÇÃO  FRENTE TRABALHISTA ";"PPS / PDT / PTB";4;"NÃO ELEITO";"N";503';
+    expect(lerVotacaoCandidatoMunzona(latin1(`${cabecalho}\r\n${linha}\r\n`))).toEqual([
+      {
+        geracao: "18/03/2022 13:18:59",
+        ano: 2002,
+        turno: 1,
+        cargo: 1,
+        uf: "AC",
+        municipio: 1120,
+        nomeMunicipio: "ACRELANDIA",
+        zona: 8,
+        numero: 23,
+        nome: "CIRO FERREIRA GOMES",
+        nomeUrna: "CIRO",
+        partido: "PPS",
+        votos: 503,
+        dia: "2002-10-06",
+      },
+    ]);
+  });
+
+  it("acha a coluna dos válidos com espaço no nome e não troca pelos nominais num arquivo de 2018 em diante", () => {
+    const comEspaco = CABECALHO_CANDIDATO.replace('"QT_VOTOS_NOMINAIS_VALIDOS"', '"QT_VOTOS_NOMINAIS_VALIDOS "');
+    const anulado = LINHA_CANDIDATO.replace('"N";2478;"Válido";2478', '"N";2478;"Anulado";0');
+    expect(lerVotacaoCandidatoMunzona(latin1(`${comEspaco}\n${anulado}\n`))[0]!.votos).toBe(0);
+    const semValidos = CABECALHO_CANDIDATO.replace('"QT_VOTOS_NOMINAIS_VALIDOS"', '"QT_OUTRA_COISA"');
+    expect(() => lerVotacaoCandidatoMunzona(latin1(`${semValidos}\n${LINHA_CANDIDATO}\n`))).toThrow(/QT_VOTOS_NOMINAIS_VALIDOS/);
   });
 });
 

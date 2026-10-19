@@ -9,6 +9,7 @@
   "scripts": {
     "gerar": "tsx src/gerar.ts",
     "noites": "tsx src/gerar-noites.ts",
+    "historico": "tsx src/gerar-resultados-historicos.ts",
     "conferir": "tsx src/conferir.ts",
     "conferir-pesquisas": "tsx src/conferir-pesquisas.ts"
   },
