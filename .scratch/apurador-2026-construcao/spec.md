@@ -529,6 +529,7 @@ Não há código de produção ainda. As referências são:
   - a entrega pela borda de objetos gravados com gzip no R2 é conferida no ensaio 1;
   - a zona entra ou não pela calibração.
 - **Protótipos de referência**: branches `prototipo/metodo-projecao` (o módulo `Projecao`), `prototipo/telas-pagina-lugar` (variante D, `componentes.js`, `mapa.js`) e `prototipo/pagina-metodologia` (variante A, objeto `T`, gráficos `svgSino`, `svgNoite`, `svgHist`). Nenhuma branch de protótipo entra na `main`.
+  - A série de 2022 nas duas bases, com o agregado real e deslocado, é o `prototipos/pagina-metodologia/serie2022.js` da última. O ticket 08 a copiou para os testes do `modelo`. Diferença deliberada: a série soma as incertezas locais das pesquisas como independentes, e o modelo as anula no lugar de cima, por decisão do dono no [ticket 08](issues/08-base-apuracao-mais-pesquisas.md).
 - **ADR**: a especificação segue o [ADR 0001](../../docs/adr/0001-coletor-no-computador-do-dono.md), sem conflito.
 - **Vocabulário**: os tickets usam termos que ainda não estão no `GLOSSARY.md` e que esta especificação repete: arquivo de rodada, tabela de projeções, objeto da noite, TSE falso, replay automático, núcleo mínimo e arquivo de controle. Vale registrá-los com o `/domain-modeling` antes dos tickets de construção.
 - **Próximo passo**: quebrar esta especificação em tickets de construção com o `/to-tickets`, em `issues/NN-<slug>.md` nesta mesma pasta.
