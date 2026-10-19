@@ -2,16 +2,22 @@ import { data, dataHora, inteiro } from "./csv.ts";
 import { percorrerCsvTse } from "./csv-em-fluxo.ts";
 
 // Leitores dos arquivos por seção do TSE: `detalhe_votacao_secao` (membro `*_BR.csv`, só Presidente), com a
-// hora em que cada seção foi totalizada, e o boletim de urna (`bweb`, um zip por UF), com os votos de cada
-// votável em cada seção. São arquivos de centenas de MB, lidos em fluxo.
+// hora em que cada seção foi totalizada, e os votos de cada votável em cada seção, do boletim de urna (`bweb`,
+// um zip por UF) ou da votação por seção (`votacao_secao`). São arquivos de centenas de MB, lidos em fluxo.
 
 /**
- * O zip do boletim de urna de uma UF (ou `ZZ`) num turno. O `carimbo` é a data de geração que o TSE põe no
- * nome dos zips do turno (`311020221535` no 2º turno de 2022), e o membro tem o mesmo nome, em `.csv`.
+ * O zip do boletim de urna de uma UF (ou `ZZ`) num turno e o CSV dentro dele. O `carimbo` é a data de geração
+ * que o TSE põe no nome dos zips do turno (`311020221535` no 2º turno de 2022). Em 2022, o CSV tem o nome do
+ * zip. Em 2018, o zip tem o nome em maiúsculas (`BWEB_2t_AL_301020181744.zip`), e o CSV, gerado minutos depois,
+ * tem outro carimbo (`bweb_2t_AL_301020181745.csv`).
  */
-export function boletimDeUrna(opcoes: { ano: number; turno: number; uf: string; carimbo: string }): { url: string; membro: string } {
-  const nome = `bweb_${opcoes.turno}t_${opcoes.uf}_${opcoes.carimbo}`;
-  return { url: `https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes${opcoes.ano}/buweb/${nome}.zip`, membro: `${nome}.csv` };
+export function boletimDeUrna(opcoes: { ano: number; turno: number; uf: string; carimbo: string }): { url: string; membro: (nome: string) => boolean } {
+  const prefixo = `bweb_${opcoes.turno}t_${opcoes.uf}_`;
+  const zip = `${opcoes.ano === 2018 ? prefixo.replace("bweb", "BWEB") : prefixo}${opcoes.carimbo}`;
+  return {
+    url: `https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes${opcoes.ano}/buweb/${zip}.zip`,
+    membro: (nome) => nome.startsWith(prefixo) && nome.endsWith(".csv"),
+  };
 }
 
 /** Uma seção, com os totais do boletim e a hora em que o TSE a totalizou. */
@@ -39,8 +45,8 @@ export interface DetalheSecao {
    * `AAAA-MM-DD HH:MM:SS`. É o instante em que a seção entra no placar parcial. `null` se nunca foi totalizada.
    */
   primeiraTotalizacao: string | null;
-  /** As seções não instaladas entram no total de seções, sem votantes. */
-  instalada: boolean;
+  /** As seções não instaladas entram no total de seções, sem votantes. `null` quando o TSE não diz, como em 2018. */
+  instalada: boolean | null;
 }
 
 const COLUNAS_DETALHE = [
@@ -81,7 +87,7 @@ export function* lerDetalheVotacaoSecao(bytes: Uint8Array): Generator<DetalheSec
       brancos: inteiro(l.QT_VOTOS_BRANCOS, "QT_VOTOS_BRANCOS"),
       nulos: inteiro(l.QT_VOTOS_NULOS, "QT_VOTOS_NULOS"),
       primeiraTotalizacao: dataHora(l.DT_PRIM_TOT_PARCIAL_HOR_TSE, "DT_PRIM_TOT_PARCIAL_HOR_TSE"),
-      instalada: simOuNao(l.ST_SECAO_INSTALADA, "ST_SECAO_INSTALADA"),
+      instalada: l.ST_SECAO_INSTALADA === "#NULO#" ? null : simOuNao(l.ST_SECAO_INSTALADA, "ST_SECAO_INSTALADA"),
     };
   }
 }
@@ -124,6 +130,8 @@ const TIPOS_DE_VOTAVEL: Record<string, VotoSecao["tipo"]> = { "1": "nominal", "2
 
 export function* lerBoletimDeUrna(bytes: Uint8Array): Generator<VotoSecao> {
   for (const l of percorrerCsvTse(bytes, COLUNAS_BWEB)) {
+    // Em 2018, uma seção sem nenhum voto numa pergunta vem numa linha só, sem votável.
+    if (l.CD_TIPO_VOTAVEL === "#NULO#" && l.QT_VOTOS === "0") continue;
     const tipo = TIPOS_DE_VOTAVEL[l.CD_TIPO_VOTAVEL];
     if (!tipo) throw new Error(`Tipo de votável desconhecido na coluna CD_TIPO_VOTAVEL: ${l.CD_TIPO_VOTAVEL}`);
     yield {
@@ -137,6 +145,50 @@ export function* lerBoletimDeUrna(bytes: Uint8Array): Generator<VotoSecao> {
       secao: inteiro(l.NR_SECAO, "NR_SECAO"),
       tipo,
       numero: inteiro(l.NR_VOTAVEL, "NR_VOTAVEL"),
+      votos: inteiro(l.QT_VOTOS, "QT_VOTOS"),
+    };
+  }
+}
+
+/**
+ * O zip da votação por seção de Presidente de um ano (`votacao_secao_<ano>_BR.zip`), com os votos de cada
+ * votável em cada seção. Serve quando o boletim de urna é grande demais: o do 1º turno de 2026 tem 5 GB,
+ * com todos os cargos, e este, 162 MB.
+ */
+export function votacaoSecao(ano: number): { url: string; membro: string } {
+  const nome = `votacao_secao_${ano}_BR`;
+  return { url: `https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/${nome}.zip`, membro: `${nome}.csv` };
+}
+
+const COLUNAS_VOTACAO_SECAO = [
+  "DT_GERACAO",
+  "HH_GERACAO",
+  "ANO_ELEICAO",
+  "NR_TURNO",
+  "CD_CARGO",
+  "SG_UF",
+  "CD_MUNICIPIO",
+  "NR_ZONA",
+  "NR_SECAO",
+  "NR_VOTAVEL",
+  "QT_VOTOS",
+] as const;
+
+/** Os votos por seção da `votacao_secao`, que não diz o tipo do votável: o branco é o 95, e o nulo, o 96. */
+export function* lerVotacaoSecao(bytes: Uint8Array): Generator<VotoSecao> {
+  for (const l of percorrerCsvTse(bytes, COLUNAS_VOTACAO_SECAO)) {
+    const numero = inteiro(l.NR_VOTAVEL, "NR_VOTAVEL");
+    yield {
+      geracao: `${l.DT_GERACAO} ${l.HH_GERACAO}`,
+      ano: inteiro(l.ANO_ELEICAO, "ANO_ELEICAO"),
+      turno: inteiro(l.NR_TURNO, "NR_TURNO"),
+      cargo: inteiro(l.CD_CARGO, "CD_CARGO"),
+      uf: l.SG_UF,
+      municipio: inteiro(l.CD_MUNICIPIO, "CD_MUNICIPIO"),
+      zona: inteiro(l.NR_ZONA, "NR_ZONA"),
+      secao: inteiro(l.NR_SECAO, "NR_SECAO"),
+      tipo: numero === 95 ? "branco" : numero === 96 ? "nulo" : "nominal",
+      numero,
       votos: inteiro(l.QT_VOTOS, "QT_VOTOS"),
     };
   }

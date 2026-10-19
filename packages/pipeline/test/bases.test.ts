@@ -64,11 +64,12 @@ describe("a base da noite de 25/10: o 1º turno de 2026", () => {
   });
 });
 
+const REGIAO: Record<string, string> = Object.fromEntries(
+  Object.entries({ N: "AC AM AP PA RO RR TO", NE: "AL BA CE MA PB PE PI RN SE", CO: "DF GO MS MT", SE: "ES MG RJ SP", S: "PR RS SC", Exterior: "ZZ" }).flatMap(([r, ufs]) => ufs.split(" ").map((uf) => [uf, r])),
+);
+
 describe("a base da noite de 2022: o 1º turno de 2022", () => {
   const base = ler("2022-2");
-  const REGIAO: Record<string, string> = Object.fromEntries(
-    Object.entries({ N: "AC AM AP PA RO RR TO", NE: "AL BA CE MA PB PE PI RN SE", CO: "DF GO MS MT", SE: "ES MG RJ SP", S: "PR RS SC", Exterior: "ZZ" }).flatMap(([r, ufs]) => ufs.split(" ").map((uf) => [uf, r])),
-  );
 
   it("tem os finalistas do 2º turno, Lula e Bolsonaro, e os totais do resultado oficial do 1º turno", () => {
     expect(base.turnoDaBase).toEqual({ ano: 2022, turno: 1 });
@@ -84,5 +85,53 @@ describe("a base da noite de 2022: o 1º turno de 2022", () => {
 
   it("o perfil de chegada põe as regiões na ordem da metade das seções medida no 1º turno de 2022", () => {
     expect(ordemDaMetade(base, (uf) => REGIAO[uf]!).filter((r) => r !== "Exterior")).toEqual(["CO", "S", "N", "SE", "NE"]);
+  });
+});
+
+describe("a base da noite do 2º turno de 2018, da calibração: o 1º turno de 2018", () => {
+  const base = ler("2018-2");
+
+  it("tem os finalistas do 2º turno, Bolsonaro e Haddad, e os totais do resultado oficial do 1º turno", () => {
+    expect(base.noite).toEqual({ ano: 2018, turno: 2 });
+    expect(base.turnoDaBase).toEqual({ ano: 2018, turno: 1 });
+    expect(base.finalistas.map((f) => f.nomeUrna)).toEqual(["JAIR BOLSONARO", "FERNANDO HADDAD"]);
+    expect(noBrasil(base)).toMatchObject({ aptos: 147_306_295, validos: 107_050_749, votos: [49_277_010, 31_342_051] });
+  });
+
+  it("o perfil de chegada põe as regiões na ordem da metade das seções medida no 1º turno de 2018: Sul primeiro, Nordeste por último", () => {
+    const ordem = ordemDaMetade(base, (uf) => REGIAO[uf]!).filter((r) => r !== "Exterior");
+
+    expect(ordem.slice(0, 2)).toEqual(["S", "CO"]);
+    expect(ordem.at(-1)).toBe("NE");
+  });
+
+  it("cada município tem todas as suas seções totalizadas com 100% das seções do país", () => {
+    expect(base.municipios.filter((m) => m.degrausDeChegada.at(-1)?.[1] !== m.secoes)).toEqual([]);
+  });
+});
+
+describe("a base da noite do 1º turno de 2026, da calibração: o 1º turno de 2022", () => {
+  const base = ler("2026-1");
+
+  it("tem os finalistas de 2026 pelos números, 22 e 13, que em 2022 são Bolsonaro e Lula", () => {
+    expect(base.noite).toEqual({ ano: 2026, turno: 1 });
+    expect(base.turnoDaBase).toEqual({ ano: 2022, turno: 1 });
+    expect(base.finalistas.map((f) => [f.numero, f.nomeUrna])).toEqual([
+      [22, "JAIR BOLSONARO"],
+      [13, "LULA"],
+    ]);
+  });
+
+  it("dá no Brasil o placar entre finalistas do 1º turno de 2022: 47,1 para Bolsonaro e 52,9 para Lula", () => {
+    const brasil = noBrasil(base);
+    const { placarEntreFinalistas } = indicadoresDaBase({ uf: "BR", municipio: 0, ...brasil, degrausDeChegada: [] });
+
+    expect(placarEntreFinalistas!.map((p) => (100 * p).toFixed(1))).toEqual(["47.1", "52.9"]);
+  });
+
+  it("tem a geografia da noite de 2026, com Boa Esperança do Norte (MT) zerada, porque ela não votou em 2022", () => {
+    expect(base.municipios.filter((m) => m.uf !== "ZZ")).toHaveLength(5_571);
+    expect(base.municipios.filter((m) => m.uf === "ZZ")).toHaveLength(186);
+    expect(base.municipios.find((m) => m.uf === BOA_ESPERANCA_DO_NORTE.uf && m.municipio === BOA_ESPERANCA_DO_NORTE.municipio)).toMatchObject({ aptos: 0, secoes: 0, validos: 0, degrausDeChegada: [] });
   });
 });
