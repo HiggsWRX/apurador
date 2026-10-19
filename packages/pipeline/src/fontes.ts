@@ -21,11 +21,16 @@ export interface FonteBaixada {
 /** O membro de Presidente de um zip do TSE, do cache ou, se não estiver lá (ou com `atualizar`), da rede. */
 export async function membroDePresidenteComCache(url: string, opcoes: { atualizar: boolean }): Promise<FonteBaixada> {
   const base = url.split("/").pop()!.replace(/\.zip$/, "");
-  const arquivo = new URL(`${base}_BR.csv`, CACHE);
-  const meta = new URL(`${base}_BR.json`, CACHE);
+  return membroComCache(url, { membro: membroDePresidente, noCache: `${base}_BR`, atualizar: opcoes.atualizar });
+}
+
+/** Um membro de um zip do TSE, guardado no cache como `<noCache>.csv`, com os metadados em `<noCache>.json`. */
+export async function membroComCache(url: string, opcoes: { membro: (nome: string) => boolean; noCache: string; atualizar: boolean }): Promise<FonteBaixada> {
+  const arquivo = new URL(`${opcoes.noCache}.csv`, CACHE);
+  const meta = new URL(`${opcoes.noCache}.json`, CACHE);
 
   if (opcoes.atualizar || !existsSync(arquivo) || !existsSync(meta)) {
-    const membro = await lerMembroRemoto({ url, membro: membroDePresidente });
+    const membro = await lerMembroRemoto({ url, membro: opcoes.membro });
     mkdirSync(CACHE, { recursive: true });
     writeFileSync(arquivo, membro.dados);
     writeFileSync(meta, JSON.stringify({ url, membro: membro.nome, baixadoEm: new Date().toISOString() }, null, 2));

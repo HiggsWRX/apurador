@@ -69,6 +69,31 @@ describe("resultadoDoTurno", () => {
     expect(resultado.geracao).toEqual(["18/10/2026 19:31:39"]);
   });
 
+  it("dá o resultado de cada UF, do Exterior e de cada município, somando as zonas", () => {
+    const { lugares } = resultadoDoTurno({ ano: 2026, turno: 1, candidatos, detalhes });
+
+    expect(Object.keys(lugares).sort()).toEqual(["01023", "29539", "AC", "BR", "ZZ"]);
+    expect(lugares["01023"]).toEqual({ aptos: 2200, votantes: 1620, abstencoes: 580, validos: 1500, brancos: 50, nulos: 70, secoes: 7, votos: [800, 600, 100] });
+    expect(lugares.AC).toEqual(lugares["01023"]);
+    expect(lugares["29539"]).toEqual({ aptos: 300, votantes: 105, abstencoes: 195, validos: 100, brancos: 2, nulos: 3, secoes: 1, votos: [40, 60, 0] });
+    expect(lugares.ZZ).toEqual(lugares["29539"]);
+  });
+
+  it("dá votos zerados ao lugar que teve eleitores mas nenhum voto válido", () => {
+    const semVotos = detalhe("ZZ", 29998, 1, { aptos: 50, abstencoes: 50 });
+
+    const { lugares } = resultadoDoTurno({ ano: 2026, turno: 1, candidatos, detalhes: [...detalhes, semVotos] });
+
+    expect(lugares["29998"]).toEqual({ aptos: 50, votantes: 0, abstencoes: 50, validos: 0, brancos: 0, nulos: 0, secoes: 0, votos: [0, 0, 0] });
+  });
+
+  it("recusa um município em que a soma dos candidatos não bate com os válidos do TSE", () => {
+    // Um voto válido trocado de lugar: o total do Brasil ainda bate, o de cada município não.
+    const errado = detalhes.map((d) => (d.zona === 2 ? { ...d, validos: 501 } : d.uf === "ZZ" ? { ...d, validos: 99 } : d));
+
+    expect(() => resultadoDoTurno({ ano: 2026, turno: 1, candidatos, detalhes: errado })).toThrow(/lugar (AC|ZZ|01023|29539):/);
+  });
+
   it("recusa dados em que a soma dos candidatos não bate com os válidos do TSE", () => {
     const errado = detalhes.map((d) => (d.uf === "ZZ" ? { ...d, validos: 101 } : d));
 

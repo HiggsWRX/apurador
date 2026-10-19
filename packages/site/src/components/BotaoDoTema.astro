@@ -1,0 +1,28 @@
+---
+// O tema segue o do sistema; o botão troca entre claro e escuro e guarda a escolha neste aparelho.
+---
+
+<button type="button" class="tema" data-tema-botao aria-label="Tema escuro" aria-pressed="false">
+  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+  </svg>
+</button>
+
+<script>
+  const raiz = document.documentElement;
+  const sistemaEscuro = matchMedia("(prefers-color-scheme: dark)");
+  const escuro = () => (raiz.dataset.tema ? raiz.dataset.tema === "escuro" : sistemaEscuro.matches);
+
+  for (const botao of document.querySelectorAll<HTMLButtonElement>("[data-tema-botao]")) {
+    const mostrar = () => botao.setAttribute("aria-pressed", String(escuro()));
+    botao.addEventListener("click", () => {
+      raiz.dataset.tema = escuro() ? "claro" : "escuro";
+      try {
+        localStorage.setItem("tema", raiz.dataset.tema);
+      } catch {}
+      mostrar();
+    });
+    sistemaEscuro.addEventListener("change", mostrar);
+    mostrar();
+  }
+</script>

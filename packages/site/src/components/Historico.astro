@@ -1,0 +1,43 @@
+---
+import { idDoTurno, nomeCompleto, type Lugar } from "@apurador/pipeline";
+import { TURNOS } from "../lib/lugares";
+import BarrasDoTurno from "./BarrasDoTurno.astro";
+
+interface Props {
+  lugar: Lugar;
+}
+const { lugar } = Astro.props;
+
+// Abre no turno mais recente em que o lugar votou.
+const aberto = TURNOS.find((t) => t.lugares[lugar.id]) ?? TURNOS[0]!;
+---
+
+<section class="cartao historico" aria-labelledby="historico-titulo" data-historico>
+  <h2 id="historico-titulo">Histórico · {nomeCompleto(lugar)}</h2>
+  <div class="turnos" role="group" aria-label="Turno">
+    {
+      TURNOS.map((t) => (
+        <button type="button" data-turno-botao={idDoTurno(t)} aria-controls={`turno-${idDoTurno(t)}`} aria-pressed={t === aberto ? "true" : "false"}>
+          {t.ano} {t.turno}T
+        </button>
+      ))
+    }
+  </div>
+  {TURNOS.map((t) => <BarrasDoTurno turno={t} lugar={lugar} ativo={t === aberto} />)}
+  <p class="nota">Percentuais dos candidatos sobre os votos válidos; brancos e nulos sobre os votantes. Fonte: TSE (CC-BY).</p>
+</section>
+
+<script>
+  for (const historico of document.querySelectorAll("[data-historico]")) {
+    const botoes = [...historico.querySelectorAll<HTMLButtonElement>("[data-turno-botao]")];
+    for (const botao of botoes) {
+      botao.addEventListener("click", () => {
+        for (const outro of botoes) {
+          const ativo = outro === botao;
+          outro.setAttribute("aria-pressed", String(ativo));
+          historico.querySelector(`[data-turno="${outro.dataset.turnoBotao}"]`)?.toggleAttribute("data-ativo", ativo);
+        }
+      });
+    }
+  }
+</script>

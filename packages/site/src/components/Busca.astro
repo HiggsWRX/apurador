@@ -1,0 +1,104 @@
+---
+// A busca de município ou estado, no topo de toda página. O índice (`/busca.json`) só é baixado
+// quando o visitante usa a busca.
+---
+
+<form class="busca" role="search" data-busca>
+  <label class="so-leitor" for="busca-campo">Buscar município ou estado</label>
+  <input
+    id="busca-campo"
+    type="search"
+    name="q"
+    placeholder="Município ou estado"
+    autocomplete="off"
+    spellcheck="false"
+    role="combobox"
+    aria-autocomplete="list"
+    aria-expanded="false"
+    aria-controls="busca-sugestoes"
+  />
+  <ul id="busca-sugestoes" class="sugestoes" role="listbox" aria-label="Lugares encontrados" hidden></ul>
+</form>
+
+<script>
+  import { buscarLugares, type ItemDaBusca } from "../lib/busca";
+
+  const formulario = document.querySelector<HTMLFormElement>("[data-busca]")!;
+  const campo = formulario.querySelector("input")!;
+  const lista = formulario.querySelector("ul")!;
+
+  let indice: Promise<ItemDaBusca[]> | undefined;
+  const carregar = () => (indice ??= fetch("/busca.json").then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status))))));
+
+  let achados: ItemDaBusca[] = [];
+  let escolhido = -1;
+
+  function mostrar() {
+    const aberta = campo.value.trim().length >= 2;
+    lista.hidden = !aberta;
+    campo.setAttribute("aria-expanded", String(aberta));
+    lista.replaceChildren(
+      ...achados.map(([rotulo, caminho], i) => {
+        const item = document.createElement("li");
+        item.id = `busca-opcao-${i}`;
+        item.setAttribute("role", "option");
+        item.setAttribute("aria-selected", String(i === escolhido));
+        const link = document.createElement("a");
+        link.href = caminho;
+        link.textContent = rotulo;
+        link.tabIndex = -1;
+        item.append(link);
+        return item;
+      }),
+    );
+    if (aberta && achados.length === 0) {
+      const vazio = document.createElement("li");
+      vazio.className = "vazio";
+      vazio.textContent = "Nenhum município ou estado com esse nome";
+      lista.append(vazio);
+    }
+    if (escolhido >= 0) campo.setAttribute("aria-activedescendant", `busca-opcao-${escolhido}`);
+    else campo.removeAttribute("aria-activedescendant");
+  }
+
+  campo.addEventListener("focus", () => void carregar().catch(() => {}), { once: true });
+  campo.addEventListener("input", async () => {
+    const consulta = campo.value;
+    try {
+      const encontrados = buscarLugares(await carregar(), consulta);
+      if (campo.value !== consulta) return;
+      achados = encontrados;
+    } catch {
+      indice = undefined;
+      achados = [];
+    }
+    escolhido = -1;
+    mostrar();
+  });
+  campo.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (achados.length === 0) return;
+      e.preventDefault();
+      escolhido = (escolhido + (e.key === "ArrowDown" ? 1 : -1) + achados.length) % achados.length;
+      mostrar();
+    } else if (e.key === "Escape") {
+      achados = [];
+      escolhido = -1;
+      lista.hidden = true;
+      campo.setAttribute("aria-expanded", "false");
+    }
+  });
+  formulario.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const destino = achados[Math.max(escolhido, 0)];
+    if (destino) location.href = destino[1];
+  });
+  // Tocar numa sugestão não tira o foco do campo, para a lista não fechar antes do clique.
+  lista.addEventListener("mousedown", (e) => e.preventDefault());
+  formulario.addEventListener("focusout", (e) => {
+    if (!formulario.contains(e.relatedTarget as Node | null)) {
+      lista.hidden = true;
+      campo.setAttribute("aria-expanded", "false");
+    }
+  });
+</script>

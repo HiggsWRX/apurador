@@ -1,4 +1,11 @@
 ---
+import "@fontsource-variable/inter";
+import "@fontsource-variable/source-serif-4";
+import "../estilos/global.css";
+import BotaoDoTema from "../components/BotaoDoTema.astro";
+import Busca from "../components/Busca.astro";
+import Rodape from "../components/Rodape.astro";
+
 interface Props {
   titulo: string;
 }
@@ -11,52 +18,29 @@ const { titulo } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light dark" />
     <title>{titulo} · Apurador</title>
+    <script is:inline>
+      // Antes de pintar: o tema escolhido no botão (se houver) e a marca de que há JavaScript.
+      document.documentElement.classList.add("js");
+      try {
+        const tema = localStorage.getItem("tema");
+        if (tema === "claro" || tema === "escuro") document.documentElement.dataset.tema = tema;
+      } catch {}
+    </script>
   </head>
   <body>
-    <main>
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+    <header class="topo">
+      <div class="topo-linha">
+        <a class="marca" href="/">Apurador</a>
+        <Busca />
+        <BotaoDoTema />
+      </div>
+    </header>
+    <main id="conteudo" class="pagina">
       <slot />
     </main>
-    <footer>
-      <p>Fonte: TSE, dados abertos de resultados (CC-BY).</p>
-    </footer>
+    <Rodape />
   </body>
 </html>
-
-<style is:global>
-  :root {
-    --texto: #1c1917;
-    --texto-suave: #57534e;
-    --fundo: #fafaf9;
-    --barra: #a8a29e;
-    --trilho: #e7e5e4;
-    color-scheme: light dark;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --texto: #f5f5f4;
-      --texto-suave: #a8a29e;
-      --fundo: #1c1917;
-      --barra: #78716c;
-      --trilho: #292524;
-    }
-  }
-  body {
-    margin: 0;
-    background: var(--fundo);
-    color: var(--texto);
-    font-family: system-ui, sans-serif;
-    line-height: 1.4;
-    font-variant-numeric: tabular-nums;
-  }
-  main,
-  footer {
-    max-width: 40rem;
-    margin: 0 auto;
-    padding: 1rem;
-  }
-  footer {
-    color: var(--texto-suave);
-    font-size: 0.85rem;
-  }
-</style>

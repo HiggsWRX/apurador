@@ -1,72 +1,84 @@
 ---
-import type { Turno } from "@apurador/pipeline";
+import { idDoTurno, nomeCompleto, type Lugar, type Turno } from "@apurador/pipeline";
+import { corDoPartido, type Cor } from "../lib/identidade";
 import { formatarPct, formatarVotos } from "../lib/formato";
 
 interface Props {
   turno: Turno;
-  lugar: string;
+  lugar: Lugar;
+  ativo: boolean;
 }
-const { turno, lugar } = Astro.props;
-const resultado = turno.lugares[lugar];
-if (!resultado) throw new Error(`Sem resultado de ${lugar} em ${turno.ano} ${turno.turno}º turno`);
+const { turno, lugar, ativo } = Astro.props;
+const resultado = turno.lugares[lugar.id];
+const id = idDoTurno(turno);
 
-// Os 5 mais votados (os candidatos já vêm em ordem de votos no Brasil) e o resto em "demais".
+// Os candidatos na ordem do turno no Brasil, a mesma em toda página (Telas da página de lugar, decisão 10):
+// nos 1º turnos, os 5 maiores do Brasil e o resto em "demais".
 const MAIORES = 5;
-const linhas = turno.candidatos.map((c, i) => ({ rotulo: `${c.nomeUrna} (${c.partido})`, votos: resultado.votos[i] ?? 0 })).sort((a, b) => b.votos - a.votos);
+const linhas: { rotulo: string; partido: string; votos: number; cor: Cor }[] = turno.candidatos.map((c, i) => ({
+  rotulo: c.nomeUrna,
+  partido: c.partido,
+  votos: resultado?.votos[i] ?? 0,
+  cor: corDoPartido(c.partido),
+}));
 const demais = linhas.slice(MAIORES);
 const barras = [
   ...linhas.slice(0, MAIORES),
-  ...(demais.length > 0 ? [{ rotulo: `Demais candidatos (${demais.length})`, votos: demais.reduce((s, l) => s + l.votos, 0) }] : []),
+  ...(demais.length > 0 ? [{ rotulo: `Demais candidatos (${demais.length})`, partido: "", votos: demais.reduce((s, l) => s + l.votos, 0), cor: "cinza" as const }] : []),
 ];
 ---
 
-<section>
-  <h2>{turno.turno}º turno de {turno.ano}</h2>
-  <ol>
-    {
-      barras.map((b) => (
-        <li data-barra>
-          <span class="rotulo">{b.rotulo}</span>
-          <span class="numeros">
-            <strong>{formatarPct(b.votos, resultado.validos)}</strong> · {formatarVotos(b.votos)} votos
-          </span>
-          <span class="trilho">
-            <span class="barra" style={`width: ${(100 * b.votos) / resultado.validos}%`} />
-          </span>
-        </li>
-      ))
-    }
-  </ol>
-  <p class="nota">Percentuais sobre os votos válidos.</p>
-</section>
-
-<style>
-  ol {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+<div class="turno" id={`turno-${id}`} data-turno={id} data-ativo={ativo ? "" : undefined}>
+  <h3>{turno.turno}º turno de {turno.ano}</h3>
+  {
+    !resultado ? (
+      <p class="nota">{nomeCompleto(lugar)} não teve votação neste turno.</p>
+    ) : (
+      <>
+        {resultado.validos === 0 ? (
+          <p class="nota">Nenhum voto válido neste turno.</p>
+        ) : (
+          <ol class="barras">
+            {barras.map((b) => (
+              <li class="barra" data-barra data-cor={b.cor}>
+                <span class="b-nome">
+                  {b.rotulo}
+                  {b.partido && <small>{b.partido}</small>}
+                </span>
+                <span class="b-pct">{formatarPct(b.votos, resultado.validos)}</span>
+                <span class="b-trilho">
+                  <span class="b-cheia" style={`width:${((100 * b.votos) / resultado.validos).toFixed(2)}%`} />
+                </span>
+                <span class="b-votos">{formatarVotos(b.votos)} votos</span>
+              </li>
+            ))}
+          </ol>
+        )}
+        <dl class="totais">
+          <div>
+            <dt>Aptos</dt>
+            <dd>{formatarVotos(resultado.aptos)}</dd>
+          </div>
+          {resultado.aptos > 0 && (
+            <div>
+              <dt>Comparecimento</dt>
+              <dd>{formatarPct(resultado.votantes, resultado.aptos)}</dd>
+            </div>
+          )}
+          {resultado.votantes > 0 && (
+            <>
+              <div>
+                <dt>Brancos</dt>
+                <dd>{formatarPct(resultado.brancos, resultado.votantes)}</dd>
+              </div>
+              <div>
+                <dt>Nulos</dt>
+                <dd>{formatarPct(resultado.nulos, resultado.votantes)}</dd>
+              </div>
+            </>
+          )}
+        </dl>
+      </>
+    )
   }
-  li {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 0.25rem 1rem;
-    margin-bottom: 0.75rem;
-  }
-  .trilho {
-    grid-column: 1 / -1;
-    height: 0.5rem;
-    background: var(--trilho);
-  }
-  .barra {
-    display: block;
-    height: 100%;
-    background: var(--barra);
-  }
-  .numeros,
-  .nota {
-    color: var(--texto-suave);
-  }
-  .nota {
-    font-size: 0.85rem;
-  }
-</style>
+</div>
