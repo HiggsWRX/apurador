@@ -10,6 +10,8 @@
     "tse-falso": "tsx src/servir.ts"
   },
   "dependencies": {
-    "@apurador/pipeline": "*"
+    "@apurador/coletor": "*",
+    "@apurador/pipeline": "*",
+    "@apurador/tse": "*"
   }
 }

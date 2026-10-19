@@ -22,6 +22,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      # Inclui o replay automático: o coletor sobre o TSE falso, a noite inteira do 2º turno de 2022
+      # (packages/ensaio/test/replay.test.ts, ~1 min).
       - run: npm test
       # Os totais de cada turno, no Brasil e em cada UF, contra os arquivos do TSE baixados agora.
       - run: npm run conferir
