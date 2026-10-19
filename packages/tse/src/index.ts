@@ -8,3 +8,5 @@ export {
   type DetalheMunzona,
   type VotoCandidatoMunzona,
 } from "./historico.ts";
+export { boletimDeUrna, lerBoletimDeUrna, lerDetalheVotacaoSecao, type DetalheSecao, type VotoSecao } from "./secao.ts";
+export { historicoDeTotalizacao, lerHistoricoDeTotalizacao, type LinhaDoHistorico } from "./totalizacao.ts";

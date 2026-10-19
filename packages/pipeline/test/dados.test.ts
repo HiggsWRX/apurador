@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { Turno } from "../src/turno.ts";
 
@@ -30,8 +31,10 @@ describe("manifesto de origem", () => {
   const sha256 = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 
   it("lista cada arquivo derivado com o hash que ele tem no repositório", () => {
-    const turnos = readdirSync(new URL("turnos/", DADOS)).map((f) => `turnos/${f}`);
-    expect(manifesto.derivados.map((d) => d.arquivo).sort()).toEqual(turnos.sort());
+    const derivados = readdirSync(DADOS, { recursive: true, withFileTypes: true })
+      .filter((f) => f.isFile() && f.name !== "manifesto.json")
+      .map((f) => `${f.parentPath.slice(fileURLToPath(DADOS).length).replaceAll("\\", "/")}/${f.name}`.replace(/^\//, ""));
+    expect(manifesto.derivados.map((d) => d.arquivo).sort()).toEqual(derivados.sort());
     for (const d of manifesto.derivados) expect(sha256(ler(d.arquivo)), d.arquivo).toBe(d.sha256);
   });
 
@@ -42,7 +45,7 @@ describe("manifesto de origem", () => {
         const fonte = manifesto.fontes.find((f) => f.url === url);
         expect(fonte, url).toBeDefined();
         expect(fonte!.url).toMatch(/^https:\/\/cdn\.tse\.jus\.br\/.+\.zip$/);
-        expect(fonte!.membro).toMatch(/_BR\.csv$/);
+        expect(fonte!.membro).toMatch(/\.csv$/);
         expect(fonte!.geracao.length).toBeGreaterThan(0);
         expect(fonte!.sha256).toMatch(/^[0-9a-f]{64}$/);
       }

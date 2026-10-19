@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { lerMembroRemoto, membroDePresidente } from "@apurador/tse";
+import { lerMembroRemoto } from "@apurador/tse";
 
 // Os arquivos do TSE baixados ficam num cache fora do Git (`.cache/` na raiz). O repositório
 // guarda só os dados derivados, e o manifesto diz de onde cada um veio.
@@ -21,17 +21,24 @@ export interface FonteBaixada {
 /** O membro de Presidente de um zip do TSE, do cache ou, se não estiver lá (ou com `atualizar`), da rede. */
 export async function membroDePresidenteComCache(url: string, opcoes: { atualizar: boolean }): Promise<FonteBaixada> {
   const base = url.split("/").pop()!.replace(/\.zip$/, "");
-  const arquivo = new URL(`${base}_BR.csv`, CACHE);
-  const meta = new URL(`${base}_BR.json`, CACHE);
+  return membroComCache(url, `${base}_BR.csv`, opcoes);
+}
+
+/** O membro `nome` de um zip do TSE, do cache ou, se não estiver lá (ou com `atualizar`), da rede. */
+export async function membroComCache(url: string, nome: string, opcoes: { atualizar: boolean }): Promise<FonteBaixada> {
+  const arquivo = new URL(nome, CACHE);
+  const meta = new URL(`${nome.replace(/\.csv$/, "")}.json`, CACHE);
 
   if (opcoes.atualizar || !existsSync(arquivo) || !existsSync(meta)) {
-    const membro = await lerMembroRemoto({ url, membro: membroDePresidente });
+    const membro = await lerMembroRemoto({ url, membro: (n) => n === nome });
     mkdirSync(CACHE, { recursive: true });
     writeFileSync(arquivo, membro.dados);
     writeFileSync(meta, JSON.stringify({ url, membro: membro.nome, baixadoEm: new Date().toISOString() }, null, 2));
   }
 
-  const dados = new Uint8Array(readFileSync(arquivo));
+  // Uma vista sobre o mesmo buffer, sem cópia: os arquivos por seção têm centenas de MB.
+  const lido = readFileSync(arquivo);
+  const dados = new Uint8Array(lido.buffer, lido.byteOffset, lido.byteLength);
   const { membro, baixadoEm } = JSON.parse(readFileSync(meta, "utf8")) as { membro: string; baixadoEm: string };
   return { url, membro, sha256: createHash("sha256").update(dados).digest("hex"), bytes: dados.length, baixadoEm, dados };
 }

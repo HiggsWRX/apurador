@@ -14,6 +14,7 @@
     "test": "vitest run",
     "build": "npm run build -w @apurador/site",
     "dados": "npm run gerar -w @apurador/pipeline",
+    "noites": "npm run noites -w @apurador/pipeline",
     "deploy": "npm run deploy -w @apurador/site"
   },
   "devDependencies": {

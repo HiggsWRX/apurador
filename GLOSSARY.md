@@ -50,6 +50,10 @@ _Avoid_: 100% apurado, resultado final (quando se fala da projeção)
 A curva real de um turno passado, sobreposta à curva real atual no mesmo eixo de % de seções totalizadas.
 _Avoid_: curva de 2022 (é qualquer turno)
 
+**Noite reconstruída**:
+Uma apuração passada refeita seção por seção: cada seção entra no placar parcial no instante em que o TSE a totalizou, com os votos do boletim de urna. Dá o estado da apuração em qualquer instante, por zona, município, UF e Brasil. É o que o replay, o ensaio geral e a calibração reproduzem.
+_Avoid_: noite simulada, simulação (é do simulador "e se")
+
 ## Previsão
 
 **Projeção**:
@@ -79,6 +83,10 @@ A diferença, medida em eleições passadas, entre o que o agregado de pesquisas
 O conjunto de informações que a projeção usa, escolhido pelo visitante: **Só apuração** (placar parcial e eleições passadas) ou **Apuração + pesquisas** (o mesmo, mais o agregado de pesquisas).
 _Avoid_: modo, modelo (para a escolha do visitante)
 
+**Base do modelo**:
+O 1º turno de cada município que o modelo usa numa noite: placar entre finalistas, fatia dos eliminados, aptos, seções, válidos por apto e perfil de chegada. A noite de 25/10 usa o 1º turno de 2026.
+_Avoid_: base da projeção (é a escolha do visitante)
+
 **Peso das pesquisas**:
 Quanto a indicação das pesquisas ainda influencia a projeção na base Apuração + pesquisas. É 100% antes da apuração e cai conforme o Brasil é apurado, igual para todos os lugares.
 _Avoid_: confiança nas pesquisas, peso do modelo
@@ -101,6 +109,10 @@ _Avoid_: hora da virada, previsão da virada
 **Ordem de chegada**:
 A sequência em que as seções (e, por agregação, municípios e UFs) são totalizadas na noite. A ordem prevista define o formato da curva projetada.
 _Avoid_: ordem de apuração, ordem de contagem
+
+**Perfil de chegada**:
+Num turno passado, a fração das seções de um município que já tinha sido totalizada quando o país tinha cada % de seções totalizadas. Diz se o município chega cedo ou tarde na noite.
+_Avoid_: curva de chegada
 
 **Transferência de votos**:
 A fração dos votos dados no 1º turno aos candidatos eliminados que vai para cada finalista no 2º turno.
