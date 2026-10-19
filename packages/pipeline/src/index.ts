@@ -18,3 +18,4 @@ export { baseDoModelo, indicadoresDaBase, type BaseDoModelo, type BaseDoMunicipi
 export { finalistas, listaDasPesquisas, pesquisasDoAgregado, type ExtratoDoTse, type Modo, type Pesquisa, type PesquisaDaLista } from "./pesquisas.ts";
 export { agregadoDaNoite, eleicoesPassadas, lerPesquisasHistoricas, type PesquisaHistorica } from "./pesquisas-historicas.ts";
 export { conferirResultadosHistoricos, resultadoHistorico, type FinalistaDoResultado, type ResultadoHistorico } from "./resultados-historicos.ts";
+export { cadastroDaNoite, lerCadastro, type Cadastro, type CandidatoDoCadastro, type MunicipioDoCadastro, type UfDoCadastro } from "./cadastro.ts";

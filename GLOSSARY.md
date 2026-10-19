@@ -200,6 +200,10 @@ _Avoid_: ZZ, UF exterior
 A reprodução de uma apuração passada inteira, acelerada, no site e na infraestrutura reais, com pessoas assistindo, para aprovar o site antes da noite.
 _Avoid_: teste, simulado (o simulado é do TSE)
 
+**TSE falso**:
+O servidor que imita o TSE: serve uma noite reconstruída nos arquivos da divulgação ao vivo, com relógio próprio, para o replay e o ensaio geral. O coletor lê dele só trocando a URL base.
+_Avoid_: mock, simulador do TSE, simulado (o simulado é do TSE)
+
 **Plano zero**:
 O estado do site em que nenhum dado ao vivo vai ao ar e a página manda o visitante para o app oficial do TSE. É reversível na própria noite.
 _Avoid_: site fora do ar, modo de emergência

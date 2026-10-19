@@ -12,3 +12,5 @@ export { boletimDeUrna, lerBoletimDeUrna, lerDetalheVotacaoSecao, lerVotacaoSeca
 export { historicoDeTotalizacao, lerHistoricoDeTotalizacao, type LinhaDoHistorico } from "./totalizacao.ts";
 export { lerMunicipioTseIbge, MEMBRO_MUNICIPIO_TSE_IBGE, URL_MUNICIPIO_TSE_IBGE, type MunicipioTseIbge } from "./municipio-tse-ibge.ts";
 export { abrangenciaDoRegistro, lerRegistrosDePesquisas, membroDoBrasil, urlRegistrosDePesquisas, type RegistroDePesquisa } from "./pesquisas.ts";
+export { lerCandidaturas, membroCandidaturasDoBrasil, urlCandidaturas, type Candidatura } from "./candidaturas.ts";
+export { lerConfiguracaoDeMunicipios, type ConfiguracaoDeMunicipios, type MunicipioDaConfiguracao } from "./configuracao.ts";

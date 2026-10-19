@@ -32,7 +32,7 @@ Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decis�
   2. quem perdeu nunca passa de 95% de chance depois de 5%;
   3. menor erro médio entre 5% e 50%;
   4. no empate (menos de 0,05 p.p.), a incerteza mais larga.
-- [ ] **K**: os casos são o 2º turno de 2022 com o agregado real e deslocado 2 pontos para cada lado, o 2º turno de 2018 com o agregado real e o 1º turno de 2026 com as pesquisas entre os dois finalistas. Fica o K com o menor erro no pior caso entre 0,1% e 5% das seções, mantendo a cobertura de 95% em todos.
+- [ ] **K**: os casos são o 2º turno de 2022 com o agregado real e deslocado 2 pontos para cada lado, o 2º turno de 2018 com o agregado real e o 1º turno de 2026 com as pesquisas entre os dois finalistas (as 12 da regra do agregado, com erro de −3,8 na margem, por decisão do dono em 19/10: ver o [ticket 05](05-historico-das-pesquisas.md)). Fica o K com o menor erro no pior caso entre 0,1% e 5% das seções, mantendo a cobertura de 95% em todos.
 - [ ] **Sinal de virada**: o limite de 50% fica. O de 5% passa só se, em todas as rodadas, nas duas bases e com as pesquisas deslocadas:
   - no Brasil e nas UFs, "sem sinal de virada" nunca aparece antes de uma virada real;
   - nos municípios, no máximo 5% dos momentos com "sem sinal de virada" são seguidos de virada.

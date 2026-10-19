@@ -74,6 +74,7 @@ Decisões: [Agregado de pesquisas e erro histórico](../../apurador-2026/issues/
   - As 8 com campo terminando de 1 a 3/10 conferem os −2,8 na margem nos válidos.
   - Com as 12, o erro na margem é −3,8, e Flávio fica em 48,9 entre os dois, contra 51,0.
   - O `agregadoDaNoite` de 2026-1 usa as 12, pela regra. Se o caso do K no [ticket 28](28-calibracao.md) deve ser o de −2,8, basta tirar do CSV as 4 com campo terminando antes de 01/10.
+  - **Decidido pelo dono em 19/10**: ficam as 12, pela regra do agregado. A calibração testa o agregado que o site calcula, e o erro maior (−3,8) é o caso mais duro para o K.
 - **Dados a conferir, se der tempo**:
   - O Ibope de 28/10/2006 vem do banco do Poder360 com registro no TRE-RN e 812 entrevistas. Os dados de Jennings e Wlezien trazem a mesma pesquisa como nacional, e ela fica. Sem ela, 2006 erraria +1,29, e a raiz, 1,32.
   - A Quaest final de 2022 tem campo de 27 a 29/10 e 45 × 42 na Wikipédia, mas 28 a 29/10 e 46 × 43 no Poder360 e no registro do TSE. Ficam os do registro: a diferença é de 0,03 ponto.

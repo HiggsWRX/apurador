@@ -5,5 +5,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "scripts": {
+    "tse-falso": "tsx src/servir.ts"
+  },
+  "dependencies": {
+    "@apurador/pipeline": "*"
   }
 }

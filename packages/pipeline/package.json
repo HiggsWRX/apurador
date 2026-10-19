@@ -11,7 +11,8 @@
     "noites": "tsx src/gerar-noites.ts",
     "historico": "tsx src/gerar-resultados-historicos.ts",
     "conferir": "tsx src/conferir.ts",
-    "conferir-pesquisas": "tsx src/conferir-pesquisas.ts"
+    "conferir-pesquisas": "tsx src/conferir-pesquisas.ts",
+    "cadastros": "tsx src/gerar-cadastros.ts"
   },
   "dependencies": {
     "@apurador/modelo": "*",
