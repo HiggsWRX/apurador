@@ -16,8 +16,11 @@ const ORDENS: Record<string, string> = { mistura: '"mistura"', "primeiro-turno":
 /** Uma tabela em Markdown. */
 const tabela = (cabecalho: string[], linhas: string[][]) => [`| ${cabecalho.join(" | ")} |`, `|${cabecalho.map(() => "---").join("|")}|`, ...linhas.map((l) => `| ${l.join(" | ")} |`)].join("\n");
 
-/** A seção "Resultados" do registro, com a data em que a calibração rodou (`DD/MM/AAAA`). */
-export function resultadosDaCalibracao(c: Calibracao, provisorias: Constantes, data: string): string {
+/**
+ * A seção "Resultados" do registro. Ela não leva a data: o CI a gera de novo e falha se ela mudar, e quando ela rodou
+ * fica no histórico do Git.
+ */
+export function resultadosDaCalibracao(c: Calibracao, provisorias: Constantes): string {
   const e = c.constantes;
   const p1 = c.passo1;
   const passam1 = p1.candidatos.filter((x) => x.passaCobertura && x.passaChance);
@@ -33,7 +36,7 @@ export function resultadosDaCalibracao(c: Calibracao, provisorias: Constantes, d
   return [
     "## Resultados",
     "",
-    `Rodada em ${data} com \`npm run calibracao\`, sobre o código e os dados deste commit. Os números completos estão nos CSVs de \`docs/calibracao/\`.`,
+    "Gerada pelo `npm run calibracao`, sobre o código e os dados do repositório. O CI a gera de novo e falha se ela mudar. Os números completos estão nos CSVs de `docs/calibracao/`.",
     "",
     "### Constantes escolhidas",
     "",

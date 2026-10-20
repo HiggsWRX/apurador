@@ -94,7 +94,7 @@ O modelo aceita zonas nos municípios com mais de uma: cada zona entra como uma 
 
 ## Resultados
 
-Rodada em 19/10/2026 com `npm run calibracao`, sobre o código e os dados deste commit. Os números completos estão nos CSVs de `docs/calibracao/`.
+Gerada pelo `npm run calibracao`, sobre o código e os dados do repositório. O CI a gera de novo e falha se ela mudar. Os números completos estão nos CSVs de `docs/calibracao/`.
 
 ### Constantes escolhidas
 

@@ -22,6 +22,12 @@ export interface MomentoDaNoite {
   instante: number;
   /** O % de seções totalizadas no Brasil. */
   secoes: number;
+  /**
+   * O ponto da fotografia, ou 100 no fim da noite. Os intervalos de % de seções comparam o ponto, porque a fotografia
+   * alcança o número de seções arredondado e fica até meia seção abaixo dele (a de 0,1% de 2022 tem 0,09998%) ou passa
+   * dele pela chegada que o alcança. Quando uma chegada alcança dois pontos, o momento é o do primeiro.
+   */
+  ponto: number;
   apuracao: Apuracao;
 }
 
@@ -67,8 +73,9 @@ export function* momentosDaNoite(modelo: Modelo, noite: NoiteDoModelo, pontos: n
   let proxima = 0;
   let secoes = 0;
   let ultima = 0;
-  const alvos = [...pontos].sort((a, b) => a - b).map((p) => Math.min(comHora, Math.max(1, Math.round((p / 100) * total))));
-  for (const alvo of [...alvos, comHora]) {
+  const ordenados = [...pontos].sort((a, b) => a - b);
+  const alvos = [...ordenados.map((p) => ({ ponto: p, secoes: Math.min(comHora, Math.max(1, Math.round((p / 100) * total))) })), { ponto: 100, secoes: comHora }];
+  for (const { ponto, secoes: alvo } of alvos) {
     for (; proxima < noite.chegadas.length && secoes < alvo; proxima++) {
       const c = noite.chegadas[proxima]!;
       const a = apuracao[municipioDaZona[c.zona]!]!;
@@ -79,7 +86,7 @@ export function* momentosDaNoite(modelo: Modelo, noite: NoiteDoModelo, pontos: n
     }
     if (proxima === ultima) continue;
     ultima = proxima;
-    yield { instante: noite.chegadas[proxima - 1]!.instante, secoes: (100 * secoes) / total, apuracao: apuracao.map((a) => ({ ...a, votos: [...a.votos] })) };
+    yield { instante: noite.chegadas[proxima - 1]!.instante, secoes: (100 * secoes) / total, ponto, apuracao: apuracao.map((a) => ({ ...a, votos: [...a.votos] })) };
   }
 }
 
@@ -88,6 +95,8 @@ export interface LinhaDaNoite {
   instante: number;
   /** O % de seções totalizadas. */
   secoes: number;
+  /** O ponto da fotografia, como no `MomentoDaNoite`. */
+  ponto: number;
   placar: number | null;
   /** O peso das pesquisas na base "Apuração + pesquisas", 0 na "Só apuração". */
   pesoDasPesquisas: number;
@@ -102,13 +111,13 @@ export interface ResultadoDaNoite {
   /** O resultado final no Brasil: a fatia do 1º finalista no fim da noite. */
   final: number;
   momentos: LinhaDaNoite[];
-  /** O erro, em pontos percentuais, no primeiro momento com 5, 25 e 50% das seções. */
+  /** O erro, em pontos percentuais, nas fotografias de 5, 25 e 50% das seções. */
   erroCom5: number | null;
   erroCom25: number | null;
   erroCom50: number | null;
   /** A fração dos momentos com o resultado final dentro da margem de 95%. */
   cobertura: number;
-  /** A mesma fração, só nos momentos depois de 1% das seções. */
+  /** A mesma fração, só nos momentos depois da fotografia de 1% das seções. */
   coberturaDepoisDe1: number;
   /** O % de seções desde o qual a projeção aponta o vencedor até o fim da noite. */
   acertaDesde: number | null;
@@ -134,12 +143,12 @@ export function executarNoite(
   const final = votos1 / fim.reduce((s, a) => s + a.votos[0]! + a.votos[1]!, 0);
   const vence = final > 0.5;
 
-  const momentos = lista.map(({ instante, secoes, apuracao }): LinhaDaNoite => {
+  const momentos = lista.map(({ instante, secoes, ponto, apuracao }): LinhaDaNoite => {
     const { pesoDasPesquisas, brasil } = projetar(modelo, apuracao, constantes, agregado);
     const { placar, projecao, desvio, chance } = brasil;
-    return { instante, secoes, placar, pesoDasPesquisas, projecao, desvio, chance, erro: 100 * Math.abs(projecao - final) };
+    return { instante, secoes, ponto, placar, pesoDasPesquisas, projecao, desvio, chance, erro: 100 * Math.abs(projecao - final) };
   });
-  const erroCom = (secoes: number) => momentos.find((m) => m.secoes >= secoes)?.erro ?? null;
+  const erroCom = (ponto: number) => momentos.find((m) => m.ponto >= ponto)?.erro ?? null;
   /** O % de seções desde o qual a condição vale em todos os momentos até o fim. */
   const desde = (vale: (m: LinhaDaNoite) => boolean) => {
     let inicio: number | null = null;
@@ -155,7 +164,7 @@ export function executarNoite(
     erroCom25: erroCom(25),
     erroCom50: erroCom(50),
     cobertura: cobertura(momentos),
-    coberturaDepoisDe1: cobertura(momentos.filter((m) => m.secoes > 1)),
+    coberturaDepoisDe1: cobertura(momentos.filter((m) => m.ponto > 1)),
     acertaDesde: desde((m) => m.projecao > 0.5 === vence),
     chance95Desde: desde((m) => chanceDoVencedor(m) >= 0.95),
     brier: momentos.reduce((s, m) => s + (chanceDoVencedor(m) - 1) ** 2, 0) / momentos.length,

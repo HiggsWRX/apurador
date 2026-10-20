@@ -1,12 +1,25 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { lerMembroRemoto } from "@apurador/tse";
 
-// Os arquivos do TSE baixados ficam num cache fora do Git (`.cache/` na raiz). O repositório
-// guarda só os dados derivados, e o manifesto diz de onde cada um veio.
+// Os arquivos do TSE baixados ficam num cache fora do Git (`.cache/tse/` na raiz do checkout principal). O
+// repositório guarda só os dados derivados, e o manifesto diz de onde cada um veio.
 
 export const RAIZ = new URL("../../../", import.meta.url);
-const CACHE = new URL(".cache/tse/", RAIZ);
+
+/**
+ * O cache dos arquivos do TSE: `.cache/tse/` na raiz do checkout principal. Os worktrees de cada ticket o dividem,
+ * porque as noites leem gigabytes do TSE. Num worktree, o `.git` é um arquivo que aponta para
+ * `<principal>/.git/worktrees/<nome>`.
+ */
+export function cacheDoTse(raiz: URL): URL {
+  const git = new URL(".git", raiz);
+  const gitdir = existsSync(git) && statSync(git).isFile() ? /^gitdir: (.+)$/m.exec(readFileSync(git, "utf8"))?.[1]?.trim() : undefined;
+  const principal = gitdir ? new URL("../../../", new URL(`file:///${gitdir.replace(/^\/+/, "")}/`)) : raiz;
+  return new URL(".cache/tse/", principal);
+}
+
+const CACHE = cacheDoTse(RAIZ);
 
 export interface FonteBaixada {
   url: string;

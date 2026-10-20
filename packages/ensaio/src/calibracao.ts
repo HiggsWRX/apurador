@@ -24,26 +24,14 @@ export interface MedidaDaNoite {
 
 const media = (valores: number[]) => valores.reduce((s, v) => s + v, 0) / valores.length;
 
-/**
- * Se o momento é a fotografia de um ponto ou uma posterior. A fotografia alcança o número de seções arredondado e fica
- * até meia seção abaixo do ponto: a de 0,1% de 2022 tem 0,09998%.
- */
-const desde = (secoes: number, ponto: number) => secoes >= ponto - 0.001;
-/** Se o momento é a fotografia de um ponto ou uma anterior. A fotografia passa do ponto pela chegada que o alcança: a de 50% de 2018 tem 50,0077%. */
-const ate = (secoes: number, ponto: number) => secoes <= ponto + 0.05;
-/** Se o momento vem depois da fotografia de um ponto: "mais de 1%" deixa de fora a fotografia de 1%. */
-const depois = (secoes: number, ponto: number) => !ate(secoes, ponto);
-
 /** As medidas da regra sobre uma noite rodada pelo executor de noites. */
 export function medirNoite(noite: ResultadoDaNoite): MedidaDaNoite {
   const vence = noite.final > 0.5;
-  const de5a50 = noite.momentos.filter((m) => desde(m.secoes, 5) && ate(m.secoes, 50));
-  const depoisDe1 = noite.momentos.filter((m) => depois(m.secoes, 1));
+  const de5a50 = noite.momentos.filter((m) => m.ponto >= 5 && m.ponto <= 50);
   return {
-    // a cobertura do executor conta "mais de 1%" pelo % de seções, e a fotografia de 1% fica acima ou abaixo de 1 conforme a noite
-    cobertura: depoisDe1.filter((m) => Math.abs(m.projecao - noite.final) <= Z_95 * m.desvio).length / depoisDe1.length,
-    maiorChanceDeQuemPerdeu: Math.max(0, ...noite.momentos.filter((m) => depois(m.secoes, 5)).map((m) => (vence ? 1 - m.chance : m.chance))),
-    maiorErroNoComeco: Math.max(0, ...noite.momentos.filter((m) => desde(m.secoes, 0.1) && ate(m.secoes, 5)).map((m) => m.erro)),
+    cobertura: noite.coberturaDepoisDe1,
+    maiorChanceDeQuemPerdeu: Math.max(0, ...noite.momentos.filter((m) => m.ponto > 5).map((m) => (vence ? 1 - m.chance : m.chance))),
+    maiorErroNoComeco: Math.max(0, ...noite.momentos.filter((m) => m.ponto >= 0.1 && m.ponto <= 5).map((m) => m.erro)),
     erroMedio: media(de5a50.map((m) => m.erro)),
     margemMedia: media(de5a50.map((m) => 100 * Z_95 * m.desvio)),
   };
@@ -133,8 +121,8 @@ export function erroDaCurva(pontos: PontoDaCurva[], real: (x: number) => number)
 export function medirOrdem(noite: NoiteDaCalibracao, constantes: Constantes): number {
   const real = placarReal(noite);
   const erros: number[] = [];
-  for (const { secoes, apuracao } of momentosDaNoite(noite.modelo, noite.noite)) {
-    if (!desde(secoes, 5) || !ate(secoes, 50)) continue;
+  for (const { ponto, apuracao } of momentosDaNoite(noite.modelo, noite.noite)) {
+    if (ponto < 5 || ponto > 50) continue;
     const projecao = projetar(noite.modelo, apuracao, constantes);
     erros.push(erroDaCurva(curvaProjetada(noite.modelo, apuracao, projecao, constantes).brasil.pontos, real));
   }
