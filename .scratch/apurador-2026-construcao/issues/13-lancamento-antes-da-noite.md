@@ -59,3 +59,4 @@ O endereço só abre com os nove itens verdadeiros, registrados com o de acordo 
   - O e-mail do rodapé é `contato@apurador.org` (Email Routing, encaminhado para a caixa do dono). Falta o nome completo do dono para `RESPONSAVEL`.
   - O Web Analytics de `apurador.org` está no modo snippet, sem injeção automática. O snippet a pôr no `<head>` é `<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "cc7b32506206448bb43d8ec6514d5f18"}'></script>`.
   - O `apurador.org` já é domínio próprio do Worker `apurador`, posto pelo painel e não pelo `wrangler.jsonc`: ele já serve o site, com `noindex`. Ao pôr o domínio no `wrangler.jsonc`, confira que o `wrangler deploy` não o tira nem o duplica. O endereço do Worker é `apurador.hicampos93.workers.dev`.
+- 20/10/2026, do dono: o nome completo para `RESPONSAVEL` (rodapé e "Quem faz" da metodologia) é **Hiago de Oliveira**.
