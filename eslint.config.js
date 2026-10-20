@@ -4,7 +4,7 @@ import tseslint from "typescript-eslint";
 export default tseslint.config(
   { ignores: ["**/node_modules/", "**/dist/", "**/dist-chaves-desligadas/", "**/.astro/", ".cache/", "prototipos/"] },
   {
-    files: ["**/*.ts"],
+    files: ["**/*.ts", "**/*.tsx"],
     languageOptions: { parser: tseslint.parser },
     rules: {
       "no-restricted-syntax": [

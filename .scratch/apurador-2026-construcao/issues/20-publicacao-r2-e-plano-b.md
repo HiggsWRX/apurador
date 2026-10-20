@@ -32,3 +32,11 @@ Decisões: [Arquitetura e tecnologia](../../apurador-2026/issues/08-arquitetura-
 ## Comments
 
 - 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): `Destino { gravar(caminho, bytes) }` (`packages/coletor/src/destino.ts`) é a interface única, e hoje só existe `pastaLocal`. O coletor já grava só quando os bytes mudam (um hash por caminho) e conta `gravacoes` no registro de cada rodada.
+- 19/10/2026, do [ticket 14](14-bloco-ao-vivo.md):
+  - A página lê `<base>rodada.json` e `<base>lugares/<id>.json`. A `base` vem de `PUBLIC_AO_VIVO` no build, com a barra no fim; sem ela, a ilha não lê nada.
+  - Ela pede com o `If-None-Match` posto à mão e `cache: "no-store"`, para o 304 chegar ao código, e lê o cabeçalho `Date` de cada resposta: é ele que dá a interrupção.
+  - Lidas de `apurador.app` em `ao-vivo.apurador.app`, as duas coisas pedem CORS no R2:
+    - `GET` e `OPTIONS`, com o cabeçalho `If-None-Match` permitido, porque o pedido tem preflight;
+    - `Date` e `ETag` em `Access-Control-Expose-Headers`. Sem isso, o `Date` chega `null` à página, e a interrupção nunca aparece;
+    - um `Access-Control-Max-Age` longo, para o preflight não se repetir a cada 30 s.
+  - A troca para o plano B entra em `criarLeitorAoVivo` (`packages/site/src/lib/leitor-ao-vivo.ts`), que hoje conhece um endereço só.

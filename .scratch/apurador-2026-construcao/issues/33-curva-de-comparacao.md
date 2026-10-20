@@ -17,3 +17,7 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
 - [ ] **Botões**: há um botão por turno passado, desligado por padrão, e a curva de comparação aparece sobre a curva real atual, com legenda.
 - [ ] **Peso**: os dados das curvas passadas só são baixados quando o visitante liga uma delas.
 - [ ] **Sem a projeção antes das 17h**: com a chave desligada, "O que esperar da noite" pode mostrar as curvas reais de noites passadas.
+
+## Comments
+
+- 19/10/2026, do [ticket 14](14-bloco-ao-vivo.md): a curva de comparação vai por cima da curva real, em `packages/site/src/components/CurvaReal.tsx`, e entra na conta da escala como a curva real: só depois de 3% das seções.

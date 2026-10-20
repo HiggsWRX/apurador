@@ -18,6 +18,7 @@
     "noites": "npm run noites -w @apurador/pipeline --",
     "historico": "npm run historico -w @apurador/pipeline --",
     "cadastros": "npm run cadastros -w @apurador/pipeline --",
+    "fotos": "npm run fotos -w @apurador/pipeline --",
     "tse-falso": "npm run tse-falso -w @apurador/ensaio --",
     "coletor": "npm run coletor -w @apurador/coletor --",
     "replay": "vitest run packages/ensaio/test/replay.test.ts",

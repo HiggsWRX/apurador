@@ -45,3 +45,9 @@ Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decis�
 - [ ] **Veredito**: o registro de cada ensaio traz os números, as falhas com hora e o veredito de cada bloco, assinado pelo dono.
 - [ ] **Se o núcleo mínimo for reprovado**: correção em 24/10 e um trecho de 30 min a 1x, das 18:30 às 19:00 de 2022. Se falhar de novo, vale o plano zero na noite.
 - [ ] **Se outro bloco for reprovado**: ele vai para a noite com a chave desligada. Pode ser aprovado até as 18h de 24/10, se a correção passar no replay e num trecho de 30 min.
+
+## Comments
+
+- 19/10/2026, do [ticket 14](14-bloco-ao-vivo.md):
+  - "Placar e curva visíveis em até 3 s num Android barato no 4G" não foi medido num aparelho. Fica para o ensaio. O JavaScript da ilha soma ~16 KB com gzip: ilha 6,0, Preact 4,4, signals 3,0, cliente do Astro 1,5 e hooks 1,2.
+  - O limite de "TSE sem novidade" é provisório: 2 min sem totalização nova no Brasil, abaixo dos 3 min da interrompida. Nenhuma decisão fixa o número; o ensaio confirma ou ajusta.

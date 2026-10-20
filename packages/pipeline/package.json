@@ -12,7 +12,8 @@
     "historico": "tsx src/gerar-resultados-historicos.ts",
     "conferir": "tsx src/conferir.ts",
     "conferir-pesquisas": "tsx src/conferir-pesquisas.ts",
-    "cadastros": "tsx src/gerar-cadastros.ts"
+    "cadastros": "tsx src/gerar-cadastros.ts",
+    "fotos": "tsx src/gerar-fotos.ts"
   },
   "dependencies": {
     "@apurador/modelo": "*",

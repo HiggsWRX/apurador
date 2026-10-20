@@ -10,3 +10,10 @@ export function corDoPartido(partido: string): Cor {
   if (PARTIDO_DE_BOLSONARO.includes(partido)) return "flavio";
   return "cinza";
 }
+
+// O nome curto dos finalistas na manchete e na linha fixa ("Flávio lidera com …"), pelo nome de urna, que o TSE
+// escreve em maiúsculas e sem acento. O 2º turno de 2022 entra porque o TSE falso o serve no ensaio geral.
+const NOMES_CURTOS: Record<string, string> = { "FLAVIO BOLSONARO": "Flávio", LULA: "Lula", "JAIR BOLSONARO": "Bolsonaro" };
+
+/** "FLAVIO BOLSONARO" → "Flávio". Um nome de urna sem nome curto fica como o TSE o escreve. */
+export const nomeCurto = (nomeUrna: string) => NOMES_CURTOS[nomeUrna] ?? nomeUrna;

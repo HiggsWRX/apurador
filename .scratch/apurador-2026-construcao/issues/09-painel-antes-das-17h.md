@@ -43,3 +43,6 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
   - Na base com pesquisas, o Brasil fica no valor, na incerteza e na chance de vitória do agregado, porque as partes locais se anulam no Brasil. O bloco do agregado e o da projeção mostram os mesmos números.
   - "As pesquisas pesam X%" é `comPesquisas.pesoDasPesquisas`, 100% antes da apuração.
   - A base de 2026 e o agregado têm Flávio como 1º finalista.
+- 19/10/2026, do [ticket 14](14-bloco-ao-vivo.md): toda página de lugar abre o conteúdo principal com a ilha do bloco ao vivo (`components/BlocoAoVivo.tsx`, posta em `layouts/PaginaDeLugar.astro`). Antes das 17h, ela já desenha a manchete "A apuração do 2º turno começa às 17h" e o placar oficial com "A divulgação começa às 17h".
+  - O painel entra depois dela, pelo slot da página: não repita a manchete nem o placar.
+  - O build sem `PUBLIC_AO_VIVO` (o da etapa "Antes da noite") não lê nada e fica nesse estado.

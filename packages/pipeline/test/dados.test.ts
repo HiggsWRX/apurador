@@ -114,10 +114,39 @@ describe("manifesto de origem", () => {
         // configuração de municípios, de onde o cadastro tira as capitais).
         const doPortal = /^https:\/\/cdn\.tse\.jus\.br\/.+\.zip$/.test(fonte!.url) && /\.csv$/.test(fonte!.membro);
         const daDivulgacao = /^https:\/\/resultados\.tse\.jus\.br\/oficial\/.+\.json$/.test(fonte!.url) && fonte!.url.endsWith(`/${fonte!.membro}`);
-        expect(doPortal || daDivulgacao, url).toBe(true);
-        expect(fonte!.geracao.length).toBeGreaterThan(0);
+        // As fotos: as da divulgação vêm soltas; as do portal, de dentro do zip de fotos, com o membro na URL. O TSE
+        // não põe data de geração numa foto.
+        const fotoDaDivulgacao = /^https:\/\/resultados\.tse\.jus\.br\/oficial\/.+\/fotos\/br\/\d+\.jpeg$/.test(fonte!.url) && fonte!.url.endsWith(`/${fonte!.membro}`);
+        const fotoDoPortal = /^https:\/\/cdn\.tse\.jus\.br\/.+\.zip#FBR\d+_div\.jpe?g$/.test(fonte!.url) && fonte!.url.endsWith(`#${fonte!.membro}`);
+        expect(doPortal || daDivulgacao || fotoDaDivulgacao || fotoDoPortal, url).toBe(true);
+        if (!d.arquivo.startsWith("fotos/")) expect(fonte!.geracao.length).toBeGreaterThan(0);
         expect(fonte!.sha256).toMatch(/^[0-9a-f]{64}$/);
       }
+    }
+  });
+});
+
+describe("fotos oficiais dos candidatos", () => {
+  const manifesto = JSON.parse(ler("manifesto.json").toString("utf8")) as { derivados: { arquivo: string; fontes: string[] }[] };
+  const fonteDa = (arquivo: string) => manifesto.derivados.find((d) => d.arquivo === arquivo)?.fontes;
+  const ehJpeg = (bytes: Buffer) => bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+
+  it("traz as dos finalistas de 2026, da divulgação da eleição 6258", () => {
+    // Os sequenciais de Flávio e de Lula, medidos na pesquisa da API ao vivo do TSE.
+    for (const sequencial of ["280002551544", "280002542548"]) {
+      expect(ehJpeg(ler(`fotos/${sequencial}.jpeg`)), sequencial).toBe(true);
+      expect(fonteDa(`fotos/${sequencial}.jpeg`)).toEqual([`https://resultados.tse.jus.br/oficial/ele2026/6258/fotos/br/${sequencial}.jpeg`]);
+    }
+  });
+
+  it("traz as dos candidatos da noite que o TSE falso serve, do zip de fotos do portal", () => {
+    // Os sequenciais de Lula e de Bolsonaro no 2º turno de 2022, como o TSE os publica nas candidaturas daquele ano.
+    for (const [sequencial, membro] of [
+      ["280001607829", "FBR280001607829_div.jpg"],
+      ["280001618036", "FBR280001618036_div.jpeg"],
+    ]) {
+      expect(ehJpeg(ler(`fotos/${sequencial}.jpeg`)), sequencial).toBe(true);
+      expect(fonteDa(`fotos/${sequencial}.jpeg`)).toEqual([`https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2022/fotos/foto_cand2022_BR_div.zip#${membro}`]);
     }
   });
 });

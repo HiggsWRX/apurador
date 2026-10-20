@@ -36,3 +36,10 @@ Decisões: [Operação na noite](../../apurador-2026/issues/18-operacao-na-noite
   2. "O Apurador está com instabilidade. Acompanhe também no app oficial do TSE." (com o link)
   3. "A projeção do Apurador está suspensa. O placar oficial do TSE continua atualizado."
 - [ ] O replay liga e desliga chaves e avisos em rodadas escolhidas e confere o efeito no arquivo de rodada e nos JSONs publicados.
+
+## Comments
+
+- 19/10/2026, do [ticket 14](14-bloco-ao-vivo.md):
+  - O arquivo de rodada chega à página por `criarLeitorAoVivo` (`packages/site/src/lib/leitor-ao-vivo.ts`). As chaves e o aviso pronto entram no `QuadroAoVivo`, e `test/leitor-ao-vivo.test.ts` já tem um endereço ao vivo de mentira para as respostas.
+  - O plano zero troca o bloco em `components/VistaDoBlocoAoVivo.tsx`, que desenha a manchete, a linha fixa, o placar e a curva.
+  - O link do app oficial do TSE é `APP_DO_TSE`, em `lib/textos-ao-vivo.ts`.
