@@ -92,7 +92,8 @@ a {
 }
 
 .so-leitor,
-:root.js .par-titulo {
+:root.js .par-titulo,
+:root.js .base-titulo {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -321,7 +322,8 @@ a {
   margin: 0.75rem 0;
 }
 
-.turnos button {
+.turnos button,
+.base-da-projecao button {
   border: 1px solid var(--borda-forte);
   background: var(--cartao);
   color: var(--texto);
@@ -332,7 +334,8 @@ a {
   cursor: pointer;
 }
 
-.turnos button[aria-pressed="true"] {
+.turnos button[aria-pressed="true"],
+.base-da-projecao button[aria-pressed="true"] {
   background: var(--texto);
   color: var(--fundo);
   border-color: var(--texto);
@@ -568,6 +571,204 @@ a {
 }
 .mudou [data-cor="lula"] {
   color: var(--cor-lula);
+}
+
+/* ---------- painel de antes das 17h: o que esperar da noite e a projeção ---------- */
+
+/* Cada base da projeção tem a sua cópia dos blocos; o controle mostra uma. Sem JavaScript, as duas ficam à vista, cada
+   uma com o seu título (que, com JavaScript, fica só para o leitor de tela, junto de `.so-leitor`). */
+:root.js [data-base]:not([data-ativa]) {
+  display: none;
+}
+:root:not(.js) .base-da-projecao {
+  display: none;
+}
+
+.base-titulo {
+  font-size: 0.9375rem;
+  margin: 0.75rem 0 0;
+}
+
+/* A projeção numa moldura tracejada, com fundo próprio: o segundo nível visual, depois do placar oficial. */
+.projecao {
+  border: 2px dashed var(--borda-forte);
+  background: color-mix(in srgb, var(--cartao) 70%, var(--fundo));
+}
+
+.projecao-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
+.projecao .aviso {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.chance-titulo {
+  font-size: 1rem;
+  margin: 1rem 0 0.375rem;
+}
+
+.chance-titulo a {
+  text-decoration: none;
+  border-bottom: 1px solid var(--borda-forte);
+}
+
+.chance-barra {
+  position: relative;
+  display: flex;
+  height: 0.875rem;
+  border-radius: 999px;
+  background: var(--trilho);
+  overflow: hidden;
+}
+
+.chance-barra i {
+  display: block;
+  height: 100%;
+}
+
+.chance-barra i[data-cor="flavio"] {
+  background: var(--cor-flavio);
+}
+.chance-barra i[data-cor="lula"] {
+  background: var(--cor-lula);
+}
+
+.chance-meio {
+  position: absolute;
+  left: calc(50% - 1px);
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--cartao);
+}
+
+.chance-rotulos {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.375rem 0 0;
+  font-size: 0.875rem;
+}
+
+.chance-rotulos [data-cor="flavio"] strong {
+  color: var(--cor-flavio);
+}
+.chance-rotulos [data-cor="lula"] strong {
+  color: var(--cor-lula);
+}
+
+.base-da-projecao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.5rem;
+  margin-top: 1rem;
+}
+
+.base-rotulo {
+  margin-right: 0.25rem;
+  color: var(--texto-suave);
+  font-size: 0.8125rem;
+}
+
+/* ---------- curva projetada ---------- */
+
+.curva-projetada {
+  margin: 0.75rem 0 0;
+}
+
+.faixa-projetada {
+  opacity: 0.15;
+}
+.faixa-projetada[data-cor="flavio"] {
+  fill: var(--cor-flavio);
+}
+.faixa-projetada[data-cor="lula"] {
+  fill: var(--cor-lula);
+}
+
+.linha-projetada {
+  fill: none;
+  stroke-width: 2.25;
+  stroke-dasharray: 6 4;
+  stroke-linejoin: round;
+}
+.linha-projetada[data-cor="flavio"] {
+  stroke: var(--cor-flavio);
+}
+.linha-projetada[data-cor="lula"] {
+  stroke: var(--cor-lula);
+}
+
+/* A faixa em que a virada é possível, cinza, por baixo das curvas; o losango da virada projetada, por cima. */
+.faixa-virada {
+  fill: var(--texto);
+  opacity: 0.08;
+}
+
+.losango-virada {
+  fill: var(--cartao);
+  stroke: var(--texto);
+  stroke-width: 1.5;
+}
+
+.rotulo-fim {
+  font-size: 10px;
+  font-weight: 700;
+}
+.rotulo-fim[data-cor="flavio"] {
+  fill: var(--cor-flavio);
+}
+.rotulo-fim[data-cor="lula"] {
+  fill: var(--cor-lula);
+}
+
+.legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.875rem;
+  margin: 0.5rem 0 0;
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+}
+
+.amostra {
+  display: inline-block;
+  width: 1rem;
+  height: 0.625rem;
+  margin-right: 0.25rem;
+  vertical-align: -1px;
+}
+
+.amostra-tracejada {
+  height: 0;
+  border-top: 2px dashed var(--texto-suave);
+  vertical-align: 3px;
+}
+
+.amostra-faixa {
+  background: var(--texto-suave);
+  opacity: 0.2;
+}
+
+.amostra-losango {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: 0 0.4rem 0 0.15rem;
+  border: 1.5px solid var(--texto);
+  background: var(--cartao);
+  transform: rotate(45deg);
+}
+
+.amostra-virada {
+  background: var(--texto);
+  opacity: 0.1;
 }
 
 /* ---------- rodapé ---------- */

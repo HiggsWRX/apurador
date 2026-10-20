@@ -16,12 +16,15 @@ export const existe = (caminho: string) => existsSync(new URL(`.${caminho}`, DIS
 /** O HTML da página no caminho do site ("/", "/sp/", "/sp/campinas/"). */
 export const pagina = (caminho: string) => readFileSync(new URL(`.${caminho}index.html`, DIST), "utf8");
 
-/** O texto visível de um trecho de HTML, com os espaços reduzidos. */
+const ENTIDADES: Record<string, string> = { "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'", "&amp;": "&" };
+
+/** O texto visível de um trecho de HTML, com os espaços reduzidos e as entidades de "<1%" e ">99%" desfeitas. */
 export const texto = (html: string) =>
   html
     .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/g, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;|\s+/g, " ")
+    .replace(/&(lt|gt|quot|#39|amp);/g, (e) => ENTIDADES[e]!)
     .trim();
 
 /** Os elementos cuja tag de abertura casa com o padrão, cada um inteiro, até a tag que o fecha. */

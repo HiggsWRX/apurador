@@ -36,3 +36,11 @@ export function formatarMudanca(n: number): string {
 }
 /** Uma diferença em pontos, "0,1 ponto", "2,0 pontos". */
 export const formatarPontos = (n: number) => `${formatarCalculo(n)} ${Math.abs(umaCasa(n)) < 2 ? "ponto" : "pontos"}`;
+/**
+ * A chance de vitória como a página a mostra (Telas da página de lugar, decisão 3): um inteiro, e "<1%" e ">99%" nas
+ * pontas, porque nenhuma projeção é certeza. O 100% só existe com a indicação do TSE, que não passa por aqui.
+ */
+export function formatarChance(chance: number): string {
+  const inteiro = Math.round(100 * chance);
+  return inteiro <= 0 ? "<1%" : inteiro >= 100 ? ">99%" : `${inteiro}%`;
+}

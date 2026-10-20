@@ -1,6 +1,8 @@
 ---
 import AgregadoDePesquisas from "../components/AgregadoDePesquisas.astro";
 import ListaDasPesquisas from "../components/ListaDasPesquisas.astro";
+import OQueEsperarDaNoite from "../components/OQueEsperarDaNoite.astro";
+import ProjecaoAntesDas17h from "../components/ProjecaoAntesDas17h.astro";
 import PaginaDeLugar from "../layouts/PaginaDeLugar.astro";
 import { CHAVES } from "../lib/chaves";
 import { lugar } from "../lib/lugares";
@@ -8,5 +10,7 @@ import { lugar } from "../lib/lugares";
 
 <PaginaDeLugar lugar={lugar("BR")}>
   {CHAVES.antesDas17h.agregado && <AgregadoDePesquisas />}
+  <OQueEsperarDaNoite />
+  <ProjecaoAntesDas17h />
   <ListaDasPesquisas aberta={!CHAVES.antesDas17h.agregado} />
 </PaginaDeLugar>

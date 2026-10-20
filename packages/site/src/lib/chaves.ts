@@ -9,10 +9,12 @@ export interface Chaves {
   antesDas17h: {
     /** O agregado de pesquisas e a tendência, e com eles a indicação das pesquisas nos outros lugares, que deriva do agregado. */
     agregado: boolean;
+    /** A projeção, a chance de vitória e a curva projetada antes das 17h, na página do Brasil. */
+    projecao: boolean;
   };
 }
 
-const ESPERADAS: Chaves = { antesDas17h: { agregado: false } };
+const ESPERADAS: Chaves = { antesDas17h: { agregado: false, projecao: false } };
 
 /**
  * Confere o arquivo de chaves contra as chaves que o site conhece: uma chave faltando, desconhecida ou que não seja
