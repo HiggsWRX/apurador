@@ -27,7 +27,7 @@ export interface ItemDaConferencia {
 const PREFLIGHT_MINIMO = 7200;
 
 const iguais = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((x, i) => x === b[i]);
-const lista = (valor: string | null) => (valor ?? "").toLowerCase().split(",").map((v) => v.trim());
+const valoresDoCabecalho = (valor: string | null) => (valor ?? "").toLowerCase().split(",").map((v) => v.trim());
 
 /** Confere a entrega de um objeto recém-gravado, pelo endereço público, com uma borda de cache ainda fria para ele. */
 export async function conferirEntrega(opcoes: {
@@ -45,7 +45,7 @@ export async function conferirEntrega(opcoes: {
   const itens: ItemDaConferencia[] = [];
   const item = (id: ItemDaConferencia["id"], descricao: string, ok: boolean, visto: string) => itens.push({ id, descricao, ok, visto });
   const permiteAOrigem = (r: Response) => [origem, "*"].includes(r.headers.get("access-control-allow-origin") ?? "");
-  const allowOrigin = (r: Response) => `Allow-Origin ${r.headers.get("access-control-allow-origin") ?? "ausente"}`;
+  const origemNaResposta = (r: Response) => `Allow-Origin ${r.headers.get("access-control-allow-origin") ?? "ausente"}`;
 
   const primeira = await buscar(url, { headers: { "accept-encoding": "gzip, br" } });
   const corpo = new Uint8Array(await primeira.arrayBuffer());
@@ -54,8 +54,8 @@ export async function conferirEntrega(opcoes: {
   const etag = primeira.headers.get("etag");
   item("etag", "a resposta traz ETag", etag !== null, etag ?? "sem ETag");
   if (tipo === "r2") {
-    const cacheControl = primeira.headers.get("cache-control");
-    item("cache-control", "o navegador recebe max-age=15", /(^|[ ,])max-age=15($|[ ,])/.test(cacheControl ?? ""), cacheControl ?? "sem Cache-Control");
+    const cabecalhoDeCache = primeira.headers.get("cache-control");
+    item("cache-control", "o navegador recebe max-age=15", /(^|[ ,])max-age=15($|[ ,])/.test(cabecalhoDeCache ?? ""), cabecalhoDeCache ?? "sem Cache-Control");
   }
 
   const segunda = await buscar(url, { headers: { origin: origem } });
@@ -64,28 +64,28 @@ export async function conferirEntrega(opcoes: {
     const status = segunda.headers.get("cf-cache-status");
     item("cache-da-borda", "o segundo pedido vem da cópia da borda", status === "HIT", `CF-Cache-Status ${status ?? "ausente"}`);
   }
-  const expostos = lista(segunda.headers.get("access-control-expose-headers"));
+  const expostos = valoresDoCabecalho(segunda.headers.get("access-control-expose-headers"));
   item(
     "cors",
     `de ${origem}, com Date e ETag expostos, mesmo depois de um pedido sem Origin`,
     permiteAOrigem(segunda) && expostos.includes("date") && expostos.includes("etag"),
-    `${allowOrigin(segunda)}, Expose-Headers ${segunda.headers.get("access-control-expose-headers") ?? "ausente"}`,
+    `${origemNaResposta(segunda)}, Expose-Headers ${segunda.headers.get("access-control-expose-headers") ?? "ausente"}`,
   );
 
   const terceira = await buscar(url, { headers: { origin: origem, "if-none-match": etag ?? "" } });
   await terceira.body?.cancel();
-  item("304", "com If-None-Match, a borda responde 304, com o CORS", terceira.status === 304 && permiteAOrigem(terceira), `${terceira.status}, ${allowOrigin(terceira)}`);
+  item("304", "com If-None-Match, a borda responde 304, com o CORS", terceira.status === 304 && permiteAOrigem(terceira), `${terceira.status}, ${origemNaResposta(terceira)}`);
 
   if (tipo === "r2") {
     const preflight = await buscar(url, { method: "OPTIONS", headers: { origin: origem, "access-control-request-method": "GET", "access-control-request-headers": "if-none-match" } });
     await preflight.body?.cancel();
-    const permitidos = lista(preflight.headers.get("access-control-allow-headers"));
-    const maxAge = Number(preflight.headers.get("access-control-max-age") ?? 0);
+    const permitidos = valoresDoCabecalho(preflight.headers.get("access-control-allow-headers"));
+    const validade = Number(preflight.headers.get("access-control-max-age") ?? 0);
     item(
       "preflight",
       `o preflight permite o If-None-Match e vale ${PREFLIGHT_MINIMO / 3600} h ou mais`,
-      preflight.ok && permiteAOrigem(preflight) && (permitidos.includes("if-none-match") || permitidos.includes("*")) && maxAge >= PREFLIGHT_MINIMO,
-      `${preflight.status}, ${allowOrigin(preflight)}, Allow-Headers ${preflight.headers.get("access-control-allow-headers") || "ausente"}, Max-Age ${maxAge}`,
+      preflight.ok && permiteAOrigem(preflight) && (permitidos.includes("if-none-match") || permitidos.includes("*")) && validade >= PREFLIGHT_MINIMO,
+      `${preflight.status}, ${origemNaResposta(preflight)}, Allow-Headers ${preflight.headers.get("access-control-allow-headers") || "ausente"}, Max-Age ${validade}`,
     );
   }
   return itens;

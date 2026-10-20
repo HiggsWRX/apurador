@@ -39,7 +39,8 @@ function montar() {
 describe("a republicação do Worker do plano B", () => {
   it("na primeira gravação, a pasta fica só com os arquivos ao vivo e o `_headers` do CORS, sem os de uma noite anterior", async () => {
     await mkdir(join(pasta, "lugares"), { recursive: true });
-    await writeFile(join(pasta, "lugares", "35157.json"), "do ensaio de 22/10");
+    await writeFile(join(pasta, "rodada.json"), '{"rodada":"2026-10-24T22:30:00.000Z"}');
+    await writeFile(join(pasta, "lugares", "35157.json"), "do coletor de 24/10, contra o TSE zerado");
     const { destino, feitas, assentar } = montar();
 
     await destino.gravar("rodada.json", BYTES);
@@ -52,6 +53,21 @@ describe("a republicação do Worker do plano B", () => {
     // Os static assets respondem 405 a todo OPTIONS (medido em 20/10/2026): a página lê o plano B sem preflight, e o
     // `_headers` só precisa liberar a origem e expor o `Date` e a ETag.
     expect(await readFile(join(pasta, "_headers"), "utf8")).toBe("/*\n  Access-Control-Allow-Origin: *\n  Access-Control-Expose-Headers: Date, ETag\n  X-Robots-Tag: noindex\n");
+  });
+
+  it("o coletor que volta no plano B na mesma noite mantém a pasta: a partida a frio leva minutos, e o Worker não perde os lugares", async () => {
+    await mkdir(join(pasta, "lugares"), { recursive: true });
+    await writeFile(join(pasta, "_headers"), "/*\n");
+    await writeFile(join(pasta, "rodada.json"), JSON.stringify({ rodada: "2026-10-25T23:58:40.000Z" }));
+    await writeFile(join(pasta, "lugares", "35157.json"), '{"lugar":"35157"}');
+    const { destino, feitas, assentar } = montar();
+
+    await destino.gravar("rodada.json", BYTES);
+    await destino.fimDaRodada!();
+    await assentar();
+
+    expect(feitas[0]!.arquivos).toEqual(["_headers", "lugares/35157.json", "rodada.json"]);
+    expect(await readFile(join(pasta, "_headers"), "utf8")).toContain("Access-Control-Expose-Headers: Date, ETag");
   });
 
   it("republica no fim da rodada, uma vez por minuto e só com algo novo na pasta", async () => {

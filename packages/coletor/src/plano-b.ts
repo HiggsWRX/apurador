@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import type { Destino } from "./destino.ts";
@@ -11,8 +11,10 @@ import { pastaLocal } from "./destino.ts";
 // arquivos (dentro dos 20.000 por versão do Workers Free), e o `wrangler deploy` só sobe os que mudaram.
 //
 // A republicação não segura a rodada: ela começa no fim de uma e termina quando terminar, e a falha chega na rodada
-// seguinte, que tenta de novo. A pasta é esvaziada na primeira gravação: o coletor regrava tudo ao passar ao plano B,
-// e nada de um ensaio anterior pode ir junto.
+// seguinte, que tenta de novo. Na primeira gravação, a pasta de outra noite (o `rodada.json` dela tem mais de 6 h) é
+// esvaziada: o coletor regrava tudo ao passar ao plano B, e nada do coletor de 24/10 vai junto. A da mesma noite fica: o
+// coletor reiniciado continua no plano B (o arquivo de controle sobrevive), e a partida a frio leva minutos para
+// baixar tudo de novo; sem a pasta, as republicações desse tempo sairiam sem parte dos lugares.
 //
 // Os static assets respondem 405 a todo `OPTIONS` (medido no Worker do site em 20/10/2026), então não atendem o
 // preflight do CORS: a página lê o plano B sem cabeçalho próprio (`enderecos-ao-vivo.ts`, no site), e o `_headers` só
@@ -28,6 +30,9 @@ const CABECALHOS_DO_PLANO_B = ["/*", "  Access-Control-Allow-Origin: *", "  Acce
  */
 const CADENCIA = 50_000;
 
+/** Uma pasta com o arquivo de rodada mais velho que isso é de outra noite. */
+const OUTRA_NOITE = 6 * 3_600_000;
+
 /** O destino do plano B: a pasta dos static assets do Worker, republicado no fim da rodada. */
 export function republicacaoDoWorker(opcoes: {
   /** A pasta dos static assets, a do `assets.directory` da configuração do Worker. */
@@ -41,28 +46,38 @@ export function republicacaoDoWorker(opcoes: {
   const local = pastaLocal(pasta);
   let preparada: Promise<void> | undefined;
   /** Há na pasta algo que a última republicação não levou. */
-  let novidade = false;
+  let pendente = false;
   let emAndamento = false;
   let ultima = -Infinity;
   let falhas: string[] = [];
 
+  /** A pasta é desta noite: o arquivo de rodada dela tem menos de 6 h pelo relógio do coletor. */
+  async function daMesmaNoite(): Promise<boolean> {
+    try {
+      const { rodada } = JSON.parse(await readFile(join(pasta, "rodada.json"), "utf8")) as { rodada?: string };
+      return agora() - Date.parse(rodada ?? "") < OUTRA_NOITE;
+    } catch {
+      return false;
+    }
+  }
+
   return {
     async gravar(caminho, bytes) {
       preparada ??= (async () => {
-        await rm(pasta, { recursive: true, force: true });
+        if (!(await daMesmaNoite())) await rm(pasta, { recursive: true, force: true });
         await mkdir(pasta, { recursive: true });
         await writeFile(join(pasta, "_headers"), CABECALHOS_DO_PLANO_B);
       })();
       await preparada;
       await local.gravar(caminho, bytes);
-      novidade = true;
+      pendente = true;
     },
     async fimDaRodada() {
       const terminadas = falhas;
       falhas = [];
-      if (novidade && !emAndamento && agora() - ultima >= CADENCIA) {
+      if (pendente && !emAndamento && agora() - ultima >= CADENCIA) {
         emAndamento = true;
-        novidade = false;
+        pendente = false;
         ultima = agora();
         // Pelo `then`, até um erro síncrono de `publicar` vira rejeição, e a republicação nunca fica presa em andamento.
         Promise.resolve()
@@ -70,7 +85,7 @@ export function republicacaoDoWorker(opcoes: {
           .catch((erro: unknown) => {
             falhas.push(`republicar o plano B: ${(erro as Error).message}`);
             // O que estava na pasta não chegou ao Worker: a rodada seguinte tenta de novo, sem esperar o minuto.
-            novidade = true;
+            pendente = true;
             ultima = -Infinity;
           })
           .finally(() => (emAndamento = false));
@@ -84,14 +99,15 @@ export function republicacaoDoWorker(opcoes: {
 const TEMPO_DA_REPUBLICACAO = 120_000;
 
 /**
- * Republica o Worker do plano B com `wrangler deploy --config <configuracao>`, pelo login do wrangler no computador
- * (ou `CLOUDFLARE_API_TOKEN`, se estiver no ambiente). Roda o `node` direto, sem o `npx` no meio, e rejeita com as
- * últimas linhas da saída se o wrangler falhar ou passar de 2 min.
+ * Republica o Worker do plano B com `wrangler deploy --config <configuracao>`, pelo login do wrangler no computador ou
+ * pelo `CLOUDFLARE_API_TOKEN` das variáveis a mais (o do `.env` do coletor). Roda o `node` direto, sem o `npx` no meio,
+ * e rejeita com as últimas linhas da saída se o wrangler falhar ou passar de 2 min.
  */
-export function implantarWorker(configuracao: string): Promise<void> {
+export function implantarWorker(configuracao: string, variaveis: Record<string, string> = {}): Promise<void> {
   const wrangler = join(dirname(createRequire(import.meta.url).resolve("wrangler/package.json")), "bin", "wrangler.js");
   return new Promise((pronto, falhou) => {
-    const processo = spawn(process.execPath, [wrangler, "deploy", "--config", configuracao], { stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, WRANGLER_SEND_METRICS: "false" } });
+    const env = { ...process.env, ...variaveis, WRANGLER_SEND_METRICS: "false" };
+    const processo = spawn(process.execPath, [wrangler, "deploy", "--config", configuracao], { stdio: ["ignore", "pipe", "pipe"], env });
     let saida = "";
     const juntar = (parte: Buffer) => (saida = (saida + parte.toString()).slice(-4000));
     processo.stdout.on("data", juntar);

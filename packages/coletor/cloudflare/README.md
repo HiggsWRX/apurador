@@ -56,7 +56,7 @@ Os passos 1, 2 e 6 são comandos, rodados na raiz do repositório com o login do
    - os 15 s de cache no navegador e a cópia da borda (`CF-Cache-Status: HIT`);
    - o CORS e o preflight.
 
-   Com `--plano-b`, o comando também faz o primeiro deploy do Worker do plano B só com esse objeto e o `_headers`, e confere o Worker. Sem `rodada.json` no Worker, a página continua no principal.
+   Com `--plano-b`, o comando também faz o primeiro deploy do Worker do plano B só com esse objeto e o `_headers`, e confere o Worker. Sem `rodada.json` no Worker, a página continua no principal. Republicar troca tudo o que o Worker tem, então o `--plano-b` é só para antes da noite: com um `rodada.json` no Worker ou na pasta dele, o comando para sem gravar nada.
 
    Se o corpo, a ETag ou o 304 falharem com gzip e passarem com `--sem-gzip`, o coletor da noite roda com `--sem-gzip`.
 
@@ -66,4 +66,5 @@ Se o CORS mudar depois de a borda já ter cópias, apague o cache do host: paine
 
 - O coletor: `npm run coletor -- --destino producao`. Ele grava no R2 com gzip e conta cada gravação em `.cache/coletor/gravacoes.json`.
 - O plano B: `npm run noite -- plano-b`. Na rodada seguinte, o coletor passa ao Worker, regrava todos os arquivos na pasta dele e o republica a cada minuto, até o fim da noite.
-- O build do site leva `PUBLIC_AO_VIVO=https://ao-vivo.apurador.org/` e `PUBLIC_AO_VIVO_PLANO_B=https://apurador-plano-b.hicampos93.workers.dev/`. Sem domínio, leva só o segundo.
+- O build do site leva `PUBLIC_AO_VIVO=https://ao-vivo.apurador.org/` e `PUBLIC_AO_VIVO_PLANO_B=https://apurador-plano-b.hicampos93.workers.dev/`.
+- **Sem domínio** (se `ao-vivo.apurador.org` não estiver pronto): `npm run coletor -- --destino producao --sem-dominio`, que publica só no Worker desde a primeira rodada e não pede a chave do R2. O build do site leva só `PUBLIC_AO_VIVO_PLANO_B`.

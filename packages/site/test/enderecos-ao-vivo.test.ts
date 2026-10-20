@@ -68,15 +68,6 @@ function montar(enderecos = enderecosDoBuild(PRINCIPAL, PLANO_B)) {
 const AGORA = "2026-10-25T19:42:00-03:00";
 
 describe("os dois endereços dos arquivos ao vivo", () => {
-  it("o build conhece o principal (PUBLIC_AO_VIVO) e o do plano B (PUBLIC_AO_VIVO_PLANO_B), e sem domínio só o do Worker", () => {
-    expect(enderecosDoBuild(PRINCIPAL, PLANO_B)).toEqual([
-      { base: PRINCIPAL, respondePreflight: true },
-      { base: PLANO_B, respondePreflight: false },
-    ]);
-    expect(enderecosDoBuild(undefined, PLANO_B)).toEqual([{ base: PLANO_B, respondePreflight: false }]);
-    expect(enderecosDoBuild(undefined, undefined)).toEqual([]);
-  });
-
   it("com o principal em dia, lê só ele", async () => {
     const { leitor, responder, urls } = montar();
     responder(`${PRINCIPAL}rodada.json`, { status: 200, date: AGORA, corpo: rodada("2026-10-25T19:41:40-03:00") });

@@ -22,6 +22,9 @@ export interface GravacoesDoMes {
   buckets: Record<string, number>;
 }
 
+/** As gravações do mês somando os buckets: o que conta contra o 1 milhão do plano gratuito. */
+export const somaDoMes = (gravacoes: GravacoesDoMes) => Object.values(gravacoes.buckets).reduce((soma, n) => soma + n, 0);
+
 /** O contador de gravações nos buckets, que os destinos R2 alimentam. */
 export interface ContadorDeGravacoes {
   /** Conta uma gravação aceita no bucket. */
