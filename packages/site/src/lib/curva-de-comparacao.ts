@@ -2,7 +2,7 @@ import type { CurvaDeComparacao } from "@apurador/pipeline";
 
 // A curva de comparação na página (Telas da página de lugar, decisão 4): a curva real de um turno passado, que o
 // visitante liga por um botão, desligada por padrão. As curvas de um lugar (os cinco turnos passados num arquivo só,
-// `/curvas/<id>.json`, com no máximo 1,4 KB com gzip) só se baixam quando o visitante liga uma delas, e uma vez só:
+// `/curvas/<id>.json`, com no máximo 1,3 KB com gzip) só se baixam quando o visitante liga uma delas, e uma vez só:
 // trocar de turno não baixa de novo. Sem DOM nem rede: a ilha injeta o transporte, como no leitor ao vivo.
 
 /** Um turno passado que a página pode sobrepor à curva real: o id dos dados, o nome no botão e o partido de Bolsonaro. */

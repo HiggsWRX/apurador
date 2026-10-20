@@ -61,3 +61,6 @@ O endereço só abre com os nove itens verdadeiros, registrados com o de acordo 
   - O `apurador.org` já é domínio próprio do Worker `apurador`, posto pelo painel e não pelo `wrangler.jsonc`: ele já serve o site, com `noindex`. Ao pôr o domínio no `wrangler.jsonc`, confira que o `wrangler deploy` não o tira nem o duplica. O endereço do Worker é `apurador.hicampos93.workers.dev`.
 - 20/10/2026, do dono: o nome completo para `RESPONSAVEL` (rodapé e "Quem faz" da metodologia) é **Hiago de Oliveira**.
 - 20/10/2026, do dono: o `apurador.org` fica ligado ao Worker até o lançamento, com `noindex`, e mostra o que estiver na `main`. "Abrir" no lançamento passa a ser tirar o `noindex` e divulgar o endereço, depois dos nove itens conferidos e do de acordo.
+- 20/10/2026, do [ticket 33](33-curva-de-comparacao.md): o build gera um `/curvas/<id>.json` por lugar, 5.749 arquivos com 3,6 MB no total.
+  - O `dist` passa a 11.569 arquivos, dentro dos 20.000 por versão do Worker de static assets.
+  - Ao conferir o deploy, abra um deles (`/curvas/BR.json`): a página só o pede quando o visitante liga uma curva de comparação.

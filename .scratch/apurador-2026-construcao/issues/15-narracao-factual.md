@@ -55,3 +55,9 @@ Decisões: [Narração da noite](../../apurador-2026/issues/14-narracao-da-noite
   - A manchete é `manchete(quadro, lugar)`, em `packages/site/src/lib/textos-ao-vivo.ts`, testada em `test/vista-ao-vivo.test.tsx`. As formas de virada, indicação do TSE e fim entram ali. O nome curto ("Flávio", "Lula" e, no TSE falso, "Bolsonaro") é `nomeCurto`, em `lib/identidade.ts`.
   - A curva é `components/CurvaReal.tsx`. Os números dos eventos e o ponto da virada real vão por cima dela, com as mesmas escalas.
   - A página lê o arquivo de rodada e o JSON do lugar por `criarLeitorAoVivo` (`lib/leitor-ao-vivo.ts`), que guarda os dois no `QuadroAoVivo`. A narração sai dali, e os testes do leitor já têm um endereço ao vivo de mentira para as respostas.
+- 20/10/2026, do [ticket 33](33-curva-de-comparacao.md): a `CurvaReal` passou a montar a curva de comparação (`components/CurvaDeComparacao.tsx`).
+  - Ela recebe `comparacao`, que a ilha (`BlocoAoVivo`) guarda e a vista passa adiante.
+  - As linhas pontilhadas entram primeiro no grupo recortado, por baixo das da curva real. Os números dos eventos e o ponto da virada vão por cima das duas.
+  - Os botões e a legenda ficam logo depois do `<svg>`.
+  - A distância de 50% da escala já começa pela da comparação.
+  - Quem também mexer em `CurvaReal.tsx`, `VistaDoBlocoAoVivo.tsx` e `BlocoAoVivo.tsx` tem um conflito pequeno no merge: as props e essas três linhas.
