@@ -1,12 +1,14 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { agregadoDePesquisas, diaDoAgregado } from "@apurador/modelo";
-import { agregadoDaNoite, lerPesquisasHistoricas, listaDasPesquisas, pesquisasDoAgregado, type ExtratoDoTse, type ResultadoHistorico, type Turno } from "@apurador/pipeline";
+import { listaDasPesquisas, pesquisasDoAgregado, type ExtratoDoTse, type Turno } from "@apurador/pipeline";
 import { describe, expect, it } from "vitest";
 import { AGORA, DIST, DIST_CHAVES_DESLIGADAS, elemento, elementos, pagina, texto } from "../html";
 
 // Confere o que o build gera (a fronteira do site): a página de metodologia da etapa "Antes da noite" (Página de
 // metodologia, decisões 1, 2, 4 a 9; Segunda consulta jurídica, decisão 3). O build dos testes roda com o relógio
-// fixo em AGORA, então o agregado do dia é o desse instante. As referências dos números são as dos tickets 04 e 05.
+// fixo em AGORA, então o agregado do dia é o desse instante. Os números do agregado que a página deve mostrar são os do
+// modelo sobre o mesmo pesquisas.csv, no mesmo instante, como no teste do bloco do agregado; os outros números têm
+// referência nos registros dos tickets 04, 05 e 28 e no docs/calibracao.md.
 const DADOS = new URL("../../../../dados/", import.meta.url);
 const ler = (arquivo: string) => readFileSync(new URL(arquivo, DADOS), "utf8");
 const turno = JSON.parse(ler("turnos/2026-1.json")) as Turno;
@@ -18,11 +20,6 @@ const lista = listaDasPesquisas({
   turno,
 });
 const agregado = agregadoDePesquisas(pesquisasDoAgregado(lista, turno), diaDoAgregado(new Date(AGORA)))!;
-const constantes = JSON.parse(readFileSync(new URL("../../../modelo/constantes.json", import.meta.url), "utf8")) as {
-  pesoDoMunicipio: number;
-  secoesDasPesquisas: number;
-  sinalDeVirada: { projetada: number; possivel: number };
-};
 
 const comUmaCasa = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const comoPublicado = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
@@ -122,19 +119,16 @@ describe("seção 1, o agregado de pesquisas", () => {
 
   it("explica a incerteza com o erro histórico medido no ticket 05 e a incerteza do dia", () => {
     // Ticket 05: erros de 0,08 a 1,88 ponto nos seis 2º turnos, raiz do erro quadrático médio de 1,30.
-    expect(t).toContain("Nos seis 2º turnos de 2002 a 2022, a média das pesquisas finais errou entre 0,1 e 1,9 ponto, sem lado fixo.");
+    expect(t).toContain("Nos seis 2º turnos de 2002 a 2022, o agregado das pesquisas finais, pela mesma regra, errou entre 0,1 e 1,9 ponto, sem lado fixo.");
     expect(t).toContain("erro típico de 1,5 ponto");
     expect(t).toContain("(1,3 ponto)");
     expect(t).toContain("√(1,3² + 0,7²) dá 1,5");
-    const diasAntes = Math.round((Date.parse("2026-10-25") - Date.parse(agregado.dia)) / 86_400_000);
-    expect(t).toContain(`${diasAntes} dias antes, ela é de ${comoPublicado(agregado.incerteza)} ponto`);
+    // AGORA é 19/10, 6 dias antes da eleição: √(1,5² + 0,4² × 6) = 1,79.
+    expect(t).toContain("Em 19/10, 6 dias antes, ela é de 1,79 ponto.");
   });
 
   it("dá o viés do 1º turno de 2026 pela regra do agregado, como o ticket 05 o mediu", () => {
     // Ticket 05: pela regra, Flávio fica em 48,87 entre os dois, contra 51,01 no placar entre finalistas.
-    const historicas = lerPesquisasHistoricas(ler("pesquisas-historicas.csv"));
-    const resultados = (JSON.parse(ler("resultados-historicos.json")) as { eleicoes: ResultadoHistorico[] }).eleicoes;
-    expect(agregadoDaNoite(historicas, resultados, { ano: 2026, turno: 1 }, [22, 13]).valor).toBeCloseTo(48.87, 2);
     expect(t).toContain("davam Flávio 48,9% entre os dois finalistas. Ele teve 51,0%: as pesquisas o subestimaram em 2,1 pontos.");
     expect(t).toContain("Não corrigimos o agregado por isso");
   });
@@ -174,18 +168,21 @@ describe("seção 2, a chance de vitória", () => {
 describe("seções 3 a 5, a apuração, a junção e a virada", () => {
   it("explica a base 'Só apuração' com as constantes congeladas pela calibração", () => {
     const t = texto(secao("apuracao"));
+    // As constantes escolhidas em docs/calibracao.md: 10.000 votos, 2 e 2 p.p., mínimo de 2.000 votos por nível.
     expect(t).toContain("transferência de votos");
-    expect(t).toContain(`com ${constantes.pesoDoMunicipio.toLocaleString("pt-BR")} votos totalizados, ele pesa metade`);
+    expect(t).toContain("com 10.000 votos totalizados, ele pesa metade");
     expect(t).toContain("um desvio próprio de cada estado (2 pontos), um desvio comum a todo o voto que falta no país (2 pontos)");
-    expect(t).toContain("usa-se a região; depois, o Brasil; antes da primeira seção, o 1º turno");
-    expect(t).toContain("Em 2022, Bolsonaro liderou o placar parcial até 67,76% das seções totalizadas");
+    expect(t).toContain("menos de 2.000 votos válidos totalizados, usa-se a região; depois, o Brasil; antes da primeira seção, o 1º turno");
+    expect(t).toContain("margem de 95% = 1,96 × desvio da projeção");
+    // O instante do histórico oficial de totalização do TSE (ticket 06).
+    expect(t).toContain("Em 2022, pelo histórico oficial do TSE, Bolsonaro liderou o placar parcial até 67,76% das seções totalizadas");
   });
 
   it("explica como pesquisas e apuração se juntam, com o K congelado", () => {
     const t = texto(secao("juntas"));
-    const k = comoPublicado(constantes.secoesDasPesquisas);
-    expect(t).toContain(`metade com ${k}% das seções totalizadas`);
-    expect(t).toContain(`com K = ${k}%`);
+    // K = 0,25% em docs/calibracao.md: as pesquisas pesam metade com 0,25% das seções e 0,25 ÷ 5,25 = 4,8% com 5%.
+    expect(t).toContain("metade com 0,25% das seções totalizadas, só 4,8% com 5%");
+    expect(t).toContain("com K = 0,25%");
     expect(t).toContain("Só apuração");
     expect(t).toContain("Apuração + pesquisas");
     expect(t).toContain('"As duas bases já coincidem aqui"');
@@ -195,10 +192,10 @@ describe("seções 3 a 5, a apuração, a junção e a virada", () => {
   it("explica a curva projetada e os três estados do sinal de virada, com os limites congelados", () => {
     const s = secao("virada");
     const t = texto(s);
-    const [projetada, possivel] = [constantes.sinalDeVirada.projetada, constantes.sinalDeVirada.possivel].map((c) => `${comoPublicado(100 * c)}%`);
-    expect(t).toContain(`Virada projetada chance de virada de ${projetada} ou mais`);
-    expect(t).toContain(`Virada possível chance de virada entre ${possivel} e ${projetada}`);
-    expect(t).toContain(`Sem sinal de virada chance de virada abaixo de ${possivel}`);
+    // Os limites em docs/calibracao.md: 50% fica, e o de "sem sinal de virada" passou de 5% a 2%.
+    expect(t).toContain("Virada projetada chance de virada de 50% ou mais");
+    expect(t).toContain("Virada possível chance de virada entre 2% e 50%");
+    expect(t).toContain("Sem sinal de virada chance de virada abaixo de 2%");
     expect(t).toContain("virada projetada vem sempre com uma faixa");
   });
 

@@ -10,8 +10,9 @@ import { sino } from "../lib/sino";
 // 30rem, como o gráfico da tendência.
 
 interface Props {
-  /** O agregado, em % do primeiro finalista, e a incerteza em pontos. */
+  /** O agregado, em % do primeiro finalista. */
   valor: number;
+  /** A incerteza do agregado, em pontos. */
   incerteza: number;
 }
 const { valor, incerteza } = Astro.props;

@@ -30,7 +30,7 @@ export function institutosDaLista(csv: string): string[] {
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
-/** Os 14 institutos, como a seção 1 os lista. */
+/** Os institutos da lista fechada, como a seção 1 os lista. */
 export const INSTITUTOS = institutosDaLista(institutosCsv);
 
 const historicas = lerPesquisasHistoricas(historicasCsv);
@@ -50,10 +50,10 @@ export interface ErroHistorico {
   incertezaNaEleicao: number;
 }
 
-// A dúvida sobre o viés do 1º turno que entra na incerteza da noite (Agregado de pesquisas e erro histórico, decisão 5).
-const DUVIDA_DO_VIES = 0.7;
+/** A dúvida sobre o viés do 1º turno que entra na incerteza da noite, em pontos (Agregado de pesquisas e erro histórico, decisão 5). */
+export const DUVIDA_DO_VIES = 0.7;
 
-/** O erro do agregado de 2002 a 2022, com a incerteza de cada ano medida sem aquele ano. */
+/** O resumo do erro do agregado nos 2º turnos passados: quantos anos, o menor e o maior erro e o erro típico. */
 export const ERRO_HISTORICO: ErroHistorico = (() => {
   const historico = historicoDoAgregado(eleicoesPassadas(historicas, resultados));
   const erros = historico.map((a) => Math.abs(a.erro));
@@ -88,26 +88,30 @@ export const VIES_DO_PRIMEIRO_TURNO: ViesDoPrimeiroTurno = (() => {
 export const INCERTEZA_NA_ELEICAO = ELEICAO_DE_2026.incerteza;
 
 /** O peso das pesquisas com um % de seções totalizadas no Brasil, com o K congelado, de 0 a 1. */
-export const pesoCom = (secoes: number) => pesoDasPesquisas(secoes, CONSTANTES);
+export const pesoDasPesquisasCom = (secoes: number) => pesoDasPesquisas(secoes, CONSTANTES);
 
-/** Um arquivo para baixar na seção 9: o caminho no site, o que ele é e o tamanho. */
+/** Um arquivo para baixar na seção 9: o caminho no site, o que ele é, o tamanho e o texto que o endpoint serve. */
 export interface ArquivoParaBaixar {
+  /** `/dados/<nome>`. */
   caminho: string;
+  /** O nome do arquivo, `pesquisas.csv`. */
   nome: string;
   descricao: string;
   /** Em KB, arredondado para cima, nunca 0. */
   kb: number;
+  /** O CSV, como está no repositório. */
+  texto: string;
 }
 
 const kb = (texto: string) => Math.max(1, Math.ceil(new TextEncoder().encode(texto).length / 1024));
 
-/** Os CSVs para baixar (Página de metodologia, decisão 6): os mesmos arquivos do repositório, servidos em `/dados/`. */
+const paraBaixar = (nome: string, descricao: string, texto: string): ArquivoParaBaixar => ({ caminho: `/dados/${nome}`, nome, descricao, kb: kb(texto), texto });
+
+/**
+ * Os CSVs para baixar (Página de metodologia, decisão 6): os mesmos arquivos do repositório, servidos em `/dados/` pelo
+ * endpoint `pages/dados/[arquivo].csv.ts`. Um CSV novo entra só aqui.
+ */
 export const PARA_BAIXAR: ArquivoParaBaixar[] = [
-  { caminho: "/dados/pesquisas.csv", nome: "pesquisas.csv", descricao: "as pesquisas da lista, com a fonte de cada uma", kb: kb(pesquisasCsv) },
-  {
-    caminho: "/dados/pesquisas-historicas.csv",
-    nome: "pesquisas-historicas.csv",
-    descricao: `as pesquisas finais dos 2º turnos de ${ERRO_HISTORICO.anos[0]} a ${ERRO_HISTORICO.anos[1]} e as do 1º turno de 2026, com a fonte`,
-    kb: kb(historicasCsv),
-  },
+  paraBaixar("pesquisas.csv", "as pesquisas da lista, com a fonte de cada uma", pesquisasCsv),
+  paraBaixar("pesquisas-historicas.csv", `as pesquisas finais dos 2º turnos de ${ERRO_HISTORICO.anos[0]} a ${ERRO_HISTORICO.anos[1]} e as do 1º turno de 2026, com a fonte`, historicasCsv),
 ];

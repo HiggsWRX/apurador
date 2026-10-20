@@ -3,7 +3,8 @@ import { sino } from "../src/lib/sino";
 
 // O sino da página de metodologia (Página de metodologia, decisão 5): a distribuição do resultado final, em que a área
 // de cada lado de 50% é a chance de vitória de cada candidato. As referências são as do agregado de 18/10 (ticket 04):
-// Flávio 51,09% com incerteza de 1,84 ponto dá chance de ~72%.
+// Flávio 51,09% com incerteza de 1,84 ponto dá chance de ~72%. O eixo é o do `svgSino` do protótipo, a referência
+// visual da decisão: ao menos de 48% a 52%, e 3,4 desvios para cada lado do agregado.
 const LARGURA = 340;
 const xs = (caminho: string) => [...caminho.matchAll(/[ML](-?\d+(?:\.\d+)?),/g)].map((m) => Number(m[1]));
 

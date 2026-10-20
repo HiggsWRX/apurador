@@ -1,12 +1,12 @@
 ---
-import { DIA_DA_ELEICAO, diasEntre, Z_95, type OrdemDeChegada } from "@apurador/modelo";
+import { DIA_DA_ELEICAO, diasEntre, INCERTEZA_POR_DIA, Z_95, type OrdemDeChegada } from "@apurador/modelo";
 import Secao from "../components/Secao.astro";
 import Sino from "../components/Sino.astro";
 import Base from "../layouts/Base.astro";
 import { CHAVES } from "../lib/chaves";
-import { formatarCalculo, formatarDia, formatarNumero, formatarVotos, umaCasa } from "../lib/formato";
+import { duasCasas, formatarCalculo, formatarDia, formatarNumero, formatarPontos, formatarVotos, umaCasa } from "../lib/formato";
 import { nomeCurto } from "../lib/identidade";
-import { CONSTANTES, ERRO_HISTORICO, INCERTEZA_NA_ELEICAO, INSTITUTOS, PARA_BAIXAR, pesoCom, VIES_DO_PRIMEIRO_TURNO } from "../lib/metodologia";
+import { CONSTANTES, DUVIDA_DO_VIES, ERRO_HISTORICO, INCERTEZA_NA_ELEICAO, INSTITUTOS, PARA_BAIXAR, pesoDasPesquisasCom, VIES_DO_PRIMEIRO_TURNO } from "../lib/metodologia";
 import { AGREGADO, entreOsFinalistas, FINALISTAS } from "../lib/pesquisas";
 import { EMAIL_DO_PROJETO, RESPONSAVEL } from "../lib/projeto";
 
@@ -26,28 +26,30 @@ const SECOES = [
   { id: "virada", titulo: "A curva projetada e a virada" },
   { id: "limites", titulo: "Limitações" },
   { id: "fontes", titulo: "Fontes, dados e avisos" },
-];
-const secao = (id: string) => {
+] as const;
+/** As âncoras fixas que a página já tem: uma seção que não está na lista não compila. */
+type Ancora = (typeof SECOES)[number]["id"];
+const secao = (id: Ancora) => {
   const posicao = SECOES.findIndex((s) => s.id === id);
-  if (posicao < 0) throw new Error(`A página de metodologia não tem a seção ${id}`);
   return { id, numero: String(posicao + 1).padStart(2, "0"), titulo: SECOES[posicao]!.titulo };
 };
 
 const [flavio, lula] = FINALISTAS.map((c) => nomeCurto(c.nomeUrna)) as [string, string];
 const pct = (n: number) => `${formatarCalculo(n)}%`;
-const pontos = (n: number) => `${formatarNumero(n)} ${n < 2 ? "ponto" : "pontos"}`;
 
 // O agregado do dia (decisão 5): muda a cada deploy de pesquisas e fica fixo depois das 23h de 24/10, quando o dia do
 // agregado passa a ser 25/10. Com a chave do agregado desligada, a página explica a regra sem os números do dia.
 const agregado = CHAVES.antesDas17h.agregado ? AGREGADO : undefined;
+const congelado = agregado?.dia === DIA_DA_ELEICAO;
 const diasAntes = agregado ? diasEntre(agregado.dia, DIA_DA_ELEICAO) : 0;
-const hoje = agregado && entreOsFinalistas(umaCasa(agregado.valor)).map((c) => `${nomeCurto(c.candidato.nomeUrna)} ${pct(c.pct)}`);
-const quando = agregado && (agregado.dia === DIA_DA_ELEICAO ? "o agregado da noite, congelado às 23h de 24/10" : `o agregado de ${formatarDia(agregado.dia)}`);
-const incertezaDoDia = agregado && (diasAntes > 0 ? `a incerteza de ${diasAntes} ${diasAntes === 1 ? "dia" : "dias"} antes da eleição, ${pontos(agregado.incerteza)}` : `a incerteza do dia da eleição, ${pontos(agregado.incerteza)}`);
+const antesDaEleicao = `${diasAntes} ${diasAntes === 1 ? "dia" : "dias"} antes`;
+const doDia = agregado && entreOsFinalistas(umaCasa(agregado.valor)).map((c) => `${nomeCurto(c.candidato.nomeUrna)} ${pct(c.pct)}`);
+const qualAgregado = agregado && (congelado ? "o agregado da noite, congelado às 23h de 24/10" : `o agregado de ${formatarDia(agregado.dia)}`);
+const incertezaDoDia = agregado && `a incerteza ${congelado ? "do dia da eleição" : `de ${antesDaEleicao} da eleição`}, ${formatarPontos(agregado.incerteza, true)}`;
 
 // As constantes congeladas pela calibração, citadas em vez de repetidas.
 const K = formatarNumero(CONSTANTES.secoesDasPesquisas);
-const pesoCom5 = pct(100 * pesoCom(5));
+const pesoCom5 = pct(100 * pesoDasPesquisasCom(5));
 const limite = (chance: number) => `${formatarNumero(100 * chance)}%`;
 const ORDENS: Record<OrdemDeChegada, string> = {
   mistura: "uma mistura do ritmo do 1º turno com o ritmo de cada estado na noite",
@@ -110,11 +112,10 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
         amostra.
       </p>
       {
-        agregado && hoje && (
+        agregado && doDia && (
           <p data-bloco="agregado-do-dia">
-            {agregado.dia === DIA_DA_ELEICAO ? "Para a noite de 25/10" : `Em ${formatarDia(agregado.dia)}`}, com {agregado.pesquisas.length} institutos,{" "}
-            {agregado.dia === DIA_DA_ELEICAO ? "o agregado congelado às 23h de 24/10" : "o agregado"} dá <strong>{hoje[0]}</strong> e <strong>{hoje[1]}</strong>{" "}
-            dos votos válidos.
+            {congelado ? "Para a noite de 25/10" : `Em ${formatarDia(agregado.dia)}`}, com {agregado.pesquisas.length} institutos,{" "}
+            {congelado ? "o agregado congelado às 23h de 24/10" : "o agregado"} dá <strong>{doDia[0]}</strong> e <strong>{doDia[1]}</strong> dos votos válidos.
           </p>
         )
       }
@@ -146,17 +147,17 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
         <summary>A incerteza do agregado</summary>
         <div>
           <p>
-            Nos {quantosTurnos} 2º turnos de {erro.anos[0]} a {erro.anos[1]}, a média das pesquisas finais errou entre {formatarCalculo(erro.menor)} e{" "}
-            {pontos(umaCasa(erro.maior))}, sem lado fixo. Por isso, o modelo espera um erro típico de <strong>{pontos(INCERTEZA_NA_ELEICAO)}</strong> no
-            dia da eleição. A faixa de 95% vai, então, de cerca de {faixaNaEleicao} pontos abaixo a {faixaNaEleicao} pontos acima do agregado.
+            Nos {quantosTurnos} 2º turnos de {erro.anos[0]} a {erro.anos[1]}, o agregado das pesquisas finais, pela mesma regra, errou entre{" "}
+            {formatarCalculo(erro.menor)} e {formatarPontos(erro.maior)}, sem lado fixo. Por isso, o modelo espera um erro típico de{" "}
+            <strong>{formatarPontos(INCERTEZA_NA_ELEICAO, true)}</strong> no dia da eleição. A faixa de 95% vai, então, de cerca de {faixaNaEleicao} pontos abaixo a {faixaNaEleicao} pontos acima do agregado.
           </p>
           <p>
             Antes do dia da eleição, a incerteza é maior, porque o voto ainda pode mudar.
-            {agregado && diasAntes > 0 && ` Em ${formatarDia(agregado.dia)}, ${diasAntes} ${diasAntes === 1 ? "dia" : "dias"} antes, ela é de ${pontos(agregado.incerteza)}.`}
+            {agregado && !congelado && ` Em ${formatarDia(agregado.dia)}, ${antesDaEleicao}, ela é de ${formatarPontos(agregado.incerteza, true)}.`}
           </p>
           <p>
             No 1º turno de 2026, as pesquisas finais, pela mesma regra, davam {flavio} {pct(vies.pesquisas)} entre os dois finalistas. Ele teve{" "}
-            {pct(vies.resultado)}: as pesquisas o subestimaram em {pontos(umaCasa(vies.diferenca))}. Não corrigimos o agregado por isso: em 2018 e em 2022,
+            {pct(vies.resultado)}: as pesquisas o subestimaram em {formatarPontos(vies.diferenca)}. Não corrigimos o agregado por isso: em 2018 e em 2022,
             o erro do 1º turno não se repetiu no 2º. Essa dúvida entra na incerteza.
           </p>
         </div>
@@ -175,11 +176,12 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
         <summary>As contas</summary>
         <div>
           <p class="formula">agregado = média de [ {flavio} ÷ ({flavio} + {lula}) ] nas pesquisas da janela</p>
-          <p class="formula">incerteza = √( {formatarNumero(INCERTEZA_NA_ELEICAO)}² + 0,4² × dias até 25/10 )</p>
+          <p class="formula">incerteza = √( {formatarNumero(INCERTEZA_NA_ELEICAO)}² + {formatarNumero(INCERTEZA_POR_DIA)}² × dias até 25/10 )</p>
           <p class="nota">
-            Os {pontos(INCERTEZA_NA_ELEICAO)} juntam o erro típico da média nos {quantosTurnos} 2º turnos ({pontos(umaCasa(erro.raiz))}) e a dúvida sobre o
-            viés do 1º turno (0,7 ponto): √({formatarCalculo(erro.raiz)}² + 0,7²) dá {formatarCalculo(erro.incertezaNaEleicao)}.
-            {agregado && diasAntes > 0 && ` Em ${formatarDia(agregado.dia)}, ${diasAntes} ${diasAntes === 1 ? "dia" : "dias"} antes, dá ${pontos(agregado.incerteza)}.`}
+            Os {formatarPontos(INCERTEZA_NA_ELEICAO, true)} juntam o erro típico do agregado nos {quantosTurnos} 2º turnos ({formatarPontos(erro.raiz)}) e a
+            dúvida sobre o viés do 1º turno ({formatarPontos(DUVIDA_DO_VIES, true)}): √({formatarCalculo(erro.raiz)}² + {formatarNumero(DUVIDA_DO_VIES)}²) dá{" "}
+            {formatarCalculo(erro.incertezaNaEleicao)}.
+            {agregado && !congelado && ` Em ${formatarDia(agregado.dia)}, ${antesDaEleicao}, dá ${formatarPontos(agregado.incerteza, true)}.`}
           </p>
           <p class="formula">indicação no lugar = placar entre finalistas do lugar no 1º turno + (agregado − {formatarCalculo(vies.resultado)})</p>
           <p class="nota">
@@ -192,15 +194,15 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
     <Secao {...secao("chance")}>
       <p>
         A projeção não é um número só: é uma faixa de resultados possíveis, mais prováveis no meio.
-        {agregado ? " Com o agregado de hoje, ela fica assim:" : " Desenhada, ela é um sino."}
+        {agregado ? ` Com ${qualAgregado}, ela fica assim:` : " Desenhada, ela é um sino."}
       </p>
       {
         agregado && (
           <figure data-bloco="sino">
             <Sino valor={agregado.valor} incerteza={agregado.incerteza} />
             <figcaption class="nota">
-              Com {quando}: {flavio} {pct(agregado.valor)}, com {incertezaDoDia}. Cálculo do Apurador sobre pesquisas registradas no TSE. Não é uma pesquisa
-              própria nem resultado oficial.
+              Com {qualAgregado}: {flavio} {pct(agregado.valor)}, com {incertezaDoDia}. Cálculo do Apurador sobre pesquisas registradas no TSE. Não é uma
+              pesquisa própria nem resultado oficial.
             </figcaption>
           </figure>
         )
@@ -229,7 +231,8 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
     <Secao {...secao("apuracao")}>
       <p>
         O placar parcial mostra só as seções que já chegaram, e elas não são uma amostra do país. Centro-Oeste e Sul costumam chegar cedo; Sudeste e
-        Nordeste, tarde. Em 2022, Bolsonaro liderou o placar parcial até 67,76% das seções totalizadas, e Lula terminou à frente.
+        Nordeste, tarde. Em 2022, pelo histórico oficial do TSE, Bolsonaro liderou o placar parcial até 67,76% das seções totalizadas, e Lula terminou à
+        frente.
       </p>
       <p>
         Quando a apuração começa, o modelo olha os municípios que já chegaram. Em cada estado, ele mede para onde estão indo os votos dados no 1º turno
@@ -242,9 +245,9 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
       </p>
       <p>
         A projeção vem com uma <strong>margem</strong>. Ela junta o erro estatístico da referência de cada estado, um desvio próprio de cada estado ({
-          pontos(CONSTANTES.incertezaRegional)
-        }), um desvio comum a todo o voto que falta no país ({pontos(CONSTANTES.incertezaNacional)}) e a diferença entre os municípios. Estados que usam a
-        mesma referência erram juntos.
+          formatarPontos(CONSTANTES.incertezaRegional, true)
+        }), um desvio comum a todo o voto que falta no país ({formatarPontos(CONSTANTES.incertezaNacional, true)}) e a diferença entre os municípios.
+        Estados que usam a mesma referência erram juntos.
       </p>
       <p>
         É a base <strong>Só apuração</strong>. Antes da primeira seção, ela parte do placar entre finalistas de cada lugar no 1º turno, com a incerteza
@@ -262,7 +265,7 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
               <span class="formula">peso do próprio município = votos totalizados ÷ (votos totalizados + {formatarVotos(CONSTANTES.pesoDoMunicipio)})</span>
             </li>
             <li>
-              <span class="formula">margem de 95% = {formatarNumero(umaCasa(Z_95 * 100) / 100)} × desvio da projeção</span>
+              <span class="formula">margem de 95% = {formatarNumero(duasCasas(Z_95))} × desvio da projeção</span>
             </li>
             <li>
               O modelo trabalha por município.{" "}
@@ -289,10 +292,10 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
         <div>
           <p class="formula">peso das pesquisas = K ÷ (K + % de seções totalizadas no Brasil), com K = {K}%</p>
           <p class="nota">As pesquisas valem o mesmo que K% das seções. O peso é nacional porque o erro das pesquisas é, sobretudo, nacional.</p>
-          <p class="formula">voto que falta = peso × indicação das pesquisas + (1 − peso) × estimativa da apuração</p>
+          <p class="formula">voto que falta = peso × indicação das pesquisas + (1 − peso) × transferência de votos</p>
           <p class="nota">Por cima, vem a correção pelo placar do próprio município, como na base Só apuração.</p>
           <p class="nota">
-            A incerteza das pesquisas é a do agregado ({pontos(INCERTEZA_NA_ELEICAO)} na noite) mais uma parte local: no estado,{" "}
+            A incerteza das pesquisas é a do agregado ({formatarPontos(INCERTEZA_NA_ELEICAO, true)} na noite) mais uma parte local: no estado,{" "}
             {formatarNumero(CONSTANTES.incertezaLocalDasPesquisas.uf)} × a fatia dos eliminados no 1º turno do estado; no município,{" "}
             {formatarNumero(CONSTANTES.incertezaLocalDasPesquisas.municipio)} × a mesma fatia dele. Ela entra multiplicada pelo peso, e a da apuração, pelo
             restante.
@@ -317,7 +320,7 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
       </p>
       <p data-bloco="simulador">
         No <strong>simulador "e se"</strong>, você muda quanto o voto que falta pende para cada candidato e o comparecimento por região. A simulação usa o
-        mesmo modelo e fica sempre ao lado da projeção do Apurador, sem substituí-la. Ele abre pelo link "Simular 'e se' →" na caixa da projeção da{" "}
+        mesmo modelo e fica sempre ao lado da projeção do Apurador, sem substituí-la. A entrada é a caixa da projeção da página de cada lugar, como a da{" "}
         <a href="/">página do Brasil</a>.
       </p>
       <details class="contas">
@@ -338,7 +341,7 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
           <strong>Poucas eleições.</strong> O erro das pesquisas vem de {quantosTurnos} 2º turnos. Com tão poucos casos, a própria incerteza é incerta.
         </li>
         <li>
-          <strong>O 1º turno de 2026.</strong> As pesquisas subestimaram {flavio} em {pontos(umaCasa(vies.diferenca))} entre os dois finalistas. Se isso se
+          <strong>O 1º turno de 2026.</strong> As pesquisas subestimaram {flavio} em {formatarPontos(vies.diferenca)} entre os dois finalistas. Se isso se
           repetir, a base com pesquisas começa errada, e a apuração corrige nos primeiros minutos.
         </li>
         <li>

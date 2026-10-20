@@ -36,18 +36,18 @@ const PONTOS = 160;
 
 /** A geometria do sino para um agregado, pronta para o SVG. */
 export function sino({ valor, incerteza, largura, altura }: EntradaDoSino): Sino {
-  const lo = Math.min(48, valor - DESVIOS * incerteza);
-  const hi = Math.max(52, valor + DESVIOS * incerteza);
+  const inicio = Math.min(48, valor - DESVIOS * incerteza);
+  const fim = Math.max(52, valor + DESVIOS * incerteza);
   const interna = largura - MARGEM.esq - MARGEM.dir;
   const alturaInterna = altura - MARGEM.topo - MARGEM.base;
   const base = MARGEM.topo + alturaInterna;
-  const x = (v: number) => MARGEM.esq + ((v - lo) / (hi - lo)) * interna;
+  const x = (v: number) => MARGEM.esq + ((v - inicio) / (fim - inicio)) * interna;
   const densidade = (v: number) => Math.exp(-0.5 * ((v - valor) / incerteza) ** 2);
   const y = (d: number) => base - d * alturaInterna;
 
   const pontos: [number, number][] = [];
   for (let i = 0; i <= PONTOS; i++) {
-    const v = lo + (i / PONTOS) * (hi - lo);
+    const v = inicio + (i / PONTOS) * (fim - inicio);
     pontos.push([v, densidade(v)]);
   }
   // Cada lado fecha em 50%, com o ponto exato da divisa, para as duas áreas se encostarem sem buraco nem sobra.
@@ -60,11 +60,11 @@ export function sino({ valor, incerteza, largura, altura }: EntradaDoSino): Sino
   const doSegundo = [...pontos.filter(([v]) => v < 50), divisa];
 
   return {
-    dominio: [lo, hi],
+    dominio: [inicio, fim],
     x50: x(50),
     topo: MARGEM.topo,
     base,
-    marcas: [Math.ceil(lo), 50, Math.floor(hi)].map((v) => ({ valor: v, x: x(v) })),
+    marcas: [Math.ceil(inicio), 50, Math.floor(fim)].map((v) => ({ valor: v, x: x(v) })),
     areas: [area(doPrimeiro), area(doSegundo)],
     chance: phi((valor - 50) / incerteza),
   };
