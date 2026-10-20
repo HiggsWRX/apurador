@@ -4,6 +4,7 @@ import arquivo from "../../../../dados/chaves.json";
 // arquivo de chaves (`dados/chaves.json`), publicado com o site: mudar uma chave é um deploy só desse arquivo. Com o
 // coletor no ar, elas vêm do arquivo de rodada.
 
+/** As chaves de publicação que o site conhece, cada uma `true` (ligada) ou `false`. */
 export interface Chaves {
   antesDas17h: {
     /** O agregado de pesquisas e a tendência, e com eles a indicação das pesquisas nos outros lugares, que deriva do agregado. */

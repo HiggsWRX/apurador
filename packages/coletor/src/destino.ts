@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 // Para onde o coletor publica os arquivos ao vivo. Os testes da construção publicam na pasta local; o R2 de
 // produção, o do ensaio e a republicação do plano B entram pela mesma interface (ticket 20).
 
+/** Para onde o coletor publica os arquivos ao vivo. */
 export interface Destino {
   /** Grava o arquivo no caminho (`rodada.json`, `lugares/BR.json`), trocando o que houver. */
   gravar(caminho: string, bytes: Uint8Array): Promise<void>;

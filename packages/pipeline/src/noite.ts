@@ -38,6 +38,7 @@ export interface Chegada extends Contagem {
   zona: number;
 }
 
+/** Uma noite reconstruída: as zonas e as chegadas das seções, em ordem de instante. */
 export interface Noite {
   ano: number;
   turno: number;
@@ -68,6 +69,7 @@ function somar(a: Contagem, b: Contagem): void {
 const chave = (r: Recorte) => `${r.uf ?? ""}/${r.municipio ?? ""}/${r.zona ?? ""}`;
 const chaveDaSecao = (s: { uf: string; municipio: number; zona: number; secao: number }) => `${chave(s)}/${s.secao}`;
 
+/** A noite de um turno, a partir das seções (primeira totalização) e dos votos de cada seção. */
 export function reconstruirNoite(entrada: { ano: number; turno: number; candidatos: CandidatoDoTurno[]; secoes: Iterable<DetalheSecao>; votos: Iterable<VotoSecao> }): Noite {
   const { ano, turno, candidatos } = entrada;
   const doTurno = doTurnoDePresidente(entrada);
@@ -149,6 +151,7 @@ export function gravarNoite(noite: Noite): Uint8Array {
   return new Uint8Array(gzipSync(`{${linhas.join(",\n")}}\n`, { level: 9 }));
 }
 
+/** Lê uma noite gravada em `dados/noites/` (JSON com gzip). */
 export function lerNoite(bytes: Uint8Array): Noite {
   const { zonas: z, chegadas: c, ...cabecalho } = JSON.parse(gunzipSync(bytes).toString("utf8")) as Omit<Noite, "zonas" | "chegadas"> & {
     zonas: { uf: string[]; municipio: number[]; zona: number[]; secoes: number[]; aptos: number[] };
@@ -266,6 +269,7 @@ export interface Recorte {
   zona?: number;
 }
 
+/** A noite reproduzida chegada a chegada até um instante, com o acumulado de cada recorte. */
 export interface Reproducao {
   /** Aplica as chegadas até o instante, inclusive. Só anda para a frente. */
   avancarAte(instante: number): void;

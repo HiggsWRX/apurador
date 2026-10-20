@@ -55,6 +55,7 @@ export function colunas<N extends string>(cabecalho: string[], nomes: readonly N
   return indices;
 }
 
+/** O inteiro de um campo do CSV do TSE, que falha com o nome da coluna se o campo não é um. */
 export function inteiro(valor: string | undefined, coluna: string): number {
   const n = Number(valor);
   if (valor === undefined || valor === "" || !Number.isInteger(n)) throw new Error(`Valor inválido na coluna ${coluna}: ${valor}`);

@@ -1,11 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { DIST, elemento, pagina, texto } from "./html";
+import { DIST, elemento, pagina, texto } from "../html";
 
 // Confere o que o build gera para o bloco ao vivo: a ilha em cada página de lugar, já desenhada no estado de antes das
 // 17h, e as fotos oficiais servidas pelo próprio site, sem alteração.
 
-const lugares = JSON.parse(readFileSync(new URL("../../../dados/lugares.json", import.meta.url), "utf8")) as { id: string; nome: string; uf?: string }[];
+const lugares = JSON.parse(readFileSync(new URL("../../../../dados/lugares.json", import.meta.url), "utf8")) as { id: string; nome: string; uf?: string }[];
 const campinas = lugares.find((l) => l.nome === "Campinas" && l.uf === "SP")!;
 
 /** A ilha do bloco ao vivo na página, com as props que o Astro serializa para o navegador. */
@@ -48,7 +48,7 @@ describe("bloco ao vivo no build", () => {
       const url = fotos[sequencial];
       expect(url, sequencial).toMatch(/^\//);
       const servida = readFileSync(new URL(`.${url}`, DIST));
-      expect(servida.equals(readFileSync(new URL(`../../../dados/fotos/${sequencial}.jpeg`, import.meta.url))), sequencial).toBe(true);
+      expect(servida.equals(readFileSync(new URL(`../../../../dados/fotos/${sequencial}.jpeg`, import.meta.url))), sequencial).toBe(true);
     }
   });
 });

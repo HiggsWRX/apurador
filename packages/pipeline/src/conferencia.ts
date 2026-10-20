@@ -6,6 +6,7 @@ import { doTurno, TOTAIS, type Turno } from "./turno.ts";
 // (com o Exterior), contra os arquivos do TSE. A soma aqui é feita à parte, linha a linha, sem passar
 // pelo código que gerou os dados.
 
+/** Um total do repositório que não bate com o do TSE, num lugar. */
 export interface Divergencia {
   lugar: string;
   total: string;
@@ -17,6 +18,7 @@ export interface Divergencia {
 
 const votosDo = (c: { numero: number; partido: string }) => `votos do ${c.numero} (${c.partido})`;
 
+/** Os totais de um turno, no Brasil e em cada UF, que não batem com os arquivos do TSE. */
 export function conferirTotais(turno: Turno, oficial: { candidatos: VotoCandidatoMunzona[]; detalhes: DetalheMunzona[] }): Divergencia[] {
   // Os totais de cada lugar, dos dois lados: no TSE, somados das linhas; no repositório, como estão.
   const tse = new Map<string, Map<string, number>>();

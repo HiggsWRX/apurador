@@ -34,6 +34,7 @@ export interface PctDoCandidato {
   candidato: CandidatoDoTurno;
   pct: number;
 }
+/** O % do primeiro finalista repartido entre os dois, na ordem da página. */
 export function entreOsFinalistas(doPrimeiro: number): PctDoCandidato[] {
   return [
     { candidato: FINALISTAS[0], pct: doPrimeiro },
@@ -55,6 +56,7 @@ const placarEntreFinalistasDoLugar = (id: string): number | undefined => {
 /** O placar entre finalistas do Brasil no 1º turno, em % do primeiro finalista: a base da mudança nacional. */
 export const PLACAR_ENTRE_FINALISTAS_DO_BRASIL = placarEntreFinalistasDoLugar("BR")!;
 
+/** A indicação das pesquisas de um lugar, com o placar entre finalistas dele, ou por que ela não existe. */
 export type IndicacaoDoLugar =
   | { tipo: "indicacao"; placarEntreFinalistas: number; indicacao: number }
   | { tipo: "sem-votacao" }

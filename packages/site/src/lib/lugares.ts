@@ -9,6 +9,7 @@ export const LUGARES = indice as Lugar[];
 
 const porId = new Map(LUGARES.map((l) => [l.id, l]));
 
+/** O lugar de um id, que falha se ele não está em `dados/lugares.json`. */
 export function lugar(id: string): Lugar {
   const l = porId.get(id);
   if (!l) throw new Error(`Lugar ${id} não está em dados/lugares.json`);
@@ -36,6 +37,7 @@ const abaixo = Map.groupBy(
 /** Os lugares logo abaixo deste: as UFs e o Exterior no Brasil, os municípios numa UF e as cidades no Exterior. */
 export const lugaresAbaixo = (l: Lugar): Lugar[] => abaixo.get(l.id) ?? [];
 
+/** O caminho da página do lugar: "/", "/sp/", "/exterior/", "/sp/campinas/". */
 export function caminhoDe(l: Lugar): string {
   if (l.tipo === "brasil") return "/";
   if (l.tipo === "exterior") return "/exterior/";

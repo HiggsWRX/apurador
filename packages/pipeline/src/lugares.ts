@@ -3,11 +3,13 @@ import type { DetalheMunzona, MunicipioTseIbge } from "@apurador/tse";
 // Os lugares do site: o Brasil, as 27 UFs, o Exterior e os municípios (no Exterior, as cidades com
 // posto de votação, que o TSE trata como municípios da UF `ZZ`). Não há recorte menor que município.
 
+/** O tipo de um lugar do site. */
 export type TipoDeLugar = "brasil" | "uf" | "exterior" | "municipio";
 
 /** O artigo do nome da UF: "o Acre", "a Bahia", "São Paulo". Serve a "estado do Acre" e "na Bahia". */
 export type Artigo = "o" | "a" | "";
 
+/** Um lugar do site: o Brasil, uma UF, o Exterior, um município ou uma cidade do exterior. */
 export interface Lugar {
   /** `BR`, a sigla da UF, `ZZ` (o Exterior) ou o código do TSE do município, com 5 dígitos. */
   id: string;

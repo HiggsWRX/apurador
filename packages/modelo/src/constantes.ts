@@ -9,6 +9,7 @@
  */
 export type OrdemDeChegada = "mistura" | "primeiro-turno" | "ritmo-da-noite";
 
+/** As constantes do modelo, que a calibração escolhe e congela (`constantes.json`). */
 export interface Constantes {
   /** Quanto o voto que falta de uma UF inteira pode se afastar da referência, além do erro estatístico, em p.p. */
   incertezaRegional: number;

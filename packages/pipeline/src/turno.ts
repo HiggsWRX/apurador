@@ -4,6 +4,7 @@ import { idDoMunicipio } from "./lugares.ts";
 // Os dados derivados de um turno: o resultado oficial de cada lugar, somado dos arquivos do TSE
 // por município e zona. É o que o repositório guarda e o site lê na construção.
 
+/** Um candidato de um turno, como o TSE o publica. */
 export interface CandidatoDoTurno {
   numero: number;
   nome: string;
@@ -11,6 +12,7 @@ export interface CandidatoDoTurno {
   partido: string;
 }
 
+/** O resultado oficial de um lugar num turno. */
 export interface ResultadoDoLugar {
   aptos: number;
   votantes: number;
@@ -24,6 +26,7 @@ export interface ResultadoDoLugar {
   votos: number[];
 }
 
+/** Os dados derivados de um turno (`dados/turnos/`): os candidatos e o resultado de cada lugar. */
 export interface Turno {
   ano: number;
   turno: number;
@@ -64,6 +67,7 @@ export function votosPorCandidato(votos: readonly VotoCandidatoMunzona[]): Map<n
   return porNumero;
 }
 
+/** O turno somado dos arquivos do TSE por município e zona. */
 export function resultadoDoTurno(entrada: { ano: number; turno: number; candidatos: VotoCandidatoMunzona[]; detalhes: DetalheMunzona[] }): Turno {
   const { ano, turno } = entrada;
   const votos = entrada.candidatos.filter(doTurno(ano, turno));

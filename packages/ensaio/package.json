@@ -8,7 +8,8 @@
   },
   "scripts": {
     "tse-falso": "tsx src/servir.ts",
-    "calibracao": "tsx src/calibrar.ts"
+    "calibracao": "tsx src/calibrar.ts",
+    "noite-local": "tsx src/noite-local.ts"
   },
   "dependencies": {
     "@apurador/coletor": "*",

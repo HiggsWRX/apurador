@@ -10,6 +10,7 @@ export const urlCandidaturas = (ano: number) => `https://cdn.tse.jus.br/estatist
 /** O membro com as candidaturas de abrangência nacional (Presidente e vice), `consulta_cand_<ano>_BRASIL.csv`. */
 export const membroCandidaturasDoBrasil = (nome: string) => nome.endsWith("_BRASIL.csv");
 
+/** Uma candidatura do `consulta_cand`, com o sequencial, o partido, a federação e a coligação. */
 export interface Candidatura {
   geracao: string;
   ano: number;
@@ -55,6 +56,7 @@ const COLUNAS = [
   "DT_NASCIMENTO",
 ] as const;
 
+/** As candidaturas do membro nacional do `consulta_cand` (Presidente e vice). */
 export function lerCandidaturas(bytes: Uint8Array): Candidatura[] {
   const { cabecalho, linhas } = lerCsvTse(bytes);
   const c = colunas(cabecalho, COLUNAS);

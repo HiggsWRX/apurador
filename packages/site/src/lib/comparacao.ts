@@ -112,6 +112,7 @@ export function compararTurnos(lugar: Lugar, um: Turno, outro: Turno): Comparaca
 export const MINIMO_DE_VOTOS = 3000;
 const NA_LISTA = 5;
 
+/** Um lugar de "onde mais mudou", com o lado que ganhou terreno. */
 export interface MudancaNoLugar {
   lugar: Lugar;
   /** O lado que ganhou terreno, com a mudança, ou nenhum se o % não mudou. */

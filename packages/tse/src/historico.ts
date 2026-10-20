@@ -3,6 +3,7 @@ import { colunas, inteiro, lerCsvTse } from "./csv.ts";
 // Leitores dos arquivos históricos por município e zona do portal de dados abertos do TSE
 // (`votacao_candidato_munzona` e `detalhe_votacao_munzona`, membro `*_BR.csv`, só Presidente).
 
+/** Um arquivo histórico do portal de dados abertos que os leitores conhecem. */
 export type ArquivoHistorico = "votacao_candidato_munzona" | "detalhe_votacao_munzona" | "detalhe_votacao_secao";
 
 /** O zip de um ano no portal de dados abertos do TSE. Tem centenas de MB: leia só o membro de Presidente. */
@@ -79,6 +80,7 @@ const VOTOS_VALIDOS = "QT_VOTOS_NOMINAIS_VALIDOS";
 const VOTOS_NOMINAIS = "QT_VOTOS_NOMINAIS";
 const PRIMEIRO_ANO_COM_VALIDOS = 2018;
 
+/** Os votos de Presidente por candidato, município e zona (`votacao_candidato_munzona`). */
 export function lerVotacaoCandidatoMunzona(bytes: Uint8Array): VotoCandidatoMunzona[] {
   const { cabecalho, linhas } = lerCsvTse(bytes);
   const c = colunas(cabecalho, COLUNAS_CANDIDATO);
@@ -134,6 +136,7 @@ const COLUNAS_DETALHE = [
   "QT_TOTAL_SECOES",
 ] as const;
 
+/** O detalhe de Presidente por município e zona (`detalhe_votacao_munzona`): aptos, comparecimento, brancos e nulos. */
 export function lerDetalheVotacaoMunzona(bytes: Uint8Array): DetalheMunzona[] {
   const { cabecalho, linhas } = lerCsvTse(bytes);
   const c = colunas(cabecalho, COLUNAS_DETALHE);

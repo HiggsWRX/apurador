@@ -11,6 +11,7 @@ import type { Momento, Relogio } from "./relogio.ts";
 // por cliente, com os 404 e os 304 contando: quem passa fica bloqueado 10 minutos, e cada pedido no bloqueio
 // recomeça a contagem. Por comando, ele responde 403 a todos por um tempo, para testar o bloqueio.
 
+/** Um pedido ao TSE falso, como chega ao CDN. */
 export interface Pedido {
   /** O caminho, com ou sem a query string, que o CDN ignora. */
   url: string;
@@ -22,6 +23,7 @@ export interface Pedido {
   cliente?: string;
 }
 
+/** A resposta do TSE falso a um pedido, como o CDN a daria. */
 export interface Resposta {
   status: number;
   /** Com os nomes em minúsculas. */
@@ -42,6 +44,7 @@ export interface EntradaDoRegistro {
   detalhe?: string;
 }
 
+/** As contas dos pedidos desde o começo: por status, os 404, as violações do limite e os 403. */
 export interface Registro {
   pedidos: number;
   porStatus: Record<number, number>;
@@ -50,6 +53,7 @@ export interface Registro {
   bloqueados: EntradaDoRegistro[];
 }
 
+/** O TSE falso: responde pedidos no estado da noite e pode ser bloqueado por comando. */
 export interface TseFalso {
   responder(pedido: Pedido): Resposta;
   /** Responde 403 a todos os pedidos pelos próximos `segundos` do relógio real. */
@@ -63,6 +67,7 @@ export interface TseFalso {
 /** O limite do TSE: 100 pedidos por segundo por IP, com bloqueio de 10 minutos. */
 const LIMITE = { pedidosPorSegundo: 100, bloqueioEmSegundos: 600 };
 
+/** O TSE falso de uma noite reconstruída, no instante do relógio dado. */
 export function criarTseFalso(opcoes: { noite: Noite; cadastro: Cadastro; relogio: Relogio; aoRegistrar?: (entrada: EntradaDoRegistro) => void }): TseFalso {
   const { noite, relogio } = opcoes;
   const divulgacao = criarDivulgacao(noite, opcoes.cadastro);

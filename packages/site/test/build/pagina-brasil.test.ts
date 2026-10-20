@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { DIST, elemento, pagina, texto as textoDe } from "./html";
+import { DIST, elemento, pagina, texto as textoDe } from "../html";
 
 // Confere o que o build gera (a fronteira do site): o HTML estático da página do Brasil.
 const html = pagina("/");

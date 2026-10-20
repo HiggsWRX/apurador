@@ -2,6 +2,7 @@
 // tempo de um bloqueio; e o instante da noite (segundos desde 00:00 do dia da eleição, em Brasília), que diz
 // que estado da apuração os arquivos mostram e vai no cabeçalho `Date`.
 
+/** Um instante do TSE falso nas duas horas dele: a real, do CDN, e a da noite. */
 export interface Momento {
   /** Milissegundos do relógio do CDN. */
   real: number;
@@ -9,6 +10,7 @@ export interface Momento {
   instante: number;
 }
 
+/** O relógio do TSE falso, que diz o momento de cada pedido. */
 export interface Relogio {
   agora(): Momento;
 }
@@ -23,6 +25,7 @@ export interface RelogioManual extends Relogio {
   avancar(segundos: number): void;
 }
 
+/** Um relógio manual que começa no instante dado (segundos da noite). */
 export function relogioManual(instante: number): RelogioManual {
   let agora = instante;
   return {

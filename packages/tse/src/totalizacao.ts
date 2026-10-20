@@ -38,6 +38,7 @@ const COLUNAS = [
 ] as const;
 const SUFIXO_DO_CANDIDATO = "_QT_VOTOS_TOT_ACUMULADO";
 
+/** Lê o histórico de totalização nacional: o acumulado do Brasil em cada instante. */
 export function lerHistoricoDeTotalizacao(bytes: Uint8Array): LinhaDoHistorico[] {
   // Os campos vêm alinhados com espaços, inclusive os nomes das colunas.
   const { cabecalho: bruto, linhas } = lerCsvTse(bytes);

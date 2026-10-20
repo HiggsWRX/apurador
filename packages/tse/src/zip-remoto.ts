@@ -3,6 +3,7 @@ import { crc32, inflateRawSync } from "node:zlib";
 /** A função de rede, injetável para os testes rodarem sem rede. Tem a forma do `fetch`. */
 export type Buscar = (url: string, init?: RequestInit) => Promise<Response>;
 
+/** Um membro baixado de um zip remoto: o nome e os bytes. */
 export interface MembroRemoto {
   nome: string;
   dados: Uint8Array;

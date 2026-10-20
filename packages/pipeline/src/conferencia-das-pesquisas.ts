@@ -11,6 +11,7 @@ import type { Turno } from "./turno.ts";
 
 const CABECALHO_DAS_VERIFICACOES = ["conferido_em", "registro", "instituto", "fonte", "tse_arquivo", "tse_geracao", "tse_sha256", "resultado"];
 
+/** Confere o `pesquisas.csv` contra o CSV de registros do TSE do dia e grava o extrato e o registro da conferência. */
 export async function conferirNoTse(opcoes: { dados: URL; agora: Date; buscar?: Buscar }): Promise<ConferenciaDaPesquisa[]> {
   const { dados, agora } = opcoes;
   const ler = (arquivo: string) => readFileSync(new URL(arquivo, dados), "utf8");

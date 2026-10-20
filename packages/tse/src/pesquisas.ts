@@ -8,8 +8,10 @@ export function urlRegistrosDePesquisas(ano: number): string {
   return `https://cdn.tse.jus.br/estatistica/sead/odsele/pesquisa_eleitoral/pesquisa_eleitoral_${ano}.zip`;
 }
 
+/** O membro do zip de registros que traz as pesquisas nacionais. */
 export const membroDoBrasil = (nome: string) => nome.endsWith("_BRASIL.csv");
 
+/** O registro de uma pesquisa no TSE: datas, amostra, empresa e plano amostral. */
 export interface RegistroDePesquisa {
   /** `DT_GERACAO HH_GERACAO`: o TSE regera o arquivo todo dia. */
   geracao: string;
@@ -48,6 +50,7 @@ const COLUNAS = [
   "DS_DADO_MUNICIPIO",
 ] as const;
 
+/** Lê o CSV diário de registros de pesquisas do TSE. */
 export function lerRegistrosDePesquisas(bytes: Uint8Array): RegistroDePesquisa[] {
   const { cabecalho, linhas } = lerCsvTse(bytes);
   const c = colunas(cabecalho, COLUNAS);

@@ -4,6 +4,7 @@ import type { ItemDaBusca } from "../lib/busca";
 import { caminhoDe, LUGARES } from "../lib/lugares";
 
 // O índice da busca do cabeçalho, do maior para o menor eleitorado.
+/** O índice da busca, gerado no build como `/busca.json`. */
 export const GET: APIRoute = () => {
   const itens: ItemDaBusca[] = [...LUGARES].sort((a, b) => b.aptos - a.aptos).map((l) => [nomeCompleto(l), caminhoDe(l), l.nome]);
   return new Response(JSON.stringify(itens), { headers: { "Content-Type": "application/json" } });

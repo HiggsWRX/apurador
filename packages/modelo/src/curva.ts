@@ -6,6 +6,7 @@ import type { Apuracao, Modelo, Projecao, ViradaProjetada } from "./projecao.ts"
 // conforme a ordem de chegada. O tempo da curva é o % de seções do país: no Brasil, os passos são os do
 // protótipo; em cada UF e no Exterior, os pontos ficam espalhados por igual no % de seções do próprio lugar.
 
+/** Um ponto da curva projetada: o placar parcial projetado num % de seções, com o desvio. */
 export interface PontoDaCurva {
   /** O % de seções totalizadas do lugar. */
   x: number;
@@ -15,6 +16,7 @@ export interface PontoDaCurva {
   desvio: number;
 }
 
+/** A curva projetada de um lugar, com a virada projetada dela. */
 export interface CurvaDoLugar {
   /** Do placar parcial de agora (se já há votos) até 100% das seções. */
   pontos: PontoDaCurva[];
@@ -22,6 +24,7 @@ export interface CurvaDoLugar {
   virada: ViradaProjetada | null;
 }
 
+/** As curvas projetadas do Brasil, de cada UF e do Exterior. */
 export interface CurvasProjetadas {
   brasil: CurvaDoLugar;
   /** Cada UF e o Exterior. */

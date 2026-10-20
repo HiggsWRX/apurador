@@ -17,6 +17,7 @@ export interface NoiteDoModelo {
   chegadas: { instante: number; zona: number; secoes: number; aptos: number; votos: number[] }[];
 }
 
+/** Um momento da noite: a apuração de cada município na primeira chegada que alcança uma fotografia. */
 export interface MomentoDaNoite {
   /** O instante da última chegada, em segundos desde 00:00 do dia da eleição. */
   instante: number;
@@ -107,6 +108,7 @@ export interface LinhaDaNoite {
   erro: number;
 }
 
+/** O resumo de uma noite numa base: o resultado final, cada momento, o erro, a cobertura e a chance. */
 export interface ResultadoDaNoite {
   /** O resultado final no Brasil: a fatia do 1º finalista no fim da noite. */
   final: number;

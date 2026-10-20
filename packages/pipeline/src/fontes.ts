@@ -21,6 +21,7 @@ export function cacheDoTse(raiz: URL): URL {
 
 const CACHE = cacheDoTse(RAIZ);
 
+/** Um arquivo do TSE baixado (ou lido do cache), com a origem para o manifesto. */
 export interface FonteBaixada {
   url: string;
   membro: string;
