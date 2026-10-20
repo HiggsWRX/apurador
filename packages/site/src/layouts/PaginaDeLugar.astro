@@ -4,6 +4,7 @@ import BlocoAoVivo from "../components/BlocoAoVivo";
 import Historico from "../components/Historico.astro";
 import Trilha from "../components/Trilha.astro";
 import { CHAVES } from "../lib/chaves";
+import { enderecosDoBuild } from "../lib/enderecos-ao-vivo";
 import { FOTOS } from "../lib/fotos";
 import Base from "./Base.astro";
 
@@ -17,9 +18,13 @@ interface Props {
 }
 const { lugar } = Astro.props;
 const nome = nomeCompleto(lugar);
-// A raiz dos arquivos ao vivo: no build, PUBLIC_AO_VIVO; no `astro dev`, a pasta que o coletor publica, servida pela
-// integração `ao-vivo-local`. Sem nenhuma das duas, a ilha não lê nada e fica no estado de antes das 17h.
-const base = import.meta.env.PUBLIC_AO_VIVO ?? (typeof __AO_VIVO_LOCAL__ === "string" ? __AO_VIVO_LOCAL__ : null);
+// Os endereços dos arquivos ao vivo: no build, PUBLIC_AO_VIVO (o R2) e PUBLIC_AO_VIVO_PLANO_B (o Worker do plano B); no
+// `astro dev`, as pastas que o coletor publica, servidas pela integração `ao-vivo-local`. Sem nenhum, a ilha não lê
+// nada e fica no estado de antes das 17h.
+const enderecos = enderecosDoBuild(
+  import.meta.env.PUBLIC_AO_VIVO ?? (typeof __AO_VIVO_LOCAL__ === "string" ? __AO_VIVO_LOCAL__ : null),
+  import.meta.env.PUBLIC_AO_VIVO_PLANO_B ?? (typeof __AO_VIVO_LOCAL_PLANO_B__ === "string" ? __AO_VIVO_LOCAL_PLANO_B__ : null),
+);
 ---
 
 <Base titulo={nome}>
@@ -30,7 +35,7 @@ const base = import.meta.env.PUBLIC_AO_VIVO ?? (typeof __AO_VIVO_LOCAL__ === "st
   </div>
   <div class="colunas">
     <div class="principal">
-      <BlocoAoVivo client:load id={lugar.id} tipo={lugar.tipo} uf={lugar.uf} fotos={FOTOS} base={base} chaves={CHAVES.noite} />
+      <BlocoAoVivo client:load id={lugar.id} tipo={lugar.tipo} uf={lugar.uf} fotos={FOTOS} enderecos={enderecos} chaves={CHAVES.noite} />
       <slot />
     </div>
     <aside class="cartao narracao" id="narracao" aria-labelledby="narracao-titulo">

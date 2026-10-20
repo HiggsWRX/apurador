@@ -1,0 +1,12 @@
+// O Worker do plano B do ensaio geral (Ensaio geral, decisão 5): o mesmo do plano B de produção, com nome e pasta
+// próprios, para o ensaio nunca republicar o Worker da noite.
+{
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "apurador-ensaio-plano-b",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "../../../.cache/coletor/plano-b-ensaio/"
+  }
+}

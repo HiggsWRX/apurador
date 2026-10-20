@@ -1,0 +1,13 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": ["https://apurador.org"],
+        "methods": ["GET", "HEAD"],
+        "headers": ["If-None-Match"]
+      },
+      "exposeHeaders": ["Date", "ETag"],
+      "maxAgeSeconds": 86400
+    }
+  ]
+}

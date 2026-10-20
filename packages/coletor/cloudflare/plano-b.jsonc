@@ -1,0 +1,14 @@
+// O Worker do plano B (Operação na noite, decisão 14): só os arquivos ao vivo como static assets, sem código nosso.
+// O coletor grava a pasta e o republica uma vez por minuto, depois do comando `npm run noite -- plano-b`
+// (packages/coletor/src/plano-b.ts). O `_headers` da pasta, gravado pelo coletor, libera o CORS.
+{
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "apurador-plano-b",
+  "compatibility_date": "2026-10-01",
+  // Servido em apurador-plano-b.hicampos93.workers.dev, nunca divulgado; sem uma URL pública a mais por versão.
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "../../../.cache/coletor/plano-b/"
+  }
+}

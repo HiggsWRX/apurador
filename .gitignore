@@ -3,6 +3,8 @@ node_modules/
 *.log
 .env
 .env.*
+# o modelo do .env do coletor, sem nenhum valor (packages/coletor/.env.exemplo)
+!.env.exemplo
 .wrangler/
 dist/
 .astro/

@@ -14,6 +14,7 @@ import {
 } from "@apurador/tse";
 import { arquivoDeRodada, arquivoDoLugar, emOrdem, pontoDaCurvaReal, type Fase, type PontoDaCurvaReal } from "./arquivos.ts";
 import { chavesEfetivas, CONTROLE_INICIAL, type Controle } from "./chaves.ts";
+import type { ContadorDeGravacoes, GravacoesDoMes } from "./contador.ts";
 import type { Destino } from "./destino.ts";
 import type { RelogioDoColetor } from "./relogio.ts";
 
@@ -36,7 +37,15 @@ export interface OpcoesDoColetor {
   eleicao: string;
   buscar: Buscar;
   relogio: RelogioDoColetor;
+  /** O destino principal: o R2 de produção ou o do ensaio, ou a pasta local. */
   destino: Destino;
+  /**
+   * O destino do plano B, a republicação do Worker (Operação na noite, decisão 14). O coletor só grava nele depois do
+   * comando do dono (`controle.planoB`) e, daí em diante, só nele, até o fim da noite.
+   */
+  planoB?: Destino;
+  /** O contador das gravações nos buckets, que os destinos R2 alimentam: vai no registro de cada rodada. */
+  contador?: ContadorDeGravacoes;
   /** O ritmo dos pedidos ao TSE. Padrão: 45 por segundo, que com a folga da fila não passa de 50 num segundo. */
   pedidosPorSegundo?: number;
   /** Segundos do começo de uma rodada ao da seguinte. Padrão: 20. */
@@ -70,6 +79,10 @@ export interface RegistroDaRodada {
   falhas: string[];
   /** O controle que valeu na rodada, com as chaves como valem (o simulador só com a projeção). */
   controle: Controle;
+  /** Onde a rodada gravou: no destino principal ou, depois do comando, no plano B. */
+  destino: "principal" | "plano B";
+  /** As gravações do mês nos buckets do R2, no fim da rodada, ou `null` sem contador. */
+  gravacoesDoMes: GravacoesDoMes | null;
 }
 
 /** O coletor de uma eleição: as rodadas e o último resultado bom de cada lugar. */
@@ -134,7 +147,7 @@ const FOLGA_DA_FILA = 4;
 
 /** O coletor de uma eleição, com a rede, o relógio e o destino injetados. */
 export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
-  const { base, buscar, relogio, destino } = opcoes;
+  const { base, buscar, relogio } = opcoes;
   const pedidosPorSegundo = opcoes.pedidosPorSegundo ?? 45;
   const intervalo = (opcoes.intervalo ?? 20) * 1000;
 
@@ -167,6 +180,8 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   let numero = 0;
   /** O que o dono mandou: lido no começo de cada rodada e aplicado nela inteira. */
   let controle: Controle = CONTROLE_INICIAL;
+  /** Onde o coletor grava: o principal até o comando do plano B, e o plano B depois dele. */
+  let destino = opcoes.destino;
 
   // A fila dos pedidos, com o ritmo fixo.
   const intervaloEntrePedidos = 1000 / pedidosPorSegundo;
@@ -384,6 +399,22 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     registro.controle = controle;
   }
 
+  /**
+   * Passa ao plano B na primeira rodada que lê o comando, e não volta (Operação na noite, decisão 14). O destino novo
+   * não tem nada do que o principal tem: os hashes são esquecidos, e todo lugar com resultado é gravado de novo nesta
+   * mesma rodada, para a primeira versão do Worker já sair com todos os arquivos.
+   */
+  function passarAoPlanoB(d: Divulgacao | undefined) {
+    if (!controle.planoB || destino === opcoes.planoB) return;
+    if (!opcoes.planoB) {
+      registro.falhas.push("plano B: o coletor roda sem destino de plano B");
+      return;
+    }
+    destino = opcoes.planoB;
+    hashes.clear();
+    for (const a of d?.acompanhados ?? []) if (a.id !== null && resultados.has(a.url)) sujos.add(a.id);
+  }
+
   async function rodada(): Promise<RegistroDaRodada> {
     const inicio = relogio.agora();
     const inicioReal = performance.now();
@@ -399,20 +430,26 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       gravacoes: 0,
       falhas: [],
       controle,
+      destino: "principal",
+      gravacoesDoMes: null,
     };
     // Um erro que escapou vira falha da rodada: o coletor nunca cai por um arquivo, e a rodada seguinte tenta de novo.
     try {
       await lerControleDaRodada();
       divulgacao ??= await configurar();
+      passarAoPlanoB(divulgacao);
       if (divulgacao) {
         await lerIndices(divulgacao);
         await baixarResultados(divulgacao);
         await publicar(divulgacao);
         if (brasil(divulgacao)) registro.fase = fase(divulgacao);
       }
+      registro.falhas.push(...((await destino.fimDaRodada?.()) ?? []));
     } catch (erro) {
       registro.falhas.push(`rodada: ${(erro as Error).message}`);
     }
+    registro.destino = destino === opcoes.destino ? "principal" : "plano B";
+    registro.gravacoesDoMes = opcoes.contador?.doMes() ?? null;
     registro.duracao = Math.round(relogio.agora() - inicio);
     registro.processamento = Math.round(performance.now() - inicioReal);
     return registro;
