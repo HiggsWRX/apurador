@@ -51,3 +51,7 @@ Decisões: [Narração da noite](../../apurador-2026/issues/14-narracao-da-noite
 ## Comments
 
 - 19/10/2026, do [ticket 11](11-tse-falso.md), conferido no dicionário do EA20 (cópia fora do Git em `.cache/docs/`): a indicação do TSE é o campo `md` na raiz do arquivo do Brasil. Só `md = "e"` é a indicação. O TSE de verdade pode mandar `md = "n"` (não definido) antes dela, e o campo some na totalização final (`tf = "s"`). Ausente ou `"n"` não é evento. O TSE falso só escreve `md = "e"`, então o teste do `"n"` precisa de um arquivo à parte.
+- 19/10/2026, do [ticket 14](14-bloco-ao-vivo.md):
+  - A manchete é `manchete(quadro, lugar)`, em `packages/site/src/lib/textos-ao-vivo.ts`, testada em `test/vista-ao-vivo.test.tsx`. As formas de virada, indicação do TSE e fim entram ali. O nome curto ("Flávio", "Lula" e, no TSE falso, "Bolsonaro") é `nomeCurto`, em `lib/identidade.ts`.
+  - A curva é `components/CurvaReal.tsx`. Os números dos eventos e o ponto da virada real vão por cima dela, com as mesmas escalas.
+  - A página lê o arquivo de rodada e o JSON do lugar por `criarLeitorAoVivo` (`lib/leitor-ao-vivo.ts`), que guarda os dois no `QuadroAoVivo`. A narração sai dali, e os testes do leitor já têm um endereço ao vivo de mentira para as respostas.

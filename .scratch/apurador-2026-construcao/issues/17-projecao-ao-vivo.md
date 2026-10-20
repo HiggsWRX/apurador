@@ -65,3 +65,7 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
   - Com K de 0,25%, as pesquisas pesam metade com 0,25% das seções, e o "coincidem" do Brasil deve vir antes dos ~12% medidos no ticket 08 com K de 0,5%.
   - A margem média de 5% a 50% das seções fica em ~3,0 p.p., o dobro da provisória, e a cobertura em 100% nas três noites.
   - O critério do ensaio "sem sinal de virada nunca no Brasil antes das 18:44" passa na calibração, nas noites de 2022 e nas duas bases. A conferência dele nos arquivos publicados é do replay.
+- 19/10/2026, do [ticket 14](14-bloco-ao-vivo.md):
+  - A curva projetada, a faixa e a virada projetada entram em `packages/site/src/components/CurvaReal.tsx`, por cima da curva real.
+  - A escala hoje é só a da curva real: a meia altura é a maior distância de 50% depois de 3% das seções, mais 1 ponto, em passos de 2, como no protótipo. A faixa da projeção tem de entrar nessa conta, também só depois de 3%.
+  - A projeção vem depois da curva, em `components/VistaDoBlocoAoVivo.tsx` (decisão 1 das Telas). A manchete continua só com o placar oficial.

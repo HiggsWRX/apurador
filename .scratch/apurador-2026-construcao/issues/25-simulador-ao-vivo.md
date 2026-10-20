@@ -23,3 +23,7 @@ Decisões: [Simulador "e se"](../../apurador-2026/issues/13-simulador-e-se.md) (
 - [ ] **Chaves**: desligar a chave do simulador, ou a da projeção, tira o simulador do ar e o link da caixa da projeção.
 - [ ] **Link compartilhado**: com os mesmos dados, reproduz a mesma simulação em outro celular.
 - [ ] **Replay de 2022**: com as hipóteses paradas, a simulação se atualiza a cada rodada.
+
+## Comments
+
+- 19/10/2026, do [ticket 14](14-bloco-ao-vivo.md): o indicador ao vivo da barra do simulador é o mesmo componente do placar, `IndicadorAoVivo` (`packages/site/src/components/IndicadorAoVivo.tsx`). Ele recebe o `indicador` do quadro de `criarLeitorAoVivo` (`lib/leitor-ao-vivo.ts`).
