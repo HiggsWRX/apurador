@@ -1,27 +1,13 @@
 import { readFileSync } from "node:fs";
-import { agregadoDePesquisas, diaDoAgregado, tendenciaDoAgregado } from "@apurador/modelo";
-import { listaDasPesquisas, pesquisasDoAgregado, type ExtratoDoTse, type Turno } from "@apurador/pipeline";
+import { tendenciaDoAgregado } from "@apurador/modelo";
 import { describe, expect, it } from "vitest";
-import { AGORA, DIST_CHAVES_DESLIGADAS, elemento, elementos, pagina, texto } from "../html";
+import { AGREGADO as agregado, DIA as dia, ler, PESQUISAS_DO_AGREGADO as pesquisas, TURNO as turno } from "../dados-do-build";
+import { DIST_CHAVES_DESLIGADAS, elemento, elementos, pagina, texto } from "../html";
 
 // Confere o que o build gera (a fronteira do site): o agregado de pesquisas na página do Brasil e a indicação das
 // pesquisas nos outros lugares, calculados no build sobre o mesmo pesquisas.csv. O build dos testes roda com o
-// relógio fixo em AGORA.
-const DADOS = new URL("../../../../dados/", import.meta.url);
-const ler = (arquivo: string) => readFileSync(new URL(arquivo, DADOS), "utf8");
-const turno = JSON.parse(ler("turnos/2026-1.json")) as Turno;
-const lista = listaDasPesquisas({
-  pesquisas: ler("pesquisas.csv"),
-  institutos: ler("pesquisas-institutos.csv"),
-  extrato: JSON.parse(ler("pesquisas-tse.json")) as ExtratoDoTse,
-  verificacoes: ler("pesquisas-verificacoes.csv"),
-  turno,
-});
-// Os números que a página deve mostrar são os do modelo sobre o mesmo pesquisas.csv, no mesmo instante. As referências
-// externas dos números ficam nos testes do modelo e do pipeline (o agregado de 18/10).
-const pesquisas = pesquisasDoAgregado(lista, turno);
-const dia = diaDoAgregado(new Date(AGORA));
-const agregado = agregadoDePesquisas(pesquisas, dia)!;
+// relógio fixo em AGORA. Os números que a página deve mostrar são os do modelo sobre o mesmo pesquisas.csv, no mesmo
+// instante (`dados-do-build.ts`).
 const tendencia = tendenciaDoAgregado(pesquisas, dia);
 
 const comUmaCasa = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });

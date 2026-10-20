@@ -3,12 +3,15 @@ import { formatarCalculo } from "../lib/formato";
 import { corDoPartido } from "../lib/identidade";
 import type { PctDoCandidato } from "../lib/pesquisas";
 
-// O par de números de um cálculo do Apurador, um por finalista, na cor de cada um e com uma casa.
+// O par de números de um cálculo do Apurador, um por finalista, na cor de cada um e com uma casa, e, numa projeção,
+// ± a margem de 95%.
 
 interface Props {
   valores: PctDoCandidato[];
+  /** A margem de 95% da projeção, em pontos: "± 3,5" ao lado de cada número. */
+  margem?: number;
 }
-const { valores } = Astro.props;
+const { valores, margem } = Astro.props;
 ---
 
 <p class="valores">
@@ -16,6 +19,7 @@ const { valores } = Astro.props;
     valores.map((c) => (
       <span data-cor={corDoPartido(c.candidato.partido)}>
         {c.candidato.nomeUrna} <strong>{formatarCalculo(c.pct)}%</strong>
+        {margem !== undefined && <small class="margem">± {formatarCalculo(margem)}</small>}
       </span>
     ))
   }
@@ -36,5 +40,10 @@ const { valores } = Astro.props;
   }
   [data-cor="lula"] strong {
     color: var(--cor-lula);
+  }
+  .margem {
+    margin-left: 0.25rem;
+    color: var(--texto-suave);
+    font-size: 0.875rem;
   }
 </style>

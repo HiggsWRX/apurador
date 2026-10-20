@@ -21,3 +21,6 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
 ## Comments
 
 - 19/10/2026, do [ticket 14](14-bloco-ao-vivo.md): a curva de comparação vai por cima da curva real, em `packages/site/src/components/CurvaReal.tsx`, e entra na conta da escala como a curva real: só depois de 3% das seções.
+- 20/10/2026, do [ticket 09](09-painel-antes-das-17h.md):
+  - "O que esperar da noite" é `packages/site/src/components/OQueEsperarDaNoite.astro`, na página do Brasil (`pages/index.astro`), sempre presente. Com a chave `antesDas17h.projecao` desligada, ele fica só com o texto da ordem de chegada do 1º turno de 2026 (`ORDEM_DE_CHEGADA` em `lib/projecao-antes-das-17h.ts`): é aí que as curvas reais de noites passadas entram.
+  - A escala e os eixos das curvas estão em `components/EixosDaCurva.tsx` (`escalaDaCurva(distancia)`, `eixosDaCurva(escala, margemDireita)` e `<EixosDaCurva>`), usados pela `CurvaReal` e pela `CurvaProjetada`: a curva de comparação entra na conta da escala pela mesma `escalaDaCurva`.

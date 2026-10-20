@@ -43,11 +43,11 @@ export function formatarPontos(n: number, comoPublicado = false): string {
   return `${texto} ${Math.abs(valor) < 2 ? "ponto" : "pontos"}`;
 }
 
-// A chance de vitória aparece em inteiros, sem falsa precisão (Telas da página de lugar, decisão 3): "<1%" e ">99%"
-// nas pontas, porque 0% e 100% só existem com a indicação do TSE.
-/** Uma chance de 0 a 1 como a página a mostra: "72%", "<1%", ">99%". */
+/**
+ * A chance de vitória como a página a mostra (Telas da página de lugar, decisão 3): um inteiro, e "<1%" e ">99%" nas
+ * pontas, porque nenhuma projeção é certeza. O 100% só existe com a indicação do TSE, que não passa por aqui.
+ */
 export function formatarChance(chance: number): string {
-  if (chance >= 0.995) return ">99%";
-  if (chance < 0.005) return "<1%";
-  return `${Math.round(100 * chance)}%`;
+  const inteiro = Math.round(100 * chance);
+  return inteiro <= 0 ? "<1%" : inteiro >= 100 ? ">99%" : `${inteiro}%`;
 }

@@ -1,6 +1,7 @@
 {
   "antesDas17h": {
-    "agregado": false
+    "agregado": false,
+    "projecao": false
   },
   "noite": {
     "nucleoMinimo": false,

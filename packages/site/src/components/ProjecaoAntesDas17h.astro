@@ -1,0 +1,98 @@
+---
+import { formatarCalculo, umaCasa } from "../lib/formato";
+import { corDoPartido } from "../lib/identidade";
+import { AGREGADO, entreOsFinalistas, PLACAR_ENTRE_FINALISTAS_DO_BRASIL, quemGanhouEntre } from "../lib/pesquisas";
+import { BASE_PADRAO, PROJECAO_ANTES_DAS_17H, type ProjecaoDeUmaBase } from "../lib/projecao-antes-das-17h";
+import { ChanceDeVitoria } from "./ChanceDeVitoria";
+import ValoresDosFinalistas from "./ValoresDosFinalistas.astro";
+
+// A projeção e a chance de vitória antes das 17h, na página do Brasil (Telas da página de lugar, decisões 3 e 11):
+// numa moldura tracejada com fundo próprio e o aviso, o resultado final estimado de cada candidato com uma casa e a
+// margem de 95%, a chance de vitória na barra dividida, "A projeção, comparada" com o 1º turno e com a indicação das
+// pesquisas, e o controle Base da projeção, com o peso das pesquisas ao lado (Combinação de pesquisas e apuração,
+// decisão 5). Nas duas bases, os números são os do `modelo` sobre o mesmo pesquisas.csv. Nenhuma frase diz quem vence.
+
+const METODOLOGIA = "/metodologia/";
+const projecao = PROJECAO_ANTES_DAS_17H;
+const comPesquisas = projecao?.bases.find((b) => b.id === "com-pesquisas");
+
+/** Os dois números de um % do primeiro finalista, como a página os escreve: "FLAVIO BOLSONARO 51,0%, LULA 49,0%". */
+const osDois = (doPrimeiro: number) =>
+  entreOsFinalistas(umaCasa(doPrimeiro))
+    .map((c) => `${c.candidato.nomeUrna} ${formatarCalculo(c.pct)}%`)
+    .join(", ");
+/** Quem ganhou terreno desde um ponto de partida, no formato "LULA +1,8" da decisão 3, ou "sem mudança". */
+const mudanca = (de: number, base: ProjecaoDeUmaBase) => {
+  const ganhou = quemGanhouEntre(de, 100 * base.brasil.projecao);
+  return ganhou ? `${ganhou.candidato.nomeUrna} +${formatarCalculo(ganhou.pontos)}` : "sem mudança";
+};
+const chances = (base: ProjecaoDeUmaBase) =>
+  entreOsFinalistas(100 * base.brasil.chance).map((c) => ({ finalista: { nomeUrna: c.candidato.nomeUrna, cor: corDoPartido(c.candidato.partido) }, chance: c.pct / 100 }));
+---
+
+{
+  projecao && (
+    <section class="cartao projecao" data-bloco="projecao-antes-das-17h" aria-labelledby="projecao-titulo">
+      <header class="projecao-topo">
+        <span class="selo" id="projecao-titulo">
+          Projeção do Apurador
+        </span>
+        <p class="aviso">Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.</p>
+      </header>
+      {projecao.bases.map((base) => (
+        <div data-base={base.id} data-ativa={base.id === BASE_PADRAO ? "" : undefined}>
+          <h3 class="base-titulo">Base da projeção: {base.nome}</h3>
+          <ValoresDosFinalistas valores={entreOsFinalistas(umaCasa(100 * base.brasil.projecao))} margem={100 * base.brasil.margem} />
+          <p class="nota">Resultado final estimado, em votos válidos, com a margem de 95%.</p>
+          <ChanceDeVitoria chances={chances(base)} href={`${METODOLOGIA}#chance`} />
+          <p class="nota">
+            A projeção, comparada: com o 1º turno, pelo placar entre finalistas ({osDois(PLACAR_ENTRE_FINALISTAS_DO_BRASIL)}), {mudanca(PLACAR_ENTRE_FINALISTAS_DO_BRASIL, base)}
+            {AGREGADO && comPesquisas ? `; com a indicação das pesquisas (${osDois(AGREGADO.valor)}), ${mudanca(AGREGADO.valor, base)}` : ""}.
+          </p>
+        </div>
+      ))}
+      {comPesquisas && (
+        <div class="base-da-projecao" role="group" aria-label="Base da projeção">
+          <span class="base-rotulo">Base da projeção</span>
+          {projecao.bases.map((base) => (
+            <button type="button" data-base-botao={base.id} aria-pressed={base.id === BASE_PADRAO ? "true" : "false"}>
+              {base.nome}
+            </button>
+          ))}
+        </div>
+      )}
+      {comPesquisas && (
+        <p class="nota">
+          {projecao.coincidem ? (
+            <a href={`${METODOLOGIA}#juntas`}>As duas bases já coincidem aqui.</a>
+          ) : (
+            <a href={`${METODOLOGIA}#juntas`}>As pesquisas pesam {Math.round(100 * comPesquisas.pesoDasPesquisas)}% na projeção agora.</a>
+          )}
+        </p>
+      )}
+      <p class="links">
+        <a href={METODOLOGIA}>Como calculamos →</a>
+      </p>
+      <p class="fonte">Cálculo do Apurador com dados do TSE</p>
+    </section>
+  )
+}
+
+<script>
+  // O controle Base da projeção: troca, na projeção e em "O que esperar da noite", o que cada base mostra.
+  const botoes = [...document.querySelectorAll<HTMLButtonElement>("[data-base-botao]")];
+  const porBase = [...document.querySelectorAll<HTMLElement>("[data-base]")];
+  for (const botao of botoes) {
+    botao.addEventListener("click", () => {
+      for (const outro of botoes) outro.setAttribute("aria-pressed", String(outro === botao));
+      for (const elemento of porBase) elemento.toggleAttribute("data-ativa", elemento.dataset.base === botao.dataset.baseBotao);
+    });
+  }
+</script>
+
+<style>
+  .links {
+    margin: 0.75rem 0 0;
+    font-size: 0.875rem;
+  }
+</style>
