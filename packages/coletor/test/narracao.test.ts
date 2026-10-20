@@ -171,7 +171,12 @@ describe("a virada", () => {
 
     expect(viradas(narracao)).toEqual(["18:42 · Virada no Brasil: a liderança trocou 5 vezes entre 18:42 e 18:44; Lula à frente no placar parcial, com 68,32% das seções totalizadas."]);
     const virada = narracao.doLugar("BR").find((e) => e.tipo === "virada")!;
-    expect({ quando: virada.quando, numero: virada.numero, ponto: virada.ponto }).toEqual({ quando: primeira.quando, numero: primeira.numero, ponto: [66.78, 49.99, 50.01] });
+    expect({ quando: virada.quando, numero: virada.numero, ponto: virada.ponto, trocas: virada.trocas }).toEqual({
+      quando: primeira.quando,
+      numero: primeira.numero,
+      ponto: [66.78, 49.99, 50.01],
+      trocas: 5,
+    });
   });
 
   it("um empate não troca o líder, e uma troca depois de 10 minutos é outra virada", () => {
@@ -205,6 +210,17 @@ describe("a virada", () => {
   });
 });
 
+describe("depois da totalização final", () => {
+  it("a narração fica como registro: nada do que chegar com hora depois dela entra", () => {
+    const narracao = criarNarracao(LUGARES);
+    narracao.narrar(rodada(["BR", { quando: "2026-10-26 00:18:04", secoes: [472027, 472027, 100], flavio: [58_206_354, 49.1], lula: [60_345_999, 50.9], final: true }]));
+    const mudaram = narracao.narrar(rodada(["SP", { quando: "2026-10-26 00:20:00", secoes: [101073, 101073, 100], flavio: [14_000_000, 55.24], lula: [11_320_000, 44.76] }]));
+
+    expect(mudaram).toEqual(new Set());
+    expect(narracao.doLugar("SP")).toEqual([]);
+  });
+});
+
 describe("um arquivo mais velho que o último visto", () => {
   it("não narra nada: uma cópia velha da CDN não volta o líder nem os marcos", () => {
     const narracao = criarNarracao(LUGARES);
@@ -215,6 +231,26 @@ describe("um arquivo mais velho que o último visto", () => {
 
     expect(mudaram).toEqual(new Set());
     expect(narracao.doLugar("SP").filter((e) => e.tipo === "virada")).toHaveLength(1);
+  });
+
+  it("de uma UF, não entra na conta de onde faltam seções", () => {
+    const narracao = criarNarracao(LUGARES);
+    narracao.narrar(
+      rodada(
+        ["SP", { quando: "2026-10-25 18:26:40", secoes: [949, 1000, 94.9], flavio: [100, 50], lula: [100, 50] }],
+        ["BA", { quando: "2026-10-25 18:26:30", secoes: [970, 1000, 97.0], flavio: [100, 50], lula: [100, 50] }],
+        ["DF", { quando: "2026-10-25 18:26:10", secoes: [981, 1000, 98.1], flavio: [100, 50], lula: [100, 50] }],
+      ),
+    );
+    // Uma cópia velha de São Paulo, com 400 seções faltando em vez de 51, chega com o marco do Brasil.
+    narracao.narrar(
+      rodada(
+        ["SP", { quando: "2026-10-25 18:20:00", secoes: [600, 1000, 60.0], flavio: [100, 50], lula: [100, 50] }],
+        ["BR", { quando: "2026-10-25 18:26:53", secoes: [237618, 472027, 50.34], flavio: [57_873_281, 50.43], lula: [56_885_102, 49.57] }],
+      ),
+    );
+
+    expect(narracao.doLugar("BR")[0]!.texto).toMatch(/Das seções que faltam, 51% são do Sudeste e 30% do Nordeste\.$/);
   });
 });
 

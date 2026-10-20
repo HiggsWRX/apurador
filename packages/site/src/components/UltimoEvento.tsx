@@ -1,5 +1,6 @@
+import { horaDoTse } from "../lib/formato";
 import type { QuadroAoVivo } from "../lib/leitor-ao-vivo";
-import { eventosDoLugar, horaDoEvento } from "../lib/narracao";
+import { eventosDoLugar } from "../lib/narracao";
 
 // O último evento sob a manchete (Telas da página de lugar, decisão 1; Narração da noite, decisão 10): sempre o do
 // próprio lugar, nunca o de outro, com o link para a coluna da narração.
@@ -10,7 +11,7 @@ export function UltimoEvento({ quadro }: { quadro: QuadroAoVivo }) {
   if (!ultimo || quadro.fase === "antes-das-17h") return null;
   return (
     <p class="ultimo-evento" data-ultimo-evento>
-      <time>{horaDoEvento(ultimo)}</time> {ultimo.texto} <a href="#narracao">Narração →</a>
+      <time>{horaDoTse(ultimo.quando, false)}</time> {ultimo.texto} <a href="#narracao">Narração →</a>
     </p>
   );
 }

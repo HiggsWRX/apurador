@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { ColunaDaNarracao } from "../src/components/ColunaDaNarracao";
 import { VistaDoBlocoAoVivo, type PropsDaVista } from "../src/components/VistaDoBlocoAoVivo";
 import type { QuadroAoVivo } from "../src/lib/leitor-ao-vivo";
-import { emLugar } from "../src/lib/textos-ao-vivo";
+import { emLugar } from "../src/lib/lugares";
 import { elemento, elementos, texto } from "./html";
 
 // A narração da noite na página (Narração da noite, decisões 1, 7, 9 e 10; Telas da página de lugar, decisões 1, 4, 6
@@ -27,7 +27,7 @@ const evento = (lugar: string, tipo: EventoDaNarracao["tipo"], quando: string, t
   ...extra,
 });
 
-const VIRADA_NO_BRASIL = evento("BR", "virada", "18:44:00", "Virada no Brasil: Lula passa à frente no placar parcial, com 67,74% das seções totalizadas.");
+const VIRADA_NO_BRASIL = evento("BR", "virada", "18:44:00", "Virada no Brasil: Lula passa à frente no placar parcial, com 67,74% das seções totalizadas.", { trocas: 1 });
 const INDICACAO = evento("BR", "indicacao", "19:56:23", "O TSE indica Lula eleito: eleição matematicamente definida, com 98,81% das seções totalizadas.");
 
 interface Momento {
@@ -77,6 +77,14 @@ describe("a manchete com a narração", () => {
     expect(manchete({ lugar: BAHIA, eventosDoBrasil: [VIRADA_NO_BRASIL], agora: "18:45:00" })).toBe("Lula lidera com 50,05% dos votos válidos e 67,76% das seções totalizadas");
   });
 
+  it("não diz \"Virada\" quando as trocas da janela voltaram a liderança a quem estava à frente", () => {
+    const idaEVolta = evento("BR", "virada", "18:42:53", "Virada no Brasil: a liderança trocou 2 vezes entre 18:42 e 18:43; Lula à frente no placar parcial, com 66,85% das seções totalizadas.", {
+      trocas: 2,
+      numero: 5,
+    });
+    expect(manchete({ narracao: [idaEVolta], agora: "18:44:00" })).toBe("Lula lidera com 50,05% dos votos válidos e 67,76% das seções totalizadas");
+  });
+
   it("no Brasil, com a indicação do TSE, diz \"O TSE indica X eleito\"; na totalização final, \"X foi eleito com Y% dos votos válidos\"", () => {
     const indicado = { narracao: [{ ...INDICACAO, numero: 9, ponto: [98.81, 49.17, 50.83] }], tse: { percentuais: [49.17, 50.83], votos: [57_000_000, 58_920_000] } };
     expect(manchete(indicado)).toBe("O TSE indica Lula eleito");
@@ -110,7 +118,8 @@ describe("o placar com a indicação do TSE", () => {
 
   it("mostra \"matematicamente definida: X eleito\" só no Brasil, e só com a indicação", () => {
     const tse = { percentuais: [49.17, 50.83], votos: [57_000_000, 58_920_000] };
-    expect(placar({ tse, narracao: [{ ...INDICACAO, numero: 9 }] })).toContain("matematicamente definida: Lula eleito");
+    const html = vista({ tse, narracao: [{ ...INDICACAO, numero: 9 }] });
+    expect(texto(elemento(elemento(html, /<section[^>]*data-placar-oficial/), /<p[^>]*data-indicacao-do-tse/))).toBe("Indicação do TSE · matematicamente definida: Lula eleito");
     expect(placar({ tse })).not.toContain("matematicamente definida");
     expect(placar({ tse, lugar: BAHIA, eventosDoBrasil: [INDICACAO] })).not.toContain("matematicamente definida");
   });
@@ -141,7 +150,9 @@ describe("a coluna da narração", () => {
 
   it("antes das 17h, diz quando a narração começa", () => {
     const html = render(<ColunaDaNarracao quadro={{ ...quadroEm(), fase: "antes-das-17h", rodada: null, lugar: null }} id="BR" />);
-    expect(texto(elemento(html, /<aside[^>]*id="narracao"/))).toContain("Narração da noite A narração começa às 17h, com as primeiras seções totalizadas.");
+    expect(texto(elemento(html, /<aside[^>]*id="narracao"/))).toBe(
+      "Narração da noite A narração começa às 17h, com as primeiras seções totalizadas. Narração do Apurador com dados do TSE",
+    );
     expect(itens(html)).toEqual([]);
   });
 
@@ -180,7 +191,7 @@ describe("a coluna da narração", () => {
     const narracao = Array.from({ length: 8 }, (_, i) => evento("BR", "marco", `18:${String(10 + i).padStart(2, "0")}:00`, `Evento ${i + 1}.`, { numero: i + 1 })).reverse();
     const html = coluna({ narracao });
     expect(itens(html)).toHaveLength(8);
-    expect(itens(html).map((li) => li.includes("data-alem-dos-5"))).toEqual([false, false, false, false, false, true, true, true]);
+    expect(itens(html).map((li) => li.includes("data-fora-do-resumo"))).toEqual([false, false, false, false, false, true, true, true]);
     expect(texto(elemento(html, /<button[^>]*data-ver-toda/))).toBe("Ver toda a narração (8)");
     expect(coluna({ narracao: narracao.slice(0, 5) })).not.toContain("data-ver-toda");
   });

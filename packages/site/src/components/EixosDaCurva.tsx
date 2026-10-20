@@ -3,8 +3,8 @@
 // passa dela. Desenhadas para a largura do celular, como o gráfico da tendência do agregado; no computador, crescem
 // com o cartão. A curva real e a projetada partilham isto para que a projetada possa entrar por cima da real na noite.
 
-/** Até esse % de seções, o placar ainda pula demais para decidir a escala. */
-export const COMECO_INSTAVEL = 3;
+// Até 3% das seções, o placar ainda pula demais para decidir a escala: o mesmo corte com que a narração conta a virada.
+export { COMECO_INSTAVEL } from "@apurador/coletor/narracao";
 
 export const LARGURA = 340;
 export const ALTURA = 210;

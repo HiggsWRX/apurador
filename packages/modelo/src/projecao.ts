@@ -97,6 +97,12 @@ const REGIAO_DA_UF: Record<string, number> = {
   ZZ: -1,
 };
 
+/** A região de uma UF, pelo nome de `REGIOES`, ou `null` no Exterior e numa sigla desconhecida. */
+export function regiaoDe(uf: string): string | null {
+  const r = REGIAO_DA_UF[uf];
+  return r === undefined || r < 0 ? null : REGIOES[r]!;
+}
+
 /** A base do modelo preparada para projetar muitas vezes. */
 export function prepararModelo(base: BaseDoModelo): Modelo {
   if (base.finalistas.length !== 2) throw new Error(`a base do modelo tem ${base.finalistas.length} finalistas, e não 2`);

@@ -34,6 +34,7 @@ export {
   projetar,
   projetarNasDuasBases,
   REGIOES,
+  regiaoDe,
   sinalDeVirada,
   type Apuracao,
   type ApuracaoDoMunicipio,

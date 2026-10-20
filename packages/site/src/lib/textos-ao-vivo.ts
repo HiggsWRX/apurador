@@ -1,8 +1,9 @@
-import type { Lugar, TipoDeLugar } from "@apurador/pipeline";
+import { instanteDoTse } from "@apurador/coletor/narracao";
+import type { TipoDeLugar } from "@apurador/pipeline";
 import { formatarPctComCasas, formatarVotos } from "./formato";
 import { nomeCurto } from "./identidade";
 import type { QuadroAoVivo } from "./leitor-ao-vivo";
-import { eventosDoLugar, instanteDoTse } from "./narracao";
+import { eventosDoLugar } from "./narracao";
 
 // Os textos do bloco ao vivo. A manchete começa sempre pelo placar oficial e nunca traz frase de projeção enquanto os
 // textos preditivos não forem confirmados (Narração da noite, decisão 9; Segunda consulta jurídica). A virada e a
@@ -22,14 +23,7 @@ const MANCHETE_DA_VIRADA = 10 * 60_000;
 /** Onde a apuração ainda não começou, como a manchete diz. */
 const ONDE: Record<TipoDeLugar, string> = { brasil: "no Brasil", uf: "neste estado", exterior: "no Exterior", municipio: "neste município" };
 
-/** O lugar como a manchete o escreve, com a preposição: "na Bahia", "em São Paulo", "no Distrito Federal", "em Salvador (BA)". */
-export function emLugar(lugar: Lugar): string {
-  if (lugar.tipo === "municipio") return `em ${lugar.nome} (${lugar.uf === "ZZ" ? "Exterior" : lugar.uf})`;
-  if (lugar.tipo === "uf") return `${lugar.artigo ? `n${lugar.artigo}` : "em"} ${lugar.nome}`;
-  return `no ${lugar.nome}`;
-}
-
-/** O lugar da página para a manchete: o tipo, a UF e o nome com a preposição (`emLugar`). */
+/** O lugar da página para a manchete: o tipo, a UF e o nome com a preposição (`emLugar`, em `lib/lugares.ts`). */
 export interface LugarDaManchete {
   tipo: TipoDeLugar;
   uf?: string;
@@ -72,9 +66,12 @@ export function manchete(quadro: QuadroAoVivo, lugar: LugarDaManchete): string |
   if (lugar.tipo === "brasil" && arquivo.tse.final) return `${frente.nome} foi eleito com ${pct} dos votos válidos`;
   if (eleitoPelaIndicacao(quadro)) return `O TSE indica ${frente.nome} eleito`;
   if (lugar.tipo !== "brasil" && secoes.totalizadas === secoes.total) return `${frente.nome} vence ${lugar.em} com ${pct} dos votos válidos`;
+  // Com um número par de trocas na janela, a liderança voltou a quem estava à frente: não houve virada para anunciar.
   const virada = eventosDoLugar(quadro).find((e) => e.tipo === "virada");
   const agoraNoTse = rodada.novidade.totalizacao && instanteDoTse(rodada.novidade.totalizacao);
-  if (virada && agoraNoTse && agoraNoTse - instanteDoTse(virada.quando) < MANCHETE_DA_VIRADA) return `Virada: ${frente.nome} passa à frente com ${pct}, com ${comSecoes}`;
+  if (virada && (virada.trocas ?? 1) % 2 === 1 && agoraNoTse && agoraNoTse - instanteDoTse(virada.quando) < MANCHETE_DA_VIRADA) {
+    return `Virada: ${frente.nome} passa à frente com ${pct}, com ${comSecoes}`;
+  }
   if (frente.centesimos - frente.segundo.centesimos < LIMITE_DA_DIFERENCA_EM_VOTOS) {
     return `${frente.nome} à frente por ${formatarVotos(frente.votos - frente.segundo.votos)} votos, com ${comSecoes}`;
   }

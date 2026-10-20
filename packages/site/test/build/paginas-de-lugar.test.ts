@@ -59,7 +59,9 @@ describe("páginas de lugar", () => {
 
     expect(html).toMatch(/<div[^>]*class="principal"/);
     const ilha = elemento(html, /<astro-island[^>]*component-url="[^"]*NarracaoDaNoite[^"]*"/);
-    expect(texto(elemento(ilha, /<aside[^>]*id="narracao"/))).toBe("Narração da noite A narração começa às 17h, com as primeiras seções totalizadas.");
+    expect(texto(elemento(ilha, /<aside[^>]*id="narracao"/))).toBe(
+      "Narração da noite A narração começa às 17h, com as primeiras seções totalizadas. Narração do Apurador com dados do TSE",
+    );
   });
 });
 

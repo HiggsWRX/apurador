@@ -1290,8 +1290,30 @@ a {
   line-height: 1.5;
 }
 
+/*
+  No celular, a narração vem logo depois do bloco ao vivo (Telas da página de lugar, decisão 1), antes dos blocos que
+  seguem na coluna principal: ela se desfaz na grade das colunas, e o que vem depois do bloco vai para o fim. Os
+  espaços ficam os de antes: a margem do bloco ao vivo, e um só antes do que segue a narração.
+*/
+@media (max-width: 59.9375rem) {
+  .colunas {
+    row-gap: 0;
+  }
+  .principal {
+    display: contents;
+  }
+  /* O bloco ao vivo é a primeira ilha da coluna; antes dela, só os scripts e estilos que o Astro põe. */
+  .principal > astro-island ~ *,
+  .principal > astro-island ~ astro-island > * {
+    order: 1;
+  }
+  .principal > astro-island + * {
+    margin-top: 1rem;
+  }
+}
+
 /* No celular, os 5 últimos e "Ver toda a narração"; no computador, a lista inteira na coluna fixa. */
-.narracao:not([data-toda]) [data-alem-dos-5] {
+.narracao:not([data-toda]) [data-fora-do-resumo] {
   display: none;
 }
 
@@ -1308,7 +1330,7 @@ a {
 }
 
 /* No placar oficial, a indicação do TSE no Brasil (Telas da página de lugar, decisão 6). */
-.eleicao-definida {
+.indicacao-do-tse {
   margin: 0.75rem 0 0;
   font-weight: 700;
 }
@@ -1336,7 +1358,7 @@ a {
 }
 
 @media (min-width: 60rem) {
-  .narracao:not([data-toda]) [data-alem-dos-5] {
+  .narracao:not([data-toda]) [data-fora-do-resumo] {
     display: grid;
   }
   .ver-toda {

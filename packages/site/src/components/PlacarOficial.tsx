@@ -53,8 +53,8 @@ export function PlacarOficial({ antesDas17h, candidatos, tse, fotos, indicador, 
             ))}
           </div>
           {eleito && (
-            <p class="eleicao-definida" data-eleicao-definida>
-              {`Eleição matematicamente definida: ${eleito} eleito`}
+            <p class="indicacao-do-tse" data-indicacao-do-tse>
+              {`Indicação do TSE · matematicamente definida: ${eleito} eleito`}
             </p>
           )}
           <div class="barra-de-secoes" aria-hidden="true">

@@ -1,6 +1,5 @@
 import type { EventoDaNarracao } from "@apurador/coletor";
-import { formatarPctComCasas } from "../lib/formato";
-import { horaDoEvento } from "../lib/narracao";
+import { formatarPctComCasas, horaDoTse } from "../lib/formato";
 import { MARGEM, type EscalaDaCurva, type Eixos } from "./EixosDaCurva";
 
 // A narração por cima da curva real (Telas da página de lugar, decisão 4): cada evento factual do próprio lugar vira
@@ -23,8 +22,9 @@ export function MarcadoresDaNarracao({ eventos, eixos, escala }: Props) {
   const { x, y } = eixos;
   const naEscala = (pct: number) => Math.min(50 + escala.meia, Math.max(50 - escala.meia, pct));
   const comPonto = eventos.filter((e): e is EventoDaNarracao & { numero: number; ponto: number[] } => e.numero !== undefined && e.ponto !== undefined);
-  const postos: { cx: number; cy: number }[] = [];
-  const encosta = (cx: number, cy: number) => postos.some((p) => Math.abs(p.cx - cx) < DEGRAU && Math.abs(p.cy - cy) < DEGRAU);
+  /** Os números já desenhados, para o próximo não encostar neles. */
+  const desenhados: { cx: number; cy: number }[] = [];
+  const encosta = (cx: number, cy: number) => desenhados.some((p) => Math.abs(p.cx - cx) < DEGRAU && Math.abs(p.cy - cy) < DEGRAU);
   const marcas = [...comPonto]
     .sort((a, b) => a.numero - b.numero)
     .map((e) => {
@@ -35,7 +35,7 @@ export function MarcadoresDaNarracao({ eventos, eixos, escala }: Props) {
       let cy = naCurva - RAIO - 4;
       while (encosta(cx, cy) && cy - DEGRAU >= MARGEM.topo + RAIO) cy -= DEGRAU;
       if (encosta(cx, cy)) for (cy = naCurva + RAIO + 4; encosta(cx, cy); cy += DEGRAU);
-      postos.push({ cx, cy });
+      desenhados.push({ cx, cy });
       return { numero: e.numero, cx, cy };
     });
   return (
@@ -64,7 +64,7 @@ export function FrasesDasViradas({ eventos }: { eventos: EventoDaNarracao[] }) {
     <>
       {viradas.map((e) => (
         <p key={e.quando} class="virada-real-frase" data-virada-real-frase>
-          {`Virada às ${horaDoEvento(e)}, com ${formatarPctComCasas(e.ponto![0] ?? 0, 2)} das seções`}
+          {`Virada às ${horaDoTse(e.quando, false)}, com ${formatarPctComCasas(e.ponto![0] ?? 0, 2)} das seções`}
         </p>
       ))}
     </>

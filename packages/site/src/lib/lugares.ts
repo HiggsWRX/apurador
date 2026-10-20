@@ -1,4 +1,4 @@
-import type { Lugar, Turno } from "@apurador/pipeline";
+import { nomeCompleto, type Lugar, type Turno } from "@apurador/pipeline";
 import indice from "../../../../dados/lugares.json";
 import { semAcentos } from "./texto";
 
@@ -55,3 +55,13 @@ export function trilhaDe(l: Lugar): Lugar[] {
 export const TURNOS: Turno[] = Object.values(import.meta.glob<Turno>("../../../../dados/turnos/*.json", { eager: true, import: "default" })).sort(
   (a, b) => b.ano - a.ano || b.turno - a.turno,
 );
+
+/**
+ * O lugar como a manchete do fim o escreve, com a preposição pelo artigo da UF: "na Bahia", "em São Paulo", "no
+ * Distrito Federal", "no Exterior", "em Salvador (BA)" (Narração da noite, decisão 9). Sai no build, para a ilha.
+ */
+export function emLugar(lugar: Lugar): string {
+  if (lugar.tipo === "municipio") return `em ${nomeCompleto(lugar)}`;
+  if (lugar.tipo === "uf") return `${lugar.artigo ? `n${lugar.artigo}` : "em"} ${lugar.nome}`;
+  return `no ${lugar.nome}`;
+}
