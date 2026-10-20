@@ -26,3 +26,11 @@ Decisões: [Narração da noite](../../apurador-2026/issues/14-narracao-da-noite
 - [ ] **Desligada de novo**: somem dos JSONs todos os preditivos, inclusive os passados, e a frase de projeção da manchete.
 - [ ] Com a chave desligada, o marco continua factual, sem a linha da projeção.
 - [ ] A simulação nunca entra na narração nem na manchete.
+
+## Comments
+
+- 20/10/2026, do [ticket 16](16-comandos-chaves-e-plano-zero.md):
+  - **A chave** é `textosPreditivos` (`NOMES_DAS_CHAVES`, em `packages/coletor/src/chaves.ts`). O dono a liga com `npm run noite -- ligar textos-preditivos`, digitando `textos-preditivos` para confirmar; `desligar textos-preditivos` desfaz. Ela é a única desligada no controle inicial (`CONTROLE_INICIAL`) e em `dados/chaves.json` (`noite.textosPreditivos: false`); o teste do build (`packages/site/test/build/bloco-ao-vivo.test.ts`) fixa esse `false` até a confirmação.
+  - **No coletor**, leia `controle.chaves.textosPreditivos` em `publicar()` (`packages/coletor/src/coletor.ts`), onde `controle` é o da rodada, lido do arquivo de controle no começo dela. O coletor grava cada arquivo só quando os bytes mudam (`gravarSeMudou`, com um hash por caminho): para "desligada de novo, somem todos", basta montar os JSONs sem os preditivos, e os que mudarem são regravados. "Ligada no meio da noite vale dali em diante" é o coletor só pôr nos JSONs os preditivos gerados nas rodadas em que a chave estava ligada.
+  - **Na página**, a frase de projeção da manchete lê `quadro.chaves.textosPreditivos` (`QuadroAoVivo`, `packages/site/src/lib/leitor-ao-vivo.ts`); a manchete é `manchete()` em `lib/textos-ao-vivo.ts`. Mas esconder no navegador não basta: a regra é a do coletor.
+  - **No replay**, `OpcoesDoReplay.controle` (`packages/ensaio/test/replay.test.ts`) liga e desliga a chave em rodadas escolhidas, pelo relógio do coletor, e `r.gravacoes` tem todo JSON publicado com a hora: o script de conferência ("nenhum preditivo em nenhum JSON público") varre essa lista. O último `describe` do arquivo mostra o jeito.

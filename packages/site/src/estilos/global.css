@@ -980,3 +980,29 @@ a {
     transition: none;
   }
 }
+
+/* ---------- avisos prontos e plano zero ---------- */
+
+/* A faixa do aviso pronto (Operação na noite, decisão 10): abaixo da manchete, em grafite, nunca nas cores dos candidatos. */
+.faixa-de-aviso {
+  margin: 0;
+  padding: 0.625rem 0.875rem;
+  border-left: 4px solid var(--grafite);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--grafite) 10%, var(--cartao));
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.faixa-de-aviso a,
+.plano-zero a {
+  font-weight: 600;
+}
+
+/* O plano zero (Ensaio geral, decisão 24): o convite ao app oficial do TSE no lugar do bloco ao vivo inteiro. */
+.plano-zero p {
+  margin: 0;
+  font-family: "Source Serif 4 Variable", Georgia, serif;
+  font-size: 1.25rem;
+  line-height: 1.3;
+}

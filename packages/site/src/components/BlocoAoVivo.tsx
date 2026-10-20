@@ -1,6 +1,8 @@
+import type { ChavesDaNoite } from "@apurador/coletor";
 import type { TipoDeLugar } from "@apurador/pipeline";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { ANTES_DA_PRIMEIRA_LEITURA, criarLeitorAoVivo, INTERVALO_DAS_LEITURAS } from "../lib/leitor-ao-vivo";
+import { emPlanoZero } from "../lib/chaves-ao-vivo";
+import { antesDaPrimeiraLeitura, criarLeitorAoVivo, INTERVALO_DAS_LEITURAS } from "../lib/leitor-ao-vivo";
 import { VistaDoBlocoAoVivo } from "./VistaDoBlocoAoVivo";
 
 // A ilha do bloco ao vivo, em cada página de lugar. No build, ela sai no estado de antes das 17h, sem nenhuma leitura.
@@ -16,12 +18,17 @@ interface Props {
   fotos: Record<string, string>;
   /** A raiz dos arquivos ao vivo, com a barra no fim, ou `null` quando não há coletor. */
   base: string | null;
+  /** As chaves da noite do arquivo de chaves do site, que valem até a primeira rodada do coletor. */
+  chaves: ChavesDaNoite;
 }
 
 /** A ilha do bloco ao vivo de um lugar. */
-export default function BlocoAoVivo({ id, tipo, uf, fotos, base }: Props) {
-  const leitor = useMemo(() => (base ? criarLeitorAoVivo({ base, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now() }) : null), [base, id]);
-  const [quadro, setQuadro] = useState(ANTES_DA_PRIMEIRA_LEITURA);
+export default function BlocoAoVivo({ id, tipo, uf, fotos, base, chaves }: Props) {
+  const leitor = useMemo(
+    () => (base ? criarLeitorAoVivo({ base, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now(), chaves }) : null),
+    [base, id, chaves],
+  );
+  const [quadro, setQuadro] = useState(() => antesDaPrimeiraLeitura(chaves));
   const [lendo, setLendo] = useState(false);
   const [proximaLeitura, setProximaLeitura] = useState<number | null>(null);
   const [movimentoReduzido, setMovimentoReduzido] = useState(false);
@@ -86,14 +93,16 @@ export default function BlocoAoVivo({ id, tipo, uf, fotos, base }: Props) {
     return () => observador.disconnect();
   }, []);
 
-  // A linha fixa aparece quando o cartão do placar sai da tela por cima.
+  // A linha fixa aparece quando o cartão do placar sai da tela por cima. No plano zero não há placar; quando ele volta,
+  // o observador é refeito.
+  const planoZero = emPlanoZero(quadro);
   useEffect(() => {
     const placar = raiz.current?.querySelector("[data-placar-oficial]");
     if (!placar) return;
     const observador = new IntersectionObserver(([e]) => e && setPlacarNaTela(e.isIntersecting || e.boundingClientRect.top > 0));
     observador.observe(placar);
     return () => observador.disconnect();
-  }, []);
+  }, [planoZero]);
 
   return (
     <div ref={raiz}>

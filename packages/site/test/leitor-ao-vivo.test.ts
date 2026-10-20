@@ -1,4 +1,4 @@
-import type { ArquivoDeRodada, ArquivoDoLugar, Buscar } from "@apurador/coletor";
+import type { ArquivoDeRodada, ArquivoDoLugar, Buscar, ChavesDaNoite } from "@apurador/coletor";
 import { describe, expect, it } from "vitest";
 import { criarLeitorAoVivo } from "../src/lib/leitor-ao-vivo";
 
@@ -13,8 +13,13 @@ const CANDIDATOS = [
   { numero: 13, nome: "LULA", partido: "PT", sequencial: "280002542548" },
 ];
 
-function rodada(hora: string, fase: ArquivoDeRodada["fase"], novidade: Partial<ArquivoDeRodada["novidade"]> = {}): ArquivoDeRodada {
-  return { rodada: new Date(hora).toISOString(), fase, novidade: { totalizacao: null, vista: null, ...novidade }, candidatos: CANDIDATOS };
+/** As chaves que o coletor publica sem comando: tudo ligado menos os textos preditivos. */
+const LIGADAS: ChavesDaNoite = { nucleoMinimo: true, projecao: true, baseComPesquisas: true, simulador: true, mapa: true, textosPreditivos: false };
+/** O arquivo de chaves do site deste teste, com o mapa desligado para se distinguir do que o coletor publica. */
+const DO_SITE: ChavesDaNoite = { ...LIGADAS, mapa: false };
+
+function rodada(hora: string, fase: ArquivoDeRodada["fase"], novidade: Partial<ArquivoDeRodada["novidade"]> = {}, controle: Partial<Pick<ArquivoDeRodada, "chaves" | "aviso">> = {}): ArquivoDeRodada {
+  return { rodada: new Date(hora).toISOString(), fase, novidade: { totalizacao: null, vista: null, ...novidade }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null, ...controle };
 }
 
 function lugar(percentualDeSecoes: number, totalizacao: string | null = null): ArquivoDoLugar {
@@ -58,7 +63,7 @@ function cdn() {
 function montar() {
   const borda = cdn();
   let agora = 0;
-  const leitor = criarLeitorAoVivo({ base: BASE, lugar: "BR", buscar: borda.buscar, relogio: () => agora });
+  const leitor = criarLeitorAoVivo({ base: BASE, lugar: "BR", buscar: borda.buscar, relogio: () => agora, chaves: DO_SITE });
   return { ...borda, leitor, passar: (ms: number) => (agora += ms) };
 }
 
@@ -262,5 +267,38 @@ describe("leitor ao vivo", () => {
     await leitor.ler();
     passar(30_000);
     expect(leitor.quadro().ultimaLeitura).toBe(42);
+  });
+
+  it("até a primeira rodada, as chaves são as do arquivo de chaves do site; depois, as do arquivo de rodada, que mudam na leitura em que ele muda", async () => {
+    const { leitor, responder } = montar();
+    expect(leitor.quadro().chaves).toEqual(DO_SITE);
+
+    responder("rodada.json", { status: 200, date: "2026-10-25T18:00:00-03:00", etag: '"r1"', corpo: rodada("2026-10-25T17:59:50-03:00", "ao-vivo") });
+    await leitor.ler();
+    expect(leitor.quadro().chaves).toEqual(LIGADAS);
+
+    // O dono desligou a projeção: a rodada seguinte traz a chave desligada, e o simulador com ela, sem recarregar.
+    const semProjecao = { ...LIGADAS, projecao: false, simulador: false };
+    responder("rodada.json", { status: 200, date: "2026-10-25T18:00:30-03:00", etag: '"r2"', corpo: rodada("2026-10-25T18:00:20-03:00", "ao-vivo", {}, { chaves: semProjecao }) });
+    await leitor.ler();
+    expect(leitor.quadro().chaves).toEqual(semProjecao);
+
+    // Um 304 mantém as chaves da última rodada.
+    responder("rodada.json", { status: 304, date: "2026-10-25T18:01:00-03:00", etag: '"r2"' });
+    await leitor.ler();
+    expect(leitor.quadro().chaves).toEqual(semProjecao);
+  });
+
+  it("o aviso pronto ativo é o do arquivo de rodada, e sai quando o dono o retira", async () => {
+    const { leitor, responder } = montar();
+    expect(leitor.quadro().aviso).toBeNull();
+
+    responder("rodada.json", { status: 200, date: "2026-10-25T19:00:00-03:00", etag: '"r1"', corpo: rodada("2026-10-25T18:59:50-03:00", "ao-vivo", {}, { aviso: 2 }) });
+    await leitor.ler();
+    expect(leitor.quadro().aviso).toBe(2);
+
+    responder("rodada.json", { status: 200, date: "2026-10-25T19:00:30-03:00", etag: '"r2"', corpo: rodada("2026-10-25T19:00:20-03:00", "ao-vivo") });
+    await leitor.ler();
+    expect(leitor.quadro().aviso).toBeNull();
   });
 });

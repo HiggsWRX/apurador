@@ -1,5 +1,13 @@
 {
   "antesDas17h": {
     "agregado": false
+  },
+  "noite": {
+    "nucleoMinimo": false,
+    "projecao": false,
+    "baseComPesquisas": false,
+    "simulador": false,
+    "mapa": false,
+    "textosPreditivos": false
   }
 }

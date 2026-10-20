@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
-import { criarColetor, relogioSemEspera, type ArquivoDeRodada, type ArquivoDoLugar, type Buscar, type RegistroDaRodada } from "@apurador/coletor";
+import { CONTROLE_INICIAL, criarColetor, relogioSemEspera, type ArquivoDeRodada, type ArquivoDoLugar, type Buscar, type Controle, type RegistroDaRodada } from "@apurador/coletor";
 import { idDoMunicipio } from "@apurador/pipeline";
 import type { AbrangenciaDaDivulgacao } from "@apurador/tse";
 import { buscarNoTseFalso, conferirPlacar, criarTseFalso, relogioDoReplay, resultadosDoTseFalso, type TseFalso } from "../src/index.ts";
@@ -28,6 +28,8 @@ interface OpcoesDoReplay {
   trocar?: (url: string, quando: number) => string | undefined;
   /** Põe na frente do TSE falso uma borda que guarda cada arquivo esse tanto de segundos, como o CDN do TSE. */
   borda?: number;
+  /** O arquivo de controle que o coletor lê no começo de cada rodada, pelo relógio dele (ms): os comandos do dono em rodadas escolhidas. */
+  controle?: (quando: number) => Controle;
 }
 
 /**
@@ -57,10 +59,12 @@ async function replay(de: string, ate: string | ((tse: TseFalso) => boolean), op
   const pedidos: { url: string; quando: number }[] = [];
   const gravacoes: Gravacao[] = [];
   const arquivos = new Map<string, Gravacao>();
+  const lerControle = opcoes.controle;
   const coletor = criarColetor({
     base: BASE,
     eleicao: "6258",
     relogio,
+    controle: lerControle && (async () => lerControle(relogio.agora())),
     buscar: async (url, init) => {
       const quando = relogio.agora();
       pedidos.push({ url, quando });
@@ -329,5 +333,84 @@ describe("a noite inteira", () => {
     expect(maximo).toBeLessThanOrEqual(50);
     expect(r.tse.registro().naoEncontrados).toEqual([]);
     expect(r.tse.registro().violacoes).toEqual([]);
+  });
+});
+
+describe("as chaves de publicação e os avisos prontos, pelo arquivo de controle", () => {
+  // O dono age em rodadas escolhidas: desliga a projeção às 17:05, publica o aviso 1 às 17:10, liga o plano zero às
+  // 17:15 e, às 17:20, religa o núcleo mínimo e retira o aviso. A projeção fica desligada até o fim.
+  const comChaves = (parte: Partial<Controle["chaves"]>, resto: Partial<Controle> = {}): Controle => ({ ...CONTROLE_INICIAL, chaves: { ...CONTROLE_INICIAL.chaves, ...parte }, ...resto });
+  const comandos = [
+    { desde: ms("2022-10-30 17:05:00"), controle: comChaves({ projecao: false }) },
+    { desde: ms("2022-10-30 17:10:00"), controle: comChaves({ projecao: false }, { aviso: 1 }) },
+    { desde: ms("2022-10-30 17:15:00"), controle: comChaves({ projecao: false, nucleoMinimo: false }, { aviso: 1 }) },
+    { desde: ms("2022-10-30 17:20:00"), controle: comChaves({ projecao: false }) },
+  ];
+  /** O critério do Ensaio geral (decisão 20): a chave aparece no site em até 2 rodadas mais o cache. */
+  const DUAS_RODADAS = 2 * 20_000;
+  let r: Awaited<ReturnType<typeof replay>>;
+  beforeAll(async () => {
+    r = await replay("2022-10-30 16:50:00", "2022-10-30 17:26:00", { controle: (quando) => comandos.filter((c) => c.desde <= quando).at(-1)?.controle ?? CONTROLE_INICIAL });
+  }, 120_000);
+  const rodadas = () => r.gravacoes.filter((g) => g.caminho === "rodada.json").map((g) => ({ ...(g.conteudo as ArquivoDeRodada), quando: g.quando }));
+  const entre = (de: string, ate: string) => rodadas().filter((x) => x.quando >= ms(de) && x.quando < ms(ate));
+
+  it("sem comando, publica todas as chaves ligadas menos os textos preditivos, e nenhum aviso", () => {
+    expect(rodadas()[0]).toMatchObject({
+      chaves: { nucleoMinimo: true, projecao: true, baseComPesquisas: true, simulador: true, mapa: true, textosPreditivos: false },
+      aviso: null,
+    });
+  });
+
+  it("uma chave desligada aparece no arquivo de rodada em até 2 rodadas, e desligar a projeção desliga junto o simulador", () => {
+    expect(entre("2022-10-30 16:50:00", "2022-10-30 17:05:00").every((x) => x.chaves.projecao && x.chaves.simulador)).toBe(true);
+    const primeira = rodadas().find((x) => !x.chaves.projecao)!;
+    expect(primeira.quando).toBeGreaterThanOrEqual(ms("2022-10-30 17:05:00"));
+    expect(primeira.quando).toBeLessThan(ms("2022-10-30 17:05:00") + DUAS_RODADAS);
+    expect(primeira.chaves).toMatchObject({ projecao: false, simulador: false, nucleoMinimo: true, baseComPesquisas: true, mapa: true });
+    expect(rodadas().filter((x) => x.quando >= primeira.quando).every((x) => !x.chaves.projecao && !x.chaves.simulador)).toBe(true);
+  });
+
+  it("o aviso pronto entra e sai do arquivo de rodada nas rodadas escolhidas", () => {
+    const comAviso = rodadas().filter((x) => x.aviso !== null);
+    expect(comAviso[0]!.quando).toBeGreaterThanOrEqual(ms("2022-10-30 17:10:00"));
+    expect(comAviso[0]!.quando).toBeLessThan(ms("2022-10-30 17:10:00") + DUAS_RODADAS);
+    expect(comAviso.every((x) => x.aviso === 1)).toBe(true);
+    expect(comAviso.at(-1)!.quando).toBeGreaterThanOrEqual(ms("2022-10-30 17:20:00") - 20_000);
+    expect(comAviso.at(-1)!.quando).toBeLessThan(ms("2022-10-30 17:20:00") + DUAS_RODADAS);
+    expect(entre("2022-10-30 17:10:40", "2022-10-30 17:20:00").every((x) => x.aviso === 1)).toBe(true);
+  });
+
+  it("no plano zero, o coletor publica só o arquivo de rodada, a cada rodada, ainda na fase ao vivo", () => {
+    const planoZero = rodadas().filter((x) => !x.chaves.nucleoMinimo);
+    const [inicio, fim] = [planoZero[0]!.quando, planoZero.at(-1)!.quando];
+    expect(inicio).toBeGreaterThanOrEqual(ms("2022-10-30 17:15:00"));
+    expect(inicio).toBeLessThan(ms("2022-10-30 17:15:00") + DUAS_RODADAS);
+    expect(fim).toBeGreaterThanOrEqual(ms("2022-10-30 17:20:00") - 20_000);
+    // Cinco minutos de rodadas de 20 s, uma gravação do arquivo de rodada em cada: a página continua sabendo a fase e
+    // os candidatos, e nada mais sai.
+    expect(planoZero).toHaveLength(15);
+    expect(planoZero.every((x) => x.fase === "ao-vivo" && x.candidatos.length === 2)).toBe(true);
+    expect(r.gravacoes.filter((g) => g.caminho !== "rodada.json" && g.quando >= inicio && g.quando <= fim)).toEqual([]);
+  });
+
+  it("religado o núcleo mínimo, os lugares voltam em até 2 rodadas, com o placar do TSE e a curva do Brasil inteira", () => {
+    const brasil = r.gravacoes.filter((g) => g.caminho === "lugares/BR.json");
+    const antes = brasil.filter((g) => g.quando < ms("2022-10-30 17:15:00")).at(-1)!;
+    const depois = brasil.find((g) => g.quando > antes.quando)!;
+    expect(depois.quando).toBeGreaterThanOrEqual(ms("2022-10-30 17:20:00"));
+    expect(depois.quando).toBeLessThan(ms("2022-10-30 17:20:00") + DUAS_RODADAS);
+
+    // A curva não tem buraco: cada Brasil que o coletor baixou no plano zero (no máximo um por minuto, quando o índice
+    // muda; às 17h, cada um muda o % de seções) virou um ponto, e ela volta inteira.
+    const curvaAntes = (antes.conteudo as ArquivoDoLugar).curva;
+    const curvaDepois = (depois.conteudo as ArquivoDoLugar).curva;
+    expect(curvaDepois.slice(0, curvaAntes.length)).toEqual(curvaAntes);
+    const primeiraRodadaNoPlanoZero = Date.parse(r.rodadas.find((x) => !x.controle.chaves.nucleoMinimo)!.inicio);
+    const baixadosDoBrasil = r.rodadas.filter((x) => Date.parse(x.inicio) >= primeiraRodadaNoPlanoZero && Date.parse(x.inicio) <= depois.quando).reduce((n, x) => n + x.baixados.brasil, 0);
+    expect(baixadosDoBrasil).toBeGreaterThanOrEqual(3);
+    expect(curvaDepois.slice(curvaAntes.length)).toHaveLength(baixadosDoBrasil);
+    expect(curvaDepois.every((p, i) => i === 0 || p[0]! >= curvaDepois[i - 1]![0]!)).toBe(true);
+    expect(conferirPlacar(r.placares(), { noite, cadastro })).toEqual([]);
   });
 });

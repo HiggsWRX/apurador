@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { DIST, elemento, pagina, texto } from "../html";
+import { DIST, DIST_CHAVES_DESLIGADAS, elemento, pagina, texto } from "../html";
 
 // Confere o que o build gera para o bloco ao vivo: a ilha em cada página de lugar, já desenhada no estado de antes das
 // 17h, e as fotos oficiais servidas pelo próprio site, sem alteração.
@@ -16,7 +16,7 @@ function ilha(html: string) {
   // O Astro guarda cada valor como [tipo, valor]; 0 é um valor simples, e os objetos repetem o formato por dentro.
   const valor = (v: unknown): unknown => (Array.isArray(v) && v[0] === 0 ? (typeof v[1] === "object" && v[1] !== null ? objeto(v[1] as Record<string, unknown>) : v[1]) : v);
   const objeto = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, valor(v)]));
-  return { html: elementoDaIlha, props: objeto(bruto) as { id: string; tipo: string; fotos: Record<string, string>; base: string | null } };
+  return { html: elementoDaIlha, props: objeto(bruto) as { id: string; tipo: string; fotos: Record<string, string>; base: string | null; chaves: Record<string, boolean> } };
 }
 
 describe("bloco ao vivo no build", () => {
@@ -40,6 +40,18 @@ describe("bloco ao vivo no build", () => {
 
   it("sem endereço ao vivo no build, não lê nada: fica no estado de antes das 17h", () => {
     expect(ilha(pagina("/")).props.base).toBeNull();
+  });
+
+  it("leva as chaves da noite do arquivo de chaves, que valem na página até a primeira rodada do coletor, com os textos preditivos desligados", () => {
+    const { noite } = JSON.parse(readFileSync(new URL("../../../../dados/chaves.json", import.meta.url), "utf8")) as { noite: Record<string, boolean> };
+    expect(Object.keys(noite).sort()).toEqual(["baseComPesquisas", "mapa", "nucleoMinimo", "projecao", "simulador", "textosPreditivos"]);
+    // Desligados até a confirmação por escrito (Segunda consulta jurídica).
+    expect(noite.textosPreditivos).toBe(false);
+    expect(ilha(pagina("/")).props.chaves).toEqual(noite);
+    expect(ilha(pagina("/sp/campinas/")).props.chaves).toEqual(noite);
+    // Com o arquivo de chaves desligadas, todas chegam desligadas à ilha, sem código novo.
+    const desligadas = ilha(readFileSync(new URL("./index.html", DIST_CHAVES_DESLIGADAS), "utf8")).props.chaves;
+    expect(Object.values(desligadas)).toEqual(Object.keys(noite).map(() => false));
   });
 
   it("serve as fotos oficiais pelo próprio site, iguais às do TSE", () => {
