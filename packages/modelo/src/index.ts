@@ -49,3 +49,4 @@ export {
   type SinalDeVirada,
   type ViradaProjetada,
 } from "./projecao.ts";
+export { HIPOTESES_ZERADAS, oQueSeriaPreciso, simular, type Hipoteses, type ResultadoDaRegiao, type Simulacao } from "./simulacao.ts";

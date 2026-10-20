@@ -1,0 +1,50 @@
+---
+import Simulador from "../components/Simulador";
+import Base from "../layouts/Base.astro";
+import { BASE_PADRAO } from "../lib/projecao-antes-das-17h";
+import { CAMINHO_DO_ARQUIVO, FINALISTAS_DO_SIMULADOR, SIMULADOR_ANTES_DAS_17H } from "../lib/simulador-antes-das-17h";
+
+// A tela própria do simulador "e se" (Simulador "e se", decisões 5 a 13), aberta pelo link da caixa da projeção. Antes
+// das 17h, com a chave dele (e a da projeção) ligada, a ilha baixa o arquivo do build e roda o `modelo` no navegador; o
+// arquivo começa a vir junto com o HTML. Desligada, a tela só diz que ele abre às 17h. A prévia do link é a do site: o
+// cabeçalho é o mesmo de toda página, sem imagem por simulação.
+const titulo = 'Simulador "e se"';
+---
+
+<Base titulo={titulo}>
+  {SIMULADOR_ANTES_DAS_17H && <link slot="head" rel="preload" href={CAMINHO_DO_ARQUIVO} as="fetch" crossorigin="anonymous" />}
+  <div class="cabecalho">
+    <nav class="trilha" aria-label="Onde você está">
+      <ol>
+        <li>
+          <a href="/">Brasil</a>
+          <span aria-hidden="true">›</span>
+        </li>
+        <li aria-current="page">{titulo}</li>
+      </ol>
+    </nav>
+    <h1>{titulo}</h1>
+    <p class="subtitulo">Eleição para Presidente · 2º turno em 25 de outubro de 2026</p>
+  </div>
+  {
+    SIMULADOR_ANTES_DAS_17H ? (
+      <>
+        <p class="sim-intro">
+          Mude quanto o voto que falta pende para cada candidato e o comparecimento em cada região, e veja a simulação ao lado da projeção do Apurador. A
+          simulação usa o mesmo modelo da projeção, com os dados de agora. <a href="/metodologia/#virada">Como funciona →</a>
+        </p>
+        <Simulador client:load arquivo={CAMINHO_DO_ARQUIVO} finalistas={FINALISTAS_DO_SIMULADOR} basePadrao={BASE_PADRAO} />
+        <noscript>
+          <p class="cartao sim-aviso">O simulador roda no seu navegador e precisa de JavaScript.</p>
+        </noscript>
+      </>
+    ) : (
+      <section class="cartao sim-aviso" data-simulador-fechado>
+        <p>O simulador abre às 17h, com a apuração.</p>
+        <p>
+          <a href="/">Voltar à página do Brasil</a>
+        </p>
+      </section>
+    )
+  }
+</Base>

@@ -203,7 +203,7 @@ describe("seções 3 a 5, a apuração, a junção e a virada", () => {
     const simulador = elemento(secao("virada"), /<p[^>]*data-bloco="simulador"/);
     expect(texto(simulador).match(/\.(\s|$)/g)).toHaveLength(3);
     expect(texto(simulador)).toContain('simulador "e se"');
-    expect(simulador).toMatch(/<a href="\/"/);
+    expect(simulador).toMatch(/<a href="\/simulador\/"/);
   });
 });
 
@@ -240,7 +240,7 @@ describe("seção 9, fontes, dados e avisos", () => {
       expect(s, arquivo).toContain(`href="/dados/${arquivo}"`);
       expect(readFileSync(new URL(`./dados/${arquivo}`, DIST), "utf8"), arquivo).toBe(ler(arquivo));
     }
-    expect(readdirSync(new URL("./dados/", DIST)).sort()).toEqual(["pesquisas-historicas.csv", "pesquisas.csv"]);
+    expect(readdirSync(new URL("./dados/", DIST)).filter((f) => f.endsWith(".csv")).sort()).toEqual(["pesquisas-historicas.csv", "pesquisas.csv"]);
     expect(t).toMatch(/pesquisas\.csv · .* CSV · \d+ KB/);
   });
 });

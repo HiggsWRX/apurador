@@ -3,6 +3,7 @@ import { formatarCalculo, umaCasa } from "../lib/formato";
 import { corDoPartido } from "../lib/identidade";
 import { AGREGADO, entreOsFinalistas, PLACAR_ENTRE_FINALISTAS_DO_BRASIL, quemGanhouEntre } from "../lib/pesquisas";
 import { BASE_PADRAO, PROJECAO_ANTES_DAS_17H, type ProjecaoDeUmaBase } from "../lib/projecao-antes-das-17h";
+import { caminhoDoSimulador, SIMULADOR_ANTES_DAS_17H } from "../lib/simulador-antes-das-17h";
 import { ChanceDeVitoria } from "./ChanceDeVitoria";
 import ValoresDosFinalistas from "./ValoresDosFinalistas.astro";
 
@@ -11,6 +12,7 @@ import ValoresDosFinalistas from "./ValoresDosFinalistas.astro";
 // margem de 95%, a chance de vitória na barra dividida, "A projeção, comparada" com o 1º turno e com a indicação das
 // pesquisas, e o controle Base da projeção, com o peso das pesquisas ao lado (Combinação de pesquisas e apuração,
 // decisão 5). Nas duas bases, os números são os do `modelo` sobre o mesmo pesquisas.csv. Nenhuma frase diz quem vence.
+// Com o simulador no ar, "Simular "e se" →" abre a tela dele com a base escolhida aqui (Simulador "e se", decisão 6).
 
 const METODOLOGIA = "/metodologia/";
 const projecao = PROJECAO_ANTES_DAS_17H;
@@ -71,6 +73,11 @@ const chances = (base: ProjecaoDeUmaBase) =>
         </p>
       )}
       <p class="links">
+        {SIMULADOR_ANTES_DAS_17H && (
+          <a href={caminhoDoSimulador(BASE_PADRAO)} data-simular>
+            Simular "e se" →
+          </a>
+        )}
         <a href={METODOLOGIA}>Como calculamos →</a>
       </p>
       <p class="fonte">Cálculo do Apurador com dados do TSE</p>
@@ -79,19 +86,29 @@ const chances = (base: ProjecaoDeUmaBase) =>
 }
 
 <script>
-  // O controle Base da projeção: troca, na projeção e em "O que esperar da noite", o que cada base mostra.
+  // O controle Base da projeção: troca, na projeção e em "O que esperar da noite", o que cada base mostra, e leva a base
+  // escolhida ao link do simulador, que a herda.
   const botoes = [...document.querySelectorAll<HTMLButtonElement>("[data-base-botao]")];
   const porBase = [...document.querySelectorAll<HTMLElement>("[data-base]")];
+  const simular = document.querySelector<HTMLAnchorElement>("a[data-simular]");
   for (const botao of botoes) {
     botao.addEventListener("click", () => {
       for (const outro of botoes) outro.setAttribute("aria-pressed", String(outro === botao));
       for (const elemento of porBase) elemento.toggleAttribute("data-ativa", elemento.dataset.base === botao.dataset.baseBotao);
+      if (simular && botao.dataset.baseBotao) {
+        const endereco = new URL(simular.href);
+        endereco.searchParams.set("base", botao.dataset.baseBotao);
+        simular.href = endereco.toString();
+      }
     });
   }
 </script>
 
 <style>
   .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.25rem;
     margin: 0.75rem 0 0;
     font-size: 0.875rem;
   }

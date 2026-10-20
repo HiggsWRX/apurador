@@ -59,8 +59,11 @@ export function viradaProjetada(pontos: PontoDaCurva[]): ViradaProjetada | null 
   };
 }
 
-/** A curva projetada do Brasil, de cada UF e do Exterior, com a virada projetada de cada um. */
-export function curvaProjetada(modelo: Modelo, apuracao: Apuracao, projecao: Projecao, constantes: Constantes): CurvasProjetadas {
+/**
+ * A curva projetada do Brasil, de cada UF e do Exterior, com a virada projetada de cada um, a partir do voto que falta
+ * de uma projeção ou de uma simulação.
+ */
+export function curvaProjetada(modelo: Modelo, apuracao: Apuracao, projecao: Pick<Projecao, "brasil" | "ufs" | "votoQueFalta" | "fatiaDoQueFalta">, constantes: Constantes): CurvasProjetadas {
   const nUfs = modelo.ufs.length;
   // Agora, por UF: seções, votos dos finalistas, votos do 1º finalista e o voto que falta.
   const secoes = new Float64Array(nUfs);
