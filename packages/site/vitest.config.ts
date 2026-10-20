@@ -7,5 +7,8 @@ export default defineConfig({
     name: "@apurador/site",
     include: ["test/build/**/*.test.{ts,tsx}"],
     globalSetup: ["./test/construir.ts"],
+    // Alguns testes leem as ~5.800 páginas do build: com várias suítes rodando na mesma máquina, eles passam dos 5 s
+    // padrão sem estar errados.
+    testTimeout: 30_000,
   },
 });

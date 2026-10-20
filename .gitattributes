@@ -1,3 +1,5 @@
 * text=auto eol=lf
 # dados derivados comprimidos (as noites reconstruídas)
 *.gz binary
+# tickets e decisões: sessões paralelas acrescentam notas no fim do mesmo ticket, e o merge fica com as de todas
+.scratch/**/*.md merge=union

@@ -28,7 +28,7 @@ const descricao =
   `A área à direita de 50% é a chance de ${nome(primeiro)} vencer, ${chances[0]}; a da esquerda, a de ${nome(segundo)}, ${chances[1]}.`;
 ---
 
-<svg class="sino" viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={descricao} data-chance={chances[0]}>
+<svg class="sino" viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={descricao} data-chance={chances[0]} data-chance-de-vitoria>
   <path class="area" data-cor={corDoPartido(primeiro.partido)} d={s.areas[0]} />
   <path class="area" data-cor={corDoPartido(segundo.partido)} d={s.areas[1]} />
   <line class="meio" x1={s.x50} x2={s.x50} y1={s.topo - 8} y2={s.base} />

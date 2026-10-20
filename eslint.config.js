@@ -3,7 +3,7 @@ import tseslint from "typescript-eslint";
 
 // Só as regras mecânicas que já pegaram um erro de verdade. Os julgamentos ficam no CODING_STANDARDS.md.
 export default tseslint.config(
-  { ignores: ["**/node_modules/", "**/dist/", "**/dist-chaves-desligadas/", "**/.astro/", ".cache/", "prototipos/"] },
+  { ignores: ["**/node_modules/", "**/dist/", "**/dist-chaves-desligadas/", "**/dist-projecao-desligada/","**/.astro/", ".cache/", "prototipos/"] },
   {
     files: ["**/*.ts", "**/*.tsx"],
     languageOptions: { parser: tseslint.parser },

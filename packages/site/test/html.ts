@@ -8,6 +8,9 @@ export const DIST = new URL("../dist/", import.meta.url);
 /** O build do mesmo código com o arquivo de chaves de `test/chaves-desligadas/`, que desliga todas as chaves. */
 export const DIST_CHAVES_DESLIGADAS = new URL("../dist-chaves-desligadas/", import.meta.url);
 
+/** O build com o arquivo de chaves de `test/projecao-desligada/`: o agregado ligado e a projeção de antes das 17h desligada. */
+export const DIST_PROJECAO_DESLIGADA = new URL("../dist-projecao-desligada/", import.meta.url);
+
 /** O relógio dos builds dos testes, nunca o real: o agregado da página é o deste instante. */
 export const AGORA = "2026-10-19T12:00:00-03:00";
 

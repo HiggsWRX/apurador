@@ -14,6 +14,10 @@ Judgement calls the reviewer checks in every diff. Mechanical rules live in the 
 - Exported types and functions carry a one-line doc comment that says what the thing is, beyond its name; the lint (`jsdoc/require-jsdoc`) only checks that one is there. Fields carry one when the unit, the time zone or the source is not obvious (`AAAA-MM-DD HH:MM:SS`, em Brasília; ms do relógio do coletor).
 - Comment density follows the surrounding code: the reason behind a choice and the gotcha no type confesses, never a restatement of the line.
 
+## The page
+
+- Every element that shows a chance de vitória carries `data-chance-de-vitoria` (the bar in `ChanceDeVitoria` and the sino do), and before 17h it sits behind `antesDas17h.projecao`, never only behind `antesDas17h.agregado`. The build with only the projeção off (`test/build/chance-de-vitoria.test.ts`) finds a chance by that mark and nothing else.
+
 ## Tests
 
 The spec's "Decisões de teste" (`.scratch/apurador-2026-construcao/spec.md`) is the rule: behaviour at the boundary, expected values from an outside reference (official results, the research notes, the real TSE samples in `packages/ensaio/test/amostras/tse`), injected clock and transport. In review, look for:
