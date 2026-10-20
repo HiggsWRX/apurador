@@ -1,9 +1,9 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { CONTROLE_INICIAL, NOMES_DAS_CHAVES, ROTULO_DA_CHAVE } from "./chaves.ts";
+import { CHAVES_DA_NOITE, NOMES_DAS_CHAVES } from "./chaves.ts";
 import { criarColetor, type RegistroDaRodada } from "./coletor.ts";
-import { ARQUIVO_DE_CONTROLE, lerArquivoDeControle } from "./controle.ts";
+import { ARQUIVO_DE_CONTROLE, controleDoArquivoDeChaves, lerArquivoDeControle } from "./controle.ts";
 import { pastaLocal } from "./destino.ts";
 import { relogioReal } from "./relogio.ts";
 
@@ -51,15 +51,17 @@ function resumo(r: RegistroDaRodada): string {
   const { brasil, ufs, municipios, zonas } = r.baixados;
   const falhas = r.falhas.length === 0 ? "" : ` · ${r.falhas.length} falhas (${r.falhas.slice(0, 3).join("; ")})`;
   // O controle do dono só aparece no que foge do inicial: o que está desligado, o aviso no ar e o plano B.
-  const desligadas = NOMES_DAS_CHAVES.filter((nome) => !r.controle.chaves[nome]).map((nome) => ROTULO_DA_CHAVE[nome]);
+  const desligadas = NOMES_DAS_CHAVES.filter((nome) => !r.controle.chaves[nome]).map((nome) => CHAVES_DA_NOITE[nome].rotulo);
   const controle = [desligadas.length === 0 ? "" : ` · desligadas: ${desligadas.join(", ")}`, r.controle.aviso === null ? "" : ` · aviso ${r.controle.aviso}`, r.controle.planoB ? " · plano B" : ""].join("");
   return `#${r.numero} ${hora} ${r.fase ?? "sem fase"} · ${(r.duracao / 1000).toFixed(1)} s · ${r.pedidos} pedidos (${respostas}) · novos: Brasil ${brasil}, UFs ${ufs}, municípios ${municipios}, zonas ${zonas} · ${r.gravacoes} gravações${controle}${falhas}`;
 }
 
 console.log(`Coletor da eleição ${opcoes.eleicao} em ${opcoes.tse}, a ${pedidosPorSegundo} pedidos por segundo.`);
 console.log(`Publica em ${pasta}. Registro: ${fileURLToPath(arquivoDoRegistro)}`);
-console.log(`Controle: ${opcoes.controle}, lido a cada rodada (npm run noite -- <comando>). Sem o arquivo, tudo ligado menos os textos preditivos.`);
+console.log(`Controle: ${opcoes.controle}, lido a cada rodada (npm run noite -- <comando>). Sem o arquivo, valem as chaves de dados/chaves.json.`);
 
+// Sem arquivo de controle, as chaves são as do arquivo de chaves do site, lidas de novo a cada rodada: um deploy que
+// mude o arquivo vale no coletor que já roda, até o primeiro comando.
 const coletor = criarColetor({
   base: opcoes.tse,
   eleicao: opcoes.eleicao,
@@ -67,7 +69,7 @@ const coletor = criarColetor({
   relogio: relogioReal,
   destino: pastaLocal(pasta),
   pedidosPorSegundo,
-  controle: async () => (await lerArquivoDeControle(opcoes.controle)) ?? CONTROLE_INICIAL,
+  controle: async () => (await lerArquivoDeControle(opcoes.controle)) ?? (await controleDoArquivoDeChaves()),
 });
 await coletor.rodar({
   ate: () => parar || Date.now() >= fim,

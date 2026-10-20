@@ -1,13 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { aplicarComando, lerComando } from "../src/comandos.ts";
-import { CONTROLE_INICIAL, lerControle, type Controle } from "../src/chaves.ts";
+import { CONTROLE_INICIAL, lerControle, type ChavesDaNoite, type Controle } from "../src/chaves.ts";
 
 // Os comandos da noite (Operação na noite, decisão 9): um conjunto fechado, cada um pedindo o nome do bloco como
 // confirmação antes de gravar o arquivo de controle. Não há texto livre, pausa da publicação nem volta a um estado
 // anterior. A conferência fica no que cada comando faz com o controle, não no terminal.
 
-const LIGADAS = CONTROLE_INICIAL.chaves;
-const comChaves = (parte: Partial<Controle["chaves"]>, resto: Partial<Controle> = {}): Controle => ({ ...CONTROLE_INICIAL, chaves: { ...LIGADAS, ...parte }, ...resto });
+/** As seis chaves da decisão 19 do Ensaio geral, ligadas, menos os textos preditivos (Segunda consulta jurídica). */
+const LIGADAS: ChavesDaNoite = { nucleoMinimo: true, projecao: true, baseComPesquisas: true, simulador: true, mapa: true, textosPreditivos: false };
+const SEM_COMANDO: Controle = { chaves: LIGADAS, aviso: null, planoB: false };
+const comChaves = (parte: Partial<ChavesDaNoite>, resto: Partial<Controle> = {}): Controle => ({ ...SEM_COMANDO, chaves: { ...LIGADAS, ...parte }, ...resto });
+
+describe("o controle inicial", () => {
+  it("é tudo ligado, menos os textos preditivos, sem aviso e no destino principal", () => {
+    expect(CONTROLE_INICIAL).toEqual(SEM_COMANDO);
+  });
+});
 
 describe("o conjunto fechado de comandos", () => {
   it("lê ligar e desligar de cada uma das seis chaves, pelo nome em kebab-case", () => {
@@ -40,23 +48,24 @@ describe("o conjunto fechado de comandos", () => {
 
 describe("o que cada comando faz com o controle", () => {
   it("desligar o núcleo mínimo é o plano zero, e religar o desfaz: a confirmação é o nome do bloco", () => {
-    const planoZero = aplicarComando(CONTROLE_INICIAL, { tipo: "desligar", chave: "nucleoMinimo" });
+    const planoZero = aplicarComando(SEM_COMANDO, { tipo: "desligar", chave: "nucleoMinimo" });
     expect(planoZero.controle).toEqual(comChaves({ nucleoMinimo: false }));
     expect(planoZero.confirmacao).toBe("nucleo-minimo");
     expect(planoZero.mudancas.join(" ")).toMatch(/plano zero/);
 
     const deVolta = aplicarComando(planoZero.controle, { tipo: "ligar", chave: "nucleoMinimo" });
-    expect(deVolta.controle).toEqual(CONTROLE_INICIAL);
+    expect(deVolta.controle).toEqual(SEM_COMANDO);
     expect(deVolta.confirmacao).toBe("nucleo-minimo");
   });
 
   it("desligar a projeção desliga junto o simulador, e religá-la não o religa sozinho", () => {
-    const semProjecao = aplicarComando(CONTROLE_INICIAL, { tipo: "desligar", chave: "projecao" });
-    expect(semProjecao.controle.chaves).toMatchObject({ projecao: false, simulador: false });
+    const semProjecao = aplicarComando(SEM_COMANDO, { tipo: "desligar", chave: "projecao" });
+    expect(semProjecao.controle.chaves).toEqual({ ...LIGADAS, projecao: false, simulador: false });
+    expect(semProjecao.confirmacao).toBe("projecao");
     expect(semProjecao.mudancas.join(" ")).toMatch(/simulador/);
 
     const comProjecao = aplicarComando(semProjecao.controle, { tipo: "ligar", chave: "projecao" });
-    expect(comProjecao.controle.chaves).toMatchObject({ projecao: true, simulador: false });
+    expect(comProjecao.controle.chaves).toEqual({ ...LIGADAS, simulador: false });
   });
 
   it("não liga o simulador com a projeção desligada", () => {
@@ -65,21 +74,24 @@ describe("o que cada comando faz com o controle", () => {
   });
 
   it("não grava o que já está assim", () => {
-    expect(() => aplicarComando(CONTROLE_INICIAL, { tipo: "ligar", chave: "mapa" })).toThrow(/já está ligado/);
-    expect(() => aplicarComando(CONTROLE_INICIAL, { tipo: "desligar", chave: "textosPreditivos" })).toThrow(/já estão desligados/);
-    expect(() => aplicarComando(CONTROLE_INICIAL, { tipo: "retirar-aviso" })).toThrow(/Nenhum aviso/);
-    expect(() => aplicarComando({ ...CONTROLE_INICIAL, aviso: 2 }, { tipo: "aviso", aviso: 2 })).toThrow(/já está publicado/);
-    expect(() => aplicarComando({ ...CONTROLE_INICIAL, planoB: true }, { tipo: "plano-b" })).toThrow(/já é o plano B/);
+    expect(() => aplicarComando(SEM_COMANDO, { tipo: "ligar", chave: "mapa" })).toThrow(/O mapa já está ligado/);
+    expect(() => aplicarComando(SEM_COMANDO, { tipo: "desligar", chave: "textosPreditivos" })).toThrow(/Os textos preditivos já estão desligados/);
+    expect(() => aplicarComando(comChaves({ projecao: false, simulador: false }), { tipo: "desligar", chave: "projecao" })).toThrow(/A projeção já está desligada/);
+    expect(() => aplicarComando(SEM_COMANDO, { tipo: "retirar-aviso" })).toThrow(/Nenhum aviso/);
+    expect(() => aplicarComando({ ...SEM_COMANDO, aviso: 2 }, { tipo: "aviso", aviso: 2 })).toThrow(/já está publicado/);
+    expect(() => aplicarComando({ ...SEM_COMANDO, planoB: true }, { tipo: "plano-b" })).toThrow(/já é o plano B/);
   });
 
-  it("publica um aviso no lugar do que houver, e retirar deixa a faixa vazia", () => {
-    const um = aplicarComando(CONTROLE_INICIAL, { tipo: "aviso", aviso: 1 });
-    expect(um.controle).toEqual({ ...CONTROLE_INICIAL, aviso: 1 });
-    expect(um.confirmacao).toBe("aviso");
+  it("publica um aviso no lugar do que houver, confirmado pelo número, e retirar deixa a faixa vazia", () => {
+    const um = aplicarComando(SEM_COMANDO, { tipo: "aviso", aviso: 1 });
+    expect(um.controle).toEqual({ ...SEM_COMANDO, aviso: 1 });
+    expect(um.confirmacao).toBe("aviso-1");
     expect(um.mudancas.join(" ")).toContain("O TSE está demorando a divulgar novos dados.");
 
     const tres = aplicarComando(um.controle, { tipo: "aviso", aviso: 3 });
     expect(tres.controle.aviso).toBe(3);
+    expect(tres.confirmacao).toBe("aviso-3");
+    expect(tres.mudancas.join(" ")).toContain("Tira o aviso 1 do ar.");
 
     const nenhum = aplicarComando(tres.controle, { tipo: "retirar-aviso" });
     expect(nenhum.controle.aviso).toBeNull();

@@ -387,8 +387,9 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
     expect(inicio).toBeGreaterThanOrEqual(ms("2022-10-30 17:15:00"));
     expect(inicio).toBeLessThan(ms("2022-10-30 17:15:00") + DUAS_RODADAS);
     expect(fim).toBeGreaterThanOrEqual(ms("2022-10-30 17:20:00") - 20_000);
-    // Cinco minutos de rodadas de 20 s: a página continua sabendo a fase e os candidatos, e nada mais sai.
-    expect(planoZero.length).toBeGreaterThan(10);
+    // Cinco minutos de rodadas de 20 s, uma gravação do arquivo de rodada em cada: a página continua sabendo a fase e
+    // os candidatos, e nada mais sai.
+    expect(planoZero).toHaveLength(15);
     expect(planoZero.every((x) => x.fase === "ao-vivo" && x.candidatos.length === 2)).toBe(true);
     expect(r.gravacoes.filter((g) => g.caminho !== "rodada.json" && g.quando >= inicio && g.quando <= fim)).toEqual([]);
   });
@@ -400,12 +401,15 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
     expect(depois.quando).toBeGreaterThanOrEqual(ms("2022-10-30 17:20:00"));
     expect(depois.quando).toBeLessThan(ms("2022-10-30 17:20:00") + DUAS_RODADAS);
 
-    // A curva não tem buraco: os placares que o coletor viu no plano zero entram nela, e ela volta inteira.
+    // A curva não tem buraco: cada Brasil que o coletor baixou no plano zero (no máximo um por minuto, quando o índice
+    // muda; às 17h, cada um muda o % de seções) virou um ponto, e ela volta inteira.
     const curvaAntes = (antes.conteudo as ArquivoDoLugar).curva;
     const curvaDepois = (depois.conteudo as ArquivoDoLugar).curva;
     expect(curvaDepois.slice(0, curvaAntes.length)).toEqual(curvaAntes);
-    const noPlanoZero = curvaDepois.slice(curvaAntes.length, -1);
-    expect(noPlanoZero.length).toBeGreaterThanOrEqual(3);
+    const primeiraRodadaNoPlanoZero = Date.parse(r.rodadas.find((x) => !x.controle.chaves.nucleoMinimo)!.inicio);
+    const baixadosDoBrasil = r.rodadas.filter((x) => Date.parse(x.inicio) >= primeiraRodadaNoPlanoZero && Date.parse(x.inicio) <= depois.quando).reduce((n, x) => n + x.baixados.brasil, 0);
+    expect(baixadosDoBrasil).toBeGreaterThanOrEqual(3);
+    expect(curvaDepois.slice(curvaAntes.length)).toHaveLength(baixadosDoBrasil);
     expect(curvaDepois.every((p, i) => i === 0 || p[0]! >= curvaDepois[i - 1]![0]!)).toBe(true);
     expect(conferirPlacar(r.placares(), { noite, cadastro })).toEqual([]);
   });
