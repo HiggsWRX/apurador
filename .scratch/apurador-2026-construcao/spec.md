@@ -28,7 +28,7 @@ As restrições são estas:
 
 ## Solução
 
-O **Apurador**, em `apurador.app`: um site público, sem login, em português, pensado primeiro para o celular. Ele tem uma **página de lugar** para o Brasil, cada UF, o Exterior e cada município, com o bloco ao vivo em cima e o histórico embaixo.
+O **Apurador**, em `apurador.org`: um site público, sem login, em português, pensado primeiro para o celular. Ele tem uma **página de lugar** para o Brasil, cada UF, o Exterior e cada município, com o bloco ao vivo em cima e o histórico embaixo.
 
 - **Antes das 17h** (a partir da etapa "Antes da noite", meta qui 22/10): a página do Brasil mostra a lista das pesquisas registradas, com os seis dados do art. 10; o **agregado de pesquisas** com faixa e tendência; a projeção e a chance de vitória antes da apuração; e "O que esperar da noite", com a curva projetada de 0% a 100% e a virada projetada. Os outros lugares mostram a **indicação das pesquisas**. O explorador histórico e a página de metodologia já estão no ar.
 - **Às 17h de 25/10** a página passa sozinha ao ao vivo, sem recarregar. Nela aparecem:
@@ -47,7 +47,7 @@ Por trás, o **coletor** roda no computador do dono ([ADR 0001](../../docs/adr/0
 
 ### Página de lugar e placar oficial
 
-1. Como visitante no celular, quero abrir `apurador.app` e cair direto na página do Brasil, para ver o estado da apuração sem navegar.
+1. Como visitante no celular, quero abrir `apurador.org` e cair direto na página do Brasil, para ver o estado da apuração sem navegar.
 2. Como visitante, quero ver o placar oficial com os dois candidatos lado a lado, com foto oficial do TSE, nome, partido, % com duas casas e votos, para saber que é o número oficial.
 3. Como visitante, quero ver o % de seções totalizadas com "x de y" e a hora da última totalização do TSE, para saber quanto da apuração já aconteceu.
 4. Como visitante, quero que o placar oficial tenha moldura sólida, o selo "Placar oficial · TSE" e "Fonte: TSE, sem alteração (CC-BY)", para nunca confundi-lo com um cálculo do Apurador.
@@ -371,8 +371,8 @@ Revistos pelo [Volume de gravações na noite](../apurador-2026/issues/24-volume
 ### Entrega aos visitantes
 
 - **Endereços**:
-  - site em `apurador.app`;
-  - JSONs ao vivo no R2 em `ao-vivo.apurador.app`, com Cache Rule que respeita o `Cache-Control` da origem, Tiered Cache e TTL do navegador em "Respect Existing Headers";
+  - site em `apurador.org`;
+  - JSONs ao vivo no R2 em `ao-vivo.apurador.org`, com Cache Rule que respeita o `Cache-Control` da origem, Tiered Cache e TTL do navegador em "Respect Existing Headers";
   - até o domínio existir, produção em `*.workers.dev` com `noindex`. Depois, o `*.workers.dev` fica só como plano B, nunca divulgado.
 - **Ritmo**: a CDN guarda cada JSON por 15 s. A página relê a cada 30 s, com `If-None-Match`. O atraso esperado sobre o app do TSE é de ~35 s em média e ~70 s no pior caso.
 - **A página conhece os dois endereços**: lê o principal e passa ao do plano B se ele der erro ou tiver arquivo de rodada com mais de 2 min, ficando com a rodada mais nova.
@@ -427,7 +427,7 @@ Antes de o coletor rodar (etapa "Antes da noite"), as chaves vêm de um arquivo 
 
 ([Plano de lançamento em fases](../apurador-2026/issues/19-plano-de-lancamento-em-fases.md))
 
-- **Antes da noite** (meta qui 22/10, 12h, em `apurador.app`): páginas de lugar com o histórico, lista das pesquisas, agregado, painel de antes das 17h, metodologia (seções 1 a 5, 8 e 9) e rodapé. O simulador entra se estiver pronto. Vai ao ar como build estático, sem o coletor. Só abre com os nove itens do critério de pronto verdadeiros e o de acordo do dono no registro do lançamento. Se atrasar, o limite é a manhã de 24/10, com o build do ensaio 2.
+- **Antes da noite** (meta qui 22/10, 12h, em `apurador.org`): páginas de lugar com o histórico, lista das pesquisas, agregado, painel de antes das 17h, metodologia (seções 1 a 5, 8 e 9) e rodapé. O simulador entra se estiver pronto. Vai ao ar como build estático, sem o coletor. Só abre com os nove itens do critério de pronto verdadeiros e o de acordo do dono no registro do lançamento. Se atrasar, o limite é a manhã de 24/10, com o build do ensaio 2.
 - **Noite**: o build aprovado no ensaio 2, com as seções 6 e 7 da metodologia.
 - **Depois** (a partir de 26/10): "Como a projeção se saiu" e o 2º turno de 2026 no histórico, provisório, de manhã. À tarde, o repositório fica público, depois da varredura de segredos. Quando chegarem os arquivos oficiais, o 2º turno de 2026 passa a eles.
 - **Congelamento**: depois do ensaio 2 (23/10), nada de função nova em lugar nenhum do site. Até as 18h de 24/10, só correções e texto da metodologia. Até as 23h de 24/10, os dados das pesquisas. Na noite, só a retirada de pesquisa até as 16h e a correção do `tse` se o TSE mudar o formato.
@@ -514,7 +514,7 @@ Não há código de produção ainda. As referências são:
   - 26/10: etapa "Depois".
 - **Prioridade**: o núcleo mínimo vem antes de tudo, depois a projeção, a base Apuração + pesquisas, o simulador, o mapa e os textos preditivos. O explorador histórico só entra no que couber sem atrasar o núcleo. Se faltar tempo, saem primeiro a comparação de turnos e os gráficos extras da metodologia.
 - **Pendências do dono** (HITL), que bloqueiam partes da construção:
-  - comprar `apurador.app` (meta 19/10, limite 21/10);
+  - comprar `apurador.org` (meta 19/10, limite 21/10);
   - criar o e-mail do projeto antes de 22/10;
   - gravar os secrets `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` no GitHub;
   - criar as chaves de escrita só nos buckets de produção (`apurador-ao-vivo`) e do ensaio, e colá-las no `.env` do coletor;

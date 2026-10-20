@@ -6,7 +6,7 @@ Spec: [Apurador 2026: especificação da construção](../spec.md)
 
 ## O que construir
 
-Abrir o site em `apurador.app` com a etapa "Antes da noite", com meta na quinta, 22/10, às 12h. Entram:
+Abrir o site em `apurador.org` com a etapa "Antes da noite", com meta na quinta, 22/10, às 12h. Entram:
 
 - as páginas de lugar com o histórico;
 - a lista das pesquisas, o agregado e o painel de antes das 17h;
@@ -34,7 +34,7 @@ O endereço só abre com os nove itens verdadeiros, registrados com o de acordo 
 - [ ] **Celular**: placar e painel visíveis em até 3 s num Android barato no 4G.
 - [ ] **Revisão do dono no celular**: o Brasil, uma UF, um município grande e um pequeno.
 - [ ] **Depois de aberto**: um deploy que quebre um destes critérios volta à versão anterior na hora.
-- [ ] O site abre em `apurador.app`, sem `noindex`, com o Cloudflare Web Analytics, sem cookies nem outro rastreador. O `*.workers.dev` fica só como endereço do plano B, nunca divulgado.
+- [ ] O site abre em `apurador.org`, sem `noindex`, com o Cloudflare Web Analytics, sem cookies nem outro rastreador. O `*.workers.dev` fica só como endereço do plano B, nunca divulgado.
 - [ ] O registro do lançamento traz a conferência dos nove itens e o de acordo do dono.
 
 ## Comments

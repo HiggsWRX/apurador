@@ -57,3 +57,9 @@ Depois disso, o Claude:
 - **Repositório** (decisão 7 de lá): o "privado até o lançamento" passa a valer até **26/10**. Ele só abre depois de uma varredura de segredos e de endereços de ensaio em todo o histórico do Git.
 - **Domínio** (decisão 6 de lá): o site abre em `apurador.app`. O limite segue 21/10, mas comprar já em 19/10 dá folga para a meta de 22/10 da etapa "Antes da noite".
 - **E-mail do projeto**: o rodapé com ele é critério de pronto da etapa "Antes da noite" (decisão 3 de lá), então ele precisa existir antes de 22/10.
+
+**20/10/2026, domínio comprado:**
+
+- O dono comprou **`apurador.org`** no Cloudflare Registrar, o domínio previsto caso o `apurador.app` não estivesse livre (passo 1 acima). Os nameservers já são os da Cloudflare (`drake.ns.cloudflare.com` e `isla.ns.cloudflare.com`). O site vai abrir em `apurador.org`, e os JSONs ao vivo em `ao-vivo.apurador.org`.
+- Na especificação e nos tickets abertos da construção (13 e 20), `apurador.app` passou a `apurador.org`. Nos tickets já resolvidos, o nome antigo fica como registro do que foi decidido, e vale `apurador.org`.
+- **Secrets da Cloudflare no GitHub, a conferir**: o último deploy do Worker `apurador` é de 18/10, 23h46 (UTC), e os 20 commits enviados à `main` depois dele não geraram deploy. Ou o job `deploy` do CI pula por falta de `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`, ou os testes falham no GitHub. O dono confere na aba Actions do repositório.
