@@ -30,3 +30,8 @@ Decisões: [Operação na noite](../../apurador-2026/issues/18-operacao-na-noite
 ## Comments
 
 - 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): num 403 ou 429, o coletor hoje só registra a falha da URL e segue pedindo. Já existe o teto de downloads por rodada (14 s de pedidos), mas não o de gravações nem a parada 30 min depois da final. O replay da noite inteira já roda até 30 min depois da final (`packages/ensaio/test/replay.test.ts`).
+- 20/10/2026, do [ticket 20](20-publicacao-r2-e-plano-b.md):
+  - **Onde está o contador**: o contador das gravações nos dois buckets existe e vai no registro de cada rodada, em `registro.gravacoesDoMes.buckets`, por bucket e por mês em UTC. O coletor o recebe em `OpcoesDoColetor.contador`. Sem contador (o replay, os testes), o registro traz `gravacoesDoMes: null`.
+  - **O que conta**: cada gravação que o R2 aceitou conta uma. A recusada não conta, e o plano B e a pasta local também não, porque não são operações do R2.
+  - **A trava de 90%**: lê a soma dos buckets com `somaDoMes` (`contador.ts`) e dispara em 900 mil.
+  - **O teto por rodada**: as gravações dos lugares saem até 32 ao mesmo tempo (`emParalelo`, em `publicar`). O teto de 1.500 entra na lista que `publicar` monta antes de gravar.

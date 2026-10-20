@@ -1,6 +1,6 @@
 # 20: Publicação no R2 e plano B
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 12, 14
 Spec: [Apurador 2026: especificação da construção](../spec.md)
 
@@ -19,15 +19,15 @@ Decisões: [Arquitetura e tecnologia](../../apurador-2026/issues/08-arquitetura-
 
 ## Critérios de aceite
 
-- [ ] **Interface**: o coletor publica por uma só interface, com os quatro destinos trocáveis por configuração. O destino do ensaio nunca é o de produção.
-- [ ] **Gravação no R2**: os JSONs vão com `Content-Encoding: gzip`, ETag e `Cache-Control`, para a CDN guardar por 15 s.
+- [x] **Interface**: o coletor publica por uma só interface, com os quatro destinos trocáveis por configuração. O destino do ensaio nunca é o de produção.
+- [x] **Gravação no R2**: os JSONs vão com `Content-Encoding: gzip`, ETag e `Cache-Control`, para a CDN guardar por 15 s.
 - [ ] **Configuração de `ao-vivo.apurador.org`**: Cache Rule que respeita o `Cache-Control` da origem, Tiered Cache e TTL do navegador em "Respect Existing Headers". O que não der para configurar por API vira um passo descrito ao dono.
 - [ ] **Conferência do gzip**: um objeto gravado com gzip chega certo ao navegador pela borda, com ETag e 304. Se não chegar, uma opção de configuração faz o coletor gravar sem compressão.
-- [ ] **Plano B**: o Worker é republicado a cada minuto com os ~5.820 arquivos ao vivo, dentro dos 20.000 por versão. O coletor só publica nele por comando do dono e fica nele até o fim da noite.
-- [ ] **Leitura da página**: ela lê o endereço principal. Se ele der erro, ou se o arquivo de rodada dele tiver mais de 2 min, tenta o outro e fica com a rodada mais nova.
-- [ ] **Sem domínio**: só existe o caminho do Worker, e a página funciona com ele.
-- [ ] **Credenciais**: as chaves de escrita ficam no `.env` local do coletor, nunca no Git.
-- [ ] **Contador de gravações**: o coletor conta cada gravação nos dois buckets e guarda o contador no estado, para o [ticket 23](23-protecoes-e-fim-da-noite.md).
+- [x] **Plano B**: o Worker é republicado a cada minuto com os ~5.820 arquivos ao vivo, dentro dos 20.000 por versão. O coletor só publica nele por comando do dono e fica nele até o fim da noite.
+- [x] **Leitura da página**: ela lê o endereço principal. Se ele der erro, ou se o arquivo de rodada dele tiver mais de 2 min, tenta o outro e fica com a rodada mais nova.
+- [x] **Sem domínio**: só existe o caminho do Worker, e a página funciona com ele.
+- [x] **Credenciais**: as chaves de escrita ficam no `.env` local do coletor, nunca no Git.
+- [x] **Contador de gravações**: o coletor conta cada gravação nos dois buckets e guarda o contador no estado, para o [ticket 23](23-protecoes-e-fim-da-noite.md).
 
 ## Comments
 
@@ -46,3 +46,53 @@ Decisões: [Arquitetura e tecnologia](../../apurador-2026/issues/08-arquitetura-
   - `criarLeitorAoVivo` (`packages/site/src/lib/leitor-ao-vivo.ts`) agora recebe `chaves`, as do arquivo de chaves do site, que valem até a primeira rodada: ao pôr o segundo endereço, mantenha a opção. O quadro expõe `chaves` e `aviso` da rodada mais nova com que a página ficou.
   - O caminho do arquivo de controle é por checkout (`--controle` no coletor e no comando mudam o padrão). No computador do dono, o ensaio e a noite usam o mesmo arquivo; o roteiro ([ticket 31](31-roteiro-da-noite.md)) confere e apaga antes da noite.
   - No plano zero, o coletor para de gravar os `lugares/*.json`, mas os velhos ficam no destino: a página os esconde pelo `rodada.json`. Se o R2 ou o Worker precisarem apagá-los, é aqui.
+
+**20/10/2026, resolvido:**
+
+- **Interface**: `Destino { gravar(caminho, bytes); fimDaRodada?() }` (`packages/coletor/src/destino.ts`). O `fimDaRodada` é dos destinos que publicam em lote, como o plano B, e devolve as falhas. Os destinos saem do `--destino` do coletor (`destinosDoColetor`, em `ambientes.ts`):
+  - `producao`: o R2 `apurador-ao-vivo` (`destinoR2`, em `r2.ts`) e, como plano B, o Worker `apurador-plano-b` (`republicacaoDoWorker`, em `plano-b.ts`; configuração em `packages/coletor/cloudflare/plano-b.jsonc`, pasta `.cache/coletor/plano-b/`).
+  - `ensaio`: o R2 `apurador-ensaio` e o Worker `apurador-ensaio-plano-b`, com a chave do ensaio (`R2_ENSAIO_*`). Sem ela, o coletor não começa, mesmo com a de produção no `.env`. Nenhum nome, pasta ou chave do ensaio é de produção.
+  - `pasta`, o padrão: `.cache/coletor/publicado/`, com o plano B em `publicado-plano-b/` e sem republicação. O `astro dev` serve as duas pastas.
+  - `--sem-dominio`: só o Worker, como principal e plano B, sem a chave do R2.
+- **R2**:
+  - a gravação vai pela API S3, porque a API REST tem limite de 1.200 pedidos a cada 5 min;
+  - a assinatura SigV4 é feita com o `node:crypto` e testada contra os dois exemplos da AWS;
+  - cada JSON vai com `Content-Encoding: gzip`, `Content-Type: application/json` e `Cache-Control: public, max-age=15`. A ETag é a do R2, e `--sem-gzip` grava sem compressão;
+  - vão até 32 gravações ao mesmo tempo. Uma por vez, a ~0,1 s cada, o pico de ~700 numa rodada levaria 70 s.
+- **Plano B**:
+  - **Republicação**: no fim da rodada, quando já passaram 50 s da anterior, o coletor republica o Worker com `wrangler deploy --config`, pelo login do wrangler ou pelo `CLOUDFLARE_API_TOKEN` do `.env`. A republicação não segura a rodada. No replay de 2022, sai uma por minuto, das 17:00 às 17:07. Uma falha aparece na rodada seguinte, que tenta de novo.
+  - **Troca**: o coletor passa ao plano B na primeira rodada que lê `controle.planoB`, regrava ali todos os lugares com resultado e não volta (`registro.destinoAtivo`).
+  - **Pasta**: a de outra noite (`rodada.json` com mais de 6 h) é esvaziada na primeira gravação. A da mesma noite fica, para o coletor reiniciado não republicar o Worker sem parte dos lugares.
+  - **Tamanho**: cada versão leva a pasta inteira. Em 2026, são os 5.789 lugares, o `rodada.json` e o `_headers`: 5.791 arquivos, ~5.820 quando entrarem as tabelas, o mapa e o simulador, dentro dos 20.000. Um `wrangler deploy --dry-run` com 5.801 arquivos levou ~8,6 s.
+- **Medido em 20/10/2026**: o Worker do site, que só tem static assets, responde 405 a um `OPTIONS`. Os static assets não atendem o preflight do CORS. Por isso, a página lê o plano B sem cabeçalho próprio, com `cache: "no-cache"`, e o navegador revalida com a ETag. O `_headers` da pasta dá `Access-Control-Allow-Origin: *`, `Access-Control-Expose-Headers: Date, ETag` e `X-Robots-Tag: noindex`.
+- **Página** (`packages/site/src/lib/enderecos-ao-vivo.ts`, chamado por `criarLeitorAoVivo`, que recebe `enderecos` no lugar de `base` e mantém `chaves`):
+  - **Troca**: ela lê o arquivo de rodada no endereço em que está. Com erro ou com a rodada de mais de 2 min pelo `Date` da resposta, lê o outro, fica com a rodada mais nova e lê o lugar de lá. Nas leituras seguintes, começa por esse endereço e só volta ao principal se o plano B parar.
+  - **Pedidos**: o principal vai com o `If-None-Match` à mão e `no-store`, como antes.
+  - **Build**: lê `PUBLIC_AO_VIVO` e `PUBLIC_AO_VIVO_PLANO_B` (`enderecosDoBuild`). Sem o primeiro, só o Worker.
+  - **Visto na página**: no `astro dev` com a noite local, depois de `npm run noite -- plano-b`, a página passou sozinha de `/ao-vivo/` a `/ao-vivo-plano-b/` quando o principal envelheceu, e a leitura seguinte foi direto ao plano B.
+- **Contador** (`contador.ts`):
+  - cada gravação que o R2 aceitou conta uma no bucket dela, por mês em UTC;
+  - o contador fica em `.cache/coletor/gravacoes.json` (`--gravacoes`), é guardado a cada rodada e vai no `registro.gravacoesDoMes`;
+  - `somaDoMes` dá o total dos dois buckets;
+  - no replay, o contador bate com o que o R2 recebeu. Uma gravação recusada não conta: se a Cloudflare cobrar as recusadas, a diferença aparece na comparação com o painel no ensaio ([ticket 30](30-ambiente-de-ensaio-e-conferencias.md)).
+- **Conferência da entrega** (`entrega.ts`, `npm run conferir-entrega -- [--destino ensaio] [--sem-gzip] [--plano-b]`):
+  - grava um objeto novo em `conferencia/` e o lê pela borda;
+  - confere o corpo igual ao gravado, a ETag, o 304, o `max-age=15` no navegador, a cópia da borda (`HIT`), o CORS mesmo depois de um leitor sem `Origin`, e o preflight;
+  - com `--plano-b`, republica o Worker só com esse objeto e o confere. Com um `rodada.json` no Worker ou na pasta dele, recusa.
+- **Conta**: o roteiro está em `packages/coletor/cloudflare/README.md`. O CORS do bucket (`cors-ao-vivo.json`):
+  - libera a origem `https://apurador.org`, com `GET` e `HEAD`;
+  - permite o `If-None-Match` e expõe `Date` e `ETag`;
+  - vale 24 h de preflight. O R2 responde ao `OPTIONS` pelas regras, sem `OPTIONS` na lista de métodos.
+
+  Em 20/10, o bucket estava sem CORS e sem domínio próprio, com o `r2.dev` desligado, e o Worker do plano B não existia. O login OAuth do wrangler escreve no R2 e nos Workers, mas na zona só lê.
+- **Não feito, passos do dono** (no README, na ordem):
+  - o domínio próprio do bucket e o CORS: dois comandos prontos, que rodam com o ok do dono. O primeiro pede o ID da zona `apurador.org`;
+  - no painel, três ajustes:
+    - a Cache Rule de `ao-vivo.apurador.org`: respeita o `Cache-Control` e, sem ele, o padrão da Cloudflare, para um 404 não virar uma leitura no R2 por visitante;
+    - o Tiered Cache;
+    - o TTL do navegador em "Respect Existing Headers";
+  - no painel, uma Transform Rule que põe o CORS em toda resposta do host. O R2 só põe o CORS quando o pedido traz `Origin`, e a cópia da borda feita por um leitor sem ele (a sentinela, o painel) chegaria ao navegador sem o CORS;
+  - a chave de escrita só no bucket, no `.env` do coletor;
+  - `npm run conferir-entrega -- --plano-b`, que também faz o primeiro deploy do Worker do plano B.
+
+  Os critérios da configuração de `ao-vivo.apurador.org` e da conferência do gzip ficam abertos até esses passos.
