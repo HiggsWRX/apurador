@@ -2,12 +2,12 @@ import { readFileSync } from "node:fs";
 import { agregadoDePesquisas, diaDoAgregado, tendenciaDoAgregado } from "@apurador/modelo";
 import { listaDasPesquisas, pesquisasDoAgregado, type ExtratoDoTse, type Turno } from "@apurador/pipeline";
 import { describe, expect, it } from "vitest";
-import { AGORA, DIST_CHAVES_DESLIGADAS, elemento, elementos, pagina, texto } from "./html";
+import { AGORA, DIST_CHAVES_DESLIGADAS, elemento, elementos, pagina, texto } from "../html";
 
 // Confere o que o build gera (a fronteira do site): o agregado de pesquisas na página do Brasil e a indicação das
 // pesquisas nos outros lugares, calculados no build sobre o mesmo pesquisas.csv. O build dos testes roda com o
 // relógio fixo em AGORA.
-const DADOS = new URL("../../../dados/", import.meta.url);
+const DADOS = new URL("../../../../dados/", import.meta.url);
 const ler = (arquivo: string) => readFileSync(new URL(arquivo, DADOS), "utf8");
 const turno = JSON.parse(ler("turnos/2026-1.json")) as Turno;
 const lista = listaDasPesquisas({

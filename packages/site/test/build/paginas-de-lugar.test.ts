@@ -1,9 +1,9 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { DIST, elemento, elementos, existe, pagina, texto } from "./html";
+import { DIST, elemento, elementos, existe, pagina, texto } from "../html";
 
 // Confere o que o build gera: as páginas de lugar estáticas, com o histórico já no HTML.
-const lugares = JSON.parse(readFileSync(new URL("../../../dados/lugares.json", import.meta.url), "utf8")) as { id: string; tipo: string }[];
+const lugares = JSON.parse(readFileSync(new URL("../../../../dados/lugares.json", import.meta.url), "utf8")) as { id: string; tipo: string }[];
 
 const turno = (html: string, id: string) => elemento(html, new RegExp(`<div[^>]*data-turno="${id}"`));
 const barras = (html: string) =>

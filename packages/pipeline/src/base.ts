@@ -28,6 +28,7 @@ export interface BaseDoMunicipio {
   degrausDeChegada: [number, number][];
 }
 
+/** A base do modelo para uma noite: o 1º turno de cada município com os finalistas da noite. */
 export interface BaseDoModelo {
   /** A noite que a base serve. */
   noite: { ano: number; turno: number };
@@ -46,6 +47,7 @@ export interface BaseDoModelo {
   municipios: BaseDoMunicipio[];
 }
 
+/** A base do modelo de uma noite, a partir do turno que serve de base e do perfil de chegada. */
 export function baseDoModelo(entrada: {
   noite: { ano: number; turno: number };
   turnoDaBase: { ano: number; turno: number };

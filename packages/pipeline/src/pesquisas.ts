@@ -6,6 +6,7 @@ import type { Turno } from "./turno.ts";
 // A lista das pesquisas nacionais do 2º turno de 2026 (`dados/pesquisas.csv`) e a conferência de cada uma contra o
 // CSV diário de registros do TSE. Nada aqui lê disco ou rede: o site e o CI chamam as mesmas funções.
 
+/** Como a pesquisa fez as entrevistas, como está no `pesquisas.csv`. */
 export type Modo = "presencial" | "telefone" | "internet" | "misto";
 
 /** Uma linha do `pesquisas.csv`, com os números como a fonte os publicou. */
@@ -51,6 +52,7 @@ export interface ExtratoDoTse {
   registros: RegistroDePesquisa[];
 }
 
+/** Uma pesquisa do `pesquisas.csv` conferida contra o registro dela no TSE. */
 export interface ConferenciaDaPesquisa {
   pesquisa: Pesquisa;
   registro: RegistroDePesquisa | undefined;
@@ -63,6 +65,7 @@ export interface ConferenciaDaPesquisa {
 /** Uma pesquisa da lista que vai ao site, com o instituto da lista, que sai do CNPJ do registro. */
 export type PesquisaDaLista = Pesquisa & { institutoDaLista: string };
 
+/** Confere cada pesquisa contra o registro no TSE e contra o critério de inclusão do agregado. */
 export function verificarPesquisas(entrada: {
   pesquisas: Pesquisa[];
   registros: RegistroDePesquisa[];

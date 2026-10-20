@@ -20,6 +20,7 @@
     "cadastros": "npm run cadastros -w @apurador/pipeline --",
     "fotos": "npm run fotos -w @apurador/pipeline --",
     "tse-falso": "npm run tse-falso -w @apurador/ensaio --",
+    "noite-local": "npm run noite-local -w @apurador/ensaio --",
     "coletor": "npm run coletor -w @apurador/coletor --",
     "replay": "vitest run packages/ensaio/test/replay.test.ts",
     "calibracao": "npm run calibracao -w @apurador/ensaio --",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@types/node": "^24.19.2",
     "eslint": "^10.12.0",
+    "eslint-plugin-jsdoc": "^65.1.0",
     "fflate": "^0.8.3",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",

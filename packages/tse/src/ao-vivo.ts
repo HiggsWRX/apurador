@@ -8,6 +8,7 @@ export class ArquivoDoTseInvalido extends Error {
   override name = "ArquivoDoTseInvalido";
 }
 
+/** Um candidato no arquivo de resultado de um lugar, com os votos e o % do TSE. */
 export interface CandidatoDoResultado {
   numero: number;
   /** O sequencial do candidato (`sqcand`), que dá a foto oficial. */
@@ -27,6 +28,7 @@ export interface SecoesDoTse {
   percentual: number;
 }
 
+/** O arquivo de resultado de um lugar (EA20), normalizado. */
 export interface ResultadoDoTse {
   eleicao: string;
   abrangencia: { tipo: "br" | "uf" | "mu" | "zona"; codigo: string };
@@ -142,6 +144,7 @@ export function lerResultado(bytes: Uint8Array): ResultadoDoTse {
   };
 }
 
+/** Um lugar no índice de acompanhamento, com a hora da última totalização dele. */
 export interface ItemDoAcompanhamento {
   abrangencia: { tipo: "br" | "uf" | "mu"; codigo: string };
   /** `AAAA-MM-DD HH:MM:SS`, em Brasília, ou `null` antes da primeira totalização. */
@@ -149,6 +152,7 @@ export interface ItemDoAcompanhamento {
   secoes: SecoesDoTse;
 }
 
+/** O índice de acompanhamento (EA14 e EA15): o que mudou no Brasil ou numa UF. */
 export interface AcompanhamentoDoTse {
   eleicao: string;
   /** Na ordem do arquivo: os municípios (ou as UFs) e, por último, o lugar do índice. */
@@ -173,6 +177,7 @@ export function lerAcompanhamento(bytes: Uint8Array): AcompanhamentoDoTse {
   };
 }
 
+/** Uma eleição na configuração das eleições: o código, o ciclo, o pleito, o dia e o turno. */
 export interface EleicaoDaDivulgacao {
   codigo: string;
   /** O ciclo da divulgação, que entra nas URLs (`ele2026`). */

@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 // servida em /ao-vivo/ como a CDN serve: com ETag, 304 ao `If-None-Match` e o cabeçalho `Date`, que o Node põe em toda
 // resposta. A pasta é a do coletor sem `--pasta` (`.cache/coletor/publicado`) ou a de APURADOR_PUBLICADO. Só o comando
 // `dev` liga isto: o build (inclusive o dos testes) nunca lê a pasta local.
-// Uso, em três terminais: npm run tse-falso -- --partida 16:58 · npm run coletor -- --tse http://127.0.0.1:8022/oficial · npm run dev -w @apurador/site
+// Uso: npm run noite-local (o TSE falso e o coletor juntos) e npm run dev -w @apurador/site.
 
 const PADRAO = fileURLToPath(new URL("../../../../.cache/coletor/publicado/", import.meta.url));
 const CAMINHO = "/ao-vivo/";

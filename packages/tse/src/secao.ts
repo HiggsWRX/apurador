@@ -69,6 +69,7 @@ const COLUNAS_DETALHE = [
   "ST_SECAO_INSTALADA",
 ] as const;
 
+/** Lê o `detalhe_votacao_secao` em fluxo: cada seção, com a hora da primeira totalização. */
 export function* lerDetalheVotacaoSecao(bytes: Uint8Array): Generator<DetalheSecao> {
   for (const l of percorrerCsvTse(bytes, COLUNAS_DETALHE)) {
     yield {
@@ -128,6 +129,7 @@ const COLUNAS_BWEB = [
 
 const TIPOS_DE_VOTAVEL: Record<string, VotoSecao["tipo"]> = { "1": "nominal", "2": "branco", "3": "nulo", "4": "legenda" };
 
+/** Lê o boletim de urna (`bweb`) em fluxo: os votos de cada votável em cada seção. */
 export function* lerBoletimDeUrna(bytes: Uint8Array): Generator<VotoSecao> {
   for (const l of percorrerCsvTse(bytes, COLUNAS_BWEB)) {
     // Em 2018, uma seção sem nenhum voto numa pergunta vem numa linha só, sem votável.

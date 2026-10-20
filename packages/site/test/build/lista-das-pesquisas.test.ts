@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 // Confere o HTML que o build gera para a página do Brasil: o bloco da lista das pesquisas.
-const DIST = new URL("../dist/", import.meta.url);
+const DIST = new URL("../../dist/", import.meta.url);
 const html = readFileSync(new URL("index.html", DIST), "utf8");
 const bloco = html.match(/<section[^>]*data-bloco="lista-das-pesquisas"[\s\S]*?<\/section>/)?.[0] ?? "";
 // Cada pesquisa vai do seu `data-pesquisa` até o da próxima (os dados do art. 10 são uma lista dentro do item).
@@ -14,7 +14,7 @@ const itens = bloco
     item,
     texto: item.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "),
   }));
-const registrosDoCsv = readFileSync(new URL("../../../dados/pesquisas.csv", import.meta.url), "utf8")
+const registrosDoCsv = readFileSync(new URL("../../../../dados/pesquisas.csv", import.meta.url), "utf8")
   .trim()
   .split("\n")
   .slice(1)

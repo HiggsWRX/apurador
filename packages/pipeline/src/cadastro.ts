@@ -6,6 +6,7 @@ import type { Noite } from "./noite.ts";
 // o código do IBGE e as capitais. A noite reconstruída traz só os códigos; o TSE falso precisa do cadastro
 // para servir a noite no formato da divulgação, com os candidatos e a geografia daquele ano.
 
+/** Um município no cadastro, com o nome como o TSE o escrevia na noite. */
 export interface MunicipioDoCadastro {
   /** O código do TSE. */
   codigo: number;
@@ -15,6 +16,7 @@ export interface MunicipioDoCadastro {
   capital: boolean;
 }
 
+/** Uma UF (ou o Exterior) no cadastro, com os municípios dela. */
 export interface UfDoCadastro {
   /** A sigla, ou `ZZ` para o Exterior. */
   sigla: string;
@@ -23,6 +25,7 @@ export interface UfDoCadastro {
   municipios: MunicipioDoCadastro[];
 }
 
+/** Um candidato no cadastro, com o sequencial, o partido, a federação, a coligação e o vice. */
 export interface CandidatoDoCadastro {
   numero: number;
   /** O `sqcand` da divulgação. */
@@ -39,6 +42,7 @@ export interface CandidatoDoCadastro {
   vice: { sequencial: string; nome: string; nomeUrna: string; partido: string };
 }
 
+/** O cadastro de uma noite: os candidatos e a geografia que o TSE divulgava naquele ano. */
 export interface Cadastro {
   ano: number;
   turno: number;
@@ -53,6 +57,7 @@ const TIPO_DA_AGREMIACAO: Record<string, "c" | "i" | "f"> = { COLIGAÇÃO: "c", 
 /** A ordem do TSE para os nomes: a dos caracteres, sem regra de idioma ("MÂNCIO LIMA" depois de "MARECHAL"). */
 const pelaOrdemDoTse = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
+/** O cadastro de uma noite, a partir das candidaturas, dos detalhes por município e da configuração do TSE. */
 export function cadastroDaNoite(entrada: {
   noite: Pick<Noite, "ano" | "turno" | "candidatos" | "zonas">;
   /** Todas as candidaturas do ano com abrangência nacional (`consulta_cand_<ano>_BRASIL.csv`). */
@@ -144,4 +149,5 @@ export function gravarCadastro(cadastro: Cadastro): string {
   return `{${linhas.join(",\n")}}\n`;
 }
 
+/** Lê um cadastro gravado em `dados/cadastros/`. */
 export const lerCadastro = (texto: string): Cadastro => JSON.parse(texto) as Cadastro;

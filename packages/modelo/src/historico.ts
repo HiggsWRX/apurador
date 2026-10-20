@@ -14,6 +14,7 @@ export interface EleicaoPassada {
   pesquisas: readonly PesquisaDoAgregado[];
 }
 
+/** Um 2º turno passado: o resultado e o agregado da véspera, com a incerteza medida nos outros anos. */
 export interface AnoDoHistorico {
   ano: number;
   resultado: number;

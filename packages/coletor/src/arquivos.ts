@@ -7,6 +7,7 @@ import type { CandidatoDoResultado, ResultadoDoTse } from "@apurador/tse";
 /** O momento da noite que a página mostra. */
 export type Fase = "antes-das-17h" | "ao-vivo" | "encerrada";
 
+/** O arquivo de rodada (`rodada.json`): o que é nacional e vale para todo lugar, publicado a cada rodada. */
 export interface ArquivoDeRodada {
   /** A hora da rodada, ISO, pelo relógio do coletor: a página a compara com o `Date` da CDN. */
   rodada: string;
@@ -20,6 +21,7 @@ export interface ArquivoDeRodada {
 /** Um ponto da curva real: o % de seções totalizadas e o % de cada candidato, como o TSE os publica. */
 export type PontoDaCurvaReal = number[];
 
+/** O arquivo de um lugar (`lugares/<id>.json`): os dados do TSE do lugar e a curva real. */
 export interface ArquivoDoLugar {
   /** `BR`, a sigla da UF, `ZZ` (o Exterior) ou o código do TSE do município, com 5 dígitos. */
   lugar: string;
@@ -46,10 +48,12 @@ function naOrdem(resultado: ResultadoDoTse, ordem: number[]): CandidatoDoResulta
   });
 }
 
+/** O ponto da curva real de um resultado do TSE, com os candidatos na ordem dada pelos números. */
 export function pontoDaCurvaReal(resultado: ResultadoDoTse, ordem: number[]): PontoDaCurvaReal {
   return [resultado.secoes.percentual, ...naOrdem(resultado, ordem).map((c) => c.percentual)];
 }
 
+/** O arquivo do lugar a partir do resultado do TSE, com os candidatos na ordem do arquivo de rodada. */
 export function arquivoDoLugar(lugar: string, resultado: ResultadoDoTse, ordem: number[], curva: PontoDaCurvaReal[]): ArquivoDoLugar {
   const candidatos = naOrdem(resultado, ordem);
   return {
@@ -65,6 +69,7 @@ export function arquivoDoLugar(lugar: string, resultado: ResultadoDoTse, ordem: 
   };
 }
 
+/** O arquivo de rodada, com a hora da rodada e a da última novidade (ms do relógio do coletor) em ISO. */
 export function arquivoDeRodada(rodada: number, fase: Fase, novidade: { totalizacao: string | null; vista: number | null }, candidatos: CandidatoDoResultado[]): ArquivoDeRodada {
   return {
     rodada: new Date(rodada).toISOString(),

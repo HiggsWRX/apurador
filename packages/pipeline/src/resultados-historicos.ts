@@ -5,8 +5,10 @@ import { doTurno, votosPorCandidato, type CandidatoDoTurno } from "./turno.ts";
 // os dois finalistas e os votos válidos no Brasil, somados do `votacao_candidato_munzona` do TSE, e a conferência
 // do que o repositório guarda contra esse arquivo, refeita no CI.
 
+/** Um finalista de um 2º turno passado, com os votos dele. */
 export type FinalistaDoResultado = CandidatoDoTurno & { votos: number };
 
+/** O resultado nacional de um 2º turno passado: os dois finalistas e os votos válidos no Brasil. */
 export interface ResultadoHistorico {
   ano: number;
   turno: number;

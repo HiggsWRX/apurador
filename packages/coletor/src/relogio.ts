@@ -1,6 +1,7 @@
 // O relógio do coletor: a hora real, em milissegundos, e as esperas entre as rodadas e entre os pedidos ao TSE.
 // Entra por parâmetro, para o replay rodar as mesmas rodadas sem esperar de verdade.
 
+/** O relógio do coletor: a hora em ms (`agora`) e as esperas. */
 export interface RelogioDoColetor {
   agora(): number;
   esperar(ms: number): Promise<void>;

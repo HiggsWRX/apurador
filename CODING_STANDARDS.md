@@ -5,13 +5,13 @@ Judgement calls the reviewer checks in every diff. Mechanical rules live in the 
 ## Vocabulary
 
 - Identifiers, comments, test names and messages are in Brazilian Portuguese, in the terms of `GLOSSARY.md`.
-- A word the glossary lists under _Avoid_ stays out of names too: the clock that never waits is `relogioSemEspera`, because "simulado" is the TSE's and "simulação" the simulator's.
+- A word the glossary lists under _Avoid_ stays out of a name that stands for that entry's concept, and a word another entry owns stays out of names for anything else: the clock that never waits is `relogioSemEspera`, because "simulado" is the TSE's and "simulação" the simulator's. The same word in its everyday sense is fine: the vote counts in `Contagem` are not the _apuração_ the glossary keeps "contagem" away from.
 - An exported name means one thing across the packages. A new type or function takes a name no other package already exports with another meaning (`Recorte` is the pipeline's slice of the night; the coletor's tracked file is `Acompanhado`).
 
 ## Shape of a module
 
 - Each module opens with a comment saying what it does and why it is built that way: the rule from the TSE, the decision ticket, the measurement.
-- Exported types and functions carry a one-line doc comment; fields carry one when the unit, the time zone or the source is not obvious (`AAAA-MM-DD HH:MM:SS`, em Brasília; ms do relógio do coletor).
+- Exported types and functions carry a one-line doc comment that says what the thing is, beyond its name; the lint (`jsdoc/require-jsdoc`) only checks that one is there. Fields carry one when the unit, the time zone or the source is not obvious (`AAAA-MM-DD HH:MM:SS`, em Brasília; ms do relógio do coletor).
 - Comment density follows the surrounding code: the reason behind a choice and the gotcha no type confesses, never a restatement of the line.
 
 ## Tests

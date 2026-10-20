@@ -97,6 +97,7 @@ const REGIAO_DA_UF: Record<string, number> = {
   ZZ: -1,
 };
 
+/** A base do modelo preparada para projetar muitas vezes. */
 export function prepararModelo(base: BaseDoModelo): Modelo {
   if (base.finalistas.length !== 2) throw new Error(`a base do modelo tem ${base.finalistas.length} finalistas, e não 2`);
   const n = base.municipios.length;
@@ -148,8 +149,10 @@ export function prepararModelo(base: BaseDoModelo): Modelo {
 /** De onde vem a transferência de votos de uma UF: dela, da região, do Brasil ou, sem apuração, do 1º turno. */
 export type FonteDaReferencia = "UF" | "região" | "Brasil" | "1º turno";
 
+/** Os três estados do sinal de virada, pela chance de virada e os limites das constantes. */
 export type SinalDeVirada = "virada projetada" | "virada possível" | "sem sinal de virada";
 
+/** A projeção de um lugar num momento: o placar, a projeção com a margem e as chances. */
 export interface ResultadoDoLugar {
   /** O % de seções totalizadas. */
   secoes: number;
@@ -170,6 +173,7 @@ export interface ResultadoDoLugar {
   sinalDeVirada: SinalDeVirada | null;
 }
 
+/** A projeção de uma UF, com a fonte da referência da transferência de votos. */
 export interface ResultadoDaUf extends ResultadoDoLugar {
   referencia: FonteDaReferencia;
 }
@@ -186,10 +190,12 @@ export interface ViradaProjetada {
   quem: number;
 }
 
+/** A projeção de um município, com a virada projetada dele. */
 export interface ResultadoDoMunicipio extends ResultadoDoLugar {
   virada: ViradaProjetada;
 }
 
+/** A projeção de um momento numa base: o Brasil, as UFs e os municípios. */
 export interface Projecao {
   /** Quanto a indicação das pesquisas pesa no voto que falta: o peso das pesquisas na base "Apuração + pesquisas", 0 na "Só apuração". */
   pesoDasPesquisas: number;

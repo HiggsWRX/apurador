@@ -24,8 +24,10 @@ import type { RelogioDoColetor } from "./relogio.ts";
 // sempre com ETag. Os índices são lidos a cada rodada (29 pedidos). Todo pedido passa por uma fila com ritmo fixo,
 // abaixo dos 50 por segundo que alertam o dono (o limite do TSE é 100 por IP, com 404 e 304 contando).
 
+/** A função de rede, com a forma do `fetch`, injetável para o replay rodar sem rede. */
 export type Buscar = (url: string, init?: RequestInit) => Promise<Response>;
 
+/** O que o coletor recebe: a eleição, a rede, o relógio e o destino da publicação. */
 export interface OpcoesDoColetor {
   /** A base do ambiente: `https://resultados.tse.jus.br/oficial`, ou a do TSE falso. */
   base: string;
@@ -40,6 +42,7 @@ export interface OpcoesDoColetor {
   intervalo?: number;
 }
 
+/** O que uma rodada fez: uma linha do registro do coletor (`.cache/coletor/rodadas-*.jsonl`). */
 export interface RegistroDaRodada {
   numero: number;
   /** ISO, pelo relógio do coletor. */
@@ -61,6 +64,7 @@ export interface RegistroDaRodada {
   falhas: string[];
 }
 
+/** O coletor de uma eleição: as rodadas e o último resultado bom de cada lugar. */
 export interface Coletor {
   rodada(): Promise<RegistroDaRodada>;
   /** Roda uma rodada a cada intervalo, até `ate()` dar verdadeiro. */
@@ -120,6 +124,7 @@ const MAXIMO_EM_VOO = 40;
  */
 const FOLGA_DA_FILA = 4;
 
+/** O coletor de uma eleição, com a rede, o relógio e o destino injetados. */
 export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   const { base, buscar, relogio, destino } = opcoes;
   const pedidosPorSegundo = opcoes.pedidosPorSegundo ?? 45;

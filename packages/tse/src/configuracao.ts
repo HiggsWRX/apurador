@@ -4,6 +4,7 @@
 
 import { ArquivoDoTseInvalido } from "./ao-vivo.ts";
 
+/** Um município na configuração da divulgação, com o código do IBGE, a capital e as zonas. */
 export interface MunicipioDaConfiguracao {
   /** O código do TSE, como inteiro (o arquivo o escreve com 5 dígitos). */
   codigo: number;
@@ -15,6 +16,7 @@ export interface MunicipioDaConfiguracao {
   zonas: number[];
 }
 
+/** A configuração de municípios e zonas da divulgação (EA12). */
 export interface ConfiguracaoDeMunicipios {
   /** `DD/MM/AAAA HH:MM:SS`. */
   geracao: string;
@@ -36,6 +38,7 @@ function numero(texto: string, nome: string): number {
   return n;
 }
 
+/** Lê a configuração de municípios e zonas (`mun-e<eleição>-cm.json`). */
 export function lerConfiguracaoDeMunicipios(bytes: Uint8Array): ConfiguracaoDeMunicipios {
   const raiz: unknown = JSON.parse(new TextDecoder().decode(bytes));
   return {

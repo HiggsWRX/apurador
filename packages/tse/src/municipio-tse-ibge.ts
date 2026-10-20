@@ -9,6 +9,7 @@ export const URL_MUNICIPIO_TSE_IBGE = "https://cdn.tse.jus.br/estatistica/sead/o
 /** O membro com a tabela, dentro do zip, que também traz o dicionário em PDF. */
 export const MEMBRO_MUNICIPIO_TSE_IBGE = "municipio_tse_ibge.csv";
 
+/** Um município com o código do TSE e o do IBGE. */
 export interface MunicipioTseIbge {
   geracao: string;
   uf: string;
@@ -31,6 +32,7 @@ const COLUNAS = [
   "NM_MUNICIPIO_IBGE",
 ] as const;
 
+/** Lê a tabela `municipio_tse_ibge` do TSE. */
 export function lerMunicipioTseIbge(bytes: Uint8Array): MunicipioTseIbge[] {
   const { cabecalho, linhas } = lerCsvTse(bytes);
   const c = colunas(cabecalho, COLUNAS);

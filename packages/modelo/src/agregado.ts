@@ -19,6 +19,7 @@ export interface PesquisaDoAgregado {
   votos: readonly [number, number];
 }
 
+/** O agregado de pesquisas de um dia: o valor, a incerteza, a janela e as pesquisas que entraram. */
 export interface Agregado {
   /** O dia do cálculo, `aaaa-mm-dd`. */
   dia: string;

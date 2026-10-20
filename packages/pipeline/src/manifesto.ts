@@ -4,6 +4,7 @@ import { RAIZ } from "./fontes.ts";
 // O manifesto de origem dos dados derivados (`dados/manifesto.json`): de que arquivo do TSE, de que data de
 // geração e com que hash veio cada derivado. Mais de um gerador escreve nele, cada um nas suas pastas.
 
+/** Um arquivo do TSE de onde saiu algum derivado. */
 export interface FonteDoManifesto {
   url: string;
   membro: string;
@@ -15,6 +16,7 @@ export interface FonteDoManifesto {
   geracao: string[];
 }
 
+/** Um arquivo derivado do repositório, com o hash e as fontes. */
 export interface DerivadoDoManifesto {
   /** O caminho dentro de `dados/`. */
   arquivo: string;
@@ -23,6 +25,7 @@ export interface DerivadoDoManifesto {
   fontes: string[];
 }
 
+/** O manifesto de origem dos dados derivados (`dados/manifesto.json`). */
 export interface Manifesto {
   fontes: FonteDoManifesto[];
   derivados: DerivadoDoManifesto[];
@@ -64,10 +67,12 @@ export function atualizarManifesto(
   return { fontes: [...fontes.values()].filter((f) => usadas.has(f.url)), derivados };
 }
 
+/** O manifesto do repositório, ou um vazio se ele ainda não existe. */
 export function lerManifesto(): Manifesto {
   return existsSync(ARQUIVO) ? (JSON.parse(readFileSync(ARQUIVO, "utf8")) as Manifesto) : { fontes: [], derivados: [] };
 }
 
+/** Grava o manifesto em `dados/manifesto.json`. */
 export function gravarManifesto(manifesto: Manifesto): void {
   writeFileSync(ARQUIVO, `${JSON.stringify(manifesto, null, 2)}\n`);
 }

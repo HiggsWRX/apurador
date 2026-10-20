@@ -42,6 +42,7 @@ const ACOMPANHAMENTO = new RegExp(`^([a-z]{2})-e${ELEICAO6}-ab\\.json$`);
 /** Uma ordem dos candidatos, pelas posições em `Noite.candidatos`: a primeira é a de quem lidera. */
 type Ordem = number[];
 
+/** Os arquivos da divulgação de uma noite reconstruída, no formato da eleição 6258, em qualquer estado da apuração. */
 export interface Divulgacao {
   /** O arquivo de um caminho (sem a query string), ou `undefined` se ele não existe na configuração. */
   documento(caminho: string): Documento | undefined;
@@ -62,6 +63,7 @@ const GERACAO_INICIAL = 0;
 /** Um percentual com duas e com nove casas, o par de campos do TSE (`pst` e `pstn`, por exemplo). */
 const percentuais = (parte: number, todo: number, semTodo = "0") => [percentual(parte, todo), percentualPreciso(parte, todo, semTodo)] as const;
 
+/** A divulgação de uma noite reconstruída, com os candidatos e a geografia do cadastro daquela noite. */
 export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
   if (cadastro.candidatos.map((c) => c.numero).join() !== noite.candidatos.map((c) => c.numero).join())
     throw new Error("Os candidatos do cadastro não são os da noite");

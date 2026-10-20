@@ -1,6 +1,7 @@
 // Os CSVs que o repositório guarda e edita à mão: UTF-8, separados por vírgula, com aspas em volta do texto que
 // tem vírgula, aspas ou quebra de linha (aspas dobradas dentro dele). Diferem dos do TSE, que são Latin-1 com `;`.
 
+/** As linhas de um CSV nosso (UTF-8, vírgula, aspas), cada uma com os campos. */
 export function lerCsv(texto: string): string[][] {
   const linhas: string[][] = [];
   let linha: string[] = [];
@@ -32,8 +33,11 @@ export function lerCsv(texto: string): string[][] {
   return linhas;
 }
 
+/** Um campo preenchido. */
 export const naoVazio = (v: string) => v.trim() !== "";
+/** Um número com ponto decimal, sem sinal. */
 export const ehDecimal = (v: string) => /^\d+(\.\d+)?$/.test(v);
+/** Uma data `aaaa-mm-dd` que existe. */
 export const ehData = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
 
 /** As linhas de um CSV do repositório, com cada valor conferido na leitura, para o erro apontar a linha e a coluna. */
@@ -55,6 +59,7 @@ export function lerTabela<C extends string>(texto: string, arquivo: string, colu
   }));
 }
 
+/** O texto de um CSV nosso, com aspas só nos campos que precisam delas. */
 export function escreverCsv(linhas: readonly (readonly (string | number)[])[]): string {
   const campo = (valor: string | number) => {
     const texto = String(valor);
