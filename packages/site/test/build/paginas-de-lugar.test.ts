@@ -54,11 +54,12 @@ describe("páginas de lugar", () => {
     expect(indice[0]).toEqual(["Brasil", "/", "Brasil"]);
   });
 
-  it("reservam a coluna da narração ao lado da principal", () => {
+  it("reservam a coluna da narração ao lado da principal, numa ilha que sai com o texto de antes das 17h", () => {
     const html = pagina("/sp/campinas/");
 
     expect(html).toMatch(/<div[^>]*class="principal"/);
-    expect(texto(elemento(html, /<aside[^>]*id="narracao"/))).toContain("Narração da noite");
+    const ilha = elemento(html, /<astro-island[^>]*component-url="[^"]*NarracaoDaNoite[^"]*"/);
+    expect(texto(elemento(ilha, /<aside[^>]*id="narracao"/))).toBe("Narração da noite A narração começa às 17h, com as primeiras seções totalizadas.");
   });
 });
 

@@ -3,6 +3,7 @@ import type { TipoDeLugar } from "@apurador/pipeline";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import { antesDaPrimeiraLeitura, criarLeitorAoVivo, INTERVALO_DAS_LEITURAS } from "../lib/leitor-ao-vivo";
+import { publicarQuadro } from "../lib/quadro-da-pagina";
 import { VistaDoBlocoAoVivo } from "./VistaDoBlocoAoVivo";
 
 // A ilha do bloco ao vivo, em cada página de lugar. No build, ela sai no estado de antes das 17h, sem nenhuma leitura.
@@ -14,6 +15,8 @@ interface Props {
   id: string;
   tipo: TipoDeLugar;
   uf?: string;
+  /** O lugar com a preposição, como a manchete o escreve ("na Bahia"). */
+  em: string;
   /** A URL da foto oficial de cada candidato, pelo sequencial do TSE. */
   fotos: Record<string, string>;
   /** A raiz dos arquivos ao vivo, com a barra no fim, ou `null` quando não há coletor. */
@@ -23,7 +26,7 @@ interface Props {
 }
 
 /** A ilha do bloco ao vivo de um lugar. */
-export default function BlocoAoVivo({ id, tipo, uf, fotos, base, chaves }: Props) {
+export default function BlocoAoVivo({ id, tipo, uf, em, fotos, base, chaves }: Props) {
   const leitor = useMemo(
     () => (base ? criarLeitorAoVivo({ base, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now(), chaves }) : null),
     [base, id, chaves],
@@ -34,6 +37,9 @@ export default function BlocoAoVivo({ id, tipo, uf, fotos, base, chaves }: Props
   const [movimentoReduzido, setMovimentoReduzido] = useState(false);
   const [placarNaTela, setPlacarNaTela] = useState(true);
   const raiz = useRef<HTMLDivElement>(null);
+
+  // A coluna da narração, outra ilha, desenha a partir do mesmo quadro.
+  useEffect(() => publicarQuadro(quadro), [quadro]);
 
   // As leituras: a primeira logo ao abrir, as outras 30 s depois do começo da anterior, sem duas ao mesmo tempo. A
   // página volta a ler na hora quando a aba volta a aparecer ou a internet volta.
@@ -108,7 +114,7 @@ export default function BlocoAoVivo({ id, tipo, uf, fotos, base, chaves }: Props
     <div ref={raiz}>
       <VistaDoBlocoAoVivo
         quadro={quadro}
-        lugar={{ tipo, uf }}
+        lugar={{ tipo, uf, em }}
         fotos={fotos}
         movimentoReduzido={movimentoReduzido}
         proximaLeitura={proximaLeitura}

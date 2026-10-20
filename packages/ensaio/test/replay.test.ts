@@ -1,10 +1,20 @@
 import { readFileSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
-import { CONTROLE_INICIAL, criarColetor, relogioSemEspera, type ArquivoDeRodada, type ArquivoDoLugar, type Buscar, type Controle, type RegistroDaRodada } from "@apurador/coletor";
+import {
+  CONTROLE_INICIAL,
+  criarColetor,
+  relogioSemEspera,
+  type ArquivoDeRodada,
+  type ArquivoDoLugar,
+  type Buscar,
+  type Controle,
+  type EventoDaNarracao,
+  type RegistroDaRodada,
+} from "@apurador/coletor";
 import { idDoMunicipio } from "@apurador/pipeline";
 import type { AbrangenciaDaDivulgacao } from "@apurador/tse";
 import { buscarNoTseFalso, conferirPlacar, criarTseFalso, relogioDoReplay, resultadosDoTseFalso, type TseFalso } from "../src/index.ts";
-import { cadastro, instante, noite } from "./noite-2022.ts";
+import { cadastro, instante, lugaresDoSite, noite } from "./noite-2022.ts";
 
 // O replay automático: o coletor inteiro, rodada a rodada, sobre o TSE falso servindo o 2º turno de 2022, sem
 // rede e na velocidade máxima (o relógio do coletor não espera, e o do TSE falso anda com ele). As referências
@@ -63,6 +73,7 @@ async function replay(de: string, ate: string | ((tse: TseFalso) => boolean), op
   const coletor = criarColetor({
     base: BASE,
     eleicao: "6258",
+    lugares: lugaresDoSite,
     relogio,
     controle: lerControle && (async () => lerControle(relogio.agora())),
     buscar: async (url, init) => {
@@ -121,11 +132,13 @@ describe("antes das 17h", () => {
         { numero: 22, nome: "JAIR BOLSONARO", partido: "PL" },
         { numero: 13, nome: "LULA", partido: "PT" },
       ],
+      eventosDoBrasil: [],
     });
     expect(publicado("lugares/BR.json")).toEqual({
       lugar: "BR",
       tse: { totalizacao: null, secoes: { totalizadas: 0, total: 472_075, percentual: 0 }, votos: [0, 0], percentuais: [0, 0], final: false },
       curva: [],
+      narracao: [],
     });
   }, 60_000);
 
@@ -334,6 +347,109 @@ describe("a noite inteira", () => {
     expect(r.tse.registro().naoEncontrados).toEqual([]);
     expect(r.tse.registro().violacoes).toEqual([]);
   });
+
+  describe("a narração factual", () => {
+    // As referências são a medição da narração de 2022 (.scratch/apurador-2026/research/14-narracao-noite-2t-2022.md):
+    // os marcos e as trocas de líder do Brasil (seções 1 e 2), as trocas por UF depois de 3% (seção 3), as UFs que
+    // terminam (seção 4) e onde estão as seções que faltam (seção 6). O coletor vê o Brasil no máximo uma vez por minuto.
+    const narracao = (id: string) => r.publicado(`lugares/${id}.json`).narracao;
+    const doBrasil = () => narracao("BR").filter((e) => e.lugar === "BR");
+    const dasUfs = (tipo: EventoDaNarracao["tipo"]) => narracao("BR").filter((e) => e.lugar !== "BR" && e.tipo === tipo);
+    const UFS_E_EXTERIOR = cadastro.ufs.map((uf) => uf.sigla);
+
+    it("no Brasil, tem ~50 eventos: o começo, os 7 marcos, uma virada, a indicação do TSE, a totalização final e os das UFs", () => {
+      expect(doBrasil().map((e) => (e.tipo === "marco" ? `${e.marco}%` : e.tipo)).reverse()).toEqual([
+        "comeco",
+        "10%",
+        "25%",
+        "50%",
+        "virada",
+        "75%",
+        "90%",
+        "95%",
+        "indicacao",
+        "99%",
+        "totalizacao-final",
+      ]);
+      // As 4 viradas em UF depois de 3% das seções da UF, na ordem da noite, cada UF que termina e os 50% dos 8 maiores eleitorados.
+      expect(dasUfs("virada").map((e) => e.lugar).reverse()).toEqual(["MG", "AP", "AM", "MG"]);
+      expect(dasUfs("fim").map((e) => e.lugar).sort()).toEqual([...UFS_E_EXTERIOR].sort());
+      expect(dasUfs("marco").map((e) => `${e.lugar} ${e.marco}%`).sort()).toEqual(["BA 50%", "CE 50%", "MG 50%", "PE 50%", "PR 50%", "RJ 50%", "RS 50%", "SP 50%"]);
+      expect(narracao("BR")).toHaveLength(11 + 4 + 28 + 8);
+      // Nenhum evento de município entra.
+      expect(narracao("BR").filter((e) => e.lugar.length > 2)).toEqual([]);
+    });
+
+    it("tem uma única virada no Brasil, às ~18:44, sem a troca de 0,26% das 17:08", () => {
+      const [virada, ...outras] = doBrasil().filter((e) => e.tipo === "virada");
+      expect(outras).toEqual([]);
+      // A primeira troca para Lula depois de 3% é às 18:42:53, com 66,78%; a última, às 18:44:50, com 68,32%.
+      expect(virada!.quando >= "2022-10-30 18:42:53" && virada!.quando <= "2022-10-30 18:45:50").toBe(true);
+      expect(virada!.texto).toMatch(/^Virada no Brasil: Lula passa à frente no placar parcial, com 6[678],\d\d% das seções totalizadas\.$/);
+      expect(virada!.ponto![0]).toBeGreaterThanOrEqual(66.78);
+    });
+
+    it("dá a indicação do TSE quando o arquivo a traz, e a totalização final com o resultado oficial", () => {
+      const indicacao = doBrasil().find((e) => e.tipo === "indicacao")!;
+      // O campo aparece às 19:56:20, com 98,78% das seções (ticket 11); o coletor o vê na leitura seguinte do Brasil.
+      expect(indicacao.quando >= "2022-10-30 19:56:20" && indicacao.quando < "2022-10-30 19:58:00").toBe(true);
+      expect(indicacao.texto).toMatch(/^O TSE indica Lula eleito: eleição matematicamente definida, com 98,(7[89]|8\d)% das seções totalizadas\.$/);
+      expect(doBrasil()[0]).toMatchObject({ tipo: "totalizacao-final", quando: "2022-10-31 00:18:04", texto: "Totalização final: Lula eleito com 50,90% dos votos válidos." });
+    });
+
+    it("cada marco do Brasil diz o % observado e que o que falta está mais no Sudeste e no Nordeste", () => {
+      const marcos = doBrasil().filter((e) => e.tipo === "marco");
+      expect(marcos).toHaveLength(7);
+      for (const m of marcos) {
+        expect(m.ponto![0]).toBeGreaterThanOrEqual(m.marco!);
+        expect(m.texto).toMatch(/^Passa de \d\d% das seções totalizadas no Brasil: \d\d,\d\d%\. Bolsonaro \d\d,\d\d%, Lula \d\d,\d\d%\. Das seções que faltam, \d\d% são do Sudeste e \d\d% do Nordeste\.$/);
+      }
+      // Com 50%, faltam 51% no Sudeste e 30% no Nordeste (seção 6).
+      expect(marcos.find((m) => m.marco === 50)!.texto).toMatch(/Das seções que faltam, 51% são do Sudeste e 30% do Nordeste\.$/);
+    });
+
+    it("numera na curva só os eventos do próprio lugar, na ordem da noite", () => {
+      expect(doBrasil().map((e) => e.numero).reverse()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+      expect(narracao("BR").filter((e) => e.lugar !== "BR" && (e.numero !== undefined || e.ponto !== undefined))).toEqual([]);
+      const mg = narracao("MG");
+      expect(mg.filter((e) => e.tipo === "virada")).toHaveLength(2);
+      expect(mg.map((e) => e.numero)).toEqual(mg.map((_, i) => mg.length - i));
+    });
+
+    it("nas outras páginas, o arquivo de rodada leva a virada, a indicação do TSE e a totalização final do Brasil, sem número", () => {
+      const tipos = ["totalizacao-final", "indicacao", "virada"];
+      expect(r.rodada().eventosDoBrasil).toEqual(doBrasil().filter((e) => tipos.includes(e.tipo)).map(({ numero: _n, ponto: _p, ...e }) => e));
+      expect(r.rodada().eventosDoBrasil.map((e) => e.tipo)).toEqual(tipos);
+    });
+
+    it("nomeia o estado e o município sem ambiguidade, e cada município termina com \"terminou\" e só tem o marco de 50%", () => {
+      expect(narracao("SP")[0]!.texto).toMatch(/^O estado de São Paulo terminou a totalização\./);
+      expect(narracao("71072")[0]!.texto).toMatch(/^São Paulo \(SP\) terminou a totalização\./);
+      const municipios = lugares.filter((l) => l.caminho.length > "lugares/XX.json".length).map((l) => narracao(l.caminho.slice(8, -5)));
+      expect(municipios.length).toBeGreaterThan(5_000);
+      // Um "terminou" em cada um, por último: uma virada vista na mesma rodada vem antes dele, pela prioridade.
+      expect(municipios.filter((n) => n.filter((e) => e.tipo === "fim").length !== 1 || n.find((e) => e.tipo === "fim")!.quando !== n[0]!.quando)).toEqual([]);
+      expect(municipios.flat().filter((e) => e.tipo === "marco" && e.marco !== 50)).toEqual([]);
+    });
+
+    it("para de crescer na totalização final: nenhum evento depois dela", () => {
+      const final = r.tse.estado().dataHoraDaTotalizacaoFinal!;
+      const todos = lugares.flatMap((l) => r.publicado(l.caminho).narracao);
+      expect(todos.filter((e) => e.quando > final)).toEqual([]);
+    });
+  });
+});
+
+describe("as fases do relógio do coletor", () => {
+  // A 20 s, 7 das 20 fases veem 4 trocas no Brasil entre 18:42 e 18:45 (seção 2 da medição): a janela de 10 minutos
+  // junta todas num evento só. O coletor parte a frio às 18:30 mais a fase e vê a virada de 2022.
+  it.each([0, 4, 8, 13, 15, 17, 31, 47])("com o relógio %i s depois da meia hora, dá uma virada só no Brasil", async (fase) => {
+    const r = await replay(`2022-10-30 18:30:${String(fase).padStart(2, "0")}`, "2022-10-30 18:58:00");
+    const viradas = r.publicado("lugares/BR.json").narracao.filter((e) => e.lugar === "BR" && e.tipo === "virada");
+
+    expect(viradas).toHaveLength(1);
+    expect(r.rodada().eventosDoBrasil.filter((e) => e.tipo === "virada")).toHaveLength(1);
+  }, 120_000);
 });
 
 describe("as chaves de publicação e os avisos prontos, pelo arquivo de controle", () => {
@@ -413,4 +529,16 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
     expect(curvaDepois.every((p, i) => i === 0 || p[0]! >= curvaDepois[i - 1]![0]!)).toBe(true);
     expect(conferirPlacar(r.placares(), { noite, cadastro })).toEqual([]);
   });
+
+  it("no plano zero, nem os eventos do Brasil vão no arquivo de rodada: a narração é do núcleo mínimo", async () => {
+    // Depois da virada de 2022 (~18:44), o dono liga o plano zero às 18:50.
+    const planoZero = { ...CONTROLE_INICIAL, chaves: { ...CONTROLE_INICIAL.chaves, nucleoMinimo: false } };
+    const comPlanoZero = await replay("2022-10-30 18:30:00", "2022-10-30 18:53:00", { controle: (quando) => (quando >= ms("2022-10-30 18:50:00") ? planoZero : CONTROLE_INICIAL) });
+    const rodadas = comPlanoZero.gravacoes.filter((g) => g.caminho === "rodada.json").map((g) => g.conteudo as ArquivoDeRodada);
+
+    expect(rodadas.filter((x) => x.chaves.nucleoMinimo).at(-1)!.eventosDoBrasil.map((e) => e.tipo)).toEqual(["virada"]);
+    const noPlanoZero = rodadas.filter((x) => !x.chaves.nucleoMinimo);
+    expect(noPlanoZero.length).toBeGreaterThan(5);
+    expect(noPlanoZero.filter((x) => x.eventosDoBrasil.length > 0)).toEqual([]);
+  }, 120_000);
 });

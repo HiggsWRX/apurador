@@ -5,13 +5,15 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./chaves": "./src/chaves.ts"
+    "./chaves": "./src/chaves.ts",
+    "./narracao": "./src/narracao.ts"
   },
   "scripts": {
     "coletor": "tsx src/principal.ts",
     "noite": "tsx src/noite.ts"
   },
   "dependencies": {
+    "@apurador/pipeline": "*",
     "@apurador/tse": "*"
   }
 }

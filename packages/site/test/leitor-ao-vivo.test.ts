@@ -19,7 +19,7 @@ const LIGADAS: ChavesDaNoite = { nucleoMinimo: true, projecao: true, baseComPesq
 const DO_SITE: ChavesDaNoite = { ...LIGADAS, mapa: false };
 
 function rodada(hora: string, fase: ArquivoDeRodada["fase"], novidade: Partial<ArquivoDeRodada["novidade"]> = {}, controle: Partial<Pick<ArquivoDeRodada, "chaves" | "aviso">> = {}): ArquivoDeRodada {
-  return { rodada: new Date(hora).toISOString(), fase, novidade: { totalizacao: null, vista: null, ...novidade }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null, ...controle };
+  return { rodada: new Date(hora).toISOString(), fase, novidade: { totalizacao: null, vista: null, ...novidade }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null, eventosDoBrasil: [], ...controle };
 }
 
 function lugar(percentualDeSecoes: number, totalizacao: string | null = null): ArquivoDoLugar {
@@ -27,6 +27,7 @@ function lugar(percentualDeSecoes: number, totalizacao: string | null = null): A
     lugar: "BR",
     tse: { totalizacao, secoes: { totalizadas: 0, total: 472027, percentual: percentualDeSecoes }, votos: [0, 0], percentuais: [0, 0], final: false },
     curva: [],
+    narracao: [],
   };
 }
 

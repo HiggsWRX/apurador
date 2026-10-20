@@ -1,23 +1,26 @@
-import type { ArquivoDeRodada, PontoDaCurvaReal } from "@apurador/coletor";
+import type { ArquivoDeRodada, EventoDaNarracao, PontoDaCurvaReal } from "@apurador/coletor";
 import { formatarPctComCasas } from "../lib/formato";
 import { corDoPartido, nomeCurto } from "../lib/identidade";
 import { ALTURA, COMECO_INSTAVEL, EixosDaCurva, eixosDaCurva, escalaDaCurva, LARGURA, MARGEM } from "./EixosDaCurva";
+import { FrasesDasViradas, MarcadoresDaNarracao } from "./MarcadoresDaNarracao";
 
 // A curva real (Telas da página de lugar, decisão 4): o % de cada candidato ao longo do % de seções totalizadas, as
 // duas linhas espelhadas em torno de 50%. A escala vertical ignora o começo instável, até 3% das seções, e recorta o
-// que passa dela: sem isso, os 70% do primeiro minuto achatam a noite inteira numa linha reta. A curva projetada, a
-// faixa e os marcadores da narração entram por cima nos tickets da projeção e da narração, com os eixos de
-// `EixosDaCurva`, que a curva projetada de antes das 17h já usa.
+// que passa dela: sem isso, os 70% do primeiro minuto achatam a noite inteira numa linha reta. Os números da narração
+// e a virada real vão por cima (`MarcadoresDaNarracao`); a curva projetada e a faixa entram no ticket da projeção, com
+// os eixos de `EixosDaCurva`, que a curva projetada de antes das 17h já usa.
 
 const MARGEM_DIREITA = 16;
 
 interface Props {
   candidatos: ArquivoDeRodada["candidatos"];
   curva: PontoDaCurvaReal[];
+  /** Os eventos da narração do próprio lugar: os números na curva e a virada real. */
+  eventos?: EventoDaNarracao[];
 }
 
 /** O cartão da curva real do lugar, com a nota enquanto não há seções. */
-export function CurvaReal({ candidatos, curva }: Props) {
+export function CurvaReal({ candidatos, curva, eventos = [] }: Props) {
   const ultimo = curva.at(-1);
   return (
     <section class="cartao curva-real" data-curva-real aria-labelledby="curva-real-titulo">
@@ -25,14 +28,17 @@ export function CurvaReal({ candidatos, curva }: Props) {
       {!ultimo ? (
         <p class="nota">A curva começa com as primeiras seções totalizadas.</p>
       ) : (
-        <Grafico candidatos={candidatos} curva={curva} ultimo={ultimo} />
+        <>
+          <Grafico candidatos={candidatos} curva={curva} ultimo={ultimo} eventos={eventos} />
+          <FrasesDasViradas eventos={eventos} />
+        </>
       )}
       <p class="fonte">Cálculo do Apurador com dados do TSE</p>
     </section>
   );
 }
 
-function Grafico({ candidatos, curva, ultimo }: Props & { ultimo: PontoDaCurvaReal }) {
+function Grafico({ candidatos, curva, ultimo, eventos = [] }: Props & { ultimo: PontoDaCurvaReal }) {
   // A meia altura da escala: a maior distância de 50% depois do começo instável.
   let distancia = 0;
   for (const [secoes = 0, ...pcts] of curva) if (secoes > COMECO_INSTAVEL) for (const p of pcts) distancia = Math.max(distancia, Math.abs(p - 50));
@@ -64,6 +70,7 @@ function Grafico({ candidatos, curva, ultimo }: Props & { ultimo: PontoDaCurvaRe
           r={3.5}
         />
       ))}
+      <MarcadoresDaNarracao eventos={eventos} eixos={eixos} escala={escala} />
     </svg>
   );
 }

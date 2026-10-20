@@ -21,7 +21,7 @@ function quadro(parte: Partial<QuadroAoVivo> = {}): QuadroAoVivo {
 }
 
 function rodada(fase: ArquivoDeRodada["fase"]): ArquivoDeRodada {
-  return { rodada: "2026-10-25T22:42:15.000Z", fase, novidade: { totalizacao: "2026-10-25 19:42:10", vista: "2026-10-25T22:42:12.000Z" }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null };
+  return { rodada: "2026-10-25T22:42:15.000Z", fase, novidade: { totalizacao: "2026-10-25 19:42:10", vista: "2026-10-25T22:42:12.000Z" }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null, eventosDoBrasil: [] };
 }
 
 function dadosDoLugar(tse: Partial<ArquivoDoLugar["tse"]>, curva: ArquivoDoLugar["curva"] = []): ArquivoDoLugar {
@@ -29,10 +29,11 @@ function dadosDoLugar(tse: Partial<ArquivoDoLugar["tse"]>, curva: ArquivoDoLugar
     lugar: "BR",
     tse: { totalizacao: "2026-10-25 19:42:10", secoes: { totalizadas: 0, total: 472027, percentual: 0 }, votos: [0, 0], percentuais: [0, 0], final: false, ...tse },
     curva,
+    narracao: [],
   };
 }
 
-const PADRAO: Omit<PropsDaVista, "quadro"> = { lugar: { tipo: "brasil" }, fotos: {}, movimentoReduzido: false, proximaLeitura: 30, lendo: false };
+const PADRAO: Omit<PropsDaVista, "quadro"> = { lugar: { tipo: "brasil", em: "no Brasil" }, fotos: {}, movimentoReduzido: false, proximaLeitura: 30, lendo: false };
 const vista = (q: QuadroAoVivo, outras: Partial<PropsDaVista> = {}) => render(<VistaDoBlocoAoVivo quadro={q} {...PADRAO} {...outras} />);
 
 describe("bloco ao vivo antes das 17h", () => {
@@ -66,15 +67,15 @@ describe("manchete durante a apuração", () => {
 
   it("num lugar ainda sem seções, diz que a apuração não começou ali", () => {
     const q = aoVivo({ secoes: { totalizadas: 0, total: 41123, percentual: 0 } });
-    expect(mancheteDe(q, { lugar: { tipo: "uf", uf: "BA" } })).toBe("A apuração ainda não começou neste estado");
-    expect(mancheteDe(q, { lugar: { tipo: "municipio", uf: "BA" } })).toBe("A apuração ainda não começou neste município");
-    expect(mancheteDe(q, { lugar: { tipo: "exterior", uf: "ZZ" } })).toBe("A apuração ainda não começou no Exterior");
-    expect(mancheteDe(q, { lugar: { tipo: "municipio", uf: "ZZ" } })).toBe("A apuração ainda não começou nesta cidade");
+    expect(mancheteDe(q, { lugar: { tipo: "uf", uf: "BA", em: "na Bahia" } })).toBe("A apuração ainda não começou neste estado");
+    expect(mancheteDe(q, { lugar: { tipo: "municipio", uf: "BA", em: "em Salvador (BA)" } })).toBe("A apuração ainda não começou neste município");
+    expect(mancheteDe(q, { lugar: { tipo: "exterior", uf: "ZZ", em: "no Exterior" } })).toBe("A apuração ainda não começou no Exterior");
+    expect(mancheteDe(q, { lugar: { tipo: "municipio", uf: "ZZ", em: "em Lisboa (Exterior)" } })).toBe("A apuração ainda não começou nesta cidade");
   });
 
   it("depois das 17h, sem o arquivo do lugar ainda, não afirma nada sobre ele nem volta a falar das 17h", () => {
     // O arquivo pode faltar por um erro da CDN na primeira leitura: dizer que a apuração não começou seria falso.
-    const html = vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar: null }), { lugar: { tipo: "brasil" } });
+    const html = vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar: null }), { lugar: { tipo: "brasil", em: "no Brasil" } });
     expect(html).not.toContain("data-manchete");
     const placar = texto(elemento(html, /<section[^>]*data-placar-oficial/));
     expect(placar).not.toContain("17h");
@@ -83,7 +84,7 @@ describe("manchete durante a apuração", () => {
 
   it("com os mesmos votos, diz que estão empatados", () => {
     const q = aoVivo({ secoes: { totalizadas: 1, total: 12, percentual: 8.33 }, votos: [104, 104], percentuais: [50, 50] });
-    expect(mancheteDe(q, { lugar: { tipo: "municipio", uf: "RR" } })).toBe("Flávio e Lula empatam com 104 votos cada, com 8,33% das seções totalizadas");
+    expect(mancheteDe(q, { lugar: { tipo: "municipio", uf: "RR", em: "em Uiramutã (RR)" } })).toBe("Flávio e Lula empatam com 104 votos cada, com 8,33% das seções totalizadas");
   });
 });
 

@@ -18,10 +18,12 @@ interface Props {
   indicador: ComponentChildren;
   /** Se a última leitura mudou o número (uma chave de `NUMEROS_DO_PLACAR`), para ele piscar. */
   mudou: (numero: string) => boolean;
+  /** No Brasil, com a indicação do TSE, o eleito pelo nome curto: a eleição está matematicamente definida. */
+  eleito?: string | null;
 }
 
 /** O cartão do placar oficial do lugar, com o indicador ao vivo. */
-export function PlacarOficial({ antesDas17h, candidatos, tse, fotos, indicador, mudou }: Props) {
+export function PlacarOficial({ antesDas17h, candidatos, tse, fotos, indicador, mudou, eleito = null }: Props) {
   return (
     <section class="cartao placar-oficial" data-placar-oficial aria-labelledby="placar-oficial-selo">
       <header class="placar-topo">
@@ -50,6 +52,11 @@ export function PlacarOficial({ antesDas17h, candidatos, tse, fotos, indicador, 
               </div>
             ))}
           </div>
+          {eleito && (
+            <p class="eleicao-definida" data-eleicao-definida>
+              {`Eleição matematicamente definida: ${eleito} eleito`}
+            </p>
+          )}
           <div class="barra-de-secoes" aria-hidden="true">
             <i style={{ width: `${tse.secoes.percentual}%` }} />
           </div>
