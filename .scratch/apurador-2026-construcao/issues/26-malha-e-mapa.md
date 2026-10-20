@@ -29,3 +29,11 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
 - [ ] **Desempenho**: no Android barato, o mapa desenha todos os municípios em até 2 s, sem travar a rolagem. Se falhar em SVG, passa para canvas. Se falhar de novo, a chave do mapa fica desligada.
 - [ ] **Chave do mapa**: desligada, o cartão mostra só a Tabela.
 - [ ] O mapa leva "Cálculo do Apurador com dados do TSE".
+
+## Comments
+
+- 20/10/2026, do [ticket 16](16-comandos-chaves-e-plano-zero.md):
+  - **A chave** é `mapa` (`NOMES_DAS_CHAVES`, em `packages/coletor/src/chaves.ts`). O dono a desliga com `npm run noite -- desligar mapa` (confirmando com `mapa`), e o estado chega à página pelo `rodada.json` (`chaves.mapa`), em até 2 rodadas, sem recarregar.
+  - **Na página**, a chave vale em `quadro.chaves.mapa` (`QuadroAoVivo`, `packages/site/src/lib/leitor-ao-vivo.ts`): até a primeira rodada, é a de `dados/chaves.json` (`noite.mapa`, que o build também lê por `CHAVES.noite` para o mapa do 1º turno antes das 17h); depois, a do arquivo de rodada. Desligada, o cartão mostra só a Tabela.
+  - O cartão Mapa | Tabela fica fora da ilha do bloco ao vivo (`components/BlocoAoVivo.tsx`), que é quem tem o leitor. Ou o cartão entra na mesma ilha e recebe o quadro por prop, ou a ilha repassa o quadro a cada leitura (um evento no DOM, por exemplo `apurador:quadro`). O que não deve existir é um segundo `criarLeitorAoVivo` por visitante: dobraria os pedidos à CDN a cada 30 s. O mesmo vale para o simulador ([ticket 25](25-simulador-ao-vivo.md)).
+  - A regra "se falhar em canvas, a chave do mapa fica desligada" é o dono rodando `desligar mapa` no ensaio, não código.
