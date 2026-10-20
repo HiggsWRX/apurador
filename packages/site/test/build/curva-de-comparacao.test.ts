@@ -3,7 +3,7 @@ import type { Lugar, Turno } from "@apurador/pipeline";
 import { describe, expect, it } from "vitest";
 import type { CurvasDoLugar } from "../../src/lib/curva-de-comparacao";
 import { ler } from "../dados-do-build";
-import { DIST, DIST_CHAVES_DESLIGADAS, DIST_PROJECAO_DESLIGADA, elemento, elementos, texto } from "../html";
+import { botoes, DIST, DIST_CHAVES_DESLIGADAS, DIST_PROJECAO_DESLIGADA, elemento, elementos, texto } from "../html";
 
 // A curva de comparação no build (a fronteira do site): um arquivo de curvas por lugar, `/curvas/<id>.json`, que a
 // página só baixa quando o visitante liga uma curva, e as curvas reais de noites passadas em "O que esperar da noite"
@@ -12,7 +12,6 @@ import { DIST, DIST_CHAVES_DESLIGADAS, DIST_PROJECAO_DESLIGADA, elemento, elemen
 const TURNOS = ["2018-1", "2018-2", "2022-1", "2022-2", "2026-1"];
 const curvas = (id: string) => JSON.parse(readFileSync(new URL(`curvas/${id}.json`, DIST), "utf8")) as CurvasDoLugar;
 const BLOCO_DO_ESPERAR = /<section[^>]*data-bloco="o-que-esperar-da-noite"/;
-const botoes = (html: string) => [...html.matchAll(/<button[^>]*aria-pressed="(true|false)"[^>]*>([^<]+)</g)].map((m) => [m[2], m[1]]);
 
 describe("as curvas de comparação de cada lugar", () => {
   const lugares = JSON.parse(ler("lugares.json")) as Lugar[];

@@ -60,9 +60,9 @@ describe("curvasDoTurno", () => {
       ),
     );
 
-    expect(curvas.partidos).toEqual(["PSL", "PT"]);
+    expect(curvas.partidoDeBolsonaro).toBe("PSL");
     expect(Object.keys(curvas.lugares).sort()).toEqual(["29297", "71072", "BR", "SP", "ZZ"]);
-    // No Brasil: 30 de 40, depois 31 de 64 (48,4375).
+    // No Brasil: 30 de 40, depois 31 de 64: o PSL com 51,6 (51,5625), e o PT com o que falta para 100,0.
     expect(pontos(curvas.lugares.BR)).toEqual([
       [20, 75],
       [60, 48.4],
@@ -90,7 +90,7 @@ describe("curvasDoTurno", () => {
       ),
     );
 
-    // O 1,5% fica de fora; 5 de 11 é 45,45.
+    // O 1,5% fica de fora; no fim, o PSL tem 6 de 11 (54,5), e o PT, 45,5.
     expect(pontos(curvas.lugares["01392"])).toEqual([
       [0.5, 50],
       [1, 75],
@@ -118,10 +118,11 @@ describe("as curvas dos turnos passados no repositório", () => {
     const pt = t.candidatos.findIndex((c) => c.partido === "PT");
     const bolsonaro = t.candidatos.findIndex((c) => ["PSL", "PL"].includes(c.partido));
     const { lugares } = curvas(turno);
+    // Como a comparação de dois turnos mostra o PT (ticket 34): o que falta para 100,0 do partido de Bolsonaro com uma casa.
     const fimOficial = new Map(
       Object.entries(t.lugares).flatMap(([id, l]) => {
         const dois = l.votos[pt]! + l.votos[bolsonaro]!;
-        return dois > 0 ? [[id, Math.round((1000 * l.votos[pt]!) / dois) / 10] as const] : [];
+        return dois > 0 ? [[id, Number((100 - Number(((100 * l.votos[bolsonaro]!) / dois).toFixed(1))).toFixed(1))] as const] : [];
       }),
     );
     const diferem = [...new Set([...fimOficial.keys(), ...Object.keys(lugares)])].filter((id) => fimOficial.get(id) !== lugares[id]?.pt.at(-1));
@@ -155,7 +156,7 @@ describe("as curvas dos turnos passados no repositório", () => {
     expect(pontos(curvas(turno).lugares.BR)).toEqual(expect.arrayContaining(marcos));
   });
 
-  it("os partidos de cada turno são o de Bolsonaro e o PT", () => {
-    expect(TURNOS.map((t) => curvas(t).partidos)).toEqual([["PSL", "PT"], ["PSL", "PT"], ["PL", "PT"], ["PL", "PT"], ["PL", "PT"]]);
+  it("o partido de Bolsonaro é o PSL em 2018 e o PL depois", () => {
+    expect(TURNOS.map((t) => curvas(t).partidoDeBolsonaro)).toEqual(["PSL", "PSL", "PL", "PL", "PL"]);
   });
 });

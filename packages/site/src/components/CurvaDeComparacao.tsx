@@ -1,6 +1,6 @@
 import { useMemo, useState } from "preact/hooks";
-import { COMPARACAO_DESLIGADA, criarComparacao, type EstadoDaComparacao, type TurnoPassado } from "../lib/curva-de-comparacao";
-import { corDoPartido } from "../lib/identidade";
+import { COMPARACAO_DESLIGADA, criarEscolhaDaComparacao, type EstadoDaComparacao, type TurnoPassado } from "../lib/curva-de-comparacao";
+import { corDoPartido, PT } from "../lib/identidade";
 import { COMECO_INSTAVEL, type Eixos } from "./EixosDaCurva";
 
 // A curva de comparação (Telas da página de lugar, decisão 4): a curva real de um turno passado, sobreposta à curva real
@@ -30,12 +30,11 @@ export function LinhasDaComparacao({ turnos, estado, eixos }: PropsDaComparacao 
   const turno = turnos.find((t) => t.id === estado.ligado);
   const curva = estado.curva;
   if (!turno || !curva) return null;
-  const [bolsonaro, pt] = turno.partidos;
   const linha = (y: (pt: number) => number) => curva.secoes.map((s, i) => `${i ? "L" : "M"}${eixos.x(s).toFixed(1)},${eixos.y(y(curva.pt[i]!)).toFixed(1)}`).join("");
   return (
     <g data-curva-de-comparacao={turno.id}>
-      <path class="linha-de-comparacao" data-cor={corDoPartido(pt)} d={linha((p) => p)} />
-      <path class="linha-de-comparacao" data-cor={corDoPartido(bolsonaro)} d={linha((p) => 100 - p)} />
+      <path class="linha-de-comparacao" data-cor={corDoPartido(PT[0]!)} d={linha((p) => p)} />
+      <path class="linha-de-comparacao" data-cor={corDoPartido(turno.partidoDeBolsonaro)} d={linha((p) => 100 - p)} />
     </g>
   );
 }
@@ -69,13 +68,12 @@ export function ControleDaComparacao({ turnos, estado, alternar, rotulo = "Compa
 function Legenda({ turno, estado }: { turno: TurnoPassado; estado: EstadoDaComparacao }) {
   if (estado.situacao === "baixando") return <>Baixando a curva de {turno.nome}…</>;
   if (estado.situacao === "falhou" || !estado.curva) return <>Não foi possível baixar a curva de {turno.nome}. Tente de novo.</>;
-  const [bolsonaro, pt] = turno.partidos;
   // Num 1º turno, a fatia do PT é o placar entre finalistas: os outros candidatos ficam de fora.
   return (
     <span>
       <i class="amostra amostra-pontilhada" /> Curva real de {turno.nome}
-      {turno.id.endsWith("-1") ? ", só entre os dois" : ""}: <strong data-cor={corDoPartido(pt)}>{pt}</strong> ×{" "}
-      <strong data-cor={corDoPartido(bolsonaro)}>{bolsonaro}</strong>
+      {turno.turno === 1 ? ", só entre os dois" : ""}: <strong data-cor={corDoPartido(PT[0]!)}>{PT[0]}</strong> ×{" "}
+      <strong data-cor={corDoPartido(turno.partidoDeBolsonaro)}>{turno.partidoDeBolsonaro}</strong>
     </span>
   );
 }
@@ -83,6 +81,6 @@ function Legenda({ turno, estado }: { turno: TurnoPassado; estado: EstadoDaCompa
 /** A comparação de um lugar numa ilha: as curvas vêm de `/curvas/<id>.json`, baixadas no primeiro turno ligado. */
 export function useComparacao(lugar: string, turnos: TurnoPassado[]): PropsDaComparacao {
   const [estado, setEstado] = useState(COMPARACAO_DESLIGADA);
-  const comparacao = useMemo(() => criarComparacao({ endereco: `/curvas/${lugar}.json`, buscar: (url) => fetch(url), aoMudar: setEstado }), [lugar]);
-  return { turnos, estado, alternar: (turno) => void comparacao.alternar(turno) };
+  const escolha = useMemo(() => criarEscolhaDaComparacao({ endereco: `/curvas/${lugar}.json`, buscar: (url) => fetch(url), aoMudar: setEstado }), [lugar]);
+  return { turnos, estado, alternar: (turno) => void escolha.alternar(turno) };
 }

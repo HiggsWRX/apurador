@@ -25,7 +25,7 @@ export default function NoitesPassadas({ turnos }: Props) {
       <p>Nas noites passadas, o placar do PT contra o partido de Bolsonaro mudou ao longo da apuração. Escolha uma para ver a curva real do Brasil.</p>
       <ControleDaComparacao {...comparacao} rotulo="Ver a noite de" />
       {turno && comparacao.estado.curva && (
-        <svg class="grafico-curva" viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={`Curva real do Brasil em ${turno.nome}: o PT e o ${turno.partidos[0]}`}>
+        <svg class="grafico-curva" viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={`Curva real do Brasil em ${turno.nome}: o PT e o ${turno.partidoDeBolsonaro}`}>
           <EixosDaCurva eixos={eixos} escala={escala} recorte="noites-passadas-recorte" />
           <g clip-path="url(#noites-passadas-recorte)">
             <LinhasDaComparacao {...comparacao} eixos={eixos} />

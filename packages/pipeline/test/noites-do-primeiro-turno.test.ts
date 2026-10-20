@@ -1,18 +1,12 @@
 import { readFileSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { dataHoraDoInstante, instanteDaNoite, lerNoite, reproduzir, type Noite } from "../src/noite.ts";
-import { marcos } from "./marcos.ts";
+import { dataHoraDoInstante, instanteDaNoite, reproduzir, type Noite } from "../src/noite.ts";
+import { arquivoDaNoite as arquivo, DADOS, lerDoRepositorio as ler, marcos, pct, validos } from "./noites-do-repositorio.ts";
 
 // O replay das noites do 1º turno de 2018 e de 2022, que a curva de comparação usa, a partir das sequências que estão
 // no repositório, sem rede. As referências são o resultado oficial do TSE, o histórico oficial de totalização do 1º
 // turno de 2022 (Historico_Totalizacao_Presidente_BR_1T_2022) e a tabela da linha do tempo
 // (.scratch/apurador-2026/research/02-linha-do-tempo-apuracoes-passadas.md), medida no detalhe por seção.
-const DADOS = new URL("../../../dados/", import.meta.url);
-const arquivo = (noite: string) => new URL(`noites/${noite}.json.gz`, DADOS);
-const ler = (noite: string): Noite => lerNoite(new Uint8Array(readFileSync(arquivo(noite))));
-
-const pct = (parte: number, todo: number) => ((100 * parte) / todo).toFixed(2);
-const validos = (t: { votos: number[] }) => t.votos.reduce((s, v) => s + v, 0);
 const posicao = (n: Noite, nomeUrna: string) => n.candidatos.findIndex((c) => c.nomeUrna === nomeUrna);
 
 describe("a noite do 1º turno de 2022 reconstruída", () => {

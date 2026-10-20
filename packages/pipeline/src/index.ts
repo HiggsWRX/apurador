@@ -15,7 +15,7 @@ export {
   type ZonaDaNoite,
 } from "./noite.ts";
 export { baseDoModelo, indicadoresDaBase, type BaseDoModelo, type BaseDoMunicipio } from "./base.ts";
-export { curvasDoTurno, type CurvaDeComparacao, type CurvasDoTurno } from "./curvas.ts";
+export type { CurvaDeComparacao, CurvasDoTurno } from "./curvas.ts";
 export { finalistas, lerInstitutos, listaDasPesquisas, pesquisasDoAgregado, type CnpjDaLista, type ExtratoDoTse, type Modo, type Pesquisa, type PesquisaDaLista } from "./pesquisas.ts";
 export { agregadoDaNoite, eleicoesPassadas, lerPesquisasHistoricas, type PesquisaHistorica } from "./pesquisas-historicas.ts";
 export { conferirResultadosHistoricos, resultadoHistorico, type FinalistaDoResultado, type ResultadoHistorico } from "./resultados-historicos.ts";

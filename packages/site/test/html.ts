@@ -57,3 +57,6 @@ export function elemento(html: string, abertura: RegExp): string {
   if (primeiro === undefined) throw new Error(`Nenhum elemento casa com ${abertura}`);
   return primeiro;
 }
+
+/** Os botões de ligar e desligar do trecho, cada um com o texto e se está apertado (`aria-pressed`). */
+export const botoes = (html: string) => [...html.matchAll(/<button[^>]*aria-pressed="(true|false)"[^>]*>([^<]+)</g)].map((m) => [m[2], m[1]]);

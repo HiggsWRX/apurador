@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { VistaDoBlocoAoVivo, type PropsDaVista } from "../src/components/VistaDoBlocoAoVivo";
 import { COMPARACAO_DESLIGADA, type EstadoDaComparacao, type TurnoPassado } from "../src/lib/curva-de-comparacao";
 import type { QuadroAoVivo } from "../src/lib/leitor-ao-vivo";
-import { elemento, texto } from "./html";
+import { botoes, elemento, texto } from "./html";
 
 // O que o bloco ao vivo mostra para cada quadro do leitor, renderizado em HTML como a ilha o desenha. Os números de
 // referência são os dos exemplos das decisões (Narração da noite, decisão 9), com as seções e os candidatos de 2026.
@@ -207,11 +207,11 @@ describe("curva real", () => {
 
   describe("com a curva de comparação", () => {
     const TURNOS: TurnoPassado[] = [
-      { id: "2018-1", nome: "2018 1T", partidos: ["PSL", "PT"] },
-      { id: "2018-2", nome: "2018 2T", partidos: ["PSL", "PT"] },
-      { id: "2022-1", nome: "2022 1T", partidos: ["PL", "PT"] },
-      { id: "2022-2", nome: "2022 2T", partidos: ["PL", "PT"] },
-      { id: "2026-1", nome: "2026 1T", partidos: ["PL", "PT"] },
+      { id: "2018-1", nome: "2018 1T", turno: 1, partidoDeBolsonaro: "PSL" },
+      { id: "2018-2", nome: "2018 2T", turno: 2, partidoDeBolsonaro: "PSL" },
+      { id: "2022-1", nome: "2022 1T", turno: 1, partidoDeBolsonaro: "PL" },
+      { id: "2022-2", nome: "2022 2T", turno: 2, partidoDeBolsonaro: "PL" },
+      { id: "2026-1", nome: "2026 1T", turno: 1, partidoDeBolsonaro: "PL" },
     ];
     // O PT entre os dois, no começo instável com 25% e depois nunca mais de 11,4 pontos de 50%, até os 44,9% do fim.
     const DE_2018 = { secoes: [0.1, 2, 10, 50, 100], pt: [12.5, 25, 38.6, 41.2, 44.9] };
@@ -220,7 +220,6 @@ describe("curva real", () => {
       const comparacao = { turnos, estado: { ...COMPARACAO_DESLIGADA, ...estado }, alternar: () => {} };
       return elemento(vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar }), { comparacao }), /<section[^>]*data-curva-real/);
     };
-    const botoes = (html: string) => [...html.matchAll(/<button[^>]*aria-pressed="(true|false)"[^>]*>([^<]+)</g)].map((m) => [m[2], m[1]]);
     const legenda = (html: string) => texto(elemento(html, /<p[^>]*data-legenda-da-comparacao/));
 
     it("abre desligada: um botão por turno passado, nenhum apertado, e só as linhas da curva real", () => {
@@ -242,7 +241,7 @@ describe("curva real", () => {
 
       expect(botoes(html).filter(([, apertado]) => apertado === "true")).toEqual([["2018 2T", "true"]]);
       expect([...html.matchAll(/<path class="linha-de-comparacao" data-cor="(\w+)"/g)].map((m) => m[1])).toEqual(["lula", "flavio"]);
-      // A curva real vem depois, por cima.
+      // As linhas da comparação vêm antes, por baixo das da curva real, que continua inteira à vista.
       expect(html.indexOf("data-linha-real")).toBeGreaterThan(html.lastIndexOf("linha-de-comparacao"));
       expect(legenda(html)).toBe("Curva real de 2018 2T: PT × PSL");
     });
@@ -265,8 +264,8 @@ describe("curva real", () => {
       expect(baixando + falhou).not.toContain("linha-de-comparacao");
     });
 
-    it("um lugar que não votou em nenhum turno passado, como Boa Esperança do Norte antes de 2026, só tem os botões dos que votou", () => {
-      expect(botoes(comparadaCom({}, TURNOS.slice(-1)))).toEqual([["2026 1T", "false"]]);
+    it("um lugar sem nenhum turno passado, como Abuja, não tem botões nem legenda", () => {
+      expect(comparadaCom({}, [])).not.toContain("data-comparacao");
     });
   });
 });

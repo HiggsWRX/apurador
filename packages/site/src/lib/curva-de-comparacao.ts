@@ -5,14 +5,16 @@ import type { CurvaDeComparacao } from "@apurador/pipeline";
 // `/curvas/<id>.json`, com no máximo 1,4 KB com gzip) só se baixam quando o visitante liga uma delas, e uma vez só:
 // trocar de turno não baixa de novo. Sem DOM nem rede: a ilha injeta o transporte, como no leitor ao vivo.
 
-/** Um turno passado que a página pode sobrepor à curva real: o id dos dados, o nome no botão e os dois partidos. */
+/** Um turno passado que a página pode sobrepor à curva real: o id dos dados, o nome no botão e o partido de Bolsonaro. */
 export interface TurnoPassado {
   /** Como em `dados/turnos/`: "2022-2". */
   id: string;
   /** Como no botão: "2022 2T". */
   nome: string;
-  /** O partido de Bolsonaro e o PT, como o TSE os escreve: `["PSL", "PT"]` em 2018. */
-  partidos: [string, string];
+  /** 1 ou 2: num 1º turno, a fatia do PT é o placar entre finalistas, sem os outros candidatos. */
+  turno: number;
+  /** O PSL em 2018 e o PL depois, como o TSE escreve a sigla. */
+  partidoDeBolsonaro: string;
 }
 
 /** As curvas de comparação de um lugar, pelo id do turno, como o site as serve em `/curvas/<id>.json`. */
@@ -28,15 +30,14 @@ export interface EstadoDaComparacao {
 /** A comparação desligada, como a página abre. */
 export const COMPARACAO_DESLIGADA: EstadoDaComparacao = { ligado: null, situacao: "desligada", curva: null };
 
-/** O que a ilha guarda da comparação: o estado e o clique num botão de turno. */
-export interface Comparacao {
-  estado(): EstadoDaComparacao;
+/** O turno passado que o visitante escolhe na ilha, com as curvas do lugar baixadas no primeiro. */
+export interface EscolhaDaComparacao {
   /** Liga o turno (e desliga o que estava ligado) ou, se ele já está ligado, desliga a curva. */
   alternar(turno: string): Promise<void>;
 }
 
-/** A comparação de um lugar, que baixa as curvas do `endereco` no primeiro turno ligado e avisa cada mudança. */
-export function criarComparacao(opcoes: { endereco: string; buscar: (url: string) => Promise<Response>; aoMudar: (estado: EstadoDaComparacao) => void }): Comparacao {
+/** A escolha de um lugar, que baixa as curvas do `endereco` no primeiro turno ligado e dá cada estado a `aoMudar`. */
+export function criarEscolhaDaComparacao(opcoes: { endereco: string; buscar: (url: string) => Promise<Response>; aoMudar: (estado: EstadoDaComparacao) => void }): EscolhaDaComparacao {
   let estado = COMPARACAO_DESLIGADA;
   let curvas: Promise<CurvasDoLugar> | null = null;
   const mudar = (novo: EstadoDaComparacao) => {
@@ -50,7 +51,6 @@ export function criarComparacao(opcoes: { endereco: string; buscar: (url: string
   };
 
   return {
-    estado: () => estado,
     async alternar(turno) {
       if (estado.ligado === turno) return mudar(COMPARACAO_DESLIGADA);
       mudar({ ligado: turno, situacao: "baixando", curva: null });

@@ -1044,7 +1044,7 @@
     },
     {
       "arquivo": "curvas/2022-2.json",
-      "sha256": "facadcdab5e7196d011ac3696cc299d84baad165677b4ed8f29f6878073fc528",
+      "sha256": "49986f7366bde89e6b33c6ec9d627a16c980fd50956dbdf7aac2ba439b3df2d5",
       "fontes": [
         "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2022.zip",
         "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2022/buweb/bweb_2t_AC_311020221535.zip",
@@ -1081,7 +1081,7 @@
     },
     {
       "arquivo": "curvas/2018-2.json",
-      "sha256": "1f502fe23f2e413d79fec6ef292926bcdaf7b89f238938029609ec62c4349b9f",
+      "sha256": "00ff4db2cbed0809908ed87800bf53af16d2c5762034c441821f79585cd95a43",
       "fontes": [
         "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2018.zip",
         "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2018/buweb/BWEB_2t_AC_301020181744.zip",
@@ -1118,7 +1118,7 @@
     },
     {
       "arquivo": "curvas/2026-1.json",
-      "sha256": "dda6e35818405a82747e21df0d2476c9e07c533a44d99e69e10082f63658998f",
+      "sha256": "5767d7baab9ad659346067869dcab670c35c0336860e961793130a5cf6614c3a",
       "fontes": [
         "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2026.zip",
         "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2026_BR.zip",
@@ -1138,7 +1138,7 @@
     },
     {
       "arquivo": "curvas/2018-1.json",
-      "sha256": "088156c6cc78080c2792f8236b4b9d99bc7f18125eb66475182448c1cca3c288",
+      "sha256": "723d3feb91dc367ae20c84af813e84034c3acedc46ad2c24df9a890d392b2072",
       "fontes": [
         "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2018.zip",
         "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2018_BR.zip",
@@ -1158,7 +1158,7 @@
     },
     {
       "arquivo": "curvas/2022-1.json",
-      "sha256": "9155801f2c1302bbac40bcaa9f53bfa880aed99b6126f311dbc2edc385449d80",
+      "sha256": "2e5623df6450062371b885e25cfb0538d0640ea3ac763a7d54f05239bd513ea1",
       "fontes": [
         "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2022.zip",
         "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2022_BR.zip",

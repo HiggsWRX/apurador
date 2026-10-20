@@ -1,22 +1,12 @@
 import { readFileSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { dataHoraDoInstante, instanteDaNoite, lerNoite, reproduzir, type Noite } from "../src/noite.ts";
+import { dataHoraDoInstante, instanteDaNoite, reproduzir, type Noite } from "../src/noite.ts";
 import type { Turno } from "../src/turno.ts";
-import { marcos } from "./marcos.ts";
+import { arquivoDaNoite as arquivo, DADOS, lerDoRepositorio as ler, marcos, pct, validos } from "./noites-do-repositorio.ts";
 
 // O replay das noites da calibração (2º turno de 2018 e 1º turno de 2026) a partir das sequências que estão
 // no repositório, sem rede. As referências são o resultado oficial do TSE e as parciais publicadas na noite,
 // conferidas na linha do tempo (.scratch/apurador-2026/research/02-linha-do-tempo-apuracoes-passadas.md).
-const DADOS = new URL("../../../dados/", import.meta.url);
-const arquivo = (noite: string) => new URL(`noites/${noite}.json.gz`, DADOS);
-const lidas = new Map<string, Noite>();
-const ler = (noite: string) => {
-  if (!lidas.has(noite)) lidas.set(noite, lerNoite(new Uint8Array(readFileSync(arquivo(noite)))));
-  return lidas.get(noite)!;
-};
-
-const pct = (parte: number, todo: number) => ((100 * parte) / todo).toFixed(2);
-const validos = (t: { votos: number[] }) => t.votos.reduce((s, v) => s + v, 0);
 
 describe("a noite do 2º turno de 2018 reconstruída", () => {
   const noite = ler("2018-2");
