@@ -1,0 +1,41 @@
+---
+// Uma seção numerada da página de metodologia (Página de metodologia, decisão 1): a âncora fixa é o `id`, que os links
+// da página de lugar usam, e o número é a posição dela entre as seções que a página já tem. A página só cresce: quando
+// as seções 6 e 7 entrarem, elas entram na lista da página e os números seguem.
+
+interface Props {
+  /** A âncora fixa: `pesquisas`, `chance`, `apuracao`, `juntas`, `virada`, `acerto`, `constantes`, `limites` ou `fontes`. */
+  id: string;
+  /** A posição entre as seções da página, "01", "02", … */
+  numero: string;
+  titulo: string;
+}
+const { id, numero, titulo } = Astro.props;
+---
+
+<section class="secao" id={id} aria-labelledby={`${id}-titulo`}>
+  <span class="numero" aria-hidden="true">{numero}</span>
+  <h2 id={`${id}-titulo`}>{titulo}</h2>
+  <slot />
+</section>
+
+<style>
+  .secao {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--texto);
+    /* A âncora para abaixo do cabeçalho fixo, e não escondida por ele. */
+    scroll-margin-top: 4.5rem;
+  }
+  .numero {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--cor-cinza);
+  }
+  h2 {
+    font-size: 1.375rem;
+  }
+</style>

@@ -21,7 +21,7 @@ const MODOS: Record<Modo, string> = { presencial: "presenciais", telefone: "por 
 const conferidoEm = dataEmBrasilia(new Date(EXTRATO.fonte.conferidoEm));
 ---
 
-<section class="pesquisas" data-bloco="lista-das-pesquisas">
+<section class="pesquisas" id="pesquisas-registradas" data-bloco="lista-das-pesquisas">
   <details open={aberta}>
     <summary><h2>Pesquisas registradas no TSE ({pesquisas.length})</h2></summary>
     <p class="nota">

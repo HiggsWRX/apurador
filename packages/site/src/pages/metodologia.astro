@@ -1,0 +1,615 @@
+---
+import { DIA_DA_ELEICAO, diasEntre, Z_95, type OrdemDeChegada } from "@apurador/modelo";
+import Secao from "../components/Secao.astro";
+import Sino from "../components/Sino.astro";
+import Base from "../layouts/Base.astro";
+import { CHAVES } from "../lib/chaves";
+import { formatarCalculo, formatarDia, formatarNumero, formatarVotos, umaCasa } from "../lib/formato";
+import { nomeCurto } from "../lib/identidade";
+import { CONSTANTES, ERRO_HISTORICO, INCERTEZA_NA_ELEICAO, INSTITUTOS, PARA_BAIXAR, pesoCom, VIES_DO_PRIMEIRO_TURNO } from "../lib/metodologia";
+import { AGREGADO, entreOsFinalistas, FINALISTAS } from "../lib/pesquisas";
+import { EMAIL_DO_PROJETO, RESPONSAVEL } from "../lib/projeto";
+
+// A página de metodologia (Página de metodologia, decisões 1, 2, 4 a 9; Segunda consulta jurídica, decisão 3), na
+// estrutura A do protótipo: "Em um minuto" no topo e as seções numeradas, com âncoras fixas e as fórmulas recolhidas em
+// "As contas". Na etapa "Antes da noite" entram as seções 1 a 5, 8 e 9; as seções 6 (`acerto`) e 7 (`constantes`)
+// entram no build do ensaio 2, na lista abaixo, entre `virada` e `limites`, e os números seguem. A página não traz
+// "em breve": ela só cresce. Os textos falam com você, em frases curtas, e nunca dizem que o modelo "aprende", que é
+// "IA" ou que faz "previsão", fora a declaração do cartão. Os números saem do mesmo código da noite, no build: o
+// agregado do dia, as constantes congeladas e o histórico das pesquisas. A página nunca lê dados ao vivo.
+
+const SECOES = [
+  { id: "pesquisas", titulo: "Antes das 17h: o agregado de pesquisas" },
+  { id: "chance", titulo: "De onde vem a chance de vitória" },
+  { id: "apuracao", titulo: "A partir das 17h: a apuração" },
+  { id: "juntas", titulo: "Como pesquisas e apuração se juntam" },
+  { id: "virada", titulo: "A curva projetada e a virada" },
+  { id: "limites", titulo: "Limitações" },
+  { id: "fontes", titulo: "Fontes, dados e avisos" },
+];
+const secao = (id: string) => {
+  const posicao = SECOES.findIndex((s) => s.id === id);
+  if (posicao < 0) throw new Error(`A página de metodologia não tem a seção ${id}`);
+  return { id, numero: String(posicao + 1).padStart(2, "0"), titulo: SECOES[posicao]!.titulo };
+};
+
+const [flavio, lula] = FINALISTAS.map((c) => nomeCurto(c.nomeUrna)) as [string, string];
+const pct = (n: number) => `${formatarCalculo(n)}%`;
+const pontos = (n: number) => `${formatarNumero(n)} ${n < 2 ? "ponto" : "pontos"}`;
+
+// O agregado do dia (decisão 5): muda a cada deploy de pesquisas e fica fixo depois das 23h de 24/10, quando o dia do
+// agregado passa a ser 25/10. Com a chave do agregado desligada, a página explica a regra sem os números do dia.
+const agregado = CHAVES.antesDas17h.agregado ? AGREGADO : undefined;
+const diasAntes = agregado ? diasEntre(agregado.dia, DIA_DA_ELEICAO) : 0;
+const hoje = agregado && entreOsFinalistas(umaCasa(agregado.valor)).map((c) => `${nomeCurto(c.candidato.nomeUrna)} ${pct(c.pct)}`);
+const quando = agregado && (agregado.dia === DIA_DA_ELEICAO ? "o agregado da noite, congelado às 23h de 24/10" : `o agregado de ${formatarDia(agregado.dia)}`);
+const incertezaDoDia = agregado && (diasAntes > 0 ? `a incerteza de ${diasAntes} ${diasAntes === 1 ? "dia" : "dias"} antes da eleição, ${pontos(agregado.incerteza)}` : `a incerteza do dia da eleição, ${pontos(agregado.incerteza)}`);
+
+// As constantes congeladas pela calibração, citadas em vez de repetidas.
+const K = formatarNumero(CONSTANTES.secoesDasPesquisas);
+const pesoCom5 = pct(100 * pesoCom(5));
+const limite = (chance: number) => `${formatarNumero(100 * chance)}%`;
+const ORDENS: Record<OrdemDeChegada, string> = {
+  mistura: "uma mistura do ritmo do 1º turno com o ritmo de cada estado na noite",
+  "primeiro-turno": "o ritmo em que cada município chegou no 1º turno",
+  "ritmo-da-noite": "o ritmo que cada estado mostrou até agora na noite",
+};
+const faixaNaEleicao = Math.round(Z_95 * INCERTEZA_NA_ELEICAO);
+const vies = VIES_DO_PRIMEIRO_TURNO;
+const erro = ERRO_HISTORICO;
+const numeroPorExtenso = ["zero", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez"];
+const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidade);
+---
+
+<Base titulo="Como calculamos a projeção">
+  <article class="metodologia">
+    <header class="topo-da-pagina">
+      <h1>Como calculamos a projeção</h1>
+      <p class="lead">
+        A projeção estima o resultado final a partir das pesquisas e, desde as 17h de 25/10, dos votos que o TSE já totalizou. Aqui estão as contas e os
+        limites.
+      </p>
+      <p class="aviso-projecao">
+        Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.
+        <small>A projeção é uma conta sobre dados públicos. Quem anuncia o resultado é o TSE.</small>
+      </p>
+      <section class="cartao minuto" aria-labelledby="minuto-titulo" data-bloco="em-um-minuto">
+        <h2 id="minuto-titulo">Em um minuto</h2>
+        <ol>
+          <li>
+            <span>Antes das 17h, a projeção é o <strong>agregado de pesquisas</strong>: a média da pesquisa mais recente de cada instituto de uma lista fechada de {INSTITUTOS.length}.</span>
+          </li>
+          <li>
+            <span>Desde as 17h, os municípios que chegam mostram para onde foram os votos dos <strong>eliminados no 1º turno</strong>. O modelo aplica isso ao voto que falta.</span>
+          </li>
+          <li>
+            <span>As pesquisas perdem peso rápido: pesam metade com <strong>{K}% das seções</strong> totalizadas e só {pesoCom5} com 5%.</span>
+          </li>
+          <li>
+            <span>A <strong>chance de vitória</strong> vem do tamanho do erro que o modelo espera, medido em eleições passadas.</span>
+          </li>
+          <li>
+            <span>A <strong>curva projetada</strong> mostra para onde o placar parcial deve ir e se há sinal de virada, sempre com uma faixa de incerteza.</span>
+          </li>
+        </ol>
+        <p class="declaracao" data-bloco="declaracao">
+          <strong>Sem IA generativa nem aprendizagem de máquina.</strong> O modelo usa fórmulas fixas, escritas antes da eleição. As constantes foram
+          escolhidas em noites passadas, por uma regra escrita antes, e não mudam durante a apuração.
+        </p>
+      </section>
+      <nav class="indice" aria-label="Seções desta página">
+        {SECOES.map((s) => <a href={`#${s.id}`}>{s.titulo}</a>)}
+      </nav>
+    </header>
+
+    <Secao {...secao("pesquisas")}>
+      <p>
+        Antes da primeira seção totalizada, a única informação sobre o 2º turno são as pesquisas. O <strong>agregado de pesquisas</strong> é a média
+        simples, em votos válidos, das pesquisas registradas que entram na regra. Os votos válidos de cada pesquisa saem dos números publicados por
+        ela: os votos de {flavio} divididos pela soma dos votos de {flavio} e de {lula}. Nenhum instituto pesa mais que outro, nem pelo tamanho da
+        amostra.
+      </p>
+      {
+        agregado && hoje && (
+          <p data-bloco="agregado-do-dia">
+            {agregado.dia === DIA_DA_ELEICAO ? "Para a noite de 25/10" : `Em ${formatarDia(agregado.dia)}`}, com {agregado.pesquisas.length} institutos,{" "}
+            {agregado.dia === DIA_DA_ELEICAO ? "o agregado congelado às 23h de 24/10" : "o agregado"} dá <strong>{hoje[0]}</strong> e <strong>{hoje[1]}</strong>{" "}
+            dos votos válidos.
+          </p>
+        )
+      }
+      <p class="aviso-agregado">Média calculada pelo Apurador sobre pesquisas registradas no TSE. Não é uma pesquisa própria.</p>
+      <details>
+        <summary>Quais pesquisas entram</summary>
+        <div>
+          <ul>
+            <li>Só pesquisas <strong>nacionais</strong> para Presidente no 2º turno, com campo a partir de 05/10 e <strong>registro conferido no TSE</strong>.</li>
+            <li>
+              Só os <strong>{INSTITUTOS.length} institutos</strong> que divulgaram pesquisa final no 2º turno de 2018 ou de 2022. Foi neles que medimos o
+              erro das pesquisas.
+            </li>
+            <li>
+              De cada instituto, só a <strong>pesquisa mais recente</strong>, com campo terminado nos 7 dias anteriores. Com menos de 4 institutos, a
+              janela passa a 14 dias.
+            </li>
+            <li>Boca de urna nunca entra. O agregado <strong>congela às 23h de 24/10</strong>: pesquisas divulgadas em 25/10 ficam de fora.</li>
+            <li>Se a Justiça Eleitoral suspender uma pesquisa, ela sai, e o agregado é refeito.</li>
+          </ul>
+          <h3>Os {INSTITUTOS.length} institutos</h3>
+          <ul class="institutos">
+            {INSTITUTOS.map((i) => <li>{i}</li>)}
+          </ul>
+          <p class="nota">Identificados pelo CNPJ no registro do TSE.</p>
+        </div>
+      </details>
+      <details>
+        <summary>A incerteza do agregado</summary>
+        <div>
+          <p>
+            Nos {quantosTurnos} 2º turnos de {erro.anos[0]} a {erro.anos[1]}, a média das pesquisas finais errou entre {formatarCalculo(erro.menor)} e{" "}
+            {pontos(umaCasa(erro.maior))}, sem lado fixo. Por isso, o modelo espera um erro típico de <strong>{pontos(INCERTEZA_NA_ELEICAO)}</strong> no
+            dia da eleição. A faixa de 95% vai, então, de cerca de {faixaNaEleicao} pontos abaixo a {faixaNaEleicao} pontos acima do agregado.
+          </p>
+          <p>
+            Antes do dia da eleição, a incerteza é maior, porque o voto ainda pode mudar.
+            {agregado && diasAntes > 0 && ` Em ${formatarDia(agregado.dia)}, ${diasAntes} ${diasAntes === 1 ? "dia" : "dias"} antes, ela é de ${pontos(agregado.incerteza)}.`}
+          </p>
+          <p>
+            No 1º turno de 2026, as pesquisas finais, pela mesma regra, davam {flavio} {pct(vies.pesquisas)} entre os dois finalistas. Ele teve{" "}
+            {pct(vies.resultado)}: as pesquisas o subestimaram em {pontos(umaCasa(vies.diferenca))}. Não corrigimos o agregado por isso: em 2018 e em 2022,
+            o erro do 1º turno não se repetiu no 2º. Essa dúvida entra na incerteza.
+          </p>
+        </div>
+      </details>
+      <details>
+        <summary>Estados e municípios</summary>
+        <div>
+          <p>
+            Quase não há pesquisas estaduais do 2º turno, e nenhuma entra no modelo. Por isso, nos estados, no Exterior e nos municípios, o ponto de
+            partida é a <strong>indicação das pesquisas</strong>: o placar entre finalistas do lugar no 1º turno somado à mesma mudança que o agregado
+            mostra para o Brasil.
+          </p>
+        </div>
+      </details>
+      <details class="contas">
+        <summary>As contas</summary>
+        <div>
+          <p class="formula">agregado = média de [ {flavio} ÷ ({flavio} + {lula}) ] nas pesquisas da janela</p>
+          <p class="formula">incerteza = √( {formatarNumero(INCERTEZA_NA_ELEICAO)}² + 0,4² × dias até 25/10 )</p>
+          <p class="nota">
+            Os {pontos(INCERTEZA_NA_ELEICAO)} juntam o erro típico da média nos {quantosTurnos} 2º turnos ({pontos(umaCasa(erro.raiz))}) e a dúvida sobre o
+            viés do 1º turno (0,7 ponto): √({formatarCalculo(erro.raiz)}² + 0,7²) dá {formatarCalculo(erro.incertezaNaEleicao)}.
+            {agregado && diasAntes > 0 && ` Em ${formatarDia(agregado.dia)}, ${diasAntes} ${diasAntes === 1 ? "dia" : "dias"} antes, dá ${pontos(agregado.incerteza)}.`}
+          </p>
+          <p class="formula">indicação no lugar = placar entre finalistas do lugar no 1º turno + (agregado − {formatarCalculo(vies.resultado)})</p>
+          <p class="nota">
+            {formatarCalculo(vies.resultado)} é o placar entre finalistas de {flavio} no Brasil no 1º turno. O resultado fica entre 0% e 100%.
+          </p>
+        </div>
+      </details>
+    </Secao>
+
+    <Secao {...secao("chance")}>
+      <p>
+        A projeção não é um número só: é uma faixa de resultados possíveis, mais prováveis no meio.
+        {agregado ? " Com o agregado de hoje, ela fica assim:" : " Desenhada, ela é um sino."}
+      </p>
+      {
+        agregado && (
+          <figure data-bloco="sino">
+            <Sino valor={agregado.valor} incerteza={agregado.incerteza} />
+            <figcaption class="nota">
+              Com {quando}: {flavio} {pct(agregado.valor)}, com {incertezaDoDia}. Cálculo do Apurador sobre pesquisas registradas no TSE. Não é uma pesquisa
+              própria nem resultado oficial.
+            </figcaption>
+          </figure>
+        )
+      }
+      <p>
+        A <strong>chance de vitória</strong> é a fatia do sino que fica do lado de cada candidato: a área à direita de 50% é a chance de {flavio}, e a da
+        esquerda, a de {lula}.
+      </p>
+      <p>Chance de 75% não é certeza. Em quatro eleições parecidas, quem tem 75% perderia uma.</p>
+      <p>
+        Durante a apuração, a conta é a mesma, com a projeção e a incerteza daquele momento. O sino vai ficando mais estreito conforme o voto que falta
+        diminui.
+      </p>
+      <details class="contas">
+        <summary>As contas</summary>
+        <div>
+          <p class="formula">chance de {flavio} = Φ( (projeção − 50) ÷ incerteza )</p>
+          <p class="nota">
+            Φ é a curva normal acumulada. A página mostra inteiros, "&lt;1%" e "&gt;99%". 100% só aparece com a indicação do TSE de que a eleição está
+            matematicamente definida.
+          </p>
+        </div>
+      </details>
+    </Secao>
+
+    <Secao {...secao("apuracao")}>
+      <p>
+        O placar parcial mostra só as seções que já chegaram, e elas não são uma amostra do país. Centro-Oeste e Sul costumam chegar cedo; Sudeste e
+        Nordeste, tarde. Em 2022, Bolsonaro liderou o placar parcial até 67,76% das seções totalizadas, e Lula terminou à frente.
+      </p>
+      <p>
+        Quando a apuração começa, o modelo olha os municípios que já chegaram. Em cada estado, ele mede para onde estão indo os votos dados no 1º turno
+        aos candidatos eliminados: a <strong>transferência de votos</strong>. Depois aplica essa conta ao voto que falta de cada município do estado,
+        partindo do 1º turno daquele município.
+      </p>
+      <p>
+        Quando um município já tem votos totalizados, o placar dele também conta: com {formatarVotos(CONSTANTES.pesoDoMunicipio)} votos totalizados, ele
+        pesa metade.
+      </p>
+      <p>
+        A projeção vem com uma <strong>margem</strong>. Ela junta o erro estatístico da referência de cada estado, um desvio próprio de cada estado ({
+          pontos(CONSTANTES.incertezaRegional)
+        }), um desvio comum a todo o voto que falta no país ({pontos(CONSTANTES.incertezaNacional)}) e a diferença entre os municípios. Estados que usam a
+        mesma referência erram juntos.
+      </p>
+      <p>
+        É a base <strong>Só apuração</strong>. Antes da primeira seção, ela parte do placar entre finalistas de cada lugar no 1º turno, com a incerteza
+        mais larga da noite.
+      </p>
+      <details class="contas">
+        <summary>As contas</summary>
+        <div>
+          <ul>
+            <li>
+              Referência: a transferência de votos é medida no estado, nos municípios já totalizados. Se o estado tem menos de{" "}
+              {formatarVotos(CONSTANTES.minimoPorNivel)} votos válidos totalizados, usa-se a região; depois, o Brasil; antes da primeira seção, o 1º turno.
+            </li>
+            <li>
+              <span class="formula">peso do próprio município = votos totalizados ÷ (votos totalizados + {formatarVotos(CONSTANTES.pesoDoMunicipio)})</span>
+            </li>
+            <li>
+              <span class="formula">margem de 95% = {formatarNumero(umaCasa(Z_95 * 100) / 100)} × desvio da projeção</span>
+            </li>
+            <li>
+              O modelo trabalha por município.{" "}
+              {CONSTANTES.zona ? "Nos municípios com mais de uma zona eleitoral, cada zona entra como uma parte." : "Seções, zonas e locais de votação não entram."}
+            </li>
+          </ul>
+        </div>
+      </details>
+    </Secao>
+
+    <Secao {...secao("juntas")}>
+      <p>
+        Na base <strong>Apuração + pesquisas</strong>, o voto que falta começa pela indicação das pesquisas e passa para a apuração aos poucos. O{" "}
+        <strong>peso das pesquisas</strong> é o mesmo no país todo e cai conforme o Brasil é apurado: metade com {K}% das seções totalizadas, só {pesoCom5}{" "}
+        com 5%.
+      </p>
+      <p>Na base <strong>Só apuração</strong>, as pesquisas não entram. Antes das 17h, ela parte do 1º turno, com incerteza bem maior.</p>
+      <p>
+        Você escolhe a base na página de cada lugar, e a página diz quanto as pesquisas pesam agora. Quando as duas bases ficam a menos de 0,1 ponto na
+        projeção e de 1 ponto na chance de vitória, ela avisa: "As duas bases já coincidem aqui".
+      </p>
+      <details class="contas">
+        <summary>As contas</summary>
+        <div>
+          <p class="formula">peso das pesquisas = K ÷ (K + % de seções totalizadas no Brasil), com K = {K}%</p>
+          <p class="nota">As pesquisas valem o mesmo que K% das seções. O peso é nacional porque o erro das pesquisas é, sobretudo, nacional.</p>
+          <p class="formula">voto que falta = peso × indicação das pesquisas + (1 − peso) × estimativa da apuração</p>
+          <p class="nota">Por cima, vem a correção pelo placar do próprio município, como na base Só apuração.</p>
+          <p class="nota">
+            A incerteza das pesquisas é a do agregado ({pontos(INCERTEZA_NA_ELEICAO)} na noite) mais uma parte local: no estado,{" "}
+            {formatarNumero(CONSTANTES.incertezaLocalDasPesquisas.uf)} × a fatia dos eliminados no 1º turno do estado; no município,{" "}
+            {formatarNumero(CONSTANTES.incertezaLocalDasPesquisas.municipio)} × a mesma fatia dele. Ela entra multiplicada pelo peso, e a da apuração, pelo
+            restante.
+          </p>
+        </div>
+      </details>
+    </Secao>
+
+    <Secao {...secao("virada")}>
+      <p>
+        A <strong>curva projetada</strong> imagina a ordem em que o voto que falta vai chegar: {ORDENS[CONSTANTES.ordemDeChegada]}. Como essa ordem é
+        incerta, a <strong>virada projetada</strong> vem sempre com uma faixa. Perto de 50%, meio ponto na projeção move a virada por dezenas de pontos de
+        seções.
+      </p>
+      <div class="sinais" data-bloco="sinal-de-virada">
+        <div><strong>Virada projetada</strong>chance de virada de {limite(CONSTANTES.sinalDeVirada.projetada)} ou mais</div>
+        <div><strong>Virada possível</strong>chance de virada entre {limite(CONSTANTES.sinalDeVirada.possivel)} e {limite(CONSTANTES.sinalDeVirada.projetada)}</div>
+        <div><strong>Sem sinal de virada</strong>chance de virada abaixo de {limite(CONSTANTES.sinalDeVirada.possivel)}</div>
+      </div>
+      <p class="nota">
+        A chance de virada é a chance de vitória de quem está atrás no placar parcial. Antes da primeira seção não há sinal, porque ninguém está atrás.
+      </p>
+      <p data-bloco="simulador">
+        No <strong>simulador "e se"</strong>, você muda quanto o voto que falta pende para cada candidato e o comparecimento por região. A simulação usa o
+        mesmo modelo e fica sempre ao lado da projeção do Apurador, sem substituí-la. Ele abre pelo link "Simular 'e se' →" na caixa da projeção da{" "}
+        <a href="/">página do Brasil</a>.
+      </p>
+      <details class="contas">
+        <summary>As contas</summary>
+        <div>
+          <p class="nota">
+            A virada projetada é onde a curva projetada cruza 50%. A faixa vai de onde a margem de quem está atrás encosta em 50% até onde a curva toda
+            passa de 50%.
+          </p>
+          <p class="formula">chance de virada = chance de vitória de quem está atrás no placar parcial</p>
+        </div>
+      </details>
+    </Secao>
+
+    <Secao {...secao("limites")}>
+      <ol class="limites">
+        <li>
+          <strong>Poucas eleições.</strong> O erro das pesquisas vem de {quantosTurnos} 2º turnos. Com tão poucos casos, a própria incerteza é incerta.
+        </li>
+        <li>
+          <strong>O 1º turno de 2026.</strong> As pesquisas subestimaram {flavio} em {pontos(umaCasa(vies.diferenca))} entre os dois finalistas. Se isso se
+          repetir, a base com pesquisas começa errada, e a apuração corrige nos primeiros minutos.
+        </li>
+        <li>
+          <strong>O começo da noite engana.</strong> Com poucas seções totalizadas, o placar parcial e a projeção oscilam, e a margem é larga.
+        </li>
+        <li>
+          <strong>Seções tardias.</strong> Dentro de cada município, as seções que chegam por último costumam votar diferente. O modelo não enxerga isso e
+          põe a dúvida na margem.
+        </li>
+        <li>
+          <strong>A ordem de chegada.</strong> A virada projetada depende da ordem em que o voto que falta chega, a parte mais incerta do modelo.
+        </li>
+        <li>
+          <strong>Estados e municípios antes da apuração.</strong> Sem pesquisas estaduais, a indicação das pesquisas supõe a mesma mudança do país em
+          todo lugar, com uma folga local.
+        </li>
+        <li><strong>Dependemos do TSE.</strong> Se a divulgação atrasar ou parar, a projeção para junto, e a página avisa.</li>
+      </ol>
+    </Secao>
+
+    <Secao {...secao("fontes")}>
+      <ul class="fontes">
+        <li>
+          <strong>Resultados</strong>: TSE, arquivos de divulgação e dados abertos, sem alteração (CC-BY). Os números do TSE aparecem com duas casas, como o
+          TSE publica.
+        </li>
+        <li>
+          <strong>Cálculos</strong>: curva, mapa, tabela, comparações e projeção são uma camada do Apurador, marcada como "Cálculo do Apurador com dados do
+          TSE". Nenhum cálculo nosso aparece como dado do TSE.
+        </li>
+        <li>
+          <strong>Pesquisas</strong>: registros do TSE (PesqEle) e a divulgação de cada instituto. A <a href="/#pesquisas-registradas">lista das pesquisas</a>,
+          na página do Brasil, traz, para cada uma, os seis dados exigidos pelo art. 10 da Res. 23.600: período de coleta, número de entrevistas, margem de
+          erro, nível de confiança, contratante e número de registro.
+        </li>
+        <li>
+          <strong>Pesquisas de eleições passadas</strong>: Wikipédia, Base dos Dados (banco do Poder360) e Jennings e Wlezien (2018), com os resultados
+          conferidos no TSE.
+        </li>
+        <li><strong>Malha dos municípios</strong>: IBGE, Malha Municipal Digital 2024, CC BY 4.0, simplificada pelo Apurador.</li>
+      </ul>
+      <h3>Para baixar</h3>
+      <div class="baixar" data-bloco="para-baixar">
+        {
+          PARA_BAIXAR.map((a) => (
+            <a href={a.caminho} download={a.nome}>
+              <span class="arquivo">{a.nome}</span> · {a.descricao} <span class="tamanho">CSV · {a.kb} KB</span>
+            </a>
+          ))
+        }
+        <p>
+          <span class="arquivo">Código do modelo e do site</span> · no GitHub <span class="tamanho">a partir de 26/10</span>
+        </p>
+      </div>
+      <h3>Quem faz</h3>
+      <p data-bloco="quem-faz">
+        O Apurador é feito por uma pessoa, sem ligação com o TSE, com candidatos ou com partidos. Responsável: {RESPONSAVEL}. Contato: {EMAIL_DO_PROJETO}.
+      </p>
+    </Secao>
+  </article>
+</Base>
+
+<style>
+  .metodologia {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: 1rem 0 2rem;
+    font-size: 0.9875rem;
+    line-height: 1.55;
+  }
+  h1 {
+    font-size: 1.875rem;
+    letter-spacing: -0.01em;
+  }
+  .lead {
+    margin: 0.625rem 0 0;
+    font-size: 1.0625rem;
+    color: var(--texto-suave);
+  }
+  .aviso-projecao,
+  .aviso-agregado {
+    margin: 0.875rem 0 0;
+    padding: 0.625rem 0.75rem;
+    border: 1.5px dashed var(--borda-forte);
+    border-radius: 0.625rem;
+    background: var(--cartao);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .aviso-projecao small {
+    display: block;
+    margin-top: 0.125rem;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: var(--texto-suave);
+  }
+  .minuto {
+    margin-top: 1.125rem;
+  }
+  .minuto h2,
+  h3 {
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--texto-suave);
+  }
+  h3 {
+    margin: 1rem 0 0.375rem;
+  }
+  .minuto ol {
+    counter-reset: minuto;
+    list-style: none;
+    margin: 0.625rem 0 0;
+    padding: 0;
+  }
+  .minuto li {
+    counter-increment: minuto;
+    display: grid;
+    grid-template-columns: 1.75rem 1fr;
+    gap: 0.375rem;
+    padding: 0.4375rem 0;
+    border-top: 1px solid var(--borda);
+    font-size: 0.9375rem;
+  }
+  .minuto li::before {
+    content: counter(minuto);
+    font-family: "Source Serif 4 Variable", Georgia, serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--cor-cinza);
+  }
+  .declaracao {
+    margin: 0.625rem 0 0;
+    padding: 0.5rem 0.75rem;
+    border-left: 4px solid var(--texto);
+    font-size: 0.9rem;
+  }
+  .indice {
+    margin-top: 1.125rem;
+    font-size: 0.875rem;
+  }
+  .indice a {
+    display: block;
+    padding: 0.3125rem 0;
+    border-bottom: 1px solid var(--borda);
+    text-decoration: none;
+  }
+  .indice a::before {
+    content: "↓ ";
+    color: var(--cor-cinza);
+  }
+  p {
+    margin: 0.625rem 0 0;
+  }
+  ul,
+  ol {
+    margin: 0.5rem 0;
+    padding-left: 1.25rem;
+  }
+  li + li {
+    margin-top: 0.25rem;
+  }
+  figure {
+    margin: 0.875rem 0 0;
+  }
+  details {
+    margin-top: 0.75rem;
+    border: 1px solid var(--borda-forte);
+    border-radius: 0.625rem;
+    background: var(--cartao);
+  }
+  summary {
+    cursor: pointer;
+    padding: 0.5625rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary::before {
+    content: "+ ";
+    color: var(--cor-cinza);
+  }
+  details[open] summary::before {
+    content: "− ";
+  }
+  details > div {
+    padding: 0 0.75rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  details > div > :first-child {
+    margin-top: 0;
+  }
+  .formula {
+    display: block;
+    margin: 0.5rem 0;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--borda);
+    border-radius: 0.5rem;
+    background: var(--fundo);
+    font-family: "Source Serif 4 Variable", Georgia, serif;
+    font-size: 1rem;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .institutos {
+    columns: 2;
+    column-gap: 1.125rem;
+  }
+  .institutos li {
+    break-inside: avoid;
+  }
+  .sinais {
+    display: grid;
+    gap: 0.375rem;
+    margin: 0.75rem 0 0;
+  }
+  .sinais div {
+    padding: 0.4375rem 0.625rem;
+    border: 1px solid var(--borda);
+    border-radius: 0.5rem;
+    background: var(--cartao);
+    font-size: 0.875rem;
+  }
+  .sinais strong {
+    display: block;
+  }
+  .limites li + li {
+    margin-top: 0.5rem;
+  }
+  .fontes {
+    font-size: 0.9375rem;
+  }
+  .baixar a,
+  .baixar p {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.25rem 0.625rem;
+    margin: 0.375rem 0 0;
+    padding: 0.5625rem 0.75rem;
+    border: 1px solid var(--borda-forte);
+    border-radius: 0.625rem;
+    background: var(--cartao);
+    font-size: 0.875rem;
+    text-decoration: none;
+  }
+  .baixar p {
+    color: var(--texto-suave);
+  }
+  .arquivo {
+    font-weight: 600;
+  }
+  .tamanho {
+    margin-left: auto;
+    color: var(--texto-suave);
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+  @media (min-width: 60rem) {
+    h1 {
+      font-size: 2.25rem;
+    }
+    .sinais {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>
