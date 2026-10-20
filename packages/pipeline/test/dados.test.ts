@@ -139,8 +139,14 @@ describe("fotos oficiais dos candidatos", () => {
     }
   });
 
-  it("traz as dos candidatos da noite que o TSE falso serve", () => {
-    const cadastro = JSON.parse(ler("cadastros/2022-2.json").toString("utf8")) as { candidatos: { sequencial: string }[] };
-    for (const { sequencial } of cadastro.candidatos) expect(ehJpeg(ler(`fotos/${sequencial}.jpeg`)), sequencial).toBe(true);
+  it("traz as dos candidatos da noite que o TSE falso serve, do zip de fotos do portal", () => {
+    // Os sequenciais de Lula e de Bolsonaro no 2º turno de 2022, como o TSE os publica nas candidaturas daquele ano.
+    for (const [sequencial, membro] of [
+      ["280001607829", "FBR280001607829_div.jpg"],
+      ["280001618036", "FBR280001618036_div.jpeg"],
+    ]) {
+      expect(ehJpeg(ler(`fotos/${sequencial}.jpeg`)), sequencial).toBe(true);
+      expect(fonteDa(`fotos/${sequencial}.jpeg`)).toEqual([`https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2022/fotos/foto_cand2022_BR_div.zip#${membro}`]);
+    }
   });
 });

@@ -1,12 +1,10 @@
-import type { Indicador } from "../lib/leitor-ao-vivo";
+import { horaDoTse } from "../lib/formato";
+import { INTERVALO_DAS_LEITURAS, type Indicador } from "../lib/leitor-ao-vivo";
 import { APP_DO_TSE } from "../lib/textos-ao-vivo";
 
 // O indicador ao vivo (Simulador "e se", decisão 14): um componente só, no cartão do placar oficial e na linha fixa.
 // A cor é grafite, nunca o vermelho dos portais nem o verde e amarelo. Um toque abre o detalhe (um <details>, que
 // funciona sem JavaScript e com o teclado). Com movimento reduzido, não há pulso, e o anel vira texto.
-
-/** O intervalo entre as leituras da página, em segundos. */
-export const INTERVALO_DAS_LEITURAS = 30;
 
 interface Props {
   indicador: Indicador;
@@ -15,24 +13,18 @@ interface Props {
   /** A última totalização do TSE no Brasil, `AAAA-MM-DD HH:MM:SS` em Brasília. */
   ultimaTotalizacao: string | null;
   movimentoReduzido: boolean;
+  /** Os segundos até a próxima leitura. */
   proximaLeitura: number | null;
   lendo: boolean;
 }
 
+/** O indicador ao vivo no estado do quadro, com o detalhe que um toque abre. */
 export function IndicadorAoVivo(props: Props) {
   const { indicador } = props;
   if (indicador.estado === "antes-das-17h") {
     return (
       <div class="indicador" data-indicador data-estado={indicador.estado}>
-        {indicador.faltam !== null && <span class="indicador-texto">Começa em {contagem(indicador.faltam)}</span>}
-      </div>
-    );
-  }
-  if (indicador.estado === "encerrada") {
-    return (
-      <div class="indicador" data-indicador data-estado={indicador.estado}>
-        <span class="indicador-ponto" data-ponto="grafite" />
-        <span class="indicador-rotulo">Apuração encerrada</span>
+        {indicador.faltam !== null && <span class="indicador-texto">Começa em {minutosESegundos(indicador.faltam)}</span>}
       </div>
     );
   }
@@ -42,7 +34,7 @@ export function IndicadorAoVivo(props: Props) {
     <div class="indicador" data-indicador data-estado={indicador.estado}>
       <details class="indicador-detalhe">
         <summary>
-          <span class="indicador-ponto" data-ponto={aoVivo ? "grafite" : "cinza"} {...(aoVivo && !props.movimentoReduzido ? { "data-pulso": "" } : {})} />
+          <span class="indicador-ponto" data-ponto={aoVivo || indicador.estado === "encerrada" ? "grafite" : "cinza"} {...(aoVivo && !props.movimentoReduzido ? { "data-pulso": "" } : {})} />
           {aoVivo ? (
             <>
               <span class="indicador-rotulo">Ao vivo</span>
@@ -51,15 +43,18 @@ export function IndicadorAoVivo(props: Props) {
             </>
           ) : indicador.estado === "interrompido" ? (
             <span class="indicador-rotulo">Atualizado às {indicador.atualizadoAs}, atualização interrompida</span>
+          ) : indicador.estado === "encerrada" ? (
+            <span class="indicador-rotulo">Apuração encerrada</span>
           ) : (
             <span class="indicador-rotulo">Sem conexão · tentando de novo</span>
           )}
         </summary>
         <p class="indicador-mais">
-          Lemos os dados a cada {INTERVALO_DAS_LEITURAS} s.
-          {props.ultimaLeitura !== null && ` Última leitura há ${props.ultimaLeitura} s.`}
-          {props.ultimaTotalizacao && ` Última totalização do TSE às ${props.ultimaTotalizacao.slice(11)}.`}
-          {indicador.estado === "tse-sem-novidade" && ` TSE sem novidade desde ${indicador.desde}.`} Não precisa recarregar a página.
+          {indicador.estado !== "encerrada" && `Lemos os dados a cada ${INTERVALO_DAS_LEITURAS} s.`}
+          {indicador.estado !== "encerrada" && props.ultimaLeitura !== null && ` Última leitura há ${props.ultimaLeitura} s.`}
+          {props.ultimaTotalizacao && ` Última totalização do TSE às ${horaDoTse(props.ultimaTotalizacao)}.`}
+          {indicador.estado === "tse-sem-novidade" && ` TSE sem novidade desde ${indicador.desde}.`}
+          {indicador.estado !== "encerrada" && " Não precisa recarregar a página."}
         </p>
       </details>
       {indicador.estado === "interrompido" && indicador.linkDoTse && (
@@ -87,4 +82,4 @@ function Proxima({ movimentoReduzido, proximaLeitura, lendo }: Props) {
 }
 
 /** 754 → "12:34". */
-const contagem = (segundos: number) => `${Math.floor(segundos / 60)}:${String(segundos % 60).padStart(2, "0")}`;
+const minutosESegundos = (segundos: number) => `${Math.floor(segundos / 60)}:${String(segundos % 60).padStart(2, "0")}`;

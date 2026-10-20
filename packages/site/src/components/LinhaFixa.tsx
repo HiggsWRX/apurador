@@ -2,6 +2,7 @@ import type { ArquivoDeRodada, ArquivoDoLugar } from "@apurador/coletor";
 import type { ComponentChildren } from "preact";
 import { formatarPctComCasas } from "../lib/formato";
 import { corDoPartido, nomeCurto } from "../lib/identidade";
+import { NUMEROS_DO_PLACAR } from "../lib/leitor-ao-vivo";
 import { NumeroAoVivo } from "./NumeroAoVivo";
 
 // A linha fixa (Telas da página de lugar, decisão 2): quando o placar oficial sai da tela, uma linha fina no topo mostra
@@ -12,20 +13,22 @@ interface Props {
   tse: ArquivoDoLugar["tse"];
   escondida: boolean;
   indicador: ComponentChildren;
+  /** Se a última leitura mudou o número (uma chave de `NUMEROS_DO_PLACAR`), para ele piscar. */
   mudou: (numero: string) => boolean;
 }
 
+/** A linha fina do topo com os números oficiais, escondida enquanto o placar está na tela. */
 export function LinhaFixa({ candidatos, tse, escondida, indicador, mudou }: Props) {
   return (
     <div class="linha-fixa" data-linha-fixa hidden={escondida}>
       <p class="linha-fixa-numeros">
         {candidatos.map((c, i) => (
           <span data-cor={corDoPartido(c.partido)} key={c.numero}>
-            {nomeCurto(c.nome)} <NumeroAoVivo forte valor={formatarPctComCasas(tse.percentuais[i] ?? 0, 2)} mudou={mudou(`percentual-${i}`)} />
+            {nomeCurto(c.nome)} <NumeroAoVivo forte valor={formatarPctComCasas(tse.percentuais[i] ?? 0, 2)} mudou={mudou(NUMEROS_DO_PLACAR.percentual(i))} />
           </span>
         ))}
         <span>
-          <NumeroAoVivo valor={formatarPctComCasas(tse.secoes.percentual, 2)} mudou={mudou("secoes")} /> das seções · TSE
+          <NumeroAoVivo valor={formatarPctComCasas(tse.secoes.percentual, 2)} mudou={mudou(NUMEROS_DO_PLACAR.secoes)} /> das seções · TSE
         </span>
       </p>
       {indicador}

@@ -22,6 +22,7 @@ interface Props {
   curva: PontoDaCurvaReal[];
 }
 
+/** O cartão da curva real do lugar, com a nota enquanto não há seções. */
 export function CurvaReal({ candidatos, curva }: Props) {
   const ultimo = curva.at(-1);
   return (

@@ -7,6 +7,8 @@ export const formatarPct = (parte: number, total: number) => `${PCT.format((100 
 export const formatarVotos = (n: number) => INTEIRO.format(n);
 /** O % do TSE como a página o mostra, com duas casas. */
 export const duasCasas = (n: number) => Number(n.toFixed(2));
+/** A hora de uma data do TSE (`AAAA-MM-DD HH:MM:SS`, em Brasília): `HH:MM:SS`, ou `HH:MM` sem os segundos. */
+export const horaDoTse = (dataHora: string, comSegundos = true) => dataHora.slice(11, comSegundos ? 19 : 16);
 
 // Os números de uma pesquisa aparecem como a fonte os publicou, com as casas que ela usou.
 const PUBLICADO = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });

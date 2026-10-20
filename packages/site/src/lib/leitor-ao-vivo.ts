@@ -1,5 +1,6 @@
-import type { ArquivoDeRodada, ArquivoDoLugar, Fase } from "@apurador/coletor";
+import type { ArquivoDeRodada, ArquivoDoLugar, Buscar, Fase } from "@apurador/coletor";
 import { DIA_DA_ELEICAO } from "@apurador/modelo";
+import { horaDoTse } from "./formato";
 
 // O leitor ao vivo: a lógica da ilha do bloco ao vivo que lê o arquivo de rodada e o JSON do lugar e decide o que a
 // página mostra. A fase vem só do arquivo de rodada (Ensaio geral, decisão 7), e a página passa sozinha de "antes das
@@ -7,12 +8,10 @@ import { DIA_DA_ELEICAO } from "@apurador/modelo";
 // resposta, a hora do outro lado, nunca com o relógio do aparelho: 3 min sem rodada nova é "interrompido", como na
 // decisão 19 da Arquitetura, e com 10 min entra o link do app oficial do TSE (Operação na noite, decisão 11).
 
-/** A função de rede, com a forma do `fetch`, injetável para os testes. */
-export type Buscar = (url: string, init: { headers: Record<string, string>; cache: RequestCache }) => Promise<Response>;
+/** O intervalo entre as leituras da página, em segundos (spec, "Entrega aos visitantes"). */
+export const INTERVALO_DAS_LEITURAS = 30;
 
-/** Os seis estados do indicador ao vivo (Simulador "e se", decisão 14). */
-export type EstadoDoIndicador = "antes-das-17h" | "ao-vivo" | "tse-sem-novidade" | "interrompido" | "sem-conexao" | "encerrada";
-
+/** O indicador ao vivo num dos seis estados da decisão 14 do Simulador "e se", com o que cada um mostra. */
 export type Indicador =
   | {
       estado: "antes-das-17h";
@@ -42,15 +41,34 @@ export interface QuadroAoVivo {
   /** Há quantos segundos chegou a última resposta do arquivo de rodada, pelo relógio do aparelho. */
   ultimaLeitura: number | null;
   /**
-   * Os números do placar que a última leitura mudou (`percentual-0`, `votos-1`, `secoes`), para piscarem uma vez. A
+   * Os números do placar que a última leitura mudou (as chaves de `NUMEROS_DO_PLACAR`), para piscarem uma vez. A
    * primeira leitura não muda nada: os números chegam, não mudam.
    */
   mudaram: string[];
 }
 
+/** O quadro antes de qualquer leitura: o de antes das 17h, sem dados. É o que o build desenha. */
+export const ANTES_DA_PRIMEIRA_LEITURA: QuadroAoVivo = {
+  fase: "antes-das-17h",
+  indicador: { estado: "antes-das-17h", faltam: null },
+  rodada: null,
+  lugar: null,
+  ultimaLeitura: null,
+  mudaram: [],
+};
+
+/** As chaves dos números do placar que piscam: o % e os votos de cada candidato, na ordem do arquivo de rodada, e o % de seções. */
+export const NUMEROS_DO_PLACAR = {
+  percentual: (candidato: number) => `percentual-${candidato}`,
+  votos: (candidato: number) => `votos-${candidato}`,
+  secoes: "secoes",
+};
+
+/** Lê os arquivos ao vivo de um lugar, uma leitura por vez, e diz o que mostrar. */
 export interface LeitorAoVivo {
   /** Lê o arquivo de rodada e o JSON do lugar uma vez. */
   ler(): Promise<void>;
+  /** O quadro da última leitura, com a contagem regressiva e "há N s" no instante do relógio. */
   quadro(): QuadroAoVivo;
 }
 
@@ -65,16 +83,25 @@ const TSE_SEM_NOVIDADE = 2 * MINUTO;
 /** As 17h do dia da eleição, em Brasília: o fim da contagem regressiva. */
 const INICIO_DA_DIVULGACAO = Date.parse(`${DIA_DA_ELEICAO}T17:00:00-03:00`);
 
+const HORA_DE_BRASILIA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+
 function numerosQueMudaram(antes: ArquivoDoLugar["tse"], depois: ArquivoDoLugar["tse"]): string[] {
-  const mudaram = antes.secoes.percentual === depois.secoes.percentual ? [] : ["secoes"];
-  depois.percentuais.forEach((p, i) => p !== antes.percentuais[i] && mudaram.push(`percentual-${i}`));
-  depois.votos.forEach((v, i) => v !== antes.votos[i] && mudaram.push(`votos-${i}`));
+  const mudaram = antes.secoes.percentual === depois.secoes.percentual ? [] : [NUMEROS_DO_PLACAR.secoes];
+  depois.percentuais.forEach((p, i) => p !== antes.percentuais[i] && mudaram.push(NUMEROS_DO_PLACAR.percentual(i)));
+  depois.votos.forEach((v, i) => v !== antes.votos[i] && mudaram.push(NUMEROS_DO_PLACAR.votos(i)));
   return mudaram;
 }
 
-const HORA_DE_BRASILIA =new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
-
-export function criarLeitorAoVivo(opcoes: { base: string; lugar: string; buscar: Buscar; relogio: () => number }): LeitorAoVivo {
+/** O leitor ao vivo de um lugar. */
+export function criarLeitorAoVivo(opcoes: {
+  /** A raiz dos arquivos ao vivo, com a barra no fim. */
+  base: string;
+  /** O id do lugar nos arquivos ao vivo (`BR`, `SP`, `ZZ`, o código do TSE do município). */
+  lugar: string;
+  buscar: Buscar;
+  /** O relógio do aparelho, em ms (`performance.now()`): só mede o tempo entre as leituras, nunca a hora. */
+  relogio: () => number;
+}): LeitorAoVivo {
   let rodada: ArquivoDeRodada | null = null;
   let lugar: ArquivoDoLugar | null = null;
   /** O `Date` da última resposta do arquivo de rodada, em ms. */
@@ -84,6 +111,7 @@ export function criarLeitorAoVivo(opcoes: { base: string; lugar: string; buscar:
   let semConexao = false;
   let mudaram: string[] = [];
   const etags = new Map<string, string>();
+  const fase = (): Fase => rodada?.fase ?? "antes-das-17h";
 
   /**
    * O corpo novo do arquivo, ou `null` quando a resposta não traz um. O pedido vai com a ETag da última resposta e
@@ -101,19 +129,22 @@ export function criarLeitorAoVivo(opcoes: { base: string; lugar: string; buscar:
   }
 
   function indicador(): Indicador {
-    const fase = rodada?.fase ?? "antes-das-17h";
     // Depois da totalização final nada mais chega: nem a interrupção nem a conexão do visitante mudam o que se vê.
-    if (fase === "encerrada") return { estado: "encerrada" };
+    if (fase() === "encerrada") return { estado: "encerrada" };
     if (semConexao) return { estado: "sem-conexao" };
-    if (fase === "ao-vivo" && rodada && horaDoOutroLado !== null) {
+    if (rodada && horaDoOutroLado !== null) {
+      // Antes das 17h, a rodada velha do coletor de 24/10 não é interrupção; depois delas, uma rodada parada é, mesmo
+      // que o coletor tenha caído antes de passar ao ao vivo.
       const semRodada = horaDoOutroLado - Date.parse(rodada.rodada);
-      if (semRodada >= INTERROMPIDO) {
+      if (semRodada >= INTERROMPIDO && (fase() === "ao-vivo" || horaDoOutroLado >= INICIO_DA_DIVULGACAO)) {
         return { estado: "interrompido", atualizadoAs: HORA_DE_BRASILIA.format(Date.parse(rodada.rodada)), linkDoTse: semRodada >= LINK_DO_TSE };
       }
       const { totalizacao, vista } = rodada.novidade;
-      if (totalizacao && vista && horaDoOutroLado - Date.parse(vista) >= TSE_SEM_NOVIDADE) return { estado: "tse-sem-novidade", desde: totalizacao.slice(11, 16) };
+      if (fase() === "ao-vivo" && totalizacao && vista && horaDoOutroLado - Date.parse(vista) >= TSE_SEM_NOVIDADE) {
+        return { estado: "tse-sem-novidade", desde: horaDoTse(totalizacao, false) };
+      }
     }
-    return fase === "ao-vivo" ? { estado: "ao-vivo" } : { estado: "antes-das-17h", faltam: faltamParaAs17h() };
+    return fase() === "ao-vivo" ? { estado: "ao-vivo" } : { estado: "antes-das-17h", faltam: faltamParaAs17h() };
   }
 
   /**
@@ -131,9 +162,10 @@ export function criarLeitorAoVivo(opcoes: { base: string; lugar: string; buscar:
     async ler() {
       const [novaRodada, novoLugar] = await Promise.allSettled([
         lerJson<ArquivoDeRodada>("rodada.json", (resposta) => {
-          const date = Date.parse(resposta.headers.get("Date") ?? "");
-          if (Number.isNaN(date)) return;
-          horaDoOutroLado = date;
+          // Fora da mesma origem, o `Date` só chega se a CDN o expuser (Access-Control-Expose-Headers, ticket 20).
+          const hora = Date.parse(resposta.headers.get("Date") ?? "");
+          if (Number.isNaN(hora)) return;
+          horaDoOutroLado = hora;
           momentoDaResposta = opcoes.relogio();
         }),
         lerJson<ArquivoDoLugar>(`lugares/${opcoes.lugar}.json`),
@@ -147,7 +179,7 @@ export function criarLeitorAoVivo(opcoes: { base: string; lugar: string; buscar:
     },
     quadro() {
       const ultimaLeitura = momentoDaResposta === null ? null : Math.floor((opcoes.relogio() - momentoDaResposta) / 1000);
-      return { fase: rodada?.fase ?? "antes-das-17h", indicador: indicador(), rodada, lugar, ultimaLeitura, mudaram };
+      return { fase: fase(), indicador: indicador(), rodada, lugar, ultimaLeitura, mudaram };
     },
   };
 }

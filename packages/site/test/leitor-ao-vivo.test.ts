@@ -1,6 +1,6 @@
-import type { ArquivoDeRodada, ArquivoDoLugar } from "@apurador/coletor";
+import type { ArquivoDeRodada, ArquivoDoLugar, Buscar } from "@apurador/coletor";
 import { describe, expect, it } from "vitest";
-import { criarLeitorAoVivo, type Buscar } from "../src/lib/leitor-ao-vivo";
+import { criarLeitorAoVivo } from "../src/lib/leitor-ao-vivo";
 
 // O leitor ao vivo é a lógica da ilha que decide o que mostrar (spec, "Fronteiras de teste", 3): ele lê o arquivo de
 // rodada e o JSON do lugar como a página lê, e os testes respondem por ele com status, `Date`, ETag e corpo. O relógio
@@ -39,7 +39,7 @@ function cdn() {
   const pedidos: { caminho: string; ifNoneMatch: string | undefined }[] = [];
   const buscar: Buscar = async (url, init) => {
     const caminho = url.slice(BASE.length);
-    pedidos.push({ caminho, ifNoneMatch: init.headers["If-None-Match"] });
+    pedidos.push({ caminho, ifNoneMatch: new Headers(init?.headers).get("If-None-Match") ?? undefined });
     const r = respostas.get(caminho);
     if (r === "sem-conexao") throw new TypeError("Failed to fetch");
     if (!r) return new Response(null, { status: 404 });
@@ -122,6 +122,27 @@ describe("leitor ao vivo", () => {
     expect(await lerCom("2026-10-25T19:45:10-03:00")).toEqual({ estado: "interrompido", atualizadoAs: "19:42", linkDoTse: false });
     expect(await lerCom("2026-10-25T19:52:09-03:00")).toEqual({ estado: "interrompido", atualizadoAs: "19:42", linkDoTse: false });
     expect(await lerCom("2026-10-25T19:52:10-03:00")).toEqual({ estado: "interrompido", atualizadoAs: "19:42", linkDoTse: true });
+  });
+
+  it("com o coletor parado antes da passagem, a atualização está interrompida quando o `Date` da CDN passa das 17h", async () => {
+    const { leitor, responder } = montar();
+    const lerCom = async (date: string) => {
+      responder("rodada.json", { status: 200, date, etag: '"r1"', corpo: rodada("2026-10-25T16:56:00-03:00", "antes-das-17h") });
+      await leitor.ler();
+      return leitor.quadro().indicador;
+    };
+
+    expect(await lerCom("2026-10-25T16:59:59-03:00")).toEqual({ estado: "antes-das-17h", faltam: 1 });
+    expect(await lerCom("2026-10-25T17:00:00-03:00")).toEqual({ estado: "interrompido", atualizadoAs: "16:56", linkDoTse: false });
+    expect(await lerCom("2026-10-25T17:06:00-03:00")).toEqual({ estado: "interrompido", atualizadoAs: "16:56", linkDoTse: true });
+  });
+
+  it("uma rodada velha de outro dia, antes das 17h, não é interrupção: a página espera o coletor da noite", async () => {
+    const { leitor, responder } = montar();
+    // O coletor publica na produção das 19h às 19h30 de 24/10 e para; a CDN serve essa rodada na manhã de 25/10.
+    responder("rodada.json", { status: 200, date: "2026-10-25T10:00:00-03:00", etag: '"r1"', corpo: rodada("2026-10-24T19:30:00-03:00", "antes-das-17h") });
+    await leitor.ler();
+    expect(leitor.quadro().indicador).toEqual({ estado: "antes-das-17h", faltam: null });
   });
 
   it("sem resposta nenhuma (a internet do visitante caiu), é \"sem conexão\" com os últimos dados à vista, até uma leitura responder", async () => {

@@ -6,7 +6,7 @@ import type { QuadroAoVivo } from "../src/lib/leitor-ao-vivo";
 import { elemento, texto } from "./html";
 
 // O que o bloco ao vivo mostra para cada quadro do leitor, renderizado em HTML como a ilha o desenha. Os números de
-// referência são os dos exemplos das decisões (Narração da noite, decisão 9) e os do 2º turno de 2026 no TSE.
+// referência são os dos exemplos das decisões (Narração da noite, decisão 9), com as seções e os candidatos de 2026.
 
 const CANDIDATOS: ArquivoDeRodada["candidatos"] = [
   { numero: 22, nome: "FLAVIO BOLSONARO", partido: "PL", sequencial: "280002551544" },
@@ -69,9 +69,10 @@ describe("manchete durante a apuração", () => {
     expect(mancheteDe(q, { lugar: { tipo: "municipio", uf: "ZZ" } })).toBe("A apuração ainda não começou nesta cidade");
   });
 
-  it("depois das 17h, sem o arquivo do lugar ainda, não volta a falar das 17h", () => {
-    const html = vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar: null }), { lugar: { tipo: "municipio", uf: "BA" } });
-    expect(texto(elemento(html, /<p[^>]*data-manchete/))).toBe("A apuração ainda não começou neste município");
+  it("depois das 17h, sem o arquivo do lugar ainda, não afirma nada sobre ele nem volta a falar das 17h", () => {
+    // O arquivo pode faltar por um erro da CDN na primeira leitura: dizer que a apuração não começou seria falso.
+    const html = vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar: null }), { lugar: { tipo: "brasil" } });
+    expect(html).not.toContain("data-manchete");
     const placar = texto(elemento(html, /<section[^>]*data-placar-oficial/));
     expect(placar).not.toContain("17h");
     expect(placar).toContain("Aguardando os primeiros dados do TSE");
@@ -138,10 +139,11 @@ describe("indicador ao vivo, no cartão do placar", () => {
     expect(texto(com({ estado: "sem-conexao" }).indicador)).toContain("Sem conexão · tentando de novo");
   });
 
-  it("encerrada: \"Apuração encerrada\", sem anel", () => {
+  it("encerrada: \"Apuração encerrada\", sem anel, e o detalhe com a última totalização", () => {
     const { indicador } = com({ estado: "encerrada" }, {}, "encerrada");
-    expect(texto(indicador)).toContain("Apuração encerrada");
+    expect(texto(indicador)).toMatch(/^Apuração encerrada/);
     expect(indicador).not.toContain("data-anel");
+    expect(texto(elemento(indicador, /<details/))).toContain("Última totalização do TSE às 19:42:10.");
   });
 
   it("antes das 17h: sem \"Ao vivo\", com a contagem regressiva só na última hora", () => {

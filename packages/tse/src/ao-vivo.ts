@@ -220,5 +220,7 @@ export function urlsDaDivulgacao(base: string, eleicao: Pick<EleicaoDaDivulgacao
       const lugar = `${pasta(uf)}${municipio === undefined ? "" : String(municipio).padStart(5, "0")}${zona === undefined ? "" : `-z${String(zona).padStart(4, "0")}`}`;
       return `${raiz}/dados/${pasta(uf)}/${lugar}-c0001-e${eleicao6}-u.json`;
     },
+    /** A foto oficial de um candidato a Presidente, pelo sequencial (`sqcand`). */
+    foto: (sequencial: string) => `${raiz}/fotos/br/${sequencial}.jpeg`,
   };
 }

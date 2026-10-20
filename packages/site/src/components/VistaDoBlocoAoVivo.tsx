@@ -10,11 +10,13 @@ import { PlacarOficial } from "./PlacarOficial";
 // placar oficial e a curva real. Não guarda estado nem lê nada: a ilha (`BlocoAoVivo`) faz as leituras e passa o
 // quadro, e os testes renderizam esta vista em HTML.
 
+/** O que a vista recebe da ilha: o quadro da última leitura e o que a ilha sabe da tela e do tempo. */
 export interface PropsDaVista {
   quadro: QuadroAoVivo;
   lugar: { tipo: TipoDeLugar; uf?: string };
   /** A URL da foto oficial de cada candidato, pelo sequencial do TSE. */
   fotos: Record<string, string>;
+  /** O visitante prefere movimento reduzido: nada pulsa nem pisca. */
   movimentoReduzido: boolean;
   /** Os segundos até a próxima leitura, para o anel de 30 s. */
   proximaLeitura: number | null;
@@ -24,6 +26,7 @@ export interface PropsDaVista {
   placarNaTela?: boolean;
 }
 
+/** O bloco ao vivo para o quadro: a manchete, a linha fixa, o placar oficial e a curva real. */
 export function VistaDoBlocoAoVivo({ quadro, lugar, fotos, movimentoReduzido, proximaLeitura, lendo, placarNaTela = true }: PropsDaVista) {
   // Antes das 17h o placar só diz quando a divulgação começa, mesmo com o coletor publicando o TSE zerado.
   const dados = quadro.fase !== "antes-das-17h" && quadro.rodada && quadro.lugar ? { candidatos: quadro.rodada.candidatos, tse: quadro.lugar.tse } : null;
@@ -39,12 +42,15 @@ export function VistaDoBlocoAoVivo({ quadro, lugar, fotos, movimentoReduzido, pr
   );
   // Com movimento reduzido, nada pisca.
   const mudou = (numero: string) => !movimentoReduzido && quadro.mudaram.includes(numero);
+  const frase = manchete(quadro, lugar);
   return (
     <div class="bloco-ao-vivo">
       {dados && <LinhaFixa candidatos={dados.candidatos} tse={dados.tse} escondida={placarNaTela} indicador={indicador()} mudou={mudou} />}
-      <p class="manchete" data-manchete>
-        {manchete(quadro, lugar)}
-      </p>
+      {frase && (
+        <p class="manchete" data-manchete>
+          {frase}
+        </p>
+      )}
       <PlacarOficial antesDas17h={quadro.fase === "antes-das-17h"} candidatos={dados?.candidatos ?? null} tse={dados?.tse ?? null} fotos={fotos} indicador={indicador()} mudou={mudou} />
       {dados && <CurvaReal candidatos={dados.candidatos} curva={quadro.lugar!.curva} />}
     </div>

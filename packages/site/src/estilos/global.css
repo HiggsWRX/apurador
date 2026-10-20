@@ -877,18 +877,21 @@ a {
   color: var(--cor-lula);
 }
 
-/* No celular, a linha fixa leva só o ponto e o anel do indicador; o detalhe fica no cartão do placar. */
+/*
+  No celular, ao vivo, a linha fixa leva só o ponto e o anel do indicador; o detalhe fica no cartão do placar. Os avisos
+  (interrompida, sem conexão, encerrada) e o link do app do TSE continuam nela: são o aviso do topo da decisão 12 das Telas.
+*/
 @media (max-width: 40rem) {
-  .linha-fixa .indicador-texto,
-  .linha-fixa .indicador-proxima,
-  .linha-fixa .indicador-rotulo,
   .linha-fixa .indicador-mais,
-  .linha-fixa .indicador-tse {
+  .linha-fixa :is([data-estado="ao-vivo"], [data-estado="tse-sem-novidade"]) :is(.indicador-texto, .indicador-proxima, .indicador-rotulo) {
     display: none;
   }
   .linha-fixa .indicador-detalhe summary {
     flex-wrap: nowrap;
     pointer-events: none;
+  }
+  .linha-fixa {
+    flex-wrap: wrap;
   }
 }
 
