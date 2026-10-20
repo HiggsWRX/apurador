@@ -2,7 +2,7 @@
 import Simulador from "../components/Simulador";
 import Base from "../layouts/Base.astro";
 import { BASE_PADRAO } from "../lib/projecao-antes-das-17h";
-import { CAMINHO_DO_ARQUIVO, FINALISTAS_DO_SIMULADOR, SIMULADOR_ANTES_DAS_17H } from "../lib/simulador-antes-das-17h";
+import { CAMINHO_DO_ARQUIVO, FINALISTAS_DO_SIMULADOR, SIMULADOR_ANTES_DAS_17H, VIES_DAS_HIPOTESES_PRONTAS } from "../lib/simulador-antes-das-17h";
 
 // A tela própria do simulador "e se" (Simulador "e se", decisões 5 a 13), aberta pelo link da caixa da projeção. Antes
 // das 17h, com a chave dele (e a da projeção) ligada, a ilha baixa o arquivo do build e roda o `modelo` no navegador; o
@@ -33,7 +33,13 @@ const titulo = 'Simulador "e se"';
           Mude quanto o voto que falta pende para cada candidato e o comparecimento em cada região, e veja a simulação ao lado da projeção do Apurador. A
           simulação usa o mesmo modelo da projeção, com os dados de agora. <a href="/metodologia/#virada">Como funciona →</a>
         </p>
-        <Simulador client:load arquivo={CAMINHO_DO_ARQUIVO} finalistas={FINALISTAS_DO_SIMULADOR} basePadrao={BASE_PADRAO} />
+        <Simulador
+          client:load
+          arquivo={CAMINHO_DO_ARQUIVO}
+          finalistas={FINALISTAS_DO_SIMULADOR}
+          basePadrao={BASE_PADRAO}
+          viesDoPrimeiroTurno={VIES_DAS_HIPOTESES_PRONTAS}
+        />
         <noscript>
           <p class="cartao sim-aviso">O simulador roda no seu navegador e precisa de JavaScript.</p>
         </noscript>

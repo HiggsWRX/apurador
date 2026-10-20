@@ -43,6 +43,8 @@ export interface PropsDaVista {
   coincidem: boolean | null;
   /** O placar entre finalistas do Brasil no 1º turno, em % do 1º finalista. */
   placarEntreFinalistasDoBrasil: number;
+  /** Quanto as pesquisas finais do 1º turno subestimaram o 1º finalista, em pontos entre os dois, com uma casa: o voto das hipóteses prontas. */
+  viesDoPrimeiroTurno: number;
   /** Aberto de um link de outra pessoa, até a primeira mudança. */
   deOutraPessoa: boolean;
   /** As regiões, pela posição em `REGIOES`, que abrem expandidas. */
@@ -72,7 +74,7 @@ export function VistaDoSimulador(props: PropsDaVista) {
   const preciso = fraseDoQueSeriaPreciso(tela.brasilNaSimulacao.projecao, tela.preciso, finalistas);
   // As hipóteses prontas só existem antes da apuração (decisão 9): depois da primeira seção, a projeção já leva em conta
   // os dados, e um atalho com esse nome mentiria sobre o que faz.
-  const prontas = base === "com-pesquisas" && tela.brasilNaProjecao.secoes === 0 ? hipotesesProntas(finalistas) : [];
+  const prontas = base === "com-pesquisas" && tela.brasilNaProjecao.secoes === 0 ? hipotesesProntas(finalistas, props.viesDoPrimeiroTurno) : [];
 
   return (
     <>
@@ -404,7 +406,7 @@ interface PropsDoDeslizante {
 }
 
 /**
- * Um controle deslizante nos passos da faixa. Um valor fora do passo, como os 1,4 de uma hipótese pronta ou o valor de
+ * Um controle deslizante nos passos da faixa. Um valor fora do passo, como os 2,1 de uma hipótese pronta ou o valor de
  * "Aplicar", fica no estado e no texto, e o navegador põe o cursor no passo mais perto.
  */
 function Deslizante({ id, rotulo, faixa, valor, texto, pontas, aoMudar }: PropsDoDeslizante) {

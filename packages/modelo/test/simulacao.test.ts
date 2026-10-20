@@ -83,20 +83,22 @@ describe("a simulação antes da primeira seção, em 25/10", () => {
     expect(primeiroTurno[NORDESTE]!.placarEntreFinalistas).toBeCloseTo(0.3261, 4);
   });
 
-  it("dá resultados espelhados com o par simétrico das hipóteses prontas, Flávio +1,4 e Lula +1,4", () => {
-    // Decisão 9: as pesquisas subestimam Flávio como no 1º turno, ou Lula na mesma medida.
-    const [flavio, lula] = [1.4, -1.4].map((brasil) => simular(comPesquisas, hipoteses({ brasil })));
+  it("dá resultados espelhados com o par simétrico das hipóteses prontas, Flávio +2,1 e Lula +2,1", () => {
+    // Decisão 9, com o viés do 1º turno que a metodologia cita: as pesquisas subestimam Flávio como no 1º turno (2,1
+    // pontos entre os dois), ou Lula na mesma medida.
+    const [flavio, lula] = [2.1, -2.1].map((brasil) => simular(comPesquisas, hipoteses({ brasil })));
     const [deFlavio, deLula] = [lugares(flavio!), lugares(lula!)];
     lugares(projetado).forEach((p, i) => expect(deFlavio[i]! - p, modelo.ufs[i - 1] ?? "Brasil").toBeCloseTo(p - deLula[i]!, 6));
     const zerada = simular(comPesquisas, HIPOTESES_ZERADAS);
     zerada.regioes.forEach((r, i) => expect(flavio!.regioes[i]!.fatia - r.fatia, REGIOES[i]).toBeCloseTo(r.fatia - lula!.regioes[i]!.fatia, 6));
-    // antes da primeira seção, todo o voto falta: o Brasil anda os 1,4 pontos inteiros, para cada lado
-    expect(flavio!.brasil.projecao).toBeCloseTo(0.534, 4);
-    expect(lula!.brasil.projecao).toBeCloseTo(0.506, 4);
+    // antes da primeira seção, todo o voto falta: o Brasil anda os 2,1 pontos inteiros, para cada lado
+    expect(flavio!.brasil.projecao).toBeCloseTo(0.541, 4);
+    expect(lula!.brasil.projecao).toBeCloseTo(0.499, 4);
   });
 
   it("mantém a incerteza da projeção: com o agregado em 51,0 e o viés do 1º turno inteiro, Flávio vai a ~95%", () => {
-    // O exemplo da pergunta do Simulador "e se": com incerteza de 1,5, Flávio +1,4 leva a chance a ~95%, Φ(2,4 ÷ 1,5).
+    // O exemplo da pergunta do Simulador "e se", com o viés do 1º turno como ela o media: com incerteza de 1,5, Flávio
+    // +1,4 leva a chance a ~95%, Φ(2,4 ÷ 1,5).
     const s = simular(partida(projetar(modelo, apuracao, constantes, { valor: 51, incerteza: 1.5 })), hipoteses({ brasil: 1.4 }));
     expect(s.brasil.margem).toBeCloseTo(1.96 * 0.015, 4);
     expect(s.brasil.chance).toBeCloseTo(0.945, 2);

@@ -17,12 +17,14 @@ interface Props {
   finalistas: FinalistasDoSimulador;
   /** A base que a página abre, quando o endereço não traz outra. */
   basePadrao: IdDaBase;
+  /** O voto das hipóteses prontas: quanto as pesquisas finais do 1º turno subestimaram o 1º finalista, em pontos entre os dois. */
+  viesDoPrimeiroTurno: number;
 }
 
 type Estado = { tipo: "carregando" } | { tipo: "erro" } | { tipo: "pronto"; dados: DadosDoSimulador };
 
 /** A ilha do simulador: o arquivo, as hipóteses e a base escolhida. */
-export default function Simulador({ arquivo, finalistas, basePadrao }: Props) {
+export default function Simulador({ arquivo, finalistas, basePadrao, viesDoPrimeiroTurno }: Props) {
   const [estado, setEstado] = useState<Estado>({ tipo: "carregando" });
   const [hipoteses, setHipoteses] = useState<Hipoteses>(HIPOTESES_ZERADAS);
   const [base, setBase] = useState<IdDaBase>(basePadrao);
@@ -103,6 +105,7 @@ export default function Simulador({ arquivo, finalistas, basePadrao }: Props) {
       pesoDasPesquisas={comPesquisas ? comPesquisas.pesoDasPesquisas : null}
       coincidem={dados.coincidem}
       placarEntreFinalistasDoBrasil={dados.placarEntreFinalistasDoBrasil}
+      viesDoPrimeiroTurno={viesDoPrimeiroTurno}
       deOutraPessoa={deOutraPessoa}
       regioesAbertas={regioesAbertas}
       copia={copia}

@@ -3,9 +3,10 @@ import type { Lugar } from "@apurador/pipeline";
 import { compactarBase, type ArquivoDoSimulador } from "./arquivo-do-simulador";
 import type { IdDaBase } from "./bases-da-projecao";
 import { CHAVES, type Chaves } from "./chaves";
+import { umaCasa } from "./formato";
 import type { FinalistasDoSimulador } from "./hipoteses";
 import { corDoPartido, nomeCurto } from "./identidade";
-import { CONSTANTES } from "./metodologia";
+import { CONSTANTES, VIES_DO_PRIMEIRO_TURNO } from "./metodologia";
 import { AGREGADO, FINALISTAS, PLACAR_ENTRE_FINALISTAS_DO_BRASIL, TURNO } from "./pesquisas";
 import { BASE_DO_MODELO, MODELO } from "./projecao-antes-das-17h";
 
@@ -41,6 +42,12 @@ export function caminhoDoSimulador(base: IdDaBase, lugar?: Pick<Lugar, "tipo" | 
 const doSimulador = (c: (typeof FINALISTAS)[number]) => ({ nomeUrna: c.nomeUrna, nomeCurto: nomeCurto(c.nomeUrna), cor: corDoPartido(c.partido) });
 /** Os finalistas na ordem da base do modelo, como o simulador os mostra. */
 export const FINALISTAS_DO_SIMULADOR: FinalistasDoSimulador = [doSimulador(FINALISTAS[0]), doSimulador(FINALISTAS[1])];
+
+/**
+ * O voto das hipóteses prontas: quanto as pesquisas finais do 1º turno subestimaram Flávio, em pontos entre os dois
+ * finalistas, com uma casa, o mesmo número que a metodologia escreve (decisão do dono, 20/10, ticket 24).
+ */
+export const VIES_DAS_HIPOTESES_PRONTAS = umaCasa(VIES_DO_PRIMEIRO_TURNO.diferenca);
 
 /** O 1º turno de 2026 em cada região, pelo arquivo oficial: o placar entre finalistas e o comparecimento. */
 function primeiroTurnoDasRegioes(): ArquivoDoSimulador["regioes"] {

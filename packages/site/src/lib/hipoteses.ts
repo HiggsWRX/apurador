@@ -32,13 +32,6 @@ export const FAIXAS: { brasil: Faixa; regiao: Faixa; comparecimento: Faixa } = {
   comparecimento: { min: -10, max: 10, passo: 1 },
 };
 
-/**
- * O voto das hipóteses prontas, em pontos, como na decisão 9: os 1,4 ponto em que as pesquisas finais do 1º turno
- * subestimaram Flávio, a metade dos 2,8 na margem das 8 pesquisas de 1 a 3/10. A metodologia cita 2,1, pela regra do
- * agregado sobre 12 pesquisas (ticket 05): qual dos dois vale aqui é pergunta ao dono, no ticket 24.
- */
-export const VOTO_DAS_HIPOTESES_PRONTAS = 1.4;
-
 const ATE_UMA_CASA = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 
 /** Quem ganha com um número de pontos para o 1º finalista: o 1º, se for positivo; o 2º, se negativo. */
@@ -106,12 +99,17 @@ const soNoBrasil = (brasil: number): Hipoteses => ({ voto: { brasil, regioes: RE
 
 /**
  * O par simétrico de hipóteses prontas (decisão 9), em ordem alfabética, só antes da apuração e só na base Apuração +
- * pesquisas: o 1º finalista é o que as pesquisas subestimaram no 1º turno.
+ * pesquisas. `viesDoPrimeiroTurno` é quanto as pesquisas finais do 1º turno subestimaram o 1º finalista, em pontos entre
+ * os dois (negativo, o outro): o número que a metodologia cita, por decisão do dono em 20/10 no lugar dos 1,4 da decisão
+ * 9, que eram a metade da margem de 8 pesquisas. "Como no 1º turno" é esse viés para quem as pesquisas subestimaram, e
+ * "na mesma medida", para o outro.
  */
-export function hipotesesProntas(finalistas: FinalistasDoSimulador): HipotesePronta[] {
+export function hipotesesProntas(finalistas: FinalistasDoSimulador, viesDoPrimeiroTurno: number): HipotesePronta[] {
+  const subestimado = viesDoPrimeiroTurno >= 0 ? 0 : 1;
+  const paraQuem = (finalista: number) => soNoBrasil(finalista === 0 ? Math.abs(viesDoPrimeiroTurno) : -Math.abs(viesDoPrimeiroTurno));
   return [
-    { rotulo: `As pesquisas subestimam ${finalistas[0].nomeCurto} como no 1º turno`, hipoteses: soNoBrasil(VOTO_DAS_HIPOTESES_PRONTAS) },
-    { rotulo: `As pesquisas subestimam ${finalistas[1].nomeCurto} na mesma medida`, hipoteses: soNoBrasil(-VOTO_DAS_HIPOTESES_PRONTAS) },
+    { rotulo: `As pesquisas subestimam ${finalistas[subestimado].nomeCurto} como no 1º turno`, hipoteses: paraQuem(subestimado) },
+    { rotulo: `As pesquisas subestimam ${finalistas[1 - subestimado]!.nomeCurto} na mesma medida`, hipoteses: paraQuem(1 - subestimado) },
   ].sort((a, b) => a.rotulo.localeCompare(b.rotulo, "pt-BR"));
 }
 

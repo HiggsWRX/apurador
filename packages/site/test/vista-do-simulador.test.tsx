@@ -56,6 +56,7 @@ function vista(opcoes: { dados?: DadosDoSimulador; base?: IdDaBase; hipoteses?: 
     pesoDasPesquisas: comPesquisas ? comPesquisas.pesoDasPesquisas : null,
     coincidem: dados.coincidem,
     placarEntreFinalistasDoBrasil: dados.placarEntreFinalistasDoBrasil,
+    viesDoPrimeiroTurno: 2.1,
     deOutraPessoa: false,
     regioesAbertas: [],
     copia: null,
@@ -167,7 +168,7 @@ describe("as hipóteses", () => {
     expect(prontas(vista())).toEqual(["As pesquisas subestimam Flávio como no 1º turno", "As pesquisas subestimam Lula na mesma medida"]);
     expect(prontas(vista({ base: "so-apuracao" }))).toEqual([]);
     // a pronta escolhida fica marcada
-    const marcadas = elementos(vista({ hipoteses: hipoteses({ brasil: 1.4 }) }), /<button[^>]*class="sim-pronta"/).map((b) => /aria-pressed="(\w+)"/.exec(b)?.[1]);
+    const marcadas = elementos(vista({ hipoteses: hipoteses({ brasil: 2.1 }) }), /<button[^>]*class="sim-pronta"/).map((b) => /aria-pressed="(\w+)"/.exec(b)?.[1]);
     expect(marcadas).toEqual(["true", "false"]);
   });
 

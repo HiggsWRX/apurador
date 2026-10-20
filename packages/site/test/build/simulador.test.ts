@@ -60,6 +60,14 @@ describe("a tela do simulador", () => {
     expect(links[0]).toMatch(/href="\/simulador\/\?base=com-pesquisas"/);
   });
 
+  it("dá às hipóteses prontas o viés do 1º turno que a metodologia escreve: Flávio subestimado em 2,1 pontos", () => {
+    // decisão do dono em 20/10 (ticket 24): o número da metodologia, e não os 1,4 da decisão 9
+    const naMetodologia = /As pesquisas subestimaram Flávio em (\d+,\d) pontos? entre os dois finalistas/.exec(texto(pagina("/metodologia/")))?.[1];
+    const naIlha = /viesDoPrimeiroTurno&quot;:\[0,([\d.]+)\]/.exec(html)?.[1];
+    expect(naMetodologia).toBe("2,1");
+    expect(naIlha).toBe("2.1");
+  });
+
   it("abre na metodologia, pela seção 5", () => {
     expect(elemento(pagina("/metodologia/"), /<p[^>]*data-bloco="simulador"/)).toMatch(/<a href="\/simulador\/"/);
   });

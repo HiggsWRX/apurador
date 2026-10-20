@@ -95,10 +95,18 @@ describe("o que seria preciso", () => {
 });
 
 describe("as hipóteses prontas", () => {
-  it("são o par simétrico da decisão 9, em ordem alfabética: Flávio +1,4 e Lula +1,4", () => {
-    expect(hipotesesProntas(FINALISTAS)).toEqual([
-      { rotulo: "As pesquisas subestimam Flávio como no 1º turno", hipoteses: hipoteses({ brasil: 1.4 }) },
-      { rotulo: "As pesquisas subestimam Lula na mesma medida", hipoteses: hipoteses({ brasil: -1.4 }) },
+  // Decisão 9, com o viés do 1º turno que a metodologia cita: as pesquisas subestimaram Flávio em 2,1 pontos entre os dois.
+  it("são o par simétrico, em ordem alfabética: o viés do 1º turno para quem as pesquisas subestimaram, e a mesma medida para o outro", () => {
+    expect(hipotesesProntas(FINALISTAS, 2.1)).toEqual([
+      { rotulo: "As pesquisas subestimam Flávio como no 1º turno", hipoteses: hipoteses({ brasil: 2.1 }) },
+      { rotulo: "As pesquisas subestimam Lula na mesma medida", hipoteses: hipoteses({ brasil: -2.1 }) },
+    ]);
+  });
+
+  it("com as pesquisas tendo subestimado o outro finalista, põem o 'como no 1º turno' nele, e a ordem continua a alfabética", () => {
+    expect(hipotesesProntas(FINALISTAS, -0.8)).toEqual([
+      { rotulo: "As pesquisas subestimam Flávio na mesma medida", hipoteses: hipoteses({ brasil: 0.8 }) },
+      { rotulo: "As pesquisas subestimam Lula como no 1º turno", hipoteses: hipoteses({ brasil: -0.8 }) },
     ]);
   });
 });
