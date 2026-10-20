@@ -1,0 +1,232 @@
+import type { ArquivoDeRodada, ArquivoDoLugar } from "@apurador/coletor";
+import { render } from "preact-render-to-string";
+import { describe, expect, it } from "vitest";
+import { VistaDoBlocoAoVivo, type PropsDaVista } from "../src/components/VistaDoBlocoAoVivo";
+import type { QuadroAoVivo } from "../src/lib/leitor-ao-vivo";
+import { elemento, texto } from "./html";
+
+// O que o bloco ao vivo mostra para cada quadro do leitor, renderizado em HTML como a ilha o desenha. Os números de
+// referência são os dos exemplos das decisões (Narração da noite, decisão 9) e os do 2º turno de 2026 no TSE.
+
+const CANDIDATOS: ArquivoDeRodada["candidatos"] = [
+  { numero: 22, nome: "FLAVIO BOLSONARO", partido: "PL", sequencial: "280002551544" },
+  { numero: 13, nome: "LULA", partido: "PT", sequencial: "280002542548" },
+];
+
+function quadro(parte: Partial<QuadroAoVivo> = {}): QuadroAoVivo {
+  return { fase: "antes-das-17h", indicador: { estado: "antes-das-17h", faltam: null }, rodada: null, lugar: null, ultimaLeitura: null, mudaram: [], ...parte };
+}
+
+function rodada(fase: ArquivoDeRodada["fase"]): ArquivoDeRodada {
+  return { rodada: "2026-10-25T22:42:15.000Z", fase, novidade: { totalizacao: "2026-10-25 19:42:10", vista: "2026-10-25T22:42:12.000Z" }, candidatos: CANDIDATOS };
+}
+
+function dadosDoLugar(tse: Partial<ArquivoDoLugar["tse"]>, curva: ArquivoDoLugar["curva"] = []): ArquivoDoLugar {
+  return {
+    lugar: "BR",
+    tse: { totalizacao: "2026-10-25 19:42:10", secoes: { totalizadas: 0, total: 472027, percentual: 0 }, votos: [0, 0], percentuais: [0, 0], final: false, ...tse },
+    curva,
+  };
+}
+
+const PADRAO: Omit<PropsDaVista, "quadro"> = { lugar: { tipo: "brasil" }, fotos: {}, movimentoReduzido: false, proximaLeitura: 30, lendo: false };
+const vista = (q: QuadroAoVivo, outras: Partial<PropsDaVista> = {}) => render(<VistaDoBlocoAoVivo quadro={q} {...PADRAO} {...outras} />);
+
+describe("bloco ao vivo antes das 17h", () => {
+  it("dá a manchete sem números e o placar oficial com a hora da divulgação", () => {
+    const html = vista(quadro());
+    expect(texto(elemento(html, /<p[^>]*data-manchete/))).toBe("A apuração do 2º turno começa às 17h");
+    const placar = texto(elemento(html, /<section[^>]*data-placar-oficial/));
+    expect(placar).toContain("Placar oficial · TSE");
+    expect(placar).toContain("A divulgação começa às 17h");
+  });
+});
+
+describe("manchete durante a apuração", () => {
+  const aoVivo = (tse: Partial<ArquivoDoLugar["tse"]>) => quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar: dadosDoLugar(tse) });
+  const mancheteDe = (q: QuadroAoVivo, outras: Partial<PropsDaVista> = {}) => texto(elemento(vista(q, outras), /<p[^>]*data-manchete/));
+
+  it("começa pelo placar oficial: quem lidera, com o % dos votos válidos e o % das seções", () => {
+    const q = aoVivo({ secoes: { totalizadas: 237618, total: 472027, percentual: 50.34 }, votos: [57873281, 56885102], percentuais: [50.43, 49.57] });
+    expect(mancheteDe(q)).toBe("Flávio lidera com 50,43% dos votos válidos e 50,34% das seções totalizadas");
+  });
+
+  it("com diferença menor que 0,10 ponto, dá a diferença em votos", () => {
+    const q = aoVivo({ secoes: { totalizadas: 319847, total: 472027, percentual: 67.76 }, votos: [61000000, 61012345], percentuais: [49.99, 50.01] });
+    expect(mancheteDe(q)).toBe("Lula à frente por 12.345 votos, com 67,76% das seções totalizadas");
+  });
+
+  it("com diferença de 0,10 ponto, volta ao % dos votos válidos", () => {
+    const q = aoVivo({ secoes: { totalizadas: 319847, total: 472027, percentual: 67.76 }, votos: [61000000, 61122000], percentuais: [49.95, 50.05] });
+    expect(mancheteDe(q)).toBe("Lula lidera com 50,05% dos votos válidos e 67,76% das seções totalizadas");
+  });
+
+  it("num lugar ainda sem seções, diz que a apuração não começou ali", () => {
+    const q = aoVivo({ secoes: { totalizadas: 0, total: 41123, percentual: 0 } });
+    expect(mancheteDe(q, { lugar: { tipo: "uf", uf: "BA" } })).toBe("A apuração ainda não começou neste estado");
+    expect(mancheteDe(q, { lugar: { tipo: "municipio", uf: "BA" } })).toBe("A apuração ainda não começou neste município");
+    expect(mancheteDe(q, { lugar: { tipo: "exterior", uf: "ZZ" } })).toBe("A apuração ainda não começou no Exterior");
+    expect(mancheteDe(q, { lugar: { tipo: "municipio", uf: "ZZ" } })).toBe("A apuração ainda não começou nesta cidade");
+  });
+
+  it("depois das 17h, sem o arquivo do lugar ainda, não volta a falar das 17h", () => {
+    const html = vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar: null }), { lugar: { tipo: "municipio", uf: "BA" } });
+    expect(texto(elemento(html, /<p[^>]*data-manchete/))).toBe("A apuração ainda não começou neste município");
+    const placar = texto(elemento(html, /<section[^>]*data-placar-oficial/));
+    expect(placar).not.toContain("17h");
+    expect(placar).toContain("Aguardando os primeiros dados do TSE");
+  });
+
+  it("com os mesmos votos, diz que estão empatados", () => {
+    const q = aoVivo({ secoes: { totalizadas: 1, total: 12, percentual: 8.33 }, votos: [104, 104], percentuais: [50, 50] });
+    expect(mancheteDe(q, { lugar: { tipo: "municipio", uf: "RR" } })).toBe("Flávio e Lula empatam com 104 votos cada, com 8,33% das seções totalizadas");
+  });
+});
+
+describe("indicador ao vivo, no cartão do placar", () => {
+  const lugar = dadosDoLugar({ secoes: { totalizadas: 237618, total: 472027, percentual: 50.34 }, votos: [57873281, 56885102], percentuais: [50.43, 49.57] });
+  const com = (indicador: QuadroAoVivo["indicador"], outras: Partial<PropsDaVista> = {}, fase: QuadroAoVivo["fase"] = "ao-vivo") => {
+    const html = vista(quadro({ fase, indicador, rodada: rodada(fase), lugar, ultimaLeitura: 12 }), { proximaLeitura: 18, ...outras });
+    const placar = elemento(html, /<section[^>]*data-placar-oficial/);
+    return { placar, indicador: elemento(placar, /<div[^>]*data-indicador/) };
+  };
+
+  it("ao vivo: o ponto pulsante, o anel de 30 s e \"Atualiza sozinho, sem recarregar\", com o detalhe da última leitura e da última totalização", () => {
+    const { indicador } = com({ estado: "ao-vivo" });
+    expect(indicador).toContain("data-pulso");
+    expect(indicador).toContain("data-anel");
+    expect(texto(indicador)).toMatch(/^Ao vivo Atualiza sozinho, sem recarregar/);
+    expect(texto(elemento(indicador, /<details/))).toContain(
+      "Lemos os dados a cada 30 s. Última leitura há 12 s. Última totalização do TSE às 19:42:10. Não precisa recarregar a página.",
+    );
+  });
+
+  it("durante a leitura, o anel vira uma rodinha", () => {
+    const { indicador } = com({ estado: "ao-vivo" }, { lendo: true });
+    expect(indicador).toContain("data-rodinha");
+    expect(indicador).not.toContain("data-anel");
+  });
+
+  it("com movimento reduzido, não há pulso, e o anel vira \"próxima leitura em N s\"", () => {
+    const { indicador } = com({ estado: "ao-vivo" }, { movimentoReduzido: true });
+    expect(indicador).not.toContain("data-pulso");
+    expect(indicador).not.toContain("data-anel");
+    expect(texto(indicador)).toContain("próxima leitura em 18 s");
+  });
+
+  it("TSE sem novidade: continua ao vivo, e o detalhe diz desde quando", () => {
+    const { indicador } = com({ estado: "tse-sem-novidade", desde: "19:40" });
+    expect(texto(indicador)).toMatch(/^Ao vivo/);
+    expect(texto(elemento(indicador, /<details/))).toContain("TSE sem novidade desde 19:40.");
+  });
+
+  it("interrompido: o ponto cinza, sem anel, com o aviso e os últimos dados à vista; com 10 min, o link do app oficial do TSE", () => {
+    const tresMinutos = com({ estado: "interrompido", atualizadoAs: "19:42", linkDoTse: false });
+    expect(tresMinutos.indicador).toContain('data-ponto="cinza"');
+    expect(tresMinutos.indicador).not.toContain("data-anel");
+    expect(texto(tresMinutos.indicador)).toContain("Atualizado às 19:42, atualização interrompida");
+    expect(texto(tresMinutos.indicador)).not.toContain("Ao vivo");
+    expect(tresMinutos.placar).not.toContain("app oficial do TSE");
+    expect(texto(tresMinutos.placar)).toContain("50,43%");
+
+    const dezMinutos = com({ estado: "interrompido", atualizadoAs: "19:42", linkDoTse: true });
+    expect(dezMinutos.placar).toMatch(/<a[^>]*href="https:\/\/resultados\.tse\.jus\.br\/oficial\/app\/index\.html"[^>]*>Acompanhe no app oficial do TSE<\/a>/);
+    expect(texto(dezMinutos.placar)).toContain("50,43%");
+  });
+
+  it("sem conexão: \"Sem conexão · tentando de novo\"", () => {
+    expect(texto(com({ estado: "sem-conexao" }).indicador)).toContain("Sem conexão · tentando de novo");
+  });
+
+  it("encerrada: \"Apuração encerrada\", sem anel", () => {
+    const { indicador } = com({ estado: "encerrada" }, {}, "encerrada");
+    expect(texto(indicador)).toContain("Apuração encerrada");
+    expect(indicador).not.toContain("data-anel");
+  });
+
+  it("antes das 17h: sem \"Ao vivo\", com a contagem regressiva só na última hora", () => {
+    const longe = com({ estado: "antes-das-17h", faltam: null }, {}, "antes-das-17h").indicador;
+    expect(texto(longe)).not.toContain("Ao vivo");
+    expect(texto(longe)).not.toContain("Começa em");
+    expect(texto(com({ estado: "antes-das-17h", faltam: 754 }, {}, "antes-das-17h").indicador)).toContain("Começa em 12:34");
+  });
+});
+
+describe("linha fixa", () => {
+  const lugar = dadosDoLugar({ secoes: { totalizadas: 237618, total: 472027, percentual: 50.34 }, votos: [57873281, 56885102], percentuais: [50.43, 49.57] });
+  const aoVivo = quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar });
+
+  it("quando o placar sai da tela, mostra só os números oficiais, com o indicador", () => {
+    const linha = elemento(vista(aoVivo, { placarNaTela: false }), /<div[^>]*data-linha-fixa/);
+    expect(linha).not.toMatch(/^<div[^>]*hidden/);
+    expect(texto(linha)).toMatch(/^Flávio 50,43% Lula 49,57% 50,34% das seções · TSE/);
+    expect(linha).toContain("data-indicador");
+  });
+
+  it("fica escondida com o placar na tela, e não existe antes das 17h", () => {
+    expect(elemento(vista(aoVivo, { placarNaTela: true }), /<div[^>]*data-linha-fixa/)).toMatch(/^<div[^>]*hidden/);
+    expect(vista(quadro(), { placarNaTela: false })).not.toContain("data-linha-fixa");
+  });
+});
+
+describe("curva real", () => {
+  // O começo instável: com 0,5% das seções Flávio tinha 70%; com 3%, 56%. Depois, nunca mais de 2,5 pontos de 50%.
+  const pontos = [
+    [0.5, 70, 30],
+    [2, 58, 42],
+    [3, 56, 44],
+    [10, 52.5, 47.5],
+    [25, 51.2, 48.8],
+  ];
+  const curvaDe = (curva: number[][]) => {
+    const lugar = dadosDoLugar({ secoes: { totalizadas: 1, total: 4, percentual: curva.at(-1)?.[0] ?? 0 } }, curva);
+    return elemento(vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar })), /<section[^>]*data-curva-real/);
+  };
+  const rotulosDoEixo = (svg: string) => [...svg.matchAll(/<text[^>]*data-eixo-y[^>]*>([^<]+)</g)].map((m) => m[1]);
+
+  it("espelha as duas linhas em torno de 50%, com a escala que ignora o começo até 3% das seções", () => {
+    const curva = curvaDe(pontos);
+    expect(curva.match(/<path[^>]*data-linha-real/g)).toHaveLength(2);
+    expect(rotulosDoEixo(curva)).toEqual(["46%", "48%", "50%", "52%", "54%"]);
+  });
+
+  it("se estende a cada leitura, até o último ponto", () => {
+    expect(curvaDe(pontos)).toContain('aria-label="Curva real: Flávio 51,20% e Lula 48,80% com 25,00% das seções totalizadas"');
+    expect(curvaDe([...pontos, [40, 50.6, 49.4]])).toContain('aria-label="Curva real: Flávio 50,60% e Lula 49,40% com 40,00% das seções totalizadas"');
+  });
+
+  it("leva a atribuição da camada analítica", () => {
+    expect(texto(curvaDe(pontos))).toContain("Cálculo do Apurador com dados do TSE");
+  });
+});
+
+describe("placar oficial ao vivo", () => {
+  const lugar = dadosDoLugar({ secoes: { totalizadas: 237618, total: 472027, percentual: 50.34 }, votos: [57873281, 56885102], percentuais: [50.43, 49.57] });
+  const html = vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar }), {
+    fotos: { "280002551544": "/_astro/280002551544.abc.jpeg", "280002542548": "/_astro/280002542548.def.jpeg" },
+  });
+  const placar = elemento(html, /<section[^>]*data-placar-oficial/);
+
+  it("põe os dois candidatos lado a lado, na ordem do arquivo de rodada, com nome, partido, % com duas casas e votos", () => {
+    expect(texto(placar)).toMatch(/FLAVIO BOLSONARO PL 50,43% 57\.873\.281 votos.*LULA PT 49,57% 56\.885\.102 votos/);
+  });
+
+  it("mostra a foto oficial do TSE de cada um, pelo sequencial", () => {
+    expect(placar).toContain('src="/_astro/280002551544.abc.jpeg"');
+    expect(placar).toContain('src="/_astro/280002542548.def.jpeg"');
+  });
+
+  it("faz piscar uma vez só os números que a última leitura mudou, e nenhum com movimento reduzido", () => {
+    const q = quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar, mudaram: ["percentual-0", "secoes"] });
+    const piscam = (html: string) => [...html.matchAll(/<[a-z]+[^>]*data-mudou[^>]*>([^<]+)</g)].map((m) => m[1]);
+    expect(piscam(elemento(vista(q), /<section[^>]*data-placar-oficial/))).toEqual(["50,43%", "50,34%"]);
+    expect(piscam(vista(q, { movimentoReduzido: true }))).toEqual([]);
+  });
+
+  it("traz embaixo a barra, o % de seções com x de y, a hora da última totalização e a fonte", () => {
+    expect(placar).toMatch(/<div[^>]*class="barra-de-secoes"[^>]*>\s*<i style="width:\s*50\.34%/);
+    expect(texto(placar)).toContain("50,34% das seções totalizadas (237.618 de 472.027)");
+    expect(texto(placar)).toContain("Última totalização às 19:42:10");
+    expect(texto(placar)).toContain("Fonte: TSE, sem alteração (CC-BY)");
+  });
+});

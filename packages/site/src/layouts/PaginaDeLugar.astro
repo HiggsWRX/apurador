@@ -1,19 +1,24 @@
 ---
 import { nomeCompleto, type Lugar } from "@apurador/pipeline";
+import BlocoAoVivo from "../components/BlocoAoVivo";
 import Historico from "../components/Historico.astro";
 import Trilha from "../components/Trilha.astro";
+import { FOTOS } from "../lib/fotos";
 import Base from "./Base.astro";
 
 // A casca de toda página de lugar (Telas da página de lugar, decisão 1). No celular, uma coluna:
 // cabeçalho, o conteúdo principal, a narração e o histórico. No computador, a narração fica numa
 // coluna fixa à direita da principal, e o histórico embaixo (o mapa, quando entrar, fica ao lado dele).
-// O bloco ao vivo e os blocos de antes das 17h entram como conteúdo principal (o slot padrão).
+// O bloco ao vivo abre o conteúdo principal, e os blocos de antes das 17h vêm depois dele (o slot padrão).
 
 interface Props {
   lugar: Lugar;
 }
 const { lugar } = Astro.props;
 const nome = nomeCompleto(lugar);
+// A raiz dos arquivos ao vivo: no build, PUBLIC_AO_VIVO; no `astro dev`, a pasta que o coletor publica, servida pela
+// integração `ao-vivo-local`. Sem nenhuma das duas, a ilha não lê nada e fica no estado de antes das 17h.
+const base = import.meta.env.PUBLIC_AO_VIVO ?? (typeof __AO_VIVO_LOCAL__ === "string" ? __AO_VIVO_LOCAL__ : null);
 ---
 
 <Base titulo={nome}>
@@ -23,7 +28,10 @@ const nome = nomeCompleto(lugar);
     <p class="subtitulo">Eleição para Presidente · 2º turno em 25 de outubro de 2026</p>
   </div>
   <div class="colunas">
-    <div class="principal"><slot /></div>
+    <div class="principal">
+      <BlocoAoVivo client:load id={lugar.id} tipo={lugar.tipo} uf={lugar.uf} fotos={FOTOS} base={base} />
+      <slot />
+    </div>
     <aside class="cartao narracao" id="narracao" aria-labelledby="narracao-titulo">
       <h2 id="narracao-titulo">Narração da noite</h2>
       <p class="nota">A narração começa às 17h, com as primeiras seções totalizadas.</p>
