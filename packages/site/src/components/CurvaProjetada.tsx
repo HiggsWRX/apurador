@@ -1,23 +1,17 @@
-import { Z_95, type CurvaDoLugar, type PontoDaCurva } from "@apurador/modelo";
+import { Z_95, type CurvaDoLugar, type PontoDaCurva, type ViradaProjetada } from "@apurador/modelo";
 import { formatarCalculo } from "../lib/formato";
-import type { FinalistaDoPainel } from "./ChanceDeVitoria";
+import type { FinalistaDaPagina } from "./ChanceDeVitoria";
+import { ALTURA, COMECO_INSTAVEL, EixosDaCurva, eixosDaCurva, escalaDaCurva, LARGURA, MARGEM } from "./EixosDaCurva";
 
 // A curva projetada (Telas da página de lugar, decisão 4): as duas linhas tracejadas espelhadas em torno de 50%, cada
-// uma com a faixa de 95%, e a virada projetada como um losango sobre a faixa cinza em que ela é provável. Só gráfico e
-// rótulos curtos (Segunda consulta jurídica, decisão 5): nenhuma frase diz quem vence ou quando vira, e o rótulo do
-// sinal de virada, que precisa de alguém atrás no placar parcial, fica com o bloco ao vivo. Sem estado e sem leitura:
-// o painel de antes das 17h a desenha no build de 0% a 100% das seções, e o bloco ao vivo pode desenhá-la do ponto
-// atual em diante.
+// uma com a faixa de 95%, e a virada projetada como um losango sobre a faixa cinza em que ela é possível. Só gráfico e
+// rótulos curtos (Segunda consulta jurídica, decisão 5): nenhuma frase diz quem vence ou quando vira, nem na descrição
+// para o leitor de tela, e o rótulo do sinal de virada, que precisa de alguém atrás no placar parcial, fica com o
+// bloco ao vivo. Sem estado e sem leitura: o painel de antes das 17h a desenha no build de 0% a 100% das seções, e o
+// bloco ao vivo pode desenhá-la do ponto atual em diante.
 
-/** Até esse % de seções, o placar ainda pula demais para decidir a escala, como na curva real. */
-const COMECO_INSTAVEL = 3;
-
-// A mesma largura da curva real, com a margem da direita para os rótulos do fim.
-const LARGURA = 340;
-const ALTURA = 210;
-const MARGEM = { esq: 34, dir: 44, topo: 10, base: 32 };
-const largura = LARGURA - MARGEM.esq - MARGEM.dir;
-const altura = ALTURA - MARGEM.topo - MARGEM.base;
+/** A margem da direita cabe os rótulos do fim ("51,1%"). */
+const MARGEM_DIREITA = 44;
 
 interface Props {
   /** Distingue os ids internos do SVG (o recorte) quando a página tem mais de uma curva. */
@@ -25,8 +19,8 @@ interface Props {
   /** O nome da base da projeção que a curva desenha, para a descrição. */
   base: string;
   /** O finalista cuja fatia é o `y` dos pontos, e o outro. */
-  primeiro: FinalistaDoPainel;
-  segundo: FinalistaDoPainel;
+  primeiro: FinalistaDaPagina;
+  segundo: FinalistaDaPagina;
   curva: CurvaDoLugar;
 }
 
@@ -41,12 +35,10 @@ export function CurvaProjetada({ id, base, primeiro, segundo, curva }: Props) {
   const x = virada?.x ?? null;
   const cedo = virada?.cedo ?? null;
   const tarde = virada?.tarde ?? null;
-
+  // Só o que a curva desenha, sem afirmar nada sobre a virada: os marcos dela ficam nos atributos e na legenda.
   const descricao =
     `Curva projetada na base ${base}: ${primeiro.nomeUrna} de ${pct(inicio.y)} a ${pct(fim.y)} e ${segundo.nomeUrna} de ${pct(1 - inicio.y)} a ${pct(1 - fim.y)}, ` +
-    `de ${formatarCalculo(inicio.x)}% a ${formatarCalculo(fim.x)}% das seções totalizadas` +
-    (x === null ? "" : `; losango da virada projetada em ~${Math.round(x)}% das seções`) +
-    (cedo === null ? "" : `; faixa da virada de ${Math.round(cedo)}% a ${Math.round(tarde ?? 100)}% das seções`);
+    `de ${formatarCalculo(inicio.x)}% a ${formatarCalculo(fim.x)}% das seções totalizadas`;
 
   return (
     <figure
@@ -56,7 +48,7 @@ export function CurvaProjetada({ id, base, primeiro, segundo, curva }: Props) {
       {...(cedo === null ? {} : { "data-virada-cedo": Math.round(cedo) })}
       {...(tarde === null ? {} : { "data-virada-tarde": Math.round(tarde) })}
     >
-      <Grafico id={id} primeiro={primeiro} segundo={segundo} pontos={pontos} x={x} cedo={cedo} tarde={tarde} descricao={descricao} />
+      <Grafico id={id} primeiro={primeiro} segundo={segundo} pontos={pontos} virada={{ x, cedo, tarde }} descricao={descricao} />
       <figcaption class="legenda">
         <span>
           <i class="amostra amostra-tracejada" /> Curva projetada
@@ -81,30 +73,24 @@ export function CurvaProjetada({ id, base, primeiro, segundo, curva }: Props) {
 
 interface PropsDoGrafico {
   id: string;
-  primeiro: FinalistaDoPainel;
-  segundo: FinalistaDoPainel;
+  primeiro: FinalistaDaPagina;
+  segundo: FinalistaDaPagina;
   pontos: PontoDaCurva[];
-  x: number | null;
-  cedo: number | null;
-  tarde: number | null;
+  /** O ponto e a faixa da virada projetada, cada um `null` quando a curva não o tem. */
+  virada: Pick<ViradaProjetada, "x" | "cedo" | "tarde">;
   descricao: string;
 }
 
-function Grafico({ id, primeiro, segundo, pontos, x: xDaVirada, cedo, tarde, descricao }: PropsDoGrafico) {
-  // A meia altura da escala, como na curva real: a maior distância de 50% depois do começo instável, aqui contando a
-  // faixa de 95%, mais 1 ponto de folga, em passos de 2. O que passa é recortado.
-  let distancia = 3;
+function Grafico({ id, primeiro, segundo, pontos, virada, descricao }: PropsDoGrafico) {
+  // A meia altura da escala, como na curva real, aqui contando a faixa de 95% de cada ponto depois do começo instável.
+  let distancia = 0;
   for (const p of pontos) {
     if (p.x <= COMECO_INSTAVEL) continue;
     distancia = Math.max(distancia, Math.abs(100 * (p.y + Z_95 * p.desvio) - 50), Math.abs(100 * (p.y - Z_95 * p.desvio) - 50));
   }
-  const meia = Math.min(50, Math.ceil((distancia + 1) / 2) * 2);
-  const passo = meia > 20 ? 10 : meia > 8 ? 5 : 2;
-  const rotulos: number[] = [];
-  for (let v = 50 - Math.floor(meia / passo) * passo; v <= 50 + meia; v += passo) rotulos.push(v);
-
-  const x = (secoes: number) => MARGEM.esq + (secoes / 100) * largura;
-  const y = (pct: number) => MARGEM.topo + altura / 2 - ((pct - 50) / meia) * (altura / 2);
+  const escala = escalaDaCurva(distancia);
+  const eixos = eixosDaCurva(escala, MARGEM_DIREITA);
+  const { x, y, largura, altura } = eixos;
   const ponto = (p: PontoDaCurva, valor: number) => `${x(p.x).toFixed(1)},${y(100 * valor).toFixed(1)}`;
   const linha = (valor: (p: PontoDaCurva) => number) => pontos.map((p, i) => `${i ? "L" : "M"}${ponto(p, valor(p))}`).join("");
   const faixa = (valor: (p: PontoDaCurva) => number) =>
@@ -123,33 +109,17 @@ function Grafico({ id, primeiro, segundo, pontos, x: xDaVirada, cedo, tarde, des
 
   return (
     <svg class="grafico-curva" viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={descricao}>
-      <clipPath id={recorte}>
-        <rect x={MARGEM.esq} y={MARGEM.topo} width={largura} height={altura} />
-      </clipPath>
-      {rotulos.map((v) => (
-        <g key={v}>
-          <line class={v === 50 ? "grade grade-50" : "grade"} x1={MARGEM.esq} x2={MARGEM.esq + largura} y1={y(v)} y2={y(v)} />
-          <text class="eixo" data-eixo-y x={MARGEM.esq - 6} y={y(v) + 3.5} text-anchor="end">
-            {v}%
-          </text>
-        </g>
-      ))}
-      {[0, 25, 50, 75, 100].map((s) => (
-        <text key={s} class="eixo" x={x(s)} y={MARGEM.topo + altura + 14} text-anchor="middle">
-          {s}%
-        </text>
-      ))}
-      <text class="eixo" x={MARGEM.esq + largura / 2} y={ALTURA - 3} text-anchor="middle">
-        % de seções totalizadas
-      </text>
-      {cedo !== null && <rect class="faixa-virada" x={x(cedo).toFixed(1)} y={MARGEM.topo} width={Math.max(2, x(tarde ?? 100) - x(cedo)).toFixed(1)} height={altura} />}
+      <EixosDaCurva eixos={eixos} escala={escala} recorte={recorte} />
+      {virada.cedo !== null && (
+        <rect class="faixa-virada" x={x(virada.cedo).toFixed(1)} y={MARGEM.topo} width={Math.max(2, x(virada.tarde ?? 100) - x(virada.cedo)).toFixed(1)} height={altura} />
+      )}
       <g clip-path={`url(#${recorte})`}>
         <path class="faixa-projetada" data-cor={primeiro.cor} d={faixa(doPrimeiro)} />
         <path class="faixa-projetada" data-cor={segundo.cor} d={faixa(doSegundo)} />
         <path class="linha-projetada" data-cor={primeiro.cor} d={linha(doPrimeiro)} />
         <path class="linha-projetada" data-cor={segundo.cor} d={linha(doSegundo)} />
       </g>
-      {xDaVirada !== null && <path class="losango-virada" d={`M${x(xDaVirada).toFixed(1)},${(y(50) - 6).toFixed(1)}l6,6l-6,6l-6,-6z`} />}
+      {virada.x !== null && <path class="losango-virada" d={`M${x(virada.x).toFixed(1)},${(y(50) - 6).toFixed(1)}l6,6l-6,6l-6,-6z`} />}
       <text class="rotulo-fim" data-cor={primeiro.cor} x={MARGEM.esq + largura + 5} y={(yFim[0]! + 3.5).toFixed(1)}>
         {pct(fim.y)}
       </text>

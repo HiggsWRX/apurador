@@ -51,9 +51,10 @@ describe("curva projetada", () => {
     expect(texto(svg)).toContain("51,0%");
   });
 
-  it("não tem frase preditiva nem rótulo do sinal de virada", () => {
+  it("não tem frase preditiva nem rótulo do sinal de virada, nem na descrição para o leitor de tela", () => {
     expect(texto(html)).not.toMatch(/deve |vai |chance de virada|sem sinal|virada possível ·|virada projetada ·/i);
-    expect(html).toMatch(/aria-label="Curva projetada na base Apuração \+ pesquisas: FLAVIO BOLSONARO de 56,0% a 49,0% e LULA de 44,0% a 51,0%/);
+    const descricao = /aria-label="([^"]+)"/.exec(html)?.[1];
+    expect(descricao).toBe("Curva projetada na base Apuração + pesquisas: FLAVIO BOLSONARO de 56,0% a 49,0% e LULA de 44,0% a 51,0%, de 2,0% a 100,0% das seções totalizadas");
   });
 
   it("sem virada projetada, fica só com a faixa a partir de onde a virada é possível", () => {

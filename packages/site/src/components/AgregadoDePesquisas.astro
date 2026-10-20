@@ -2,7 +2,7 @@
 import { DIA_DA_ELEICAO, diasEntre, INICIO_DO_2O_TURNO } from "@apurador/modelo";
 import { formatarCalculo, formatarDia, formatarPontos, umaCasa } from "../lib/formato";
 import { corDoPartido } from "../lib/identidade";
-import { AGREGADO, entreOsFinalistas, FINALISTAS, PLACAR_ENTRE_FINALISTAS_DO_BRASIL, quemGanhou, TENDENCIA } from "../lib/pesquisas";
+import { AGREGADO, entreOsFinalistas, FINALISTAS, PLACAR_ENTRE_FINALISTAS_DO_BRASIL, quemGanhouEntre, TENDENCIA } from "../lib/pesquisas";
 import ValoresDosFinalistas from "./ValoresDosFinalistas.astro";
 
 // O agregado de pesquisas do Brasil antes das 17h (Agregado de pesquisas e erro histórico, decisão 9b): o valor do
@@ -12,8 +12,7 @@ import ValoresDosFinalistas from "./ValoresDosFinalistas.astro";
 const pct = (n: number) => `${formatarCalculo(n)}%`;
 const [primeiro, segundo] = FINALISTAS;
 const primeiroTurno = entreOsFinalistas(umaCasa(PLACAR_ENTRE_FINALISTAS_DO_BRASIL));
-// A mudança desde o 1º turno entre os números como a página os mostra, para a conta fechar: 51,0%, +0,1, 51,1%.
-const ganhou = AGREGADO && quemGanhou(umaCasa(umaCasa(AGREGADO.valor) - umaCasa(PLACAR_ENTRE_FINALISTAS_DO_BRASIL)));
+const ganhou = AGREGADO && quemGanhouEntre(PLACAR_ENTRE_FINALISTAS_DO_BRASIL, AGREGADO.valor);
 const regra =
   AGREGADO &&
   `Média simples, em votos válidos, de ${AGREGADO.pesquisas.length} pesquisas: a mais recente de cada instituto da lista, com campo terminando nos ` +

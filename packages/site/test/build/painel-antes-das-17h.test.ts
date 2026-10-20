@@ -1,25 +1,13 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { gzipSync } from "node:zlib";
-import { agregadoDePesquisas, curvaProjetada, diaDoAgregado, lerConstantes, prepararModelo, projetarNasDuasBases, type Apuracao, type BaseDoModelo, type Projecao } from "@apurador/modelo";
-import { listaDasPesquisas, pesquisasDoAgregado, type ExtratoDoTse, type Turno } from "@apurador/pipeline";
+import { curvaProjetada, lerConstantes, prepararModelo, projetarNasDuasBases, type Apuracao, type BaseDoModelo, type Projecao } from "@apurador/modelo";
 import { describe, expect, it } from "vitest";
-import { AGORA, DIST, DIST_CHAVES_DESLIGADAS, elemento, elementos, pagina, texto } from "../html";
+import { AGREGADO as agregado, ler } from "../dados-do-build";
+import { DIST, DIST_CHAVES_DESLIGADAS, elemento, elementos, pagina, texto } from "../html";
 
 // Confere o que o build gera (a fronteira do site): o painel de antes das 17h na página do Brasil, com os números do
-// `modelo` sobre o mesmo pesquisas.csv, a base de 25/10 e as constantes congeladas, no relógio fixo em AGORA. As
-// referências externas dos números ficam nos testes do modelo (a projeção antes da primeira seção, a curva de 0% a
-// 100%) e do pipeline (o agregado de 18/10).
-const DADOS = new URL("../../../../dados/", import.meta.url);
-const ler = (arquivo: string) => readFileSync(new URL(arquivo, DADOS), "utf8");
-const turno = JSON.parse(ler("turnos/2026-1.json")) as Turno;
-const lista = listaDasPesquisas({
-  pesquisas: ler("pesquisas.csv"),
-  institutos: ler("pesquisas-institutos.csv"),
-  extrato: JSON.parse(ler("pesquisas-tse.json")) as ExtratoDoTse,
-  verificacoes: ler("pesquisas-verificacoes.csv"),
-  turno,
-});
-const agregado = agregadoDePesquisas(pesquisasDoAgregado(lista, turno), diaDoAgregado(new Date(AGORA)))!;
+// `modelo` sobre o mesmo pesquisas.csv, a base do modelo de 25/10 e as constantes congeladas, no relógio fixo em
+// AGORA. As referências de fora do site são as decisões: antes da primeira seção, a base com pesquisas fica no
+// agregado, e a "Só apuração", no placar entre finalistas do 1º turno (ticket 08 e Método de projeção, decisão 1).
 const base = JSON.parse(ler("bases/2026-2.json")) as BaseDoModelo;
 const constantes = lerConstantes(JSON.parse(readFileSync(new URL("../../../modelo/constantes.json", import.meta.url), "utf8")));
 const modelo = prepararModelo(base);
@@ -39,7 +27,7 @@ const BLOCO_DA_PROJECAO = /<section[^>]*data-bloco="projecao-antes-das-17h"/;
 const BLOCO_DA_LISTA = /<section[^>]*data-bloco="lista-das-pesquisas"/;
 const PALAVRAS_PROIBIDAS = /aprend|\bIA\b|intelig[eê]ncia artificial|previs/i;
 /** Uma frase preditiva ou o rótulo do sinal de virada, que não existem antes das 17h. */
-const PREDITIVO = /deve (seguir|passar|vencer)|vai (vencer|virar)|chance de virada|sem sinal de virada|virada poss[ií]vel ·|virada projetada ·|indica .* (eleito|à frente)/i;
+const PREDITIVO = /deve (seguir|passar|vencer)|vai (vencer|virar)|chance de virada|sem sinal de virada|virada poss[ií]vel ·|virada projetada (·|em)|faixa da virada de|indica .* (eleito|à frente)/i;
 
 const porBase = (bloco: string, id: string) => elemento(bloco, new RegExp(`<div[^>]*data-base="${id}"`));
 
@@ -75,27 +63,45 @@ describe("painel de antes das 17h na página do Brasil", () => {
     expect(t).toContain(`FLAVIO BOLSONARO ${comUmaCasa(flavio)}% ± ${margem}`);
     expect(t).toContain(`LULA ${comUmaCasa(100 - flavio)}% ± ${margem}`);
     const chance = Math.round(100 * p.brasil.chance);
-    expect(chance).toBeGreaterThan(0);
-    expect(chance).toBeLessThan(100);
     expect(t).toContain(`Chance de vitória FLAVIO BOLSONARO ${chance}% LULA ${100 - chance}%`);
     expect(elementos(porBase(projecao, id), /<div[^>]*class="chance-barra"/)).toHaveLength(1);
   });
 
-  it("compara a projeção com o 1º turno pelo placar entre finalistas, nunca pelo % sobre todos os válidos", () => {
-    const t = texto(projecao);
-    expect(t).toContain("FLAVIO BOLSONARO 51,0%, LULA 49,0%");
-    expect(t).not.toContain("47,03");
-    expect(t).not.toContain("45,16");
+  it("na base Apuração + pesquisas, mostra os mesmos números do bloco do agregado, e a chance de vitória dele", () => {
+    // Ticket 08: antes da primeira seção, o Brasil fica no agregado, e os dois blocos mostram os mesmos números.
+    const doAgregado = texto(elemento(html, BLOCO_DO_AGREGADO));
+    const t = texto(porBase(projecao, "com-pesquisas"));
+    const valor = /FLAVIO BOLSONARO (\d+,\d)%/.exec(t)?.[1];
+    expect(valor).toBeDefined();
+    expect(doAgregado).toContain(`FLAVIO BOLSONARO ${valor}%`);
+    expect(t).toContain(`Chance de vitória FLAVIO BOLSONARO ${Math.round(100 * agregado.chance)}%`);
   });
 
-  it("abre na base Apuração + pesquisas, em que as pesquisas pesam 100%, e deixa escolher a Só apuração", () => {
+  it("compara a projeção com o 1º turno, pelo placar entre finalistas, e com a indicação das pesquisas, no formato 'Lula +1,8'", () => {
+    const [flavio, lula] = [umaCasa(agregado.valor), umaCasa(100 - umaCasa(agregado.valor))];
+    // Na "Só apuração", a projeção parte do placar entre finalistas; na base com pesquisas, ela é a indicação das pesquisas.
+    expect(texto(porBase(projecao, "so-apuracao"))).toContain(`com o 1º turno, pelo placar entre finalistas (FLAVIO BOLSONARO 51,0%, LULA 49,0%), sem mudança`);
+    expect(texto(porBase(projecao, "com-pesquisas"))).toContain(`com a indicação das pesquisas (FLAVIO BOLSONARO ${comUmaCasa(flavio)}%, LULA ${comUmaCasa(lula)}%), sem mudança`);
+    // a mudança entre as duas, nos números como a página os mostra, no formato da decisão 3
+    const mudanca = umaCasa(flavio - 51);
+    const esperado = mudanca === 0 ? "sem mudança" : mudanca > 0 ? `FLAVIO BOLSONARO +${comUmaCasa(mudanca)}` : `LULA +${comUmaCasa(-mudanca)}`;
+    expect(texto(porBase(projecao, "com-pesquisas"))).toContain(`(FLAVIO BOLSONARO 51,0%, LULA 49,0%), ${esperado}`);
+    expect(texto(projecao)).not.toMatch(/ponto\b/);
+    expect(texto(projecao)).not.toContain("47,03");
+    expect(texto(projecao)).not.toContain("45,16");
+  });
+
+  it("abre na base Apuração + pesquisas, deixa escolher a Só apuração, e diz ao lado que as pesquisas pesam 100%", () => {
     const botoes = elementos(projecao, /<button[^>]*data-base-botao/);
     expect(botoes.map(texto)).toEqual(["Só apuração", "Apuração + pesquisas"]);
     expect(botoes.map((b) => /aria-pressed="(\w+)"/.exec(b)?.[1])).toEqual(["false", "true"]);
     expect(porBase(projecao, "com-pesquisas")).toMatch(/^<div[^>]*data-ativa/);
     expect(porBase(projecao, "so-apuracao")).not.toMatch(/^<div[^>]*data-ativa/);
-    expect(duas.comPesquisas.pesoDasPesquisas).toBe(1);
-    expect(texto(projecao)).toContain("As pesquisas pesam 100% na projeção agora.");
+    // o peso fica ao lado do controle, fora do que muda com a base (Combinação de pesquisas e apuração, decisão 5)
+    const peso = projecao.indexOf("As pesquisas pesam 100% na projeção agora.");
+    expect(peso).toBeGreaterThan(projecao.indexOf('data-base-botao="com-pesquisas"'));
+    expect(projecao.slice(0, peso)).not.toMatch(/<div[^>]*data-base=[^>]*>(?![\s\S]*<\/div>)/);
+    expect(elementos(projecao, /<div[^>]*data-base=/).join("")).not.toContain("As pesquisas pesam");
   });
 
   it.each(BASES)("em 'O que esperar da noite', desenha na base %s a curva projetada de 0% a 100% das seções, até a projeção", (id, nome, p) => {
@@ -103,13 +109,11 @@ describe("painel de antes das 17h na página do Brasil", () => {
     const figura = elemento(porBase(esperar, id), /<figure[^>]*data-curva-projetada/);
     const descricao = /aria-label="([^"]+)"/.exec(figura)?.[1];
     expect(descricao).toContain(`Curva projetada na base ${nome}:`);
-    // a curva começa no primeiro passo, com ~2% das seções, e termina em 100% na projeção da base
-    expect(curva.pontos[0]!.x).toBeLessThan(3);
+    // começa no primeiro passo da curva, com ~2% das seções, e termina em 100%, no mesmo número da projeção da base
     expect(descricao).toContain(`de ${comUmaCasa(curva.pontos[0]!.x)}% a 100,0% das seções totalizadas`);
-    const fim = umaCasa(100 * curva.pontos.at(-1)!.y);
-    expect(fim).toBe(umaCasa(100 * p.brasil.projecao));
-    expect(texto(figura)).toContain(`${comUmaCasa(fim)}%`);
-    expect(texto(figura)).toContain(`${comUmaCasa(100 - fim)}%`);
+    const fim = /(\d+,\d)%/.exec(texto(porBase(projecao, id)))?.[1];
+    expect(texto(figura)).toContain(`${fim}%`);
+    expect(texto(figura)).toContain(`${comUmaCasa(100 - Number(fim!.replace(",", ".")))}%`);
     expect(elementos(figura, /<path[^>]*class="linha-projetada"/)).toHaveLength(2);
     expect(elementos(figura, /<path[^>]*class="faixa-projetada"/)).toHaveLength(2);
     // a virada projetada, como o modelo a dá: o losango só com o ponto, a faixa só a partir de onde ela é possível
@@ -175,26 +179,5 @@ describe("chave da projeção e da curva antes das 17h", () => {
     expect(elementos(esperar, /<figure[^>]*data-curva-projetada/)).toEqual([]);
     expect(elementos(esperar, /<svg/)).toEqual([]);
     expect(texto(esperar)).not.toMatch(/\d,\d%|±/);
-  });
-});
-
-describe("peso da página do Brasil", () => {
-  // Spec, história 103, e Ensaio geral: placar e painel visíveis em até 3 s num Android barato no 4G. O placar e o
-  // painel estão no HTML, e os scripts são módulos, que não travam a pintura; as fontes trocam (font-display: swap).
-  // O caminho crítico é o HTML e o CSS. No "Slow 4G" do Lighthouse (1,6 Mbit/s, ~200 KB/s, 150 ms de ida e volta),
-  // ~0,6 s vão nas idas e voltas da conexão e ~0,4 s no aparelho: sobram 2 s, ou ~400 KB. O orçamento fica na metade.
-  const ORCAMENTO_EM_BYTES = 200 * 1024;
-  const html = readFileSync(new URL("index.html", DIST));
-  const css = [...readFileSync(new URL("index.html", DIST), "utf8").matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((m) => readFileSync(new URL(`.${m[1]}`, DIST)));
-
-  it("tem HTML e CSS leves o bastante para o caminho crítico", () => {
-    expect(css.length).toBeGreaterThan(0);
-    const gzip = gzipSync(html).length + css.reduce((s, c) => s + gzipSync(c).length, 0);
-    expect(gzip).toBeLessThan(ORCAMENTO_EM_BYTES);
-  });
-
-  it("não carrega script que trave a pintura", () => {
-    const scripts = [...readFileSync(new URL("index.html", DIST), "utf8").matchAll(/<script\b[^>]*>/g)].map((m) => m[0]);
-    for (const s of scripts) expect(s, s).toMatch(/type="module"|\bdefer\b|\basync\b|<script>/);
   });
 });

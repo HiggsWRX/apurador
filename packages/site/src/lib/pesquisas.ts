@@ -5,6 +5,7 @@ import extrato from "../../../../dados/pesquisas-tse.json";
 import verificacoes from "../../../../dados/pesquisas-verificacoes.csv?raw";
 import pesquisasCsv from "../../../../dados/pesquisas.csv?raw";
 import primeiroTurno from "../../../../dados/turnos/2026-1.json";
+import { umaCasa } from "./formato";
 
 // As pesquisas no build: a lista conferida no TSE, o agregado de pesquisas, a tendência e a indicação das pesquisas
 // de cada lugar, todos do módulo `modelo` sobre o mesmo pesquisas.csv.
@@ -47,6 +48,12 @@ export function quemGanhou(diferenca: number): { candidato: CandidatoDoTurno; po
   if (diferenca === 0) return undefined;
   return { candidato: FINALISTAS[diferenca > 0 ? 0 : 1], pontos: Math.abs(diferenca) };
 }
+
+/**
+ * Quem ganhou terreno de um % do primeiro finalista a outro, entre os números como a página os mostra, com uma casa,
+ * para a conta fechar na página: 51,0%, +0,1, 51,1%.
+ */
+export const quemGanhouEntre = (de: number, para: number) => quemGanhou(umaCasa(umaCasa(para) - umaCasa(de)));
 
 const placarEntreFinalistasDoLugar = (id: string): number | undefined => {
   const votos = TURNO.lugares[id]?.votos;
