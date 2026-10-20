@@ -34,5 +34,20 @@ export function formatarMudanca(n: number): string {
   const comUmaCasa = umaCasa(n);
   return `${comUmaCasa > 0 ? "+" : comUmaCasa < 0 ? "−" : ""}${formatarCalculo(Math.abs(comUmaCasa))}`;
 }
-/** Uma diferença em pontos, "0,1 ponto", "2,0 pontos". */
-export const formatarPontos = (n: number) => `${formatarCalculo(n)} ${Math.abs(umaCasa(n)) < 2 ? "ponto" : "pontos"}`;
+/**
+ * Uma diferença em pontos, com uma casa: "0,1 ponto", "2,0 pontos". Como publicado, com as casas que o número tem, até duas:
+ * "1,79 ponto", "2 pontos".
+ */
+export function formatarPontos(n: number, comoPublicado = false): string {
+  const [texto, valor] = comoPublicado ? [formatarNumero(n), n] : [formatarCalculo(n), umaCasa(n)];
+  return `${texto} ${Math.abs(valor) < 2 ? "ponto" : "pontos"}`;
+}
+
+// A chance de vitória aparece em inteiros, sem falsa precisão (Telas da página de lugar, decisão 3): "<1%" e ">99%"
+// nas pontas, porque 0% e 100% só existem com a indicação do TSE.
+/** Uma chance de 0 a 1 como a página a mostra: "72%", "<1%", ">99%". */
+export function formatarChance(chance: number): string {
+  if (chance >= 0.995) return ">99%";
+  if (chance < 0.005) return "<1%";
+  return `${Math.round(100 * chance)}%`;
+}

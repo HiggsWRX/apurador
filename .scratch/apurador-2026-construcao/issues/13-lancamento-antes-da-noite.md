@@ -36,3 +36,13 @@ O endereço só abre com os nove itens verdadeiros, registrados com o de acordo 
 - [ ] **Depois de aberto**: um deploy que quebre um destes critérios volta à versão anterior na hora.
 - [ ] O site abre em `apurador.app`, sem `noindex`, com o Cloudflare Web Analytics, sem cookies nem outro rastreador. O `*.workers.dev` fica só como endereço do plano B, nunca divulgado.
 - [ ] O registro do lançamento traz a conferência dos nove itens e o de acordo do dono.
+
+## Comments
+
+- 20/10/2026, do [ticket 10](10-metodologia-secoes-iniciais.md), o que conferir no item **Metodologia**:
+  - A página está em `/metodologia/`, alcançável pelo rodapé de toda página ("Como calculamos a projeção →") e, pelo [ticket 09](09-painel-antes-das-17h.md), pelas âncoras `/metodologia#chance` e `/metodologia#juntas`. As sete âncoras da etapa são `#pesquisas`, `#chance`, `#apuracao`, `#juntas`, `#virada`, `#limites` e `#fontes`.
+  - O que o advogado exige está assim: a declaração "Sem IA generativa nem aprendizagem de máquina" no cartão "Em um minuto"; os critérios de seleção em "Quais pesquisas entram" (seção 1), com os 14 institutos; os cálculos em "As contas" de cada seção; as sete limitações na seção 8; e a atribuição "IBGE, Malha Municipal Digital 2024, CC BY 4.0, simplificada pelo Apurador" na seção 9, junto com "TSE, sem alteração (CC-BY)", "Cálculo do Apurador com dados do TSE" e o link para a lista das pesquisas (`/#pesquisas-registradas`). O teste `packages/site/test/build/metodologia.test.ts` confere tudo isso no HTML gerado, e também que nenhum texto da página usa "aprende", "IA" (fora a declaração) ou "previsão".
+  - "Quem faz" (seção 9) usa `RESPONSAVEL` e `EMAIL_DO_PROJETO` de `packages/site/src/lib/projeto.ts`, os mesmos marcadores do rodapé: trocar os dois ali preenche a página e o rodapé. Hoje mostram "[nome do responsável]" e "[e-mail do projeto]".
+  - O sino da seção 2 e a frase "Em DD/MM, com N institutos, o agregado dá…" da seção 1 são do agregado do instante do build, como o bloco do agregado da página do Brasil, e seguem a chave `antesDas17h.agregado`: desligada, eles somem e o resto da página fica. Depois das 23h de 24/10, mostram o agregado da noite, fixo.
+  - Para baixar: `/dados/pesquisas.csv` e `/dados/pesquisas-historicas.csv`, os mesmos arquivos do repositório, servidos como `text/csv`. Conferir no celular que o toque baixa o arquivo. O código aparece como "a partir de 26/10", sem link: o link do GitHub entra na etapa "Depois".
+  - O simulador é citado na seção 5 com link para a página do Brasil, onde "Simular 'e se' →" vai abrir. Se o [ticket 24](24-simulador-antes-das-17h.md) entrar antes do lançamento, o link deve apontar para a tela do simulador.

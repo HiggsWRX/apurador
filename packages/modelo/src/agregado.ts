@@ -71,8 +71,8 @@ export interface EleicaoDoAgregado {
 /** O 2º turno de 2026. Decisão 5: 1,5 ponto na eleição. */
 export const ELEICAO_DE_2026: EleicaoDoAgregado = { dia: DIA_DA_ELEICAO, incerteza: 1.5 };
 
-// Decisão 5: antes da eleição, mais 0,4² por dia que falta, na variância.
-const INCERTEZA_POR_DIA = 0.4;
+/** Decisão 5: antes da eleição, a variância ganha o quadrado disto por dia que falta, em pontos. */
+export const INCERTEZA_POR_DIA = 0.4;
 // Decisão 3: 7 dias, ou 14 com menos de 4 institutos.
 const JANELA = 7;
 const JANELA_LARGA = 14;

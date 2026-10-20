@@ -4,6 +4,7 @@ export {
   DIA_DA_ELEICAO,
   diaDoAgregado,
   ELEICAO_DE_2026,
+  INCERTEZA_POR_DIA,
   INICIO_DO_2O_TURNO,
   tendenciaDoAgregado,
   type Agregado,

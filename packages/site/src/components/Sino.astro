@@ -1,0 +1,88 @@
+---
+import { formatarCalculo, formatarChance } from "../lib/formato";
+import { corDoPartido, nomeCurto } from "../lib/identidade";
+import { FINALISTAS } from "../lib/pesquisas";
+import { sino } from "../lib/sino";
+
+// O sino da seção "De onde vem a chance de vitória" (Página de metodologia, decisão 5): o agregado do dia desenhado
+// como a distribuição do resultado final, com a área de cada lado de 50% igual à chance de vitória de cada candidato.
+// A geometria sai de `lib/sino.ts`; aqui só o SVG. Desenhado para a largura do celular e, no computador, cresce até
+// 30rem, como o gráfico da tendência.
+
+interface Props {
+  /** O agregado, em % do primeiro finalista. */
+  valor: number;
+  /** A incerteza do agregado, em pontos. */
+  incerteza: number;
+}
+const { valor, incerteza } = Astro.props;
+const LARGURA = 340;
+const ALTURA = 180;
+const s = sino({ valor, incerteza, largura: LARGURA, altura: ALTURA });
+const [primeiro, segundo] = FINALISTAS;
+const nome = (c: (typeof FINALISTAS)[number]) => nomeCurto(c.nomeUrna);
+const chances = [formatarChance(s.chance), formatarChance(1 - s.chance)] as const;
+const descricao =
+  `Distribuição do resultado final, em % de ${nome(primeiro)} nos votos válidos, de ${s.marcas[0]!.valor}% a ${s.marcas[2]!.valor}%, ` +
+  `com o pico em ${formatarCalculo(valor)}%. ` +
+  `A área à direita de 50% é a chance de ${nome(primeiro)} vencer, ${chances[0]}; a da esquerda, a de ${nome(segundo)}, ${chances[1]}.`;
+---
+
+<svg class="sino" viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={descricao} data-chance={chances[0]}>
+  <path class="area" data-cor={corDoPartido(primeiro.partido)} d={s.areas[0]} />
+  <path class="area" data-cor={corDoPartido(segundo.partido)} d={s.areas[1]} />
+  <line class="meio" x1={s.x50} x2={s.x50} y1={s.topo - 8} y2={s.base} />
+  <text class="rotulo" data-cor={corDoPartido(primeiro.partido)} x={s.x50 + 8} y={s.topo + 4}>
+    {nome(primeiro)} vence: {chances[0]}
+  </text>
+  <text class="rotulo" data-cor={corDoPartido(segundo.partido)} x={s.x50 - 8} y={s.topo + 4} text-anchor="end">
+    {nome(segundo)} vence: {chances[1]}
+  </text>
+  {
+    s.marcas.map((m) => (
+      <text class="eixo" x={m.x} y={s.base + 14} text-anchor="middle">
+        {m.valor}%
+      </text>
+    ))
+  }
+  <text class="eixo titulo" x={LARGURA / 2} y={ALTURA - 2} text-anchor="middle">
+    % de {nome(primeiro)} nos votos válidos, no fim da apuração
+  </text>
+</svg>
+
+<style>
+  .sino {
+    display: block;
+    width: 100%;
+    max-width: 30rem;
+    height: auto;
+    overflow: visible;
+  }
+  .area {
+    opacity: 0.55;
+  }
+  .area[data-cor="flavio"] {
+    fill: var(--cor-flavio);
+  }
+  .area[data-cor="lula"] {
+    fill: var(--cor-lula);
+  }
+  .meio {
+    stroke: var(--borda-forte);
+    stroke-width: 1.5;
+  }
+  .rotulo {
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .rotulo[data-cor="flavio"] {
+    fill: var(--cor-flavio);
+  }
+  .rotulo[data-cor="lula"] {
+    fill: var(--cor-lula);
+  }
+  .eixo {
+    fill: var(--texto-suave);
+    font-size: 10px;
+  }
+</style>

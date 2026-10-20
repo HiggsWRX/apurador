@@ -51,3 +51,5 @@ Decisões: [Simulador "e se"](../../apurador-2026/issues/13-simulador-e-se.md) (
 
 - 19/10/2026, do [ticket 28](28-calibracao.md):
   - O simulador lê as constantes congeladas do `packages/modelo/constantes.json`. A margem de 95% delas é mais larga que a das provisórias (~3,0 p.p. em média de 5% a 50% das seções nas noites passadas).
+
+- 20/10/2026, do [ticket 10](10-metodologia-secoes-iniciais.md): a seção 5 da página de metodologia (`packages/site/src/pages/metodologia.astro`, o parágrafo `data-bloco="simulador"`) apresenta o simulador em três frases e, por ora, linka a página do Brasil (`/`), onde o link "Simular 'e se' →" vai abrir, porque a tela do simulador ainda não existe. Quando ela existir, troque o `href` para ela e ajuste o teste `packages/site/test/build/metodologia.test.ts`, que confere `<a href="/"` nesse parágrafo.

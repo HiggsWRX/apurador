@@ -15,7 +15,8 @@ const barras = (html: string) =>
 
 describe("páginas de lugar", () => {
   it("existem para o Brasil, as 27 UFs, o Exterior e todos os municípios", () => {
-    const paginas = readdirSync(DIST, { recursive: true, encoding: "utf8" }).filter((f) => f.endsWith("index.html"));
+    // A página de metodologia não é de lugar: fica fora da conta.
+    const paginas = readdirSync(DIST, { recursive: true, encoding: "utf8" }).filter((f) => f.endsWith("index.html") && !f.startsWith("metodologia"));
 
     expect(paginas).toHaveLength(lugares.length);
     for (const caminho of ["/", "/sp/", "/df/", "/exterior/", "/sp/sao-paulo/", "/sp/campinas/", "/mt/boa-esperanca-do-norte/", "/exterior/lisboa/"]) {
