@@ -5,8 +5,9 @@ import type { IdDaBase } from "./bases-da-projecao";
 import { CHAVES, type Chaves } from "./chaves";
 import type { FinalistasDoSimulador } from "./hipoteses";
 import { corDoPartido, nomeCurto } from "./identidade";
+import { CONSTANTES } from "./metodologia";
 import { AGREGADO, FINALISTAS, PLACAR_ENTRE_FINALISTAS_DO_BRASIL, TURNO } from "./pesquisas";
-import { BASE_DO_MODELO, CONSTANTES, MODELO } from "./projecao-antes-das-17h";
+import { BASE_DO_MODELO, MODELO } from "./projecao-antes-das-17h";
 
 // O simulador "e se" antes das 17h no build (Simulador "e se", decisão 5; Consulta a advogado eleitoral, decisão 2):
 // se ele vai ao ar, o arquivo que ele baixa ao abrir e o caminho da tela. O arquivo parte dos mesmos dados da projeção

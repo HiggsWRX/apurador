@@ -101,10 +101,11 @@ describe("o arquivo do simulador", () => {
   it("dá no navegador a mesma projeção da página do Brasil, nas duas bases, para o simulador mostrar ao lado", () => {
     expect(dados.bases.map((b) => b.id)).toEqual(["so-apuracao", "com-pesquisas"]);
     for (const b of dados.bases) {
+      const { brasil } = b.partida.projecao;
       const t = texto(elemento(projecao, new RegExp(`<div[^>]*data-base="${b.id}"`)));
-      const flavio = Number((100 * b.projecao.brasil.projecao).toFixed(1));
-      expect(t).toContain(`FLAVIO BOLSONARO ${comUmaCasa(flavio)}% ± ${comUmaCasa(100 * b.projecao.brasil.margem)}`);
-      const chance = Math.round(100 * b.projecao.brasil.chance);
+      const flavio = Number((100 * brasil.projecao).toFixed(1));
+      expect(t).toContain(`FLAVIO BOLSONARO ${comUmaCasa(flavio)}% ± ${comUmaCasa(100 * brasil.margem)}`);
+      const chance = Math.round(100 * brasil.chance);
       expect(t).toContain(`Chance de vitória FLAVIO BOLSONARO ${chance}% LULA ${100 - chance}%`);
     }
   });
@@ -123,7 +124,7 @@ describe("a simulação nunca aparece na manchete, na narração nem na página 
     for (const caminho of ["/", "/ba/", "/exterior/", "/sp/campinas/", "/exterior/lisboa/"]) {
       const h = pagina(caminho);
       expect(texto(h), caminho).not.toMatch(/Simulação|com as suas hipóteses|O que seria preciso|Hipóteses prontas/);
-      expect(h, caminho).not.toMatch(/component-url="[^"]*Simulador|\sdata-simulador[\s>]|\sdata-placar[\s>]/);
+      expect(h, caminho).not.toMatch(/component-url="[^"]*Simulador|\sdata-simulador[\s>]|\sdata-barra-da-simulacao[\s>]/);
       // o código da simulação (a ilha, a vista e as frases dela) não vai em nenhum script da página, nem no bloco ao vivo
       for (const js of javascriptDa(h)) {
         const codigo = readFileSync(new URL(`.${js}`, DIST), "utf8");

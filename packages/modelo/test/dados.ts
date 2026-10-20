@@ -25,8 +25,7 @@ export const agregado2022 = agregadoDaNoite(
   base2022.finalistas.map((f) => f.numero) as [number, number],
 );
 
-/** A apuração antes da primeira seção: nada totalizado, com as seções e os eleitores do 1º turno. */
-export const antesDaPrimeiraSecao = (base: BaseDoModelo): Apuracao => base.municipios.map((m) => ({ secoes: 0, secoesTotais: m.secoes, aptos: 0, aptosTotais: m.aptos, votos: [0, 0] }));
+export { antesDaPrimeiraSecao } from "../src/index.ts";
 
 /** O placar entre finalistas de um conjunto de municípios: a fatia do 1º finalista nos votos dos dois, no 1º turno. */
 export const placarEntreFinalistasDos = (municipios: BaseDoModelo["municipios"]) =>

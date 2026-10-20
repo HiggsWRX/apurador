@@ -41,6 +41,7 @@ export interface PropsDaVista {
   pesoDasPesquisas: number | null;
   /** Se as duas bases já coincidem no Brasil. */
   coincidem: boolean | null;
+  /** O placar entre finalistas do Brasil no 1º turno, em % do 1º finalista. */
   placarEntreFinalistasDoBrasil: number;
   /** Aberto de um link de outra pessoa, até a primeira mudança. */
   deOutraPessoa: boolean;
@@ -68,10 +69,10 @@ export function VistaDoSimulador(props: PropsDaVista) {
       voto: { brasil: h.brasil ?? hipoteses.voto.brasil, regioes: h.regioes ?? hipoteses.voto.regioes },
       comparecimento: h.comparecimento ?? hipoteses.comparecimento,
     });
-  const preciso = fraseDoQueSeriaPreciso(tela.simulada.projecao, tela.preciso, finalistas);
+  const preciso = fraseDoQueSeriaPreciso(tela.brasilNaSimulacao.projecao, tela.preciso, finalistas);
   // As hipóteses prontas só existem antes da apuração (decisão 9): depois da primeira seção, a projeção já leva em conta
   // os dados, e um atalho com esse nome mentiria sobre o que faz.
-  const prontas = base === "com-pesquisas" && tela.projetada.secoes === 0 ? hipotesesProntas(finalistas) : [];
+  const prontas = base === "com-pesquisas" && tela.brasilNaProjecao.secoes === 0 ? hipotesesProntas(finalistas) : [];
 
   return (
     <>
@@ -82,7 +83,7 @@ export function VistaDoSimulador(props: PropsDaVista) {
       )}
       <div class="simulador" data-simulador>
         <div class="sim-lado">
-          <Placar finalistas={finalistas} simulada={tela.simulada} projetada={tela.projetada} />
+          <BarraDaSimulacao finalistas={finalistas} naSimulacao={tela.brasilNaSimulacao} naProjecao={tela.brasilNaProjecao} />
           <section class="cartao simulacao sim-curva" aria-labelledby="sim-curva-titulo">
             <p class="selo">{SELO_DA_SIMULACAO}</p>
             <h2 id="sim-curva-titulo" class="so-leitor">
@@ -93,7 +94,7 @@ export function VistaDoSimulador(props: PropsDaVista) {
               base={NOME_DA_BASE[base]}
               primeiro={finalistas[0]}
               segundo={finalistas[1]}
-              curva={tela.curvaSimulada}
+              curva={tela.curvaDaSimulacao}
               doSite={tela.curvaDoSite}
             />
             <p class="nota">
@@ -155,7 +156,7 @@ export function VistaDoSimulador(props: PropsDaVista) {
               finalistas={finalistas}
               aoMudar={(brasil) => mudar({ brasil })}
             />
-            <p class="sim-traducao">{traducao(tela.simulada.projecao, props.placarEntreFinalistasDoBrasil, "no Brasil", finalistas)}</p>
+            <p class="sim-traducao">{traducao(tela.brasilNaSimulacao.projecao, props.placarEntreFinalistasDoBrasil, "no Brasil", finalistas)}</p>
           </section>
           <section class="cartao sim-regioes" aria-labelledby="sim-regioes-titulo">
             <h2 id="sim-regioes-titulo">Ajustar por região</h2>
@@ -180,10 +181,10 @@ export function VistaDoSimulador(props: PropsDaVista) {
                   faixa={FAIXAS.comparecimento}
                   valor={hipoteses.comparecimento[r]!}
                   texto={rotuloDoComparecimento(hipoteses.comparecimento[r]!)}
-                  pontas={["−10", "+10"]}
+                  pontas={[comSinal(FAIXAS.comparecimento.min), comSinal(FAIXAS.comparecimento.max)]}
                   aoMudar={(v) => mudar({ comparecimento: hipoteses.comparecimento.map((x, i) => (i === r ? v : x)) })}
                 />
-                <p class="sim-traducao">{traducao(tela.regioes[r]!.simulada, tela.regioes[r]!.primeiroTurno, naRegiao(nome), finalistas)}</p>
+                <p class="sim-traducao">{traducao(tela.regioes[r]!.naSimulacao, tela.regioes[r]!.primeiroTurno, naRegiao(nome), finalistas)}</p>
               </details>
             ))}
           </section>
@@ -213,26 +214,32 @@ export function VistaDoSimulador(props: PropsDaVista) {
 const iguais = (a: Hipoteses, b: Hipoteses) =>
   a.voto.brasil === b.voto.brasil && a.voto.regioes.every((v, i) => v === b.voto.regioes[i]) && a.comparecimento.every((v, i) => v === b.comparecimento[i]);
 
-/** O que está mexido numa região, para o resumo ao lado do nome: "Lula +2 · comparecimento +3". */
+/** Um número inteiro com o sinal: "+10", "−10". */
+const comSinal = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0");
+
+/** O que está mexido numa região, para o resumo ao lado do nome: "Lula +2 · comparecimento +3 pontos percentuais". */
 function resumoDaRegiao(h: Hipoteses, r: number, finalistas: FinalistasDoSimulador): string {
   const partes = [];
   if (h.voto.regioes[r] !== 0) partes.push(rotuloDoVoto(h.voto.regioes[r]!, finalistas));
-  if (h.comparecimento[r] !== 0) partes.push(`comparecimento ${h.comparecimento[r]! > 0 ? "+" : "−"}${Math.abs(h.comparecimento[r]!)}`);
+  if (h.comparecimento[r] !== 0) partes.push(`comparecimento ${rotuloDoComparecimento(h.comparecimento[r]!)}`);
   return partes.join(" · ");
 }
 
-interface PropsDoPlacar {
+interface PropsDaBarra {
   finalistas: FinalistasDoSimulador;
-  simulada: ResultadoDoLugar;
-  projetada: ResultadoDoLugar;
+  naSimulacao: ResultadoDoLugar;
+  naProjecao: ResultadoDoLugar;
 }
 
-/** A simulação e a projeção do Apurador no Brasil, uma linha cada: o resultado ± a margem de 95% e a chance de vitória. */
-function Placar({ finalistas, simulada, projetada }: PropsDoPlacar) {
+/**
+ * A barra da simulação (decisão 13): a simulação e a projeção do Apurador no Brasil, uma linha cada, com o resultado ±
+ * a margem de 95% e a chance de vitória. Fica fixa no alto, no celular, e no topo do resultado, no computador.
+ */
+function BarraDaSimulacao({ finalistas, naSimulacao, naProjecao }: PropsDaBarra) {
   return (
-    <section class="sim-placar" aria-label="A simulação e a projeção do Apurador no Brasil" data-placar>
-      <LinhaDoPlacar tipo="simulacao" rotulo="Simulação" finalistas={finalistas} resultado={simulada} />
-      <LinhaDoPlacar tipo="projecao" rotulo="Projeção do Apurador" finalistas={finalistas} resultado={projetada} />
+    <section class="sim-barra" aria-label="A simulação e a projeção do Apurador no Brasil" data-barra-da-simulacao>
+      <LinhaDaBarra tipo="simulacao" rotulo="Simulação" finalistas={finalistas} resultado={naSimulacao} />
+      <LinhaDaBarra tipo="projecao" rotulo="Projeção do Apurador" finalistas={finalistas} resultado={naProjecao} />
     </section>
   );
 }
@@ -244,7 +251,7 @@ interface PropsDaLinha {
   resultado: ResultadoDoLugar;
 }
 
-function LinhaDoPlacar({ tipo, rotulo, finalistas, resultado }: PropsDaLinha) {
+function LinhaDaBarra({ tipo, rotulo, finalistas, resultado }: PropsDaLinha) {
   // Arredonda uma vez, a do 1º finalista; a do outro é o complemento, para os dois somarem 100, como na caixa da projeção.
   const doPrimeiro = umaCasa(100 * resultado.projecao);
   const chanceDoPrimeiro = Math.round(100 * resultado.chance);
@@ -291,7 +298,10 @@ interface PropsDaTabela {
   tela: TelaDoSimulador;
 }
 
-/** As cinco regiões, com o resultado final da simulação e o da projeção do Apurador (decisão 7), sem resultado por lugar. */
+/**
+ * As cinco regiões, com o resultado final da simulação e o da projeção do Apurador (decisão 7), sem resultado por lugar.
+ * As colunas da simulação levam a moldura pontilhada e o hachurado, e as da projeção, a tracejada (decisão 8).
+ */
 function TabelaDasRegioes({ finalistas, tela }: PropsDaTabela) {
   const ordem = emOrdemAlfabetica(finalistas);
   const pct = (fatia: number, indice: number) => {
@@ -299,10 +309,15 @@ function TabelaDasRegioes({ finalistas, tela }: PropsDaTabela) {
     return `${formatarCalculo(indice === 0 ? doPrimeiro : 100 - doPrimeiro)}%`;
   };
   return (
-    <section class="cartao simulacao sim-tabela" aria-labelledby="sim-tabela-titulo" data-tabela-das-regioes>
+    <section class="cartao sim-tabela" aria-labelledby="sim-tabela-titulo" data-tabela-das-regioes>
       <h2 id="sim-tabela-titulo">As cinco regiões</h2>
       <div class="sim-tabela-rolagem">
         <table>
+          <colgroup>
+            <col />
+          </colgroup>
+          <colgroup span={2} class="sim-colunas-da-simulacao" />
+          <colgroup span={2} class="sim-colunas-da-projecao" />
           <thead>
             <tr>
               <td />
@@ -329,17 +344,18 @@ function TabelaDasRegioes({ finalistas, tela }: PropsDaTabela) {
               <tr data-regiao={r.nome}>
                 <th scope="row">{r.nome}</th>
                 {ordem.map((f) => (
-                  <td data-cor={f.cor}>{pct(r.simulada, f.indice)}</td>
+                  <td data-cor={f.cor}>{pct(r.naSimulacao, f.indice)}</td>
                 ))}
                 {ordem.map((f) => (
-                  <td class="sim-do-site">{pct(r.projetada, f.indice)}</td>
+                  <td class="sim-do-site">{pct(r.naProjecao, f.indice)}</td>
                 ))}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p class="nota">Resultado final estimado em cada região, em votos válidos.</p>
+      <p class="nota">Resultado final estimado em cada região, em votos válidos: na simulação, com as suas hipóteses, e na projeção do Apurador.</p>
+      <p class="fonte">Cálculo do Apurador com dados do TSE</p>
     </section>
   );
 }

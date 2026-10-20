@@ -114,7 +114,7 @@ function Grafico({ id, primeiro, segundo, pontos, doSite = [], virada, descricao
   const ponto = (p: PontoDaCurva, valor: number) => `${x(p.x).toFixed(1)},${y(100 * valor).toFixed(1)}`;
   const linha = (valor: (p: PontoDaCurva) => number, de = pontos) => de.map((p, i) => `${i ? "L" : "M"}${ponto(p, valor(p))}`).join("");
   // Na simulação, as linhas dela são pontilhadas, e as do site, tracejadas e mais claras, vão por baixo.
-  const classeDaLinha = doSite.length > 0 ? "linha-simulada" : "linha-projetada";
+  const classeDaLinha = doSite.length > 0 ? "linha-da-simulacao" : "linha-projetada";
   const faixa = (valor: (p: PontoDaCurva) => number) =>
     pontos.map((p, i) => `${i ? "L" : "M"}${ponto(p, valor(p) + Z_95 * p.desvio)}`).join("") + [...pontos].reverse().map((p) => `L${ponto(p, valor(p) - Z_95 * p.desvio)}`).join("") + "Z";
   const doPrimeiro = (p: PontoDaCurva) => p.y;

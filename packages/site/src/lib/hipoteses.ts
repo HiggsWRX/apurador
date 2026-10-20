@@ -57,12 +57,12 @@ export function rotuloDoComparecimento(pontos: number): string {
 }
 
 /**
- * A hipótese de um lugar em relação ao 1º turno (decisão 2): o resultado final simulado (a fatia do 1º finalista) contra o
+ * A hipótese de um lugar em relação ao 1º turno (decisão 2): o resultado final da simulação (a fatia do 1º finalista) contra o
  * placar entre finalistas do 1º turno (em % do 1º finalista), nos números como a página os mostra, com uma casa.
  * `onde` vem com a preposição: "no Nordeste".
  */
-export function traducao(simulada: number, primeiroTurno: number, onde: string, finalistas: FinalistasDoSimulador): string {
-  const diferenca = umaCasa(umaCasa(100 * simulada) - umaCasa(primeiroTurno));
+export function traducao(naSimulacao: number, primeiroTurno: number, onde: string, finalistas: FinalistasDoSimulador): string {
+  const diferenca = umaCasa(umaCasa(100 * naSimulacao) - umaCasa(primeiroTurno));
   if (diferenca === 0) return `isso fica igual ao 1º turno ${onde}`;
   return `isso dá ${quemGanha(diferenca, finalistas).nomeCurto} +${formatarCalculo(Math.abs(diferenca))} sobre o 1º turno ${onde}`;
 }
@@ -74,15 +74,15 @@ export interface FraseDoQueSeriaPreciso {
 }
 
 /**
- * "O que seria preciso" (decisão 10), para quem está atrás no resultado final simulado do Brasil: o valor do controle do
+ * "O que seria preciso" (decisão 10), para quem está atrás no resultado final da simulação no Brasil: o valor do controle do
  * Brasil que o leva a 50% (`preciso`, do `oQueSeriaPreciso` do `modelo`). Fora da faixa do controle, ou quando nem o
  * voto que falta todo bastaria, "mais de 5 pontos", nunca "impossível": o voto que falta também é estimado, e só o TSE
  * indica eleição matematicamente definida.
  */
-export function fraseDoQueSeriaPreciso(simulada: number, preciso: number | null, finalistas: FinalistasDoSimulador): FraseDoQueSeriaPreciso {
+export function fraseDoQueSeriaPreciso(naSimulacao: number, preciso: number | null, finalistas: FinalistasDoSimulador): FraseDoQueSeriaPreciso {
   // Empatados como a página mostra, com uma casa, ninguém está atrás.
-  if (umaCasa(100 * simulada) === 50) return { texto: "Na simulação, os dois terminam empatados.", aplicar: null };
-  const atras = simulada < 0.5 ? 0 : 1;
+  if (umaCasa(100 * naSimulacao) === 50) return { texto: "Na simulação, os dois terminam empatados.", aplicar: null };
+  const atras = naSimulacao < 0.5 ? 0 : 1;
   const nome = finalistas[atras].nomeCurto;
   const { max } = FAIXAS.brasil;
   if (preciso === null || Math.abs(preciso) > max)

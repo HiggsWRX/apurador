@@ -2,7 +2,6 @@ import { REGIOES, type Hipoteses } from "@apurador/modelo";
 import { describe, expect, it } from "vitest";
 import {
   enderecoDaSimulacao,
-  FAIXAS,
   fraseDoQueSeriaPreciso,
   hipotesesProntas,
   lerEndereco,
@@ -28,16 +27,6 @@ const hipoteses = (h: { brasil?: number; regioes?: Partial<Record<string, number
   comparecimento: REGIOES.map((r) => h.comparecimento?.[r] ?? 0),
 });
 
-describe("as faixas dos controles", () => {
-  it("vão de −5 a +5 no Brasil e de −10 a +10 na região, em passos de 0,5, e o comparecimento de −10 a +10, em passos de 1", () => {
-    expect(FAIXAS).toEqual({
-      brasil: { min: -5, max: 5, passo: 0.5 },
-      regiao: { min: -10, max: 10, passo: 0.5 },
-      comparecimento: { min: -10, max: 10, passo: 1 },
-    });
-  });
-});
-
 describe("os rótulos das hipóteses", () => {
   it("dão o voto no formato 'Lula +2', pelo nome curto de quem ganha, e o zero como a projeção", () => {
     expect([-2, 1.4, 2.5, -3.2137, 0].map((p) => rotuloDoVoto(p, FINALISTAS))).toEqual([
@@ -60,8 +49,8 @@ describe("os rótulos das hipóteses", () => {
 });
 
 describe("a tradução de cada hipótese em relação ao 1º turno", () => {
-  it("compara o resultado simulado com o placar entre finalistas do 1º turno do lugar", () => {
-    // No Nordeste, Flávio teve 32,6% entre os dois no 1º turno: com 28,4% simulados, Lula ganha 4,2.
+  it("compara o resultado da simulação com o placar entre finalistas do 1º turno do lugar", () => {
+    // No Nordeste, Flávio teve 32,6% entre os dois no 1º turno: com 28,4% na simulação, Lula ganha 4,2.
     expect(traducao(0.284, 32.61, "no Nordeste", FINALISTAS)).toBe("isso dá Lula +4,2 sobre o 1º turno no Nordeste");
     // No Brasil, 51,0 no 1º turno e a projeção com pesquisas de 51,1
     expect(traducao(0.5112, 51.0, "no Brasil", FINALISTAS)).toBe("isso dá Flávio +0,1 sobre o 1º turno no Brasil");

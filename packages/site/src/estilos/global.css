@@ -1264,7 +1264,7 @@ a {
   display: contents;
 }
 
-.sim-placar {
+.sim-barra {
   order: 1;
 }
 .sim-curva {
@@ -1300,7 +1300,7 @@ a {
   margin: 0.5rem 0 0;
 }
 
-.sim-placar {
+.sim-barra {
   position: sticky;
   top: var(--altura-do-topo, 3.5rem);
   z-index: 10;
@@ -1386,23 +1386,23 @@ a {
   color: var(--cor-lula);
 }
 
-.sim-placar .margem {
+.sim-barra .margem {
   color: var(--texto-suave);
   font-size: 0.75rem;
 }
 
 /* Na curva da simulação: as linhas dela pontilhadas, e as da projeção do site tracejadas e mais claras, por baixo. */
-.linha-simulada {
+.linha-da-simulacao {
   fill: none;
   stroke-width: 2.75;
   stroke-dasharray: 0.5 4.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.linha-simulada[data-cor="flavio"] {
+.linha-da-simulacao[data-cor="flavio"] {
   stroke: var(--cor-flavio);
 }
-.linha-simulada[data-cor="lula"] {
+.linha-da-simulacao[data-cor="lula"] {
   stroke: var(--cor-lula);
 }
 
@@ -1571,6 +1571,17 @@ a {
   color: var(--texto-suave);
 }
 
+/* Na tabela, as colunas da simulação na moldura pontilhada, com o hachurado, e as da projeção na tracejada (decisão 8). */
+.sim-colunas-da-simulacao {
+  border: 2px dotted var(--borda-forte);
+  background: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--texto) 5%, transparent) 7px 8px);
+}
+
+.sim-colunas-da-projecao {
+  border: 2px dashed var(--borda-forte);
+  background: color-mix(in srgb, var(--cartao) 70%, var(--fundo));
+}
+
 .sim-acoes {
   display: flex;
   flex-wrap: wrap;
@@ -1631,7 +1642,7 @@ a {
     max-height: calc(100vh - var(--altura-do-topo, 3.5rem) - 2rem);
     overflow-y: auto;
   }
-  .sim-placar {
+  .sim-barra {
     top: 0;
     box-shadow: none;
   }

@@ -1,5 +1,16 @@
 import type { Constantes } from "./constantes.ts";
-import { REGIOES, resultadoComDesvio, type Apuracao, type Modelo, type Projecao, type ResultadoDaUf, type ResultadoDoLugar, type VotosDoLugar } from "./projecao.ts";
+import {
+  fatiaFinal,
+  REGIOES,
+  resultadoComDesvio,
+  semVotos,
+  somarVotos,
+  type Apuracao,
+  type Modelo,
+  type Projecao,
+  type ResultadoDaUf,
+  type ResultadoDoLugar,
+} from "./projecao.ts";
 
 // A simulação do simulador "e se" (Simulador "e se", decisões 1 a 4 e 10): as hipóteses do visitante mexem só no voto
 // que falta de cada município, por cima da projeção inteira de uma base, inclusive da correção pelo próprio município.
@@ -24,9 +35,23 @@ export const HIPOTESES_ZERADAS: Hipoteses = Object.freeze({
   comparecimento: Object.freeze(REGIOES.map(() => 0)),
 });
 
-/** O resultado final simulado de uma região: a fatia do 1º finalista nos válidos dos dois e os válidos, somados das UFs. */
+/** De onde a simulação parte: a projeção de uma base sobre a apuração de agora, com o que ela precisa a mais. */
+export interface PartidaDaSimulacao {
+  modelo: Modelo;
+  apuracao: Apuracao;
+  projecao: Projecao;
+  constantes: Constantes;
+  /**
+   * O comparecimento que o modelo supõe em cada região, de 0 a 1, na ordem de `REGIOES`: o do 1º turno. Com ele, +4 pontos
+   * percentuais de comparecimento multiplicam os válidos que faltam da região por (comparecimento + 0,04) ÷ comparecimento.
+   */
+  comparecimentoEsperado: readonly number[];
+}
+
+/** O resultado final de uma região, somado das UFs dela. */
 export interface ResultadoDaRegiao {
-  projecao: number;
+  /** A fatia final do 1º finalista nos válidos dos dois, de 0 a 1. */
+  fatia: number;
   validos: number;
 }
 
@@ -36,20 +61,17 @@ export interface Simulacao {
   ufs: Record<string, ResultadoDaUf>;
   /** Na ordem de `REGIOES`. */
   regioes: ResultadoDaRegiao[];
-  /** Por município, os votos válidos que faltam com o comparecimento simulado. */
+  /** Por município, os votos válidos que faltam com o comparecimento da simulação. */
   votoQueFalta: Float64Array;
-  /** Por município, a fatia do 1º finalista no voto que falta com o voto simulado, de 0 a 1. */
+  /** Por município, a fatia do 1º finalista no voto que falta com o voto da simulação, de 0 a 1. */
   fatiaDoQueFalta: Float64Array;
 }
 
-const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
+const limitar = (x: number, min: number, max: number) => Math.max(min, Math.min(max, x));
 
-/**
- * A simulação de uma base sobre a apuração de agora, com as hipóteses. `comparecimento` é o comparecimento que o modelo
- * supõe em cada região (o do 1º turno, de 0 a 1, na ordem de `REGIOES`): com ele, +4 pontos percentuais multiplicam os
- * válidos que faltam da região por (comparecimento + 0,04) ÷ comparecimento.
- */
-export function simular(modelo: Modelo, apuracao: Apuracao, projecao: Projecao, constantes: Constantes, hipoteses: Hipoteses, comparecimento: readonly number[]): Simulacao {
+/** A simulação de uma base, com as hipóteses. */
+export function simular(partida: PartidaDaSimulacao, hipoteses: Hipoteses): Simulacao {
+  const { modelo, apuracao, projecao, constantes, comparecimentoEsperado } = partida;
   const n = modelo.municipios.length;
   if (apuracao.length !== n) throw new Error(`a apuração tem ${apuracao.length} municípios, e a base, ${n}`);
   const deslocamento = Float64Array.from(modelo.ufs, (_, u) => {
@@ -58,50 +80,38 @@ export function simular(modelo: Modelo, apuracao: Apuracao, projecao: Projecao, 
   });
   const fator = Float64Array.from(modelo.ufs, (_, u) => {
     const r = modelo.regiaoDaUf[u]!;
-    return r >= 0 && hipoteses.comparecimento[r] !== 0 ? 1 + hipoteses.comparecimento[r]! / 100 / comparecimento[r]! : 1;
+    return r >= 0 && hipoteses.comparecimento[r] !== 0 ? 1 + hipoteses.comparecimento[r]! / 100 / comparecimentoEsperado[r]! : 1;
   });
 
   const votoQueFalta = new Float64Array(n);
   const fatiaDoQueFalta = new Float64Array(n);
-  const somaVazia = (): VotosDoLugar => ({ votos1: 0, votos: 0, secoes: 0, secoesTotais: 0, falta: 0, falta1: 0 });
-  const somar = (a: VotosDoLugar, b: VotosDoLugar) => {
-    a.votos1 += b.votos1;
-    a.votos += b.votos;
-    a.secoes += b.secoes;
-    a.secoesTotais += b.secoesTotais;
-    a.falta += b.falta;
-    a.falta1 += b.falta1;
-  };
-  const porUf = modelo.ufs.map(somaVazia);
+  const porUf = modelo.ufs.map(semVotos);
   apuracao.forEach((a, m) => {
     const u = modelo.ufDoMunicipio[m]!;
     const falta = projecao.votoQueFalta[m]! * fator[u]!;
     // Sem voto que falta, a fatia fica a da projeção: não há o que deslocar.
-    const fatia = projecao.votoQueFalta[m]! > 0 ? clamp(projecao.fatiaDoQueFalta[m]! + deslocamento[u]!, 0, 1) : projecao.fatiaDoQueFalta[m]!;
+    const fatia = projecao.votoQueFalta[m]! > 0 ? limitar(projecao.fatiaDoQueFalta[m]! + deslocamento[u]!, 0, 1) : projecao.fatiaDoQueFalta[m]!;
     votoQueFalta[m] = falta;
     fatiaDoQueFalta[m] = fatia;
-    somar(porUf[u]!, { votos1: a.votos[0]!, votos: a.votos[0]! + a.votos[1]!, secoes: a.secoes, secoesTotais: a.secoesTotais, falta, falta1: falta * fatia });
+    somarVotos(porUf[u]!, { votos1: a.votos[0]!, votos: a.votos[0]! + a.votos[1]!, secoes: a.secoes, secoesTotais: a.secoesTotais, falta, falta1: falta * fatia });
   });
 
-  const brasil = somaVazia();
-  const regioes = REGIOES.map(somaVazia);
+  const brasil = semVotos();
+  const regioes = REGIOES.map(semVotos);
   const ufs: Record<string, ResultadoDaUf> = {};
   modelo.ufs.forEach((sigla, u) => {
     const somas = porUf[u]!;
     const projetada = projecao.ufs[sigla]!;
     ufs[sigla] = { ...resultadoComDesvio(somas, projetada.desvio, constantes), referencia: projetada.referencia };
-    somar(brasil, somas);
+    somarVotos(brasil, somas);
     const r = modelo.regiaoDaUf[u]!;
-    if (r >= 0) somar(regioes[r]!, somas);
+    if (r >= 0) somarVotos(regioes[r]!, somas);
   });
 
   return {
     brasil: resultadoComDesvio(brasil, projecao.brasil.desvio, constantes),
     ufs,
-    regioes: regioes.map((s) => {
-      const validos = s.votos + s.falta;
-      return { projecao: validos > 0 ? (s.votos1 + s.falta1) / validos : 0.5, validos };
-    }),
+    regioes: regioes.map((s) => ({ fatia: fatiaFinal(s), validos: s.votos + s.falta })),
     votoQueFalta,
     fatiaDoQueFalta,
   };
@@ -112,12 +122,12 @@ const PASSOS_DA_BUSCA = 31;
 
 /**
  * "O que seria preciso" (decisão 10): o valor do controle do Brasil, em pontos para o 1º finalista, com que o resultado
- * final simulado do Brasil fica em 50%, com as outras hipóteses paradas. Uma busca binária sobre o controle, que pode
+ * final da simulação no Brasil fica em 50%, com as outras hipóteses paradas. Uma busca binária sobre o controle, que pode
  * passar da faixa dele (a página diz então "mais de 5 pontos"). `null` só quando nem todo o voto que falta para um lado
  * leva o Brasil a 50%, como no fim da apuração.
  */
-export function oQueSeriaPreciso(modelo: Modelo, apuracao: Apuracao, projecao: Projecao, constantes: Constantes, hipoteses: Hipoteses, comparecimento: readonly number[]): number | null {
-  const acima = (brasil: number) => simular(modelo, apuracao, projecao, constantes, { ...hipoteses, voto: { ...hipoteses.voto, brasil } }, comparecimento).brasil.projecao - 0.5;
+export function oQueSeriaPreciso(partida: PartidaDaSimulacao, hipoteses: Hipoteses): number | null {
+  const acima = (brasil: number) => simular(partida, { ...hipoteses, voto: { ...hipoteses.voto, brasil } }).brasil.projecao - 0.5;
   // Com ±100 pontos, todo o voto que falta vai para um lado: o resultado do Brasil cresce com o controle até aí.
   let [baixo, alto] = [-100, 100];
   if (acima(baixo) > 0 || acima(alto) < 0) return null;

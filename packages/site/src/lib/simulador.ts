@@ -1,4 +1,5 @@
 import {
+  antesDaPrimeiraSecao,
   basesCoincidem,
   curvaProjetada,
   HIPOTESES_ZERADAS,
@@ -7,13 +8,10 @@ import {
   projetar,
   REGIOES,
   simular,
-  type Apuracao,
-  type BaseDoModelo,
-  type Constantes,
   type CurvaDoLugar,
   type Hipoteses,
   type Modelo,
-  type Projecao,
+  type PartidaDaSimulacao,
   type ResultadoDoLugar,
 } from "@apurador/modelo";
 import { descompactarBase, type ArquivoDoSimulador } from "./arquivo-do-simulador";
@@ -24,28 +22,24 @@ import type { IdDaBase } from "./bases-da-projecao";
 // É o mesmo `modelo` que o build roda na página do Brasil, sobre os mesmos dados: aberto, o simulador mostra ao lado a
 // mesma projeção da página. Sem DOM: a ilha (`components/Simulador.tsx`) guarda o estado e desenha.
 
-/** Antes da primeira seção: nada totalizado, com as seções e os eleitores aptos do 1º turno de cada município. */
-export const antesDaPrimeiraSecao = (base: BaseDoModelo): Apuracao =>
-  base.municipios.map((m) => ({ secoes: 0, secoesTotais: m.secoes, aptos: 0, aptosTotais: m.aptos, votos: [0, 0] }));
-
-/** Uma base da projeção no simulador: a projeção do Apurador, a curva projetada e o resultado de cada região. */
+/** Uma base da projeção no simulador: de onde a simulação parte, a curva projetada e o resultado de cada região. */
 export interface BaseNoSimulador {
   id: IdDaBase;
-  projecao: Projecao;
+  /** A projeção do Apurador nesta base, com o que a simulação precisa a mais. */
+  partida: PartidaDaSimulacao;
   curva: CurvaDoLugar;
-  /** A fatia final projetada do 1º finalista em cada região, na ordem de `REGIOES`. */
+  /** A fatia final projetada do 1º finalista em cada região, de 0 a 1, na ordem de `REGIOES`. */
   regioes: number[];
 }
 
 /** O que o simulador prepara ao abrir, para recalcular a cada hipótese. */
 export interface DadosDoSimulador {
   modelo: Modelo;
-  apuracao: Apuracao;
-  constantes: Constantes;
   /** As bases que vão ao ar, na ordem do controle: só a "Só apuração" quando o arquivo vem sem o agregado. */
   bases: BaseNoSimulador[];
   /** Se as duas bases já coincidem no Brasil, ou `null` com uma só. */
   coincidem: boolean | null;
+  /** Em % do 1º finalista. */
   placarEntreFinalistasDoBrasil: number;
   /** Na ordem de `REGIOES`: o placar entre finalistas do 1º turno, em % do 1º finalista, e o comparecimento dele, de 0 a 1. */
   regioes: ArquivoDoSimulador["regioes"];
@@ -53,37 +47,32 @@ export interface DadosDoSimulador {
 
 /** Prepara o simulador com o arquivo baixado: a base do modelo e a projeção do Apurador em cada base. */
 export function prepararSimulador(arquivo: ArquivoDoSimulador): DadosDoSimulador {
-  const base = descompactarBase(arquivo.base);
-  const modelo = prepararModelo(base);
-  const apuracao = antesDaPrimeiraSecao(base);
+  const baseDoModelo = descompactarBase(arquivo.base);
+  const modelo = prepararModelo(baseDoModelo);
+  const apuracao = antesDaPrimeiraSecao(baseDoModelo);
   const { constantes } = arquivo;
-  const comparecimento = arquivo.regioes.map((r) => r.comparecimento);
-  const naBase = (id: IdDaBase, projecao: Projecao): BaseNoSimulador => ({
-    id,
-    projecao,
-    curva: curvaProjetada(modelo, apuracao, projecao, constantes).brasil,
-    regioes: simular(modelo, apuracao, projecao, constantes, HIPOTESES_ZERADAS, comparecimento).regioes.map((r) => r.projecao),
-  });
-  const soApuracao = naBase("so-apuracao", projetar(modelo, apuracao, constantes));
-  const comPesquisas = arquivo.agregado ? naBase("com-pesquisas", projetar(modelo, apuracao, constantes, arquivo.agregado)) : null;
+  const comparecimentoEsperado = arquivo.regioes.map((r) => r.comparecimento);
+  const naBase = (id: IdDaBase, agregado?: ArquivoDoSimulador["agregado"]): BaseNoSimulador => {
+    const projecao = agregado ? projetar(modelo, apuracao, constantes, agregado) : projetar(modelo, apuracao, constantes);
+    const partida = { modelo, apuracao, projecao, constantes, comparecimentoEsperado };
+    return { id, partida, curva: curvaProjetada(modelo, apuracao, projecao, constantes).brasil, regioes: simular(partida, HIPOTESES_ZERADAS).regioes.map((r) => r.fatia) };
+  };
+  const soApuracao = naBase("so-apuracao");
+  const comPesquisas = arquivo.agregado ? naBase("com-pesquisas", arquivo.agregado) : null;
   return {
     modelo,
-    apuracao,
-    constantes,
     bases: comPesquisas ? [soApuracao, comPesquisas] : [soApuracao],
-    coincidem: comPesquisas ? basesCoincidem(soApuracao.projecao.brasil, comPesquisas.projecao.brasil) : null,
+    coincidem: comPesquisas ? basesCoincidem(soApuracao.partida.projecao.brasil, comPesquisas.partida.projecao.brasil) : null,
     placarEntreFinalistasDoBrasil: arquivo.placarEntreFinalistasDoBrasil,
     regioes: arquivo.regioes,
   };
 }
 
-/** Uma linha da tabela das regiões: a simulação, a projeção do Apurador e o 1º turno, na fatia ou no % do 1º finalista. */
+/** Uma linha da tabela das regiões: a simulação e a projeção do Apurador, de 0 a 1, e o 1º turno, em %, do 1º finalista. */
 export interface RegiaoNaTela {
   nome: string;
-  /** A fatia final simulada do 1º finalista, de 0 a 1. */
-  simulada: number;
-  /** A fatia final projetada pelo Apurador, de 0 a 1. */
-  projetada: number;
+  naSimulacao: number;
+  naProjecao: number;
   /** O placar entre finalistas do 1º turno, em %. */
   primeiroTurno: number;
 }
@@ -91,15 +80,14 @@ export interface RegiaoNaTela {
 /** O que a tela do simulador mostra para uma base e as hipóteses. */
 export interface TelaDoSimulador {
   /** O Brasil na simulação e na projeção do Apurador, lado a lado. */
-  simulada: ResultadoDoLugar;
-  projetada: ResultadoDoLugar;
-  curvaSimulada: CurvaDoLugar;
-  /** A curva projetada do Apurador, que a da simulação desenha por baixo. */
+  brasilNaSimulacao: ResultadoDoLugar;
+  brasilNaProjecao: ResultadoDoLugar;
+  curvaDaSimulacao: CurvaDoLugar;
+  /** A curva projetada do Apurador, que a da simulação desenha por cima. */
   curvaDoSite: CurvaDoLugar;
   regioes: RegiaoNaTela[];
   /** O valor do controle do Brasil que leva o resultado simulado a 50% (`oQueSeriaPreciso`), ou `null`. */
   preciso: number | null;
-  pesoDasPesquisas: number;
 }
 
 /** A base que vai ao ar com esse id, ou a primeira, quando ela não vai (o agregado fora do ar). */
@@ -107,23 +95,16 @@ export const baseNoSimulador = (dados: DadosDoSimulador, id: IdDaBase) => dados.
 
 /** A simulação de uma base com as hipóteses, como a tela a mostra, ao lado da projeção do Apurador. */
 export function simularNaTela(dados: DadosDoSimulador, id: IdDaBase, hipoteses: Hipoteses): TelaDoSimulador {
-  const { modelo, apuracao, constantes } = dados;
-  const base = baseNoSimulador(dados, id);
-  const comparecimento = dados.regioes.map((r) => r.comparecimento);
-  const simulacao = simular(modelo, apuracao, base.projecao, constantes, hipoteses, comparecimento);
+  const escolhida = baseNoSimulador(dados, id);
+  const { partida } = escolhida;
+  const simulacao = simular(partida, hipoteses);
   return {
-    simulada: simulacao.brasil,
-    projetada: base.projecao.brasil,
-    curvaSimulada: curvaProjetada(modelo, apuracao, simulacao, constantes).brasil,
-    curvaDoSite: base.curva,
-    regioes: REGIOES.map((nome, r) => ({
-      nome,
-      simulada: simulacao.regioes[r]!.projecao,
-      projetada: base.regioes[r]!,
-      primeiroTurno: dados.regioes[r]!.placarEntreFinalistas,
-    })),
-    preciso: oQueSeriaPreciso(modelo, apuracao, base.projecao, constantes, hipoteses, comparecimento),
-    pesoDasPesquisas: base.projecao.pesoDasPesquisas,
+    brasilNaSimulacao: simulacao.brasil,
+    brasilNaProjecao: partida.projecao.brasil,
+    curvaDaSimulacao: curvaProjetada(partida.modelo, partida.apuracao, simulacao, partida.constantes).brasil,
+    curvaDoSite: escolhida.curva,
+    regioes: REGIOES.map((nome, r) => ({ nome, naSimulacao: simulacao.regioes[r]!.fatia, naProjecao: escolhida.regioes[r]!, primeiroTurno: dados.regioes[r]!.placarEntreFinalistas })),
+    preciso: oQueSeriaPreciso(partida, hipoteses),
   };
 }
 

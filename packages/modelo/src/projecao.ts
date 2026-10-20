@@ -331,6 +331,25 @@ export interface VotosDoLugar {
   falta1: number;
 }
 
+/** Nenhum voto: o começo das somas de um lugar. */
+export const semVotos = (): VotosDoLugar => ({ votos1: 0, votos: 0, secoes: 0, secoesTotais: 0, falta: 0, falta1: 0 });
+
+/** Soma ao lugar `a` o apurado e o voto que falta da parte `b`. */
+export function somarVotos(a: VotosDoLugar, b: VotosDoLugar): void {
+  a.votos1 += b.votos1;
+  a.votos += b.votos;
+  a.secoes += b.secoes;
+  a.secoesTotais += b.secoesTotais;
+  a.falta += b.falta;
+  a.falta1 += b.falta1;
+}
+
+/** A fatia final do 1º finalista num lugar, do apurado mais o voto que falta, ou 50% sem voto nenhum. */
+export function fatiaFinal(s: VotosDoLugar): number {
+  const validos = s.votos + s.falta;
+  return validos > 0 ? (s.votos1 + s.falta1) / validos : 0.5;
+}
+
 /**
  * Desvios locais independentes, de variância s², que se anulam sobre todo o voto do lugar de cima (Σ V·x = 0, com V os
  * válidos finais de cada parte). Sobre o voto que falta (Σ a·x), sobra a variância condicionada a isso:
@@ -370,7 +389,7 @@ function resultado(somas: Somas, constantes: Constantes, peso: number): Resultad
  */
 export function resultadoComDesvio(somas: VotosDoLugar, desvio: number, constantes: Constantes): ResultadoDoLugar {
   const validos = somas.votos + somas.falta;
-  const projecao = validos > 0 ? (somas.votos1 + somas.falta1) / validos : 0.5;
+  const projecao = fatiaFinal(somas);
   const chance = desvio > 0 ? phi((projecao - 0.5) / desvio) : projecao > 0.5 ? 1 : projecao < 0.5 ? 0 : 0.5;
   const placar = somas.votos > 0 ? somas.votos1 / somas.votos : null;
   const atras = placar === null || placar === 0.5 ? null : placar > 0.5 ? 1 : 0;
@@ -465,15 +484,10 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
 
   const votoQueFalta = new Float64Array(n);
   const fatiaDoQueFalta = new Float64Array(n);
-  const somaVazia = (): Somas => ({ votos1: 0, votos: 0, secoes: 0, secoesTotais: 0, falta: 0, falta1: 0, varianciaDaApuracao: 0, varianciaDasPesquisas: 0 });
+  const somaVazia = (): Somas => ({ ...semVotos(), varianciaDaApuracao: 0, varianciaDasPesquisas: 0 });
   // A variância das pesquisas de cada lugar é montada à parte, porque as locais não se somam de um lugar para o de cima.
   const acumular = (a: Somas, b: Somas) => {
-    a.votos1 += b.votos1;
-    a.votos += b.votos;
-    a.secoes += b.secoes;
-    a.secoesTotais += b.secoesTotais;
-    a.falta += b.falta;
-    a.falta1 += b.falta1;
+    somarVotos(a, b);
     a.varianciaDaApuracao += b.varianciaDaApuracao;
   };
   const porUf = modelo.ufs.map(somaVazia);

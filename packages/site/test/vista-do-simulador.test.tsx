@@ -46,14 +46,14 @@ function vista(opcoes: { dados?: DadosDoSimulador; base?: IdDaBase; hipoteses?: 
   const dados = opcoes.dados ?? DUAS_BASES;
   const base = opcoes.base ?? dados.bases.at(-1)!.id;
   const h = opcoes.hipoteses ?? HIPOTESES_ZERADAS;
-  const comPesquisas = dados.bases.find((b) => b.id === "com-pesquisas");
+  const comPesquisas = dados.bases.find((b) => b.id === "com-pesquisas")?.partida.projecao;
   const props: PropsDaVista = {
     finalistas: FINALISTAS,
     tela: simularNaTela(dados, base, h),
     hipoteses: h,
     base,
     bases: dados.bases.map((b) => b.id),
-    pesoDasPesquisas: comPesquisas ? comPesquisas.projecao.pesoDasPesquisas : null,
+    pesoDasPesquisas: comPesquisas ? comPesquisas.pesoDasPesquisas : null,
     coincidem: dados.coincidem,
     placarEntreFinalistasDoBrasil: dados.placarEntreFinalistasDoBrasil,
     deOutraPessoa: false,
@@ -68,42 +68,41 @@ function vista(opcoes: { dados?: DadosDoSimulador; base?: IdDaBase; hipoteses?: 
 }
 
 const linha = (html: string, tipo: "simulacao" | "projecao") => texto(elemento(html, new RegExp(`<div[^>]*data-linha="${tipo}"`)));
-const comUmaCasa = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 describe("a simulação ao lado da projeção do Apurador", () => {
+  // Lula +2 antes da primeira seção: todo o voto falta, e Flávio sai da projeção de 51,1 (± 3,5, chance de 73%, a da
+  // caixa da projeção no relógio dos testes, ticket 09) para 49,1, com a mesma margem; a chance vai a Φ(−0,88 ÷ 1,79), 31%.
   const html = vista({ hipoteses: hipoteses({ brasil: -2 }) });
-  const comPesquisas = DUAS_BASES.bases[1]!.projecao.brasil;
 
   it("mostra no Brasil a simulação e a projeção do Apurador, cada uma com o resultado ± a margem de 95% e a chance de vitória", () => {
-    // Lula +2 antes da primeira seção: todo o voto falta, e Flávio sai de 51,1 para 49,1; a margem é a da projeção.
-    const flavio = Number((100 * comPesquisas.projecao).toFixed(1));
-    const margem = comUmaCasa(100 * comPesquisas.margem);
-    expect(linha(html, "projecao")).toContain(`Projeção do Apurador Flávio ${comUmaCasa(flavio)}% Lula ${comUmaCasa(100 - flavio)}% ± ${margem}`);
-    expect(linha(html, "simulacao")).toContain(`Simulação Flávio ${comUmaCasa(flavio - 2)}% Lula ${comUmaCasa(102 - flavio)}% ± ${margem}`);
-    const chance = Math.round(100 * comPesquisas.chance);
-    expect(linha(html, "projecao")).toContain(`Chance de vitória: Flávio ${chance}% Lula ${100 - chance}%`);
-    expect(linha(html, "simulacao")).toMatch(/Chance de vitória: Flávio \d+% Lula \d+%/);
+    expect(linha(html, "projecao")).toBe("Projeção do Apurador Flávio 51,1% Lula 48,9% ± 3,5 Chance de vitória: Flávio 73% Lula 27%");
+    expect(linha(html, "simulacao")).toBe("Simulação Flávio 49,1% Lula 50,9% ± 3,5 Chance de vitória: Flávio 31% Lula 69%");
     expect(elementos(html, /<span[^>]*class="chance-barra"/)).toHaveLength(2);
   });
 
-  it("põe a simulação na moldura pontilhada, com o selo, e a projeção na tracejada", () => {
+  it("põe a simulação na moldura pontilhada, com o selo, e a projeção na tracejada, também na tabela", () => {
     expect(texto(html)).toContain("Simulação · com as suas hipóteses, não é a projeção do Apurador");
     expect(html).toMatch(/<div[^>]*class="sim-linha sim-linha-simulacao"/);
     expect(html).toMatch(/<div[^>]*class="sim-linha sim-linha-projecao"/);
-    expect(elementos(html, /<section[^>]*class="cartao simulacao/)).toHaveLength(2);
+    expect(elementos(html, /<section[^>]*class="cartao simulacao/)).toHaveLength(1);
+    const tabela = elemento(html, /<section[^>]*data-tabela-das-regioes/);
+    expect(tabela).toMatch(/<colgroup span="2" class="sim-colunas-da-simulacao"><\/colgroup><colgroup span="2" class="sim-colunas-da-projecao">/);
     expect(texto(html)).toContain("Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.");
-    expect(texto(html)).toContain("Cálculo do Apurador com dados do TSE");
+    for (const cartao of [elemento(html, /<section[^>]*sim-curva/), tabela]) expect(texto(cartao)).toContain("Cálculo do Apurador com dados do TSE");
   });
 
   it("desenha a curva da simulação, pontilhada, sobre a curva projetada do Apurador, tracejada e mais clara", () => {
     const figura = elemento(html, /<figure[^>]*data-curva-projetada/);
-    expect(elementos(figura, /<path[^>]*class="linha-simulada"/)).toHaveLength(2);
+    expect(elementos(figura, /<path[^>]*class="linha-da-simulacao"/)).toHaveLength(2);
     expect(elementos(figura, /<path[^>]*class="linha-projetada linha-do-site"/)).toHaveLength(2);
     expect(elementos(figura, /<path[^>]*class="faixa-projetada"/)).toHaveLength(2);
     const legenda = texto(elemento(figura, /<figcaption/));
     expect(legenda).toContain("Simulação");
     expect(legenda).toContain("Projeção do Apurador");
-    expect(/aria-label="([^"]+)"/.exec(figura)?.[1]).toMatch(/^Curva da simulação na base Apuração \+ pesquisas: FLAVIO BOLSONARO de .*; a curva projetada do Apurador termina com FLAVIO BOLSONARO/);
+    // a curva da simulação termina no resultado dela, e a do site, na projeção
+    expect(/aria-label="([^"]+)"/.exec(figura)?.[1]).toMatch(
+      /^Curva da simulação na base Apuração \+ pesquisas: FLAVIO BOLSONARO de [\d,]+% a 49,1% .*; a curva projetada do Apurador termina com FLAVIO BOLSONARO 51,1% e LULA 48,9%$/,
+    );
   });
 
   it("dá a tabela das cinco regiões, com a simulação e a projeção do Apurador, sem resultado por lugar", () => {
@@ -112,9 +111,8 @@ describe("a simulação ao lado da projeção do Apurador", () => {
     expect(linhas.map((l) => /data-regiao="([^"]+)"/.exec(l)?.[1])).toEqual(["Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"]);
     // Lula +2 em todo lugar: em cada região, a simulação dá 2 pontos a menos a Flávio que a projeção, com uma casa
     for (const l of linhas) {
-      const [simFlavio, simLula, projFlavio] = elementos(l, /<td/).map((td) => Number(texto(td).replace("%", "").replace(",", ".")));
-      expect(Math.abs(projFlavio! - simFlavio! - 2)).toBeLessThanOrEqual(0.1);
-      expect(simFlavio! + simLula!).toBeCloseTo(100, 6);
+      const [simulacao, , projecao] = elementos(l, /<td/).map((td) => Number(texto(td).replace("%", "").replace(",", ".")));
+      expect(Math.abs(projecao! - simulacao! - 2), l).toBeLessThanOrEqual(0.1);
     }
     expect(html).not.toMatch(/<svg[^>]*mapa|data-mapa/);
   });
@@ -122,9 +120,10 @@ describe("a simulação ao lado da projeção do Apurador", () => {
   it("traduz cada hipótese em relação ao 1º turno, no Brasil e em cada região", () => {
     const traducoes = elementos(html, /<p[^>]*class="sim-traducao"/).map(texto);
     expect(traducoes).toHaveLength(6);
-    // Brasil: 51,0 no 1º turno; Lula +2 sobre a projeção de 51,1 dá Flávio em 49,1, Lula +1,9 sobre o 1º turno
-    expect(traducoes[0]).toMatch(/^isso dá Lula \+\d,\d sobre o 1º turno no Brasil$/);
-    expect(traducoes[1 + NORDESTE]).toMatch(/^isso dá (Lula|Flávio) \+\d+,\d sobre o 1º turno no Nordeste$|^isso fica igual ao 1º turno no Nordeste$/);
+    // Brasil: 51,0 no 1º turno, e Flávio em 49,1 na simulação
+    expect(traducoes[0]).toBe("isso dá Lula +1,9 sobre o 1º turno no Brasil");
+    // Nordeste: 32,6 no 1º turno; a indicação das pesquisas soma a mudança de 0,1 do agregado, e Lula +2 tira 2
+    expect(traducoes[1 + NORDESTE]).toBe("isso dá Lula +1,9 sobre o 1º turno no Nordeste");
   });
 
   it("não diz quem vence nem chama a simulação de previsão", () => {
@@ -155,7 +154,7 @@ describe("as hipóteses", () => {
     expect(texto(elemento(brasil, /<div[^>]*class="sim-pontas"/))).toBe("Flávio +5 0 Lula +5");
     const nordeste = elemento(html, /<details[^>]*data-regiao="Nordeste"/);
     expect(texto(elemento(nordeste, /<summary/))).toBe("Nordeste Flávio +4,5");
-    expect(texto(elemento(elemento(html, /<details[^>]*data-regiao="Sul"/), /<summary/))).toBe("Sul comparecimento −3");
+    expect(texto(elemento(elemento(html, /<details[^>]*data-regiao="Sul"/), /<summary/))).toBe("Sul comparecimento −3 pontos percentuais");
   });
 
   it("abre expandidas as regiões pedidas, e só elas", () => {

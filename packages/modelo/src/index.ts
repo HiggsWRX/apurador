@@ -18,6 +18,7 @@ export { agregadoDaVespera, historicoDoAgregado, raizDoErroQuadraticoMedio, type
 export { indicacaoDasPesquisas, placarEntreFinalistas } from "./indicacao.ts";
 export { phi, Z_95 } from "./normal.ts";
 export {
+  antesDaPrimeiraSecao,
   apuracaoAntesDaPrimeiraSecao,
   executarNoite,
   FOTOGRAFIAS,
@@ -49,4 +50,4 @@ export {
   type SinalDeVirada,
   type ViradaProjetada,
 } from "./projecao.ts";
-export { HIPOTESES_ZERADAS, oQueSeriaPreciso, simular, type Hipoteses, type ResultadoDaRegiao, type Simulacao } from "./simulacao.ts";
+export { HIPOTESES_ZERADAS, oQueSeriaPreciso, simular, type Hipoteses, type PartidaDaSimulacao, type ResultadoDaRegiao, type Simulacao } from "./simulacao.ts";

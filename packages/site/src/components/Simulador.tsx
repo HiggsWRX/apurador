@@ -77,8 +77,8 @@ export default function Simulador({ arquivo, finalistas, basePadrao }: Props) {
     );
   }
 
-  const mudar = (h: Hipoteses) => {
-    setHipoteses(h);
+  // Depois de qualquer mudança, a simulação deixa de ser a do link de outra pessoa, e o link copiado, o de agora.
+  const mexeu = () => {
     setDeOutraPessoa(false);
     setCopia(null);
   };
@@ -91,7 +91,7 @@ export default function Simulador({ arquivo, finalistas, basePadrao }: Props) {
       () => setCopia({ estado: "manual", endereco }),
     );
   };
-  const comPesquisas = dados.bases.find((b) => b.id === "com-pesquisas");
+  const comPesquisas = dados.bases.find((b) => b.id === "com-pesquisas")?.partida.projecao;
 
   return (
     <VistaDoSimulador
@@ -100,17 +100,19 @@ export default function Simulador({ arquivo, finalistas, basePadrao }: Props) {
       hipoteses={hipoteses}
       base={baseNoAr}
       bases={dados.bases.map((b) => b.id)}
-      pesoDasPesquisas={comPesquisas ? comPesquisas.projecao.pesoDasPesquisas : null}
+      pesoDasPesquisas={comPesquisas ? comPesquisas.pesoDasPesquisas : null}
       coincidem={dados.coincidem}
       placarEntreFinalistasDoBrasil={dados.placarEntreFinalistasDoBrasil}
       deOutraPessoa={deOutraPessoa}
       regioesAbertas={regioesAbertas}
       copia={copia}
-      aoMudarHipoteses={mudar}
+      aoMudarHipoteses={(h) => {
+        setHipoteses(h);
+        mexeu();
+      }}
       aoMudarBase={(b) => {
         setBase(b);
-        setDeOutraPessoa(false);
-        setCopia(null);
+        mexeu();
       }}
       aoCopiar={copiar}
     />
