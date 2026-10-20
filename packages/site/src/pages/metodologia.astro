@@ -46,6 +46,9 @@ const antesDaEleicao = `${diasAntes} ${diasAntes === 1 ? "dia" : "dias"} antes`;
 const doDia = agregado && entreOsFinalistas(umaCasa(agregado.valor)).map((c) => `${nomeCurto(c.candidato.nomeUrna)} ${pct(c.pct)}`);
 const qualAgregado = agregado && (congelado ? "o agregado da noite, congelado às 23h de 24/10" : `o agregado de ${formatarDia(agregado.dia)}`);
 const incertezaDoDia = agregado && `a incerteza ${congelado ? "do dia da eleição" : `de ${antesDaEleicao} da eleição`}, ${formatarPontos(agregado.incerteza, true)}`;
+// O sino do agregado do dia mostra a chance de vitória, que é da projeção (Consulta a advogado eleitoral, decisão 2):
+// ele segue também a chave dela, como o bloco do agregado na página do Brasil, que deixa a chance de fora.
+const sino = CHAVES.antesDas17h.projecao ? agregado : undefined;
 
 // As constantes congeladas pela calibração, citadas em vez de repetidas.
 const K = formatarNumero(CONSTANTES.secoesDasPesquisas);
@@ -194,14 +197,14 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
     <Secao {...secao("chance")}>
       <p>
         A projeção não é um número só: é uma faixa de resultados possíveis, mais prováveis no meio.
-        {agregado ? ` Com ${qualAgregado}, ela fica assim:` : " Desenhada, ela é um sino."}
+        {sino ? ` Com ${qualAgregado}, ela fica assim:` : " Desenhada, ela é um sino."}
       </p>
       {
-        agregado && (
+        sino && (
           <figure data-bloco="sino">
-            <Sino valor={agregado.valor} incerteza={agregado.incerteza} />
+            <Sino valor={sino.valor} incerteza={sino.incerteza} />
             <figcaption class="nota">
-              Com {qualAgregado}: {flavio} {pct(agregado.valor)}, com {incertezaDoDia}. Cálculo do Apurador sobre pesquisas registradas no TSE. Não é uma
+              Com {qualAgregado}: {flavio} {pct(sino.valor)}, com {incertezaDoDia}. Cálculo do Apurador sobre pesquisas registradas no TSE. Não é uma
               pesquisa própria nem resultado oficial.
             </figcaption>
           </figure>
