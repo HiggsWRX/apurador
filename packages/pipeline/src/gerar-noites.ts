@@ -14,14 +14,16 @@ import {
   type VotoSecao,
 } from "@apurador/tse";
 import { baseDoModelo, gravarBase } from "./base.ts";
+import { curvasDoTurno, gravarCurvas } from "./curvas.ts";
 import { membroComCache, membroDePresidenteComCache, RAIZ, type FonteBaixada } from "./fontes.ts";
 import { atualizarManifesto, gravarManifesto, lerManifesto, type DerivadoDoManifesto, type FonteDoManifesto } from "./manifesto.ts";
 import { divergenciasDoHistorico, divergenciasDoResultado, gravarNoite, reconstruirNoite, type Noite } from "./noite.ts";
 import { PRESIDENTE } from "./presidente.ts";
 import { resultadoDoTurno } from "./turno.ts";
 
-// Gera no repositório as noites reconstruídas seção por seção (`dados/noites/`) e as bases do modelo
-// (`dados/bases/`), com o manifesto de origem. Os arquivos por seção têm centenas de MB e ficam no cache.
+// Gera no repositório as noites reconstruídas seção por seção (`dados/noites/`), a curva de comparação de cada uma
+// em cada lugar (`dados/curvas/`) e as bases do modelo (`dados/bases/`), com o manifesto de origem. Os arquivos por
+// seção têm centenas de MB e ficam no cache.
 // Uso: npm run noites [-- --atualizar]   (--atualizar baixa de novo, em vez de usar o cache)
 
 const atualizar = process.argv.includes("--atualizar");
@@ -39,11 +41,17 @@ interface NoiteAReconstruir {
   historicoOficial: boolean;
 }
 
-/** A noite de 2022 serve ao replay e ao ensaio, e as três, à calibração. */
+/**
+ * A noite do 2º turno de 2022 serve ao replay e ao ensaio, e as três primeiras, à calibração. Os 1º turnos de 2018 e
+ * de 2022 completam os turnos passados da curva de comparação. A votação por seção de 2018 e a de 2022 trazem os dois
+ * turnos (1,8 e 1,6 GB), e o boletim de urna do 1º turno, todos os cargos (1,4 GB por ano).
+ */
 const NOITES: NoiteAReconstruir[] = [
   { ano: 2022, turno: 2, votos: { carimboDoBoletim: "311020221535" }, historicoOficial: true },
   { ano: 2018, turno: 2, votos: { carimboDoBoletim: "301020181744" }, historicoOficial: false },
   { ano: 2026, turno: 1, votos: "votacao_secao", historicoOficial: false },
+  { ano: 2018, turno: 1, votos: "votacao_secao", historicoOficial: false },
+  { ano: 2022, turno: 1, votos: "votacao_secao", historicoOficial: true },
 ];
 
 /** As bases do modelo: a noite que cada uma serve e o turno de onde vêm os números. */
@@ -156,6 +164,12 @@ for (const n of NOITES) {
   const gravada = gravarNoite(noite);
   gravar(arquivo, gravada, [detalhe.url, ...urlsDosVotos, ...oficial.urls]);
   console.log(`${arquivo}: ${noite.chegadas.length} chegadas em ${noite.zonas.length} zonas, ${(gravada.length / 1e6).toFixed(2)} MB, em ${((Date.now() - inicio) / 1000).toFixed(0)} s`);
+
+  const curvas = curvasDoTurno(noite);
+  const arquivoDasCurvas = `curvas/${n.ano}-${n.turno}.json`;
+  const conteudoDasCurvas = gravarCurvas(curvas);
+  gravar(arquivoDasCurvas, conteudoDasCurvas, [detalhe.url, ...urlsDosVotos, ...oficial.urls]);
+  console.log(`${arquivoDasCurvas}: ${Object.keys(curvas.lugares).length} lugares, ${(conteudoDasCurvas.length / 1e6).toFixed(2)} MB`);
 }
 
 for (const b of BASES) {
@@ -187,6 +201,6 @@ for (const b of BASES) {
   console.log(`${arquivoPorZona}: ${porZona.municipios.length} partes, ${new Set(porZona.municipios.filter((m) => m.zona !== undefined).map((m) => `${m.uf}/${m.municipio}`)).size} municípios divididos, ${(conteudoPorZona.length / 1e6).toFixed(2)} MB`);
 }
 
-const manifesto = atualizarManifesto(lerManifesto(), { pastas: ["noites/", "bases/"], fontes: [...fontes.values()], derivados });
+const manifesto = atualizarManifesto(lerManifesto(), { pastas: ["noites/", "curvas/", "bases/"], fontes: [...fontes.values()], derivados });
 gravarManifesto(manifesto);
 console.log(`manifesto.json: ${manifesto.fontes.length} fontes, ${manifesto.derivados.length} derivados`);

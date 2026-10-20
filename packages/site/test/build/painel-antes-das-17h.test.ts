@@ -169,7 +169,7 @@ describe("chave da projeção e da curva antes das 17h", () => {
     expect(JSON.parse(ler("chaves.json"))).toMatchObject({ antesDas17h: { projecao: true } });
   });
 
-  it("desligada, nenhuma base mostra projeção, e 'O que esperar da noite' fica só com o texto da ordem de chegada típica", () => {
+  it("desligada, nenhuma base mostra projeção, e 'O que esperar da noite' fica com o texto da ordem de chegada típica e os botões das noites passadas, sem número", () => {
     const html = desligada("/");
     expect(elementos(html, BLOCO_DA_PROJECAO)).toEqual([]);
     expect(html).not.toContain("Chance de vitória");

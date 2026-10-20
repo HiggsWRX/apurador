@@ -2,6 +2,7 @@ import type { TipoDeLugar } from "@apurador/pipeline";
 import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import type { QuadroAoVivo } from "../lib/leitor-ao-vivo";
 import { manchete } from "../lib/textos-ao-vivo";
+import type { PropsDaComparacao } from "./CurvaDeComparacao";
 import { CurvaReal } from "./CurvaReal";
 import { FaixaDeAviso } from "./FaixaDeAviso";
 import { IndicadorAoVivo } from "./IndicadorAoVivo";
@@ -27,10 +28,12 @@ export interface PropsDaVista {
   lendo: boolean;
   /** O cartão do placar está na tela: a linha fixa fica escondida. */
   placarNaTela?: boolean;
+  /** A curva de comparação: os turnos passados do lugar, o que está ligado e o clique, que a ilha guarda. */
+  comparacao?: PropsDaComparacao;
 }
 
 /** O bloco ao vivo para o quadro: a manchete, a linha fixa, o placar oficial e a curva real. */
-export function VistaDoBlocoAoVivo({ quadro, lugar, fotos, movimentoReduzido, proximaLeitura, lendo, placarNaTela = true }: PropsDaVista) {
+export function VistaDoBlocoAoVivo({ quadro, lugar, fotos, movimentoReduzido, proximaLeitura, lendo, placarNaTela = true, comparacao }: PropsDaVista) {
   // No plano zero, o bloco inteiro dá lugar ao convite ao app oficial do TSE; a faixa do aviso pronto continua.
   if (emPlanoZero(quadro)) {
     return (
@@ -65,7 +68,7 @@ export function VistaDoBlocoAoVivo({ quadro, lugar, fotos, movimentoReduzido, pr
       )}
       <FaixaDeAviso aviso={quadro.aviso} />
       <PlacarOficial antesDas17h={quadro.fase === "antes-das-17h"} candidatos={dados?.candidatos ?? null} tse={dados?.tse ?? null} fotos={fotos} indicador={indicador()} mudou={mudou} />
-      {dados && <CurvaReal candidatos={dados.candidatos} curva={quadro.lugar!.curva} />}
+      {dados && <CurvaReal candidatos={dados.candidatos} curva={quadro.lugar!.curva} comparacao={comparacao} />}
     </div>
   );
 }
