@@ -13,6 +13,7 @@ import {
   type ResultadoDoTse,
 } from "@apurador/tse";
 import { arquivoDeRodada, arquivoDoLugar, emOrdem, pontoDaCurvaReal, type Fase, type PontoDaCurvaReal } from "./arquivos.ts";
+import { chavesEfetivas, CONTROLE_INICIAL, type Controle } from "./chaves.ts";
 import type { Destino } from "./destino.ts";
 import type { RelogioDoColetor } from "./relogio.ts";
 
@@ -40,6 +41,11 @@ export interface OpcoesDoColetor {
   pedidosPorSegundo?: number;
   /** Segundos do começo de uma rodada ao da seguinte. Padrão: 20. */
   intervalo?: number;
+  /**
+   * Lê o arquivo de controle, no começo de cada rodada: os comandos do dono (chaves, aviso pronto, plano B). Se a
+   * leitura falhar, a rodada fica com o controle anterior e registra a falha. Sem ele, vale o controle inicial.
+   */
+  controle?: () => Promise<Controle>;
 }
 
 /** O que uma rodada fez: uma linha do registro do coletor (`.cache/coletor/rodadas-*.jsonl`). */
@@ -62,6 +68,8 @@ export interface RegistroDaRodada {
   baixados: { brasil: number; ufs: number; municipios: number; zonas: number };
   gravacoes: number;
   falhas: string[];
+  /** O controle que valeu na rodada, com as chaves como valem (o simulador só com a projeção). */
+  controle: Controle;
 }
 
 /** O coletor de uma eleição: as rodadas e o último resultado bom de cada lugar. */
@@ -157,6 +165,8 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   const sujos = new Set<string>();
   let novidade: { totalizacao: string | null; vista: number | null } = { totalizacao: null, vista: null };
   let numero = 0;
+  /** O que o dono mandou: lido no começo de cada rodada e aplicado nela inteira. */
+  let controle: Controle = CONTROLE_INICIAL;
 
   // A fila dos pedidos, com o ritmo fixo.
   const intervaloEntrePedidos = 1000 / pedidosPorSegundo;
@@ -347,7 +357,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     if (doBrasil.ultimaTotalizacao !== novidade.totalizacao) novidade = { totalizacao: doBrasil.ultimaTotalizacao, vista: relogio.agora() };
 
     // A hora da rodada é a da publicação: é ela que a página compara com o `Date` da CDN.
-    await gravarSeMudou("rodada.json", arquivoDeRodada(relogio.agora(), fase(d), novidade, candidatos));
+    await gravarSeMudou("rodada.json", arquivoDeRodada(relogio.agora(), fase(d), novidade, candidatos, controle));
     for (const a of d.acompanhados) {
       if (a.id === null || !sujos.has(a.id)) continue;
       const resultado = resultados.get(a.url)!;
@@ -355,8 +365,23 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       const ponto = pontoDaCurvaReal(resultado, ordem);
       if (resultado.secoes.totalizadas > 0 && JSON.stringify(ponto) !== JSON.stringify(curva.at(-1))) curva.push(ponto);
       curvas.set(a.id, curva);
+      // No plano zero (o núcleo mínimo desligado), nenhum dado ao vivo vai ao ar: o lugar fica sujo e a curva segue
+      // andando por dentro, para o bloco voltar inteiro quando a chave religar.
+      if (!controle.chaves.nucleoMinimo) continue;
       if (await gravarSeMudou(`lugares/${a.id}.json`, arquivoDoLugar(a.id, resultado, ordem, curva))) sujos.delete(a.id);
     }
+  }
+
+  /** Lê o controle do dono para esta rodada. Uma leitura que falha não derruba nada: fica o controle anterior. */
+  async function lerControleDaRodada() {
+    if (!opcoes.controle) return;
+    try {
+      const lido = await opcoes.controle();
+      controle = { chaves: chavesEfetivas(lido.chaves), aviso: lido.aviso, planoB: lido.planoB };
+    } catch (erro) {
+      registro.falhas.push(`controle: ${(erro as Error).message}`);
+    }
+    registro.controle = controle;
   }
 
   async function rodada(): Promise<RegistroDaRodada> {
@@ -373,9 +398,11 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       baixados: { brasil: 0, ufs: 0, municipios: 0, zonas: 0 },
       gravacoes: 0,
       falhas: [],
+      controle,
     };
     // Um erro que escapou vira falha da rodada: o coletor nunca cai por um arquivo, e a rodada seguinte tenta de novo.
     try {
+      await lerControleDaRodada();
       divulgacao ??= await configurar();
       if (divulgacao) {
         await lerIndices(divulgacao);

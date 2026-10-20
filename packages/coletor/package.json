@@ -4,10 +4,12 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./chaves": "./src/chaves.ts"
   },
   "scripts": {
-    "coletor": "tsx src/principal.ts"
+    "coletor": "tsx src/principal.ts",
+    "noite": "tsx src/noite.ts"
   },
   "dependencies": {
     "@apurador/tse": "*"

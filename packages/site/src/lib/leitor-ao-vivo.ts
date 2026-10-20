@@ -1,4 +1,4 @@
-import type { ArquivoDeRodada, ArquivoDoLugar, Buscar, Fase } from "@apurador/coletor";
+import type { ArquivoDeRodada, ArquivoDoLugar, AvisoPronto, Buscar, ChavesDaNoite, Fase } from "@apurador/coletor";
 import { DIA_DA_ELEICAO } from "@apurador/modelo";
 import { horaDoTse } from "./formato";
 
@@ -45,17 +45,27 @@ export interface QuadroAoVivo {
    * primeira leitura não muda nada: os números chegam, não mudam.
    */
   mudaram: string[];
+  /**
+   * As chaves de publicação que valem (ticket 16): as do arquivo de rodada ou, até a primeira rodada chegar, as do
+   * arquivo de chaves do site. Cada bloco lê a sua daqui (`quadro.chaves.projecao`, …), e `lib/chaves-ao-vivo.ts`
+   * guarda as regras que derivam delas.
+   */
+  chaves: ChavesDaNoite;
+  /** O aviso pronto que o dono publicou, pelo arquivo de rodada, ou `null`. */
+  aviso: AvisoPronto | null;
 }
 
-/** O quadro antes de qualquer leitura: o de antes das 17h, sem dados. É o que o build desenha. */
-export const ANTES_DA_PRIMEIRA_LEITURA: QuadroAoVivo = {
+/** O quadro antes de qualquer leitura: o de antes das 17h, sem dados, com as chaves do arquivo de chaves do site. É o que o build desenha. */
+export const antesDaPrimeiraLeitura = (chaves: ChavesDaNoite): QuadroAoVivo => ({
   fase: "antes-das-17h",
   indicador: { estado: "antes-das-17h", faltam: null },
   rodada: null,
   lugar: null,
   ultimaLeitura: null,
   mudaram: [],
-};
+  chaves,
+  aviso: null,
+});
 
 /** As chaves dos números do placar que piscam: o % e os votos de cada candidato, na ordem do arquivo de rodada, e o % de seções. */
 export const NUMEROS_DO_PLACAR = {
@@ -101,6 +111,8 @@ export function criarLeitorAoVivo(opcoes: {
   buscar: Buscar;
   /** O relógio do aparelho, em ms (`performance.now()`): só mede o tempo entre as leituras, nunca a hora. */
   relogio: () => number;
+  /** As chaves do arquivo de chaves do site, que valem até a primeira rodada do coletor chegar. */
+  chaves: ChavesDaNoite;
 }): LeitorAoVivo {
   let rodada: ArquivoDeRodada | null = null;
   let lugar: ArquivoDoLugar | null = null;
@@ -179,7 +191,7 @@ export function criarLeitorAoVivo(opcoes: {
     },
     quadro() {
       const ultimaLeitura = momentoDaResposta === null ? null : Math.floor((opcoes.relogio() - momentoDaResposta) / 1000);
-      return { fase: fase(), indicador: indicador(), rodada, lugar, ultimaLeitura, mudaram };
+      return { fase: fase(), indicador: indicador(), rodada, lugar, ultimaLeitura, mudaram, chaves: rodada?.chaves ?? opcoes.chaves, aviso: rodada?.aviso ?? null };
     },
   };
 }

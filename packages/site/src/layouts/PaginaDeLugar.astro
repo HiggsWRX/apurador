@@ -3,6 +3,7 @@ import { nomeCompleto, type Lugar } from "@apurador/pipeline";
 import BlocoAoVivo from "../components/BlocoAoVivo";
 import Historico from "../components/Historico.astro";
 import Trilha from "../components/Trilha.astro";
+import { CHAVES } from "../lib/chaves";
 import { FOTOS } from "../lib/fotos";
 import Base from "./Base.astro";
 
@@ -29,7 +30,7 @@ const base = import.meta.env.PUBLIC_AO_VIVO ?? (typeof __AO_VIVO_LOCAL__ === "st
   </div>
   <div class="colunas">
     <div class="principal">
-      <BlocoAoVivo client:load id={lugar.id} tipo={lugar.tipo} uf={lugar.uf} fotos={FOTOS} base={base} />
+      <BlocoAoVivo client:load id={lugar.id} tipo={lugar.tipo} uf={lugar.uf} fotos={FOTOS} base={base} chaves={CHAVES.noite} />
       <slot />
     </div>
     <aside class="cartao narracao" id="narracao" aria-labelledby="narracao-titulo">

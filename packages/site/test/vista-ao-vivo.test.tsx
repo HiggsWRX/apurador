@@ -1,4 +1,4 @@
-import type { ArquivoDeRodada, ArquivoDoLugar } from "@apurador/coletor";
+import type { ArquivoDeRodada, ArquivoDoLugar, ChavesDaNoite } from "@apurador/coletor";
 import { render } from "preact-render-to-string";
 import { describe, expect, it } from "vitest";
 import { VistaDoBlocoAoVivo, type PropsDaVista } from "../src/components/VistaDoBlocoAoVivo";
@@ -13,12 +13,15 @@ const CANDIDATOS: ArquivoDeRodada["candidatos"] = [
   { numero: 13, nome: "LULA", partido: "PT", sequencial: "280002542548" },
 ];
 
+/** As chaves que o coletor publica sem comando: tudo ligado menos os textos preditivos. */
+const LIGADAS: ChavesDaNoite = { nucleoMinimo: true, projecao: true, baseComPesquisas: true, simulador: true, mapa: true, textosPreditivos: false };
+
 function quadro(parte: Partial<QuadroAoVivo> = {}): QuadroAoVivo {
-  return { fase: "antes-das-17h", indicador: { estado: "antes-das-17h", faltam: null }, rodada: null, lugar: null, ultimaLeitura: null, mudaram: [], ...parte };
+  return { fase: "antes-das-17h", indicador: { estado: "antes-das-17h", faltam: null }, rodada: null, lugar: null, ultimaLeitura: null, mudaram: [], chaves: LIGADAS, aviso: null, ...parte };
 }
 
 function rodada(fase: ArquivoDeRodada["fase"]): ArquivoDeRodada {
-  return { rodada: "2026-10-25T22:42:15.000Z", fase, novidade: { totalizacao: "2026-10-25 19:42:10", vista: "2026-10-25T22:42:12.000Z" }, candidatos: CANDIDATOS };
+  return { rodada: "2026-10-25T22:42:15.000Z", fase, novidade: { totalizacao: "2026-10-25 19:42:10", vista: "2026-10-25T22:42:12.000Z" }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null };
 }
 
 function dadosDoLugar(tse: Partial<ArquivoDoLugar["tse"]>, curva: ArquivoDoLugar["curva"] = []): ArquivoDoLugar {
@@ -230,5 +233,62 @@ describe("placar oficial ao vivo", () => {
     expect(texto(placar)).toContain("50,34% das seções totalizadas (237.618 de 472.027)");
     expect(texto(placar)).toContain("Última totalização às 19:42:10");
     expect(texto(placar)).toContain("Fonte: TSE, sem alteração (CC-BY)");
+  });
+});
+
+describe("plano zero", () => {
+  // Ensaio geral, decisão 24: com o núcleo mínimo desligado, a partir das 17h, nenhum dado ao vivo vai ao ar.
+  const lugar = dadosDoLugar({ secoes: { totalizadas: 237618, total: 472027, percentual: 50.34 }, votos: [57873281, 56885102], percentuais: [50.43, 49.57] });
+  const comNucleoMinimo = (nucleoMinimo: boolean, fase: QuadroAoVivo["fase"] = "ao-vivo") =>
+    vista(quadro({ fase, indicador: fase === "ao-vivo" ? { estado: "ao-vivo" } : { estado: "antes-das-17h", faltam: null }, rodada: rodada(fase), lugar, chaves: { ...LIGADAS, nucleoMinimo } }), {
+      placarNaTela: false,
+    });
+
+  it("com o núcleo mínimo desligado, na fase ao vivo, o bloco dá lugar a \"Acompanhe a apuração no app oficial do TSE\", com o link", () => {
+    const html = comNucleoMinimo(false);
+    const planoZero = elemento(html, /<section[^>]*data-plano-zero/);
+    expect(texto(planoZero)).toBe("Acompanhe a apuração no app oficial do TSE");
+    expect(planoZero).toMatch(/<a[^>]*href="https:\/\/resultados\.tse\.jus\.br\/oficial\/app\/index\.html"[^>]*>app oficial do TSE<\/a>/);
+    for (const dado of ["data-placar-oficial", "data-manchete", "data-linha-fixa", "data-curva-real", "data-indicador", "50,43"]) expect(html).not.toContain(dado);
+  });
+
+  it("antes das 17h, a chave desligada não muda nada: fica o bloco de antes das 17h", () => {
+    const html = comNucleoMinimo(false, "antes-das-17h");
+    expect(html).not.toContain("data-plano-zero");
+    expect(texto(elemento(html, /<section[^>]*data-placar-oficial/))).toContain("A divulgação começa às 17h");
+  });
+
+  it("religada a chave, o bloco volta inteiro", () => {
+    const html = comNucleoMinimo(true);
+    expect(html).not.toContain("data-plano-zero");
+    expect(texto(elemento(html, /<section[^>]*data-placar-oficial/))).toContain("50,43%");
+    expect(html).toContain("data-curva-real");
+  });
+});
+
+describe("faixa de aviso", () => {
+  // Operação na noite, decisão 10: os três avisos prontos, com os textos exatos, numa faixa abaixo da manchete.
+  const lugar = dadosDoLugar({ secoes: { totalizadas: 237618, total: 472027, percentual: 50.34 }, votos: [57873281, 56885102], percentuais: [50.43, 49.57] });
+  const comAviso = (aviso: QuadroAoVivo["aviso"], chaves: ChavesDaNoite = LIGADAS) => vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar, aviso, chaves }));
+  const faixa = (html: string) => elemento(html, /<p[^>]*data-aviso/);
+
+  it("mostra o aviso pronto publicado, com o texto exato, abaixo da manchete e antes do placar", () => {
+    const html = comAviso(1);
+    expect(texto(faixa(html))).toBe("O TSE está demorando a divulgar novos dados. Os números abaixo são os mais recentes divulgados.");
+    expect(texto(faixa(comAviso(3)))).toBe("A projeção do Apurador está suspensa. O placar oficial do TSE continua atualizado.");
+    expect(html.indexOf("data-manchete")).toBeLessThan(html.indexOf("data-aviso"));
+    expect(html.indexOf("data-aviso")).toBeLessThan(html.indexOf("data-placar-oficial"));
+  });
+
+  it("o aviso 2 leva o link do app oficial do TSE", () => {
+    const html = faixa(comAviso(2));
+    // Sem o espaço que `texto` põe no lugar de cada tag: o ponto final vem colado ao link.
+    expect(html.replace(/<[^>]+>/g, "")).toBe("O Apurador está com instabilidade. Acompanhe também no app oficial do TSE.");
+    expect(html).toMatch(/<a[^>]*href="https:\/\/resultados\.tse\.jus\.br\/oficial\/app\/index\.html"[^>]*>app oficial do TSE<\/a>/);
+  });
+
+  it("sem aviso não há faixa, e no plano zero ela continua", () => {
+    expect(comAviso(null)).not.toContain("data-aviso");
+    expect(texto(faixa(comAviso(1, { ...LIGADAS, nucleoMinimo: false })))).toContain("O TSE está demorando a divulgar novos dados.");
   });
 });

@@ -1,10 +1,13 @@
 import type { TipoDeLugar } from "@apurador/pipeline";
+import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import type { QuadroAoVivo } from "../lib/leitor-ao-vivo";
 import { manchete } from "../lib/textos-ao-vivo";
 import { CurvaReal } from "./CurvaReal";
+import { FaixaDeAviso } from "./FaixaDeAviso";
 import { IndicadorAoVivo } from "./IndicadorAoVivo";
 import { LinhaFixa } from "./LinhaFixa";
 import { PlacarOficial } from "./PlacarOficial";
+import { PlanoZero } from "./PlanoZero";
 
 // O desenho do bloco ao vivo para um quadro do leitor (Telas da página de lugar, decisões 1, 2, 4 e 5): a manchete, o
 // placar oficial e a curva real. Não guarda estado nem lê nada: a ilha (`BlocoAoVivo`) faz as leituras e passa o
@@ -28,6 +31,15 @@ export interface PropsDaVista {
 
 /** O bloco ao vivo para o quadro: a manchete, a linha fixa, o placar oficial e a curva real. */
 export function VistaDoBlocoAoVivo({ quadro, lugar, fotos, movimentoReduzido, proximaLeitura, lendo, placarNaTela = true }: PropsDaVista) {
+  // No plano zero, o bloco inteiro dá lugar ao convite ao app oficial do TSE; a faixa do aviso pronto continua.
+  if (emPlanoZero(quadro)) {
+    return (
+      <div class="bloco-ao-vivo">
+        <PlanoZero />
+        <FaixaDeAviso aviso={quadro.aviso} />
+      </div>
+    );
+  }
   // Antes das 17h o placar só diz quando a divulgação começa, mesmo com o coletor publicando o TSE zerado.
   const dados = quadro.fase !== "antes-das-17h" && quadro.rodada && quadro.lugar ? { candidatos: quadro.rodada.candidatos, tse: quadro.lugar.tse } : null;
   const indicador = () => (
@@ -51,6 +63,7 @@ export function VistaDoBlocoAoVivo({ quadro, lugar, fotos, movimentoReduzido, pr
           {frase}
         </p>
       )}
+      <FaixaDeAviso aviso={quadro.aviso} />
       <PlacarOficial antesDas17h={quadro.fase === "antes-das-17h"} candidatos={dados?.candidatos ?? null} tse={dados?.tse ?? null} fotos={fotos} indicador={indicador()} mudou={mudou} />
       {dados && <CurvaReal candidatos={dados.candidatos} curva={quadro.lugar!.curva} />}
     </div>

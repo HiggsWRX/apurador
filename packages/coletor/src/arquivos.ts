@@ -1,4 +1,5 @@
 import type { CandidatoDoResultado, ResultadoDoTse } from "@apurador/tse";
+import type { AvisoPronto, ChavesDaNoite, Controle } from "./chaves.ts";
 
 // Os arquivos ao vivo que a página lê (spec, "Contratos dos arquivos ao vivo"). O arquivo de rodada traz o que é
 // nacional; o de cada lugar, os dados do TSE do próprio lugar, sem alteração e com as duas casas do TSE, e a
@@ -16,6 +17,10 @@ export interface ArquivoDeRodada {
   novidade: { totalizacao: string | null; vista: string | null };
   /** Em ordem alfabética do nome de urna, a ordem fixa do site. */
   candidatos: { numero: number; nome: string; partido: string; sequencial: string }[];
+  /** O estado de cada chave de publicação, como vale: a página lê a sua daqui a partir da primeira rodada (ticket 16). */
+  chaves: ChavesDaNoite;
+  /** O aviso pronto que o dono publicou, pelo número, ou `null`. */
+  aviso: AvisoPronto | null;
 }
 
 /** Um ponto da curva real: o % de seções totalizadas e o % de cada candidato, como o TSE os publica. */
@@ -69,12 +74,20 @@ export function arquivoDoLugar(lugar: string, resultado: ResultadoDoTse, ordem: 
   };
 }
 
-/** O arquivo de rodada, com a hora da rodada e a da última novidade (ms do relógio do coletor) em ISO. */
-export function arquivoDeRodada(rodada: number, fase: Fase, novidade: { totalizacao: string | null; vista: number | null }, candidatos: CandidatoDoResultado[]): ArquivoDeRodada {
+/** O arquivo de rodada, com a hora da rodada e a da última novidade (ms do relógio do coletor) em ISO, e o controle do dono. */
+export function arquivoDeRodada(
+  rodada: number,
+  fase: Fase,
+  novidade: { totalizacao: string | null; vista: number | null },
+  candidatos: CandidatoDoResultado[],
+  controle: Controle,
+): ArquivoDeRodada {
   return {
     rodada: new Date(rodada).toISOString(),
     fase,
     novidade: { totalizacao: novidade.totalizacao, vista: novidade.vista === null ? null : new Date(novidade.vista).toISOString() },
     candidatos: candidatos.map((c) => ({ numero: c.numero, nome: c.nomeUrna, partido: c.partido, sequencial: c.sequencial })),
+    chaves: controle.chaves,
+    aviso: controle.aviso,
   };
 }

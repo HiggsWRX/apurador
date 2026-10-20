@@ -1,8 +1,10 @@
+import type { ChavesDaNoite } from "@apurador/coletor";
 import arquivo from "../../../../dados/chaves.json";
 
 // As chaves de publicação: cada bloco sensível liga e desliga sem código novo. Antes de o coletor existir, elas vêm do
 // arquivo de chaves (`dados/chaves.json`), publicado com o site: mudar uma chave é um deploy só desse arquivo. Com o
-// coletor no ar, elas vêm do arquivo de rodada.
+// coletor no ar, as da noite vêm do arquivo de rodada (ticket 16): a página lê `quadro.chaves`, que começa em
+// `CHAVES.noite` e passa às do coletor na primeira rodada.
 
 /** As chaves de publicação que o site conhece, cada uma `true` (ligada) ou `false`. */
 export interface Chaves {
@@ -10,9 +12,14 @@ export interface Chaves {
     /** O agregado de pesquisas e a tendência, e com eles a indicação das pesquisas nos outros lugares, que deriva do agregado. */
     agregado: boolean;
   };
+  /** As chaves da noite, uma por bloco, que valem na página até a primeira rodada do coletor. */
+  noite: ChavesDaNoite;
 }
 
-const ESPERADAS: Chaves = { antesDas17h: { agregado: false } };
+const ESPERADAS: Chaves = {
+  antesDas17h: { agregado: false },
+  noite: { nucleoMinimo: false, projecao: false, baseComPesquisas: false, simulador: false, mapa: false, textosPreditivos: false },
+};
 
 /**
  * Confere o arquivo de chaves contra as chaves que o site conhece: uma chave faltando, desconhecida ou que não seja
