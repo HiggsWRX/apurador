@@ -2,7 +2,7 @@ import { HIPOTESES_ZERADAS, lerConstantes, REGIOES, type BaseDoModelo, type Hipo
 import constantesDoModelo from "@apurador/modelo/constantes.json";
 import { render } from "preact-render-to-string";
 import { describe, expect, it } from "vitest";
-import { VistaDoSimulador, type PropsDaVista } from "../src/components/VistaDoSimulador";
+import { VistaDoSimulador, type PropsDaVistaDoSimulador } from "../src/components/VistaDoSimulador";
 import { compactarBase, type ArquivoDoSimulador } from "../src/lib/arquivo-do-simulador";
 import type { IdDaBase } from "../src/lib/bases-da-projecao";
 import type { FinalistasDoSimulador } from "../src/lib/hipoteses";
@@ -42,12 +42,12 @@ const hipoteses = (h: { brasil?: number; regioes?: Partial<Record<string, number
   comparecimento: REGIOES.map((r) => h.comparecimento?.[r] ?? 0),
 });
 
-function vista(opcoes: { dados?: DadosDoSimulador; base?: IdDaBase; hipoteses?: Hipoteses; outras?: Partial<PropsDaVista> } = {}) {
+function vista(opcoes: { dados?: DadosDoSimulador; base?: IdDaBase; hipoteses?: Hipoteses; outras?: Partial<PropsDaVistaDoSimulador> } = {}) {
   const dados = opcoes.dados ?? DUAS_BASES;
   const base = opcoes.base ?? dados.bases.at(-1)!.id;
   const h = opcoes.hipoteses ?? HIPOTESES_ZERADAS;
   const comPesquisas = dados.bases.find((b) => b.id === "com-pesquisas")?.partida.projecao;
-  const props: PropsDaVista = {
+  const props: PropsDaVistaDoSimulador = {
     finalistas: FINALISTAS,
     tela: simularNaTela(dados, base, h),
     hipoteses: h,
