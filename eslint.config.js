@@ -16,6 +16,12 @@ export default tseslint.config(
           selector: "CallExpression[optional=true] > :matches(AwaitExpression, CallExpression, NewExpression).arguments",
           message: "Numa chamada opcional (`f?.(...)`), o argumento só é avaliado se `f` existir. Calcule-o antes, numa variável.",
         },
+        {
+          // "Simulado" é do TSE, e "simulação", do simulador "e se" (GLOSSARY.md). A regra em prosa não segurou: o ticket 12
+          // quase teve um relógio "simulado", e o 24 teve `curvaSimulada` e `linha-simulada`. "Simulador" passa.
+          selector: ":matches(Identifier[name=/[Ss]imulad(a|o(?!r))/], Literal[value=/[Ss]imulad(a|o(?!r))/])",
+          message: "\"Simulado\" é do TSE (GLOSSARY.md). Para o simulador \"e se\", use \"da simulação\" (`curvaDaSimulacao`).",
+        },
       ],
     },
   },

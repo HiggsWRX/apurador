@@ -71,3 +71,9 @@ Depois disso, o Claude:
 - **Worker do site**: o endereço `*.workers.dev` é `apurador.hicampos93.workers.dev`. O `apurador.org` já está ligado ao Worker `apurador` como domínio próprio, posto pelo painel, e serve o build de 18/10, com `noindex`.
 - **Deploy parado, causa achada**: os quatro runs do CI passam nos testes e no replay e falham no `wrangler deploy` com "Invalid access token [code: 9109]". O único token da conta (`shy-darkness-f47e`, token de conta com o modelo de Workers) aparece como nunca usado: o valor gravado em `CLOUDFLARE_API_TOKEN` no GitHub não é ele. O dono gera um valor novo ("Roll") e regrava o secret.
 - **Deploy de volta, 20/10/2026**: o dono regravou `CLOUDFLARE_API_TOKEN`, e o run 5 do CI (o push de `c970b28`) passou inteiro, com o deploy. O `apurador.org` serve a `main`, com `noindex` no `<meta>` e no `X-Robots-Tag`.
+
+**21/10/2026, da retro do [ticket 20](../../apurador-2026-construcao/issues/20-publicacao-r2-e-plano-b.md) da construção:**
+
+- **O que o login do wrangler pode**: escrever em `workers`, `workers_routes` e `workers_kv`; a zona `apurador.org`, só ler (o `npx wrangler whoami` da sessão do ticket 20, em 20/10).
+- **O que só o painel faz**: a Cache Rule, o Tiered Cache, o TTL do navegador e a Transform Rule da zona.
+- **Falta**: o Zone ID de `apurador.org`, que o `wrangler r2 bucket domain add` pede. Ele não é segredo e fica aqui quando o dono o passar.

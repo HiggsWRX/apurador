@@ -1,5 +1,8 @@
 import { crc32, inflateRawSync } from "node:zlib";
 
+// Os zips do TSE têm centenas de MB, e o pipeline quer um membro só (o CSV de Presidente, a foto de um candidato): aqui
+// ele vem por pedidos HTTP Range, sem baixar o zip, e é conferido pelo CRC do diretório.
+
 /** A função de rede, injetável para os testes rodarem sem rede. Tem a forma do `fetch`. */
 export type Buscar = (url: string, init?: RequestInit) => Promise<Response>;
 

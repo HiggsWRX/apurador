@@ -1,5 +1,8 @@
 import { colunas } from "./csv.ts";
 
+// Os CSVs por seção do TSE têm centenas de MB e não cabem na memória como texto: este leitor anda sobre os bytes, com
+// as mesmas regras de formato de `csv.ts`, e decodifica só as colunas pedidas.
+
 const ASPAS = 0x22;
 const PONTO_E_VIRGULA = 0x3b;
 const LF = 0x0a;

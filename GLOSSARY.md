@@ -29,7 +29,7 @@ O % de votos válidos de cada candidato entre as seções já totalizadas.
 _Avoid_: resultado parcial, parcial
 
 **Placar entre finalistas**:
-Num 1º turno, o % de cada um dos dois finalistas sobre a soma dos votos dos dois (no Brasil, em 2026: Flávio 51,0, Lula 49,0). É a base de toda comparação entre um 2º turno e o 1º turno.
+Num 1º turno, o % de cada um dos dois finalistas sobre a soma dos votos dos dois (no Brasil, em 2026: Flávio 51,0, Lula 49,0). É a base de toda comparação entre um 2º turno e o 1º turno. Na página, vai com uma casa: o finalista do partido de Bolsonaro arredondado, e o do PT com o que falta para 100,0, para o mesmo lugar dar o mesmo placar em todo bloco.
 _Avoid_: resultado do 1º turno (quando é a base de comparação com o 2º)
 
 **Curva real**:

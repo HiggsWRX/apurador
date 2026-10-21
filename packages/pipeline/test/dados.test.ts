@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync } from "node:fs";
+import { globSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import type { Lugar } from "../src/lugares.ts";
+import { compararIds, type Lugar } from "../src/lugares.ts";
 import type { Turno } from "../src/turno.ts";
 
 // Conferência dos dados derivados que estão no repositório, sem rede: é o que o site lê.
@@ -148,5 +148,31 @@ describe("fotos oficiais dos candidatos", () => {
       expect(ehJpeg(ler(`fotos/${sequencial}.jpeg`)), sequencial).toBe(true);
       expect(fonteDa(`fotos/${sequencial}.jpeg`)).toEqual([`https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2022/fotos/foto_cand2022_BR_div.zip#${membro}`]);
     }
+  });
+});
+
+describe("ordem dos lugares", () => {
+  // Um objeto `"lugares"` de `dados/`, gravado um lugar por linha, segue `compararIds` (o Brasil, as UFs, os municípios):
+  // é a ordem que o diff de uma geração para a outra espera. A conferência lê as linhas cruas, porque o `JSON.parse` põe
+  // as chaves numéricas na frente: foi assim que um `Object.fromEntries` pôs "10006" antes de "BR" no ticket 33.
+  const comLugares = globSync("**/*.json", { cwd: fileURLToPath(DADOS) })
+    .map((arquivo) => arquivo.replaceAll("\\", "/"))
+    .filter((arquivo) => /^\s*"lugares": \{\r?$/m.test(ler(arquivo).toString("utf8")));
+
+  it("há arquivos com os lugares um por linha", () => {
+    expect(comLugares.length).toBeGreaterThan(0);
+  });
+
+  it.each(comLugares)("%s segue a ordem de compararIds", (arquivo) => {
+    const linhas = ler(arquivo).toString("utf8").split(/\r?\n/);
+    linhas.forEach((linha, i) => {
+      const abertura = /^(\s*)"lugares": \{$/.exec(linha);
+      if (!abertura) return;
+      const fim = linhas.findIndex((l, j) => j > i && l.startsWith(`${abertura[1]}}`));
+      const ids = linhas.slice(i + 1, fim).map((l) => /^\s*"([^"]+)":/.exec(l)![1]!);
+      const fora = ids.findIndex((id, k) => k > 0 && compararIds(ids[k - 1]!, id) > 0);
+
+      expect(fora === -1 ? null : `"${ids[fora - 1]}" antes de "${ids[fora]}", na linha ${i + 2 + fora}`).toBeNull();
+    });
   });
 });
