@@ -1,7 +1,8 @@
-import { curvaProjetada, lerConstantes, prepararModelo, projetar, projetarNasDuasBases, REGIOES, type Apuracao, type BaseDoModelo, type CurvaDoLugar, type Projecao, type ResultadoDoLugar } from "@apurador/modelo";
+import { antesDaPrimeiraSecao, curvaProjetada, lerConstantes, prepararModelo, projetar, projetarNasDuasBases, REGIOES, type Apuracao, type BaseDoModelo, type CurvaDoLugar, type Projecao, type ResultadoDoLugar } from "@apurador/modelo";
 import constantesDoModelo from "@apurador/modelo/constantes.json";
 import { indicadoresDaBase } from "@apurador/pipeline";
 import base from "../../../../dados/bases/2026-2.json";
+import { NOME_DA_BASE, type IdDaBase } from "./bases-da-projecao";
 import { CHAVES } from "./chaves";
 import { AGREGADO, FINALISTAS } from "./pesquisas";
 
@@ -11,9 +12,6 @@ import { AGREGADO, FINALISTAS } from "./pesquisas";
 // e os aptos do 1º turno) e o agregado de pesquisas do dia, inteiro, porque a incerteza dele cresce com os dias que
 // faltam. As constantes são as congeladas pela calibração. Só a página do Brasil mostra isto: os outros lugares ficam
 // com a indicação das pesquisas.
-
-/** Um dos dois conjuntos de informações que a projeção usa, como o visitante o escolhe. */
-export type IdDaBase = "so-apuracao" | "com-pesquisas";
 
 /** A projeção do Brasil numa base da projeção, antes das 17h, com a curva projetada de 0% a 100% das seções. */
 export interface ProjecaoDeUmaBase {
@@ -26,22 +24,21 @@ export interface ProjecaoDeUmaBase {
   pesoDasPesquisas: number;
 }
 
-const BASE_DO_MODELO = base as unknown as BaseDoModelo;
+/** A base do modelo de 25/10: o 1º turno de 2026 por município. */
+export const BASE_DO_MODELO = base as unknown as BaseDoModelo;
 if (BASE_DO_MODELO.finalistas[0]?.numero !== FINALISTAS[0].numero) {
   throw new Error(`a base do modelo de 25/10 tem o ${BASE_DO_MODELO.finalistas[0]?.numero} como 1º finalista, e o agregado dá o % do ${FINALISTAS[0].numero}`);
 }
 const CONSTANTES = lerConstantes(constantesDoModelo);
-const MODELO = prepararModelo(BASE_DO_MODELO);
-/** Antes da primeira seção: nada totalizado, com as seções e os eleitores aptos do 1º turno. */
-const ANTES_DA_PRIMEIRA_SECAO: Apuracao = BASE_DO_MODELO.municipios.map((m) => ({ secoes: 0, secoesTotais: m.secoes, aptos: 0, aptosTotais: m.aptos, votos: [0, 0] }));
-
-const NOMES: Record<IdDaBase, string> = { "so-apuracao": "Só apuração", "com-pesquisas": "Apuração + pesquisas" };
+/** A base do modelo de 25/10 preparada para projetar. */
+export const MODELO = prepararModelo(BASE_DO_MODELO);
+const ANTES_DA_PRIMEIRA_SECAO: Apuracao = antesDaPrimeiraSecao(BASE_DO_MODELO);
 
 function projetarAntesDas17h(): { bases: ProjecaoDeUmaBase[]; coincidem: boolean | null } | undefined {
   if (!CHAVES.antesDas17h.projecao) return undefined;
   const deUmaBase = (id: IdDaBase, projecao: Projecao): ProjecaoDeUmaBase => ({
     id,
-    nome: NOMES[id],
+    nome: NOME_DA_BASE[id],
     brasil: projecao.brasil,
     curva: curvaProjetada(MODELO, ANTES_DA_PRIMEIRA_SECAO, projecao, CONSTANTES).brasil,
     pesoDasPesquisas: projecao.pesoDasPesquisas,

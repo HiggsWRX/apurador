@@ -1207,3 +1207,443 @@ a {
   font-size: 1.25rem;
   line-height: 1.3;
 }
+
+/* ---------- simulador "e se" ---------- */
+
+/*
+  O terceiro nível visual (Simulador "e se", decisão 8): sólido é oficial, tracejado é a estimativa do Apurador e
+  pontilhado é a simulação, com um fundo hachurado leve.
+*/
+.simulacao {
+  border: 2px dotted var(--borda-forte);
+  background:
+    repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--texto) 5%, transparent) 7px 8px),
+    var(--cartao);
+}
+
+.sim-intro {
+  max-width: 46rem;
+  margin: 0 0 1rem;
+  color: var(--texto-suave);
+  font-size: 0.9375rem;
+}
+
+.sim-aviso {
+  margin: 0;
+}
+
+.sim-aviso p {
+  margin: 0;
+}
+
+.sim-aviso p + p {
+  margin-top: 0.5rem;
+}
+
+.sim-outra-pessoa {
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.875rem;
+  border-left: 4px solid var(--grafite);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--grafite) 10%, var(--cartao));
+  font-weight: 600;
+}
+
+/*
+  No celular, uma coluna na ordem da decisão 13, com a barra da simulação fixa no alto: as duas metades da tela se
+  desfazem, e cada bloco ganha o seu lugar. No computador, os controles à esquerda e o resultado fixo à direita.
+*/
+.simulador {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sim-lado,
+.sim-controles {
+  display: contents;
+}
+
+.sim-barra {
+  order: 1;
+}
+.sim-curva {
+  order: 2;
+}
+.sim-preciso {
+  order: 3;
+}
+.sim-base {
+  order: 4;
+}
+.sim-prontas {
+  order: 5;
+}
+.sim-controle {
+  order: 6;
+}
+.sim-regioes {
+  order: 7;
+}
+.sim-tabela {
+  order: 8;
+}
+.sim-acoes {
+  order: 9;
+}
+
+.simulador h2 {
+  font-size: 1.0625rem;
+}
+
+.simulador .cartao > p {
+  margin: 0.5rem 0 0;
+}
+
+.sim-barra {
+  position: sticky;
+  top: var(--altura-do-topo, 3.5rem);
+  z-index: 10;
+  display: grid;
+  gap: 0.375rem;
+  padding: 0.5rem;
+  border: 1px solid var(--borda-forte);
+  border-radius: 0.875rem;
+  background: var(--cartao);
+  box-shadow: var(--sombra);
+}
+
+.sim-linha {
+  display: grid;
+  grid-template-columns: 4.75rem minmax(0, 1fr);
+  grid-template-areas: "rotulo valores" "rotulo chance";
+  gap: 0.125rem 0.5rem;
+  align-items: center;
+  padding: 0.3125rem 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.sim-linha-simulacao {
+  border: 2px dotted var(--borda-forte);
+  background:
+    repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--texto) 5%, transparent) 7px 8px),
+    var(--cartao);
+}
+
+.sim-linha-projecao {
+  border: 2px dashed var(--borda-forte);
+  background: color-mix(in srgb, var(--cartao) 70%, var(--fundo));
+}
+
+.sim-rotulo {
+  grid-area: rotulo;
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.sim-valores {
+  grid-area: valores;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.5rem;
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.sim-valores strong {
+  font-size: 1rem;
+}
+
+/* A chance numa linha só: "Chance 73% ▬▬ 27%", com a barra entre os dois números. */
+.sim-chance {
+  grid-area: chance;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+}
+
+.sim-chance .chance-barra {
+  flex: 1;
+  height: 0.4375rem;
+}
+
+.sim-valores [data-cor="flavio"] strong,
+.sim-chance [data-cor="flavio"] strong,
+.sim-tabela [data-cor="flavio"] {
+  color: var(--cor-flavio);
+}
+.sim-valores [data-cor="lula"] strong,
+.sim-chance [data-cor="lula"] strong,
+.sim-tabela [data-cor="lula"] {
+  color: var(--cor-lula);
+}
+
+.sim-barra .margem {
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+}
+
+/* Na curva da simulação: as linhas dela pontilhadas, e as da projeção do site tracejadas e mais claras, por baixo. */
+.linha-da-simulacao {
+  fill: none;
+  stroke-width: 2.75;
+  stroke-dasharray: 0.5 4.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.linha-da-simulacao[data-cor="flavio"] {
+  stroke: var(--cor-flavio);
+}
+.linha-da-simulacao[data-cor="lula"] {
+  stroke: var(--cor-lula);
+}
+
+.linha-do-site {
+  opacity: 0.4;
+}
+
+.amostra-pontilhada {
+  height: 0;
+  border-top: 3px dotted var(--texto-suave);
+  vertical-align: 3px;
+}
+
+.amostra-do-site {
+  opacity: 0.5;
+}
+
+.sim-botao,
+.sim-pronta {
+  border: 1px solid var(--borda-forte);
+  background: var(--cartao);
+  color: var(--texto);
+  border-radius: 999px;
+  padding: 0.375rem 0.875rem;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.sim-botao:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.sim-preciso .sim-botao {
+  margin-top: 0.625rem;
+}
+
+.sim-prontas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sim-prontas h2 {
+  flex-basis: 100%;
+}
+
+.sim-pronta {
+  text-align: left;
+  border-radius: 0.75rem;
+}
+
+.sim-pronta[aria-pressed="true"] {
+  background: var(--texto);
+  color: var(--fundo);
+}
+
+.sim-base {
+  margin-top: 0;
+}
+
+.sim-peso {
+  flex-basis: 100%;
+  color: var(--texto-suave);
+  font-size: 0.8125rem;
+}
+
+.sim-deslizante {
+  margin-top: 0.75rem;
+}
+
+.sim-deslizante-topo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 0.75rem;
+  font-size: 0.875rem;
+}
+
+.sim-deslizante output {
+  font-weight: 700;
+}
+
+.sim-deslizante input {
+  display: block;
+  width: 100%;
+  margin: 0.375rem 0 0;
+  accent-color: var(--texto);
+}
+
+.sim-pontas {
+  display: flex;
+  justify-content: space-between;
+  color: var(--texto-suave);
+  font-size: 0.6875rem;
+}
+
+.sim-traducao {
+  color: var(--texto-suave);
+  font-size: 0.8125rem;
+}
+
+.sim-regiao {
+  border-top: 1px solid var(--borda);
+  padding: 0.5rem 0;
+}
+
+.sim-regiao:last-child {
+  padding-bottom: 0;
+}
+
+.sim-regiao summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.sim-resumo {
+  color: var(--texto-suave);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.sim-tabela-rolagem {
+  overflow-x: auto;
+}
+
+.sim-tabela table {
+  width: 100%;
+  margin-top: 0.5rem;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.sim-tabela th,
+.sim-tabela td {
+  padding: 0.3125rem 0.1875rem;
+  border-bottom: 1px solid var(--borda);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.sim-tabela th[scope="row"],
+.sim-tabela th:first-child {
+  text-align: left;
+}
+
+/* Os grupos "Simulação" e "Projeção do Apurador" quebram a linha no celular, para as quatro colunas caberem. */
+.sim-tabela th[scope="colgroup"] {
+  white-space: normal;
+  text-align: center;
+  vertical-align: bottom;
+}
+
+@media (min-width: 30rem) {
+  .sim-tabela table {
+    font-size: 0.8125rem;
+  }
+}
+
+.sim-tabela td.sim-do-site {
+  color: var(--texto-suave);
+}
+
+/* Na tabela, as colunas da simulação na moldura pontilhada, com o hachurado, e as da projeção na tracejada (decisão 8). */
+.sim-colunas-da-simulacao {
+  border: 2px dotted var(--borda-forte);
+  background: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--texto) 5%, transparent) 7px 8px);
+}
+
+.sim-colunas-da-projecao {
+  border: 2px dashed var(--borda-forte);
+  background: color-mix(in srgb, var(--cartao) 70%, var(--fundo));
+}
+
+.sim-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sim-copia {
+  color: var(--texto-suave);
+  font-size: 0.8125rem;
+}
+
+.sim-copia-manual {
+  display: grid;
+  flex-basis: 100%;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+.sim-copia-manual input {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--borda-forte);
+  border-radius: 0.5rem;
+  background: var(--cartao);
+  color: var(--texto);
+  font: inherit;
+}
+
+@media (min-width: 60rem) {
+  .simulador {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.5rem;
+  }
+  /*
+    O espaço embaixo dos controles deixa ajustar a última região com o resultado inteiro à vista: sem ele, o fim da
+    coluna empurra o resultado fixo para cima antes de os últimos controles chegarem ao meio da tela.
+  */
+  .sim-controles {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    grid-column: 1;
+    grid-row: 1;
+    padding-bottom: 12rem;
+  }
+  /* O resultado fica fixo à direita; mais alto que a janela, ele rola por dentro, com a barra da simulação sempre no alto. */
+  .sim-lado {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    grid-column: 2;
+    grid-row: 1;
+    position: sticky;
+    top: calc(var(--altura-do-topo, 3.5rem) + 1rem);
+    max-height: calc(100vh - var(--altura-do-topo, 3.5rem) - 2rem);
+    overflow-y: auto;
+  }
+  .sim-barra {
+    top: 0;
+    box-shadow: none;
+  }
+}

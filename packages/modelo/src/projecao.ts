@@ -315,15 +315,39 @@ export function basesCoincidem(soApuracao: Pick<ResultadoDoLugar, "projecao" | "
  * As somas de um lugar: o apurado, o voto que falta e a variância do que o voto que falta dá ao 1º finalista, a da
  * estimativa da apuração e a da indicação das pesquisas.
  */
-interface Somas {
+interface Somas extends VotosDoLugar {
+  varianciaDaApuracao: number;
+  varianciaDasPesquisas: number;
+}
+
+/** O apurado de um lugar e o voto que falta dele: os votos do 1º finalista e dos dois, e as seções. */
+export interface VotosDoLugar {
   votos1: number;
   votos: number;
   secoes: number;
   secoesTotais: number;
+  /** Os votos válidos que faltam, estimados, e o que deles vai para o 1º finalista. */
   falta: number;
   falta1: number;
-  varianciaDaApuracao: number;
-  varianciaDasPesquisas: number;
+}
+
+/** Nenhum voto: o começo das somas de um lugar. */
+export const semVotos = (): VotosDoLugar => ({ votos1: 0, votos: 0, secoes: 0, secoesTotais: 0, falta: 0, falta1: 0 });
+
+/** Soma ao lugar `a` o apurado e o voto que falta da parte `b`. */
+export function somarVotos(a: VotosDoLugar, b: VotosDoLugar): void {
+  a.votos1 += b.votos1;
+  a.votos += b.votos;
+  a.secoes += b.secoes;
+  a.secoesTotais += b.secoesTotais;
+  a.falta += b.falta;
+  a.falta1 += b.falta1;
+}
+
+/** A fatia final do 1º finalista num lugar, do apurado mais o voto que falta, ou 50% sem voto nenhum. */
+export function fatiaFinal(s: VotosDoLugar): number {
+  const validos = s.votos + s.falta;
+  return validos > 0 ? (s.votos1 + s.falta1) / validos : 0.5;
 }
 
 /**
@@ -353,11 +377,19 @@ const oQueNaoSeAnula = (d: DesviosQueSeAnulam) => (d.vv > 0 ? Math.max(0, d.aa -
 /** Os números de um lugar, a partir das somas dos seus municípios, com o peso das pesquisas da base. */
 function resultado(somas: Somas, constantes: Constantes, peso: number): ResultadoDoLugar {
   const validos = somas.votos + somas.falta;
-  const projecao = validos > 0 ? (somas.votos1 + somas.falta1) / validos : 0.5;
   // Decisão 3 da Combinação, como no protótipo da metodologia: os desvios se somam em quadratura, e por isso a margem
   // da base com pesquisas fica um pouco mais estreita que a da "Só apuração" enquanto as pesquisas pesam.
   const variancia = peso * peso * somas.varianciaDasPesquisas + (1 - peso) * (1 - peso) * somas.varianciaDaApuracao;
-  const desvio = validos > 0 ? Math.sqrt(variancia) / validos : 0;
+  return resultadoComDesvio(somas, validos > 0 ? Math.sqrt(variancia) / validos : 0, constantes);
+}
+
+/**
+ * Os números de um lugar com o desvio já dado: a projeção, a margem de 95%, a chance de vitória e o sinal de virada. A
+ * simulação usa o desvio da projeção (Simulador "e se", decisão 4).
+ */
+export function resultadoComDesvio(somas: VotosDoLugar, desvio: number, constantes: Constantes): ResultadoDoLugar {
+  const validos = somas.votos + somas.falta;
+  const projecao = fatiaFinal(somas);
   const chance = desvio > 0 ? phi((projecao - 0.5) / desvio) : projecao > 0.5 ? 1 : projecao < 0.5 ? 0 : 0.5;
   const placar = somas.votos > 0 ? somas.votos1 / somas.votos : null;
   const atras = placar === null || placar === 0.5 ? null : placar > 0.5 ? 1 : 0;
@@ -452,15 +484,10 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
 
   const votoQueFalta = new Float64Array(n);
   const fatiaDoQueFalta = new Float64Array(n);
-  const somaVazia = (): Somas => ({ votos1: 0, votos: 0, secoes: 0, secoesTotais: 0, falta: 0, falta1: 0, varianciaDaApuracao: 0, varianciaDasPesquisas: 0 });
+  const somaVazia = (): Somas => ({ ...semVotos(), varianciaDaApuracao: 0, varianciaDasPesquisas: 0 });
   // A variância das pesquisas de cada lugar é montada à parte, porque as locais não se somam de um lugar para o de cima.
   const acumular = (a: Somas, b: Somas) => {
-    a.votos1 += b.votos1;
-    a.votos += b.votos;
-    a.secoes += b.secoes;
-    a.secoesTotais += b.secoesTotais;
-    a.falta += b.falta;
-    a.falta1 += b.falta1;
+    somarVotos(a, b);
     a.varianciaDaApuracao += b.varianciaDaApuracao;
   };
   const porUf = modelo.ufs.map(somaVazia);

@@ -13,13 +13,15 @@ export interface Chaves {
     agregado: boolean;
     /** A projeção, a chance de vitória e a curva projetada antes das 17h, na página do Brasil. */
     projecao: boolean;
+    /** O simulador "e se" antes das 17h. Só vai ao ar com a projeção, que fica sempre ao lado da simulação. */
+    simulador: boolean;
   };
   /** As chaves da noite, uma por bloco, que valem na página até a primeira rodada do coletor. */
   noite: ChavesDaNoite;
 }
 
 const ESPERADAS: Chaves = {
-  antesDas17h: { agregado: false, projecao: false },
+  antesDas17h: { agregado: false, projecao: false, simulador: false },
   noite: { nucleoMinimo: false, projecao: false, baseComPesquisas: false, simulador: false, mapa: false, textosPreditivos: false },
 };
 

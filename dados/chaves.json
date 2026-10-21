@@ -1,7 +1,8 @@
 {
   "antesDas17h": {
     "agregado": true,
-    "projecao": true
+    "projecao": true,
+    "simulador": true
   },
   "noite": {
     "nucleoMinimo": true,

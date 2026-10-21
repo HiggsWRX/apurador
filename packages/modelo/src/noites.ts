@@ -1,7 +1,7 @@
 import type { Agregado } from "./agregado.ts";
 import type { Constantes } from "./constantes.ts";
 import { Z_95 } from "./normal.ts";
-import { projetar, type Apuracao, type Modelo } from "./projecao.ts";
+import { projetar, type Apuracao, type BaseDoModelo, type Modelo } from "./projecao.ts";
 
 // O executor de noites: roda o modelo sobre uma noite reconstruída (a sequência de estados da apuração), numa das
 // duas bases da projeção, e resume o erro, a cobertura e a chance honesta. Serve à calibração, ao histórico de acerto
@@ -47,6 +47,12 @@ function posicaoDasZonas(modelo: Modelo, noite: NoiteDoModelo): number[] {
     return m;
   });
 }
+
+/**
+ * A apuração antes da primeira seção a partir da base do modelo: nada totalizado, com as seções e os eleitores aptos
+ * do 1º turno de cada município. É a de 25/10 antes das 17h; numa noite passada, vale a `apuracaoAntesDaPrimeiraSecao`.
+ */
+export const antesDaPrimeiraSecao = (base: BaseDoModelo): Apuracao => base.municipios.map((m) => ({ secoes: 0, secoesTotais: m.secoes, aptos: 0, aptosTotais: m.aptos, votos: [0, 0] }));
 
 /** A apuração antes da primeira seção: nada totalizado, com as seções e os eleitores de cada município na noite. */
 export function apuracaoAntesDaPrimeiraSecao(modelo: Modelo, noite: NoiteDoModelo, posicao = posicaoDasZonas(modelo, noite)): Apuracao {
