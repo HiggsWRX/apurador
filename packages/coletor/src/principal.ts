@@ -1,6 +1,7 @@
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import type { Lugar } from "@apurador/pipeline";
 import { AMBIENTES, destinosDoColetor, lerCredenciais, pastaDoPlanoBLocal, type NomeDoDestino } from "./ambientes.ts";
 import { CHAVES_DA_NOITE, NOMES_DAS_CHAVES } from "./chaves.ts";
 import { criarColetor, type RegistroDaRodada } from "./coletor.ts";
@@ -103,6 +104,7 @@ console.log(`Controle: ${opcoes.controle}, lido a cada rodada (npm run noite -- 
 const coletor = criarColetor({
   base: opcoes.tse,
   eleicao: opcoes.eleicao,
+  lugares: JSON.parse(readFileSync(new URL("dados/lugares.json", RAIZ), "utf8")) as Lugar[],
   buscar: fetch,
   relogio: relogioReal,
   destino: destinos.principal,

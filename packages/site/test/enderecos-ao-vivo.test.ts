@@ -17,7 +17,7 @@ const CANDIDATOS = [
 const LIGADAS: ChavesDaNoite = { nucleoMinimo: true, projecao: true, baseComPesquisas: true, simulador: true, mapa: true, textosPreditivos: false };
 
 function rodada(hora: string): ArquivoDeRodada {
-  return { rodada: new Date(hora).toISOString(), fase: "ao-vivo", novidade: { totalizacao: null, vista: null }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null };
+  return { rodada: new Date(hora).toISOString(), fase: "ao-vivo", novidade: { totalizacao: null, vista: null }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null, eventosDoBrasil: [] };
 }
 
 function lugar(percentualDeSecoes: number): ArquivoDoLugar {
@@ -25,6 +25,7 @@ function lugar(percentualDeSecoes: number): ArquivoDoLugar {
     lugar: "BR",
     tse: { totalizacao: "2026-10-25 19:41:30", secoes: { totalizadas: 1, total: 472027, percentual: percentualDeSecoes }, votos: [0, 0], percentuais: [0, 0], final: false },
     curva: [],
+    narracao: [],
   };
 }
 

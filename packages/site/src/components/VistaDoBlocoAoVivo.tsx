@@ -1,7 +1,7 @@
-import type { TipoDeLugar } from "@apurador/pipeline";
 import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import type { QuadroAoVivo } from "../lib/leitor-ao-vivo";
-import { manchete } from "../lib/textos-ao-vivo";
+import { eventosDoLugar } from "../lib/narracao";
+import { eleitoPelaIndicacao, manchete, type LugarDaManchete } from "../lib/textos-ao-vivo";
 import type { PropsDaComparacao } from "./CurvaDeComparacao";
 import { CurvaReal } from "./CurvaReal";
 import { FaixaDeAviso } from "./FaixaDeAviso";
@@ -9,15 +9,16 @@ import { IndicadorAoVivo } from "./IndicadorAoVivo";
 import { LinhaFixa } from "./LinhaFixa";
 import { PlacarOficial } from "./PlacarOficial";
 import { PlanoZero } from "./PlanoZero";
+import { UltimoEvento } from "./UltimoEvento";
 
-// O desenho do bloco ao vivo para um quadro do leitor (Telas da página de lugar, decisões 1, 2, 4 e 5): a manchete, o
-// placar oficial e a curva real. Não guarda estado nem lê nada: a ilha (`BlocoAoVivo`) faz as leituras e passa o
-// quadro, e os testes renderizam esta vista em HTML.
+// O desenho do bloco ao vivo para um quadro do leitor (Telas da página de lugar, decisões 1, 2, 4 e 5): a manchete com
+// o último evento da narração, o placar oficial e a curva real. Não guarda estado nem lê nada: a ilha (`BlocoAoVivo`)
+// faz as leituras e passa o quadro, e os testes renderizam esta vista em HTML.
 
 /** O que a vista recebe da ilha: o quadro da última leitura e o que a ilha sabe da tela e do tempo. */
 export interface PropsDaVista {
   quadro: QuadroAoVivo;
-  lugar: { tipo: TipoDeLugar; uf?: string };
+  lugar: LugarDaManchete;
   /** A URL da foto oficial de cada candidato, pelo sequencial do TSE. */
   fotos: Record<string, string>;
   /** O visitante prefere movimento reduzido: nada pulsa nem pisca. */
@@ -66,9 +67,18 @@ export function VistaDoBlocoAoVivo({ quadro, lugar, fotos, movimentoReduzido, pr
           {frase}
         </p>
       )}
+      <UltimoEvento quadro={quadro} />
       <FaixaDeAviso aviso={quadro.aviso} />
-      <PlacarOficial antesDas17h={quadro.fase === "antes-das-17h"} candidatos={dados?.candidatos ?? null} tse={dados?.tse ?? null} fotos={fotos} indicador={indicador()} mudou={mudou} />
-      {dados && <CurvaReal candidatos={dados.candidatos} curva={quadro.lugar!.curva} comparacao={comparacao} />}
+      <PlacarOficial
+        antesDas17h={quadro.fase === "antes-das-17h"}
+        candidatos={dados?.candidatos ?? null}
+        tse={dados?.tse ?? null}
+        fotos={fotos}
+        indicador={indicador()}
+        mudou={mudou}
+        eleito={eleitoPelaIndicacao(quadro)}
+      />
+      {dados && <CurvaReal candidatos={dados.candidatos} curva={quadro.lugar!.curva} comparacao={comparacao} eventos={eventosDoLugar(quadro)} />}
     </div>
   );
 }

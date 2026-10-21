@@ -33,6 +33,13 @@ describe("bloco ao vivo no build", () => {
     expect(ilha(pagina("/sp/campinas/")).props).toMatchObject({ id: campinas.id, tipo: "municipio" });
   });
 
+  it("leva o lugar como a manchete o escreve no fim da totalização (\"Lula vence na Bahia\")", () => {
+    expect(ilha(pagina("/ba/")).props).toMatchObject({ em: "na Bahia" });
+    expect(ilha(pagina("/sp/")).props).toMatchObject({ em: "em São Paulo" });
+    expect(ilha(pagina("/df/")).props).toMatchObject({ em: "no Distrito Federal" });
+    expect(ilha(pagina("/sp/campinas/")).props).toMatchObject({ em: "em Campinas (SP)" });
+  });
+
   it("sai desenhado no estado de antes das 17h, sem depender de JavaScript", () => {
     const { html } = ilha(pagina("/sp/campinas/"));
     expect(texto(elemento(html, /<p[^>]*data-manchete/))).toBe("A apuração do 2º turno começa às 17h");

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { Lugar } from "@apurador/pipeline";
 import {
   ArquivoDoTseInvalido,
   eleicaoDaConfiguracao,
@@ -16,10 +17,12 @@ import { arquivoDeRodada, arquivoDoLugar, emOrdem, pontoDaCurvaReal, type Fase, 
 import { chavesEfetivas, CONTROLE_INICIAL, type Controle } from "./chaves.ts";
 import type { ContadorDeGravacoes, GravacoesDoMes } from "./contador.ts";
 import type { Destino } from "./destino.ts";
+import { criarNarracao } from "./narracao.ts";
 import type { RelogioDoColetor } from "./relogio.ts";
 
 // O coletor da noite. A cada rodada ele lê os índices do TSE (`-ab.json` do Brasil e de cada UF), baixa o
-// resultado de cada lugar cuja última totalização no índice é mais nova que a que ele tem, e publica o que mudou.
+// resultado de cada lugar cuja última totalização no índice é mais nova que a que ele tem, narra o que chegou
+// (`narracao.ts`) e publica o que mudou.
 // As URLs saem da configuração de municípios e zonas, e nada da eleição (candidatos, municípios) fica no código.
 //
 // O TSE guarda cada arquivo ~60 s no CDN: um mesmo arquivo de resultado é pedido no máximo uma vez por minuto,
@@ -35,6 +38,8 @@ export interface OpcoesDoColetor {
   base: string;
   /** O código da eleição (`6258`, o 2º turno de 2026). */
   eleicao: string;
+  /** Os lugares do site (`dados/lugares.json`), com os nomes que a narração escreve: os do TSE vêm em maiúsculas. */
+  lugares: Lugar[];
   buscar: Buscar;
   relogio: RelogioDoColetor;
   /** O destino principal: o R2 de produção ou o do ensaio, ou a pasta local. */
@@ -188,8 +193,11 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   // O que o coletor publicou.
   const hashes = new Map<string, string>();
   const curvas = new Map<string, PontoDaCurvaReal[]>();
-  /** Os lugares cujo resultado mudou e ainda não foram gravados. */
+  /** Os lugares cujo resultado ou narração mudou e ainda não foram gravados. */
   const sujos = new Set<string>();
+  const narracao = criarNarracao(opcoes.lugares);
+  /** Os lugares com resultado novo que a narração ainda não viu. */
+  const porNarrar = new Set<string>();
   let novidade: { totalizacao: string | null; vista: number | null } = { totalizacao: null, vista: null };
   let numero = 0;
   /** O que o dono mandou: lido no começo de cada rodada e aplicado nela inteira. */
@@ -354,8 +362,21 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       if (resposta?.status !== 200) return;
       resultados.set(a.url, resposta.lido);
       registro.baixados[TIPOS[a.tipo].contador]++;
-      if (a.id !== null) sujos.add(a.id);
+      if (a.id === null) return;
+      sujos.add(a.id);
+      porNarrar.add(a.id);
     });
+  }
+
+  /**
+   * Passa à narração os resultados novos da rodada, na ordem dos lugares, e marca para gravar os lugares cuja narração
+   * mudou: o Brasil muda também com os eventos das UFs que entram nele.
+   */
+  function narrar(d: Divulgacao) {
+    const novos = new Map<string, ResultadoDoTse>();
+    for (const a of d.acompanhados) if (a.id !== null && porNarrar.has(a.id)) novos.set(a.id, resultados.get(a.url)!);
+    porNarrar.clear();
+    for (const id of narracao.narrar(novos)) sujos.add(id);
   }
 
   function fase(d: Divulgacao): Fase {
@@ -386,7 +407,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     if (doBrasil.ultimaTotalizacao !== novidade.totalizacao) novidade = { totalizacao: doBrasil.ultimaTotalizacao, vista: relogio.agora() };
 
     // A hora da rodada é a da publicação: é ela que a página compara com o `Date` da CDN.
-    await gravarSeMudou("rodada.json", arquivoDeRodada(relogio.agora(), fase(d), novidade, candidatos, controle));
+    await gravarSeMudou("rodada.json", arquivoDeRodada(relogio.agora(), fase(d), novidade, candidatos, controle, narracao.doBrasil()));
     const gravacoes: (() => Promise<void>)[] = [];
     for (const a of d.acompanhados) {
       if (a.id === null || !sujos.has(a.id)) continue;
@@ -399,7 +420,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       // andando por dentro, para o bloco voltar inteiro quando a chave religar.
       if (!controle.chaves.nucleoMinimo) continue;
       const id = a.id;
-      const arquivo = arquivoDoLugar(a.id, resultado, ordem, curva);
+      const arquivo = arquivoDoLugar(a.id, resultado, ordem, curva, narracao.doLugar(a.id));
       gravacoes.push(async () => {
         if (await gravarSeMudou(`lugares/${id}.json`, arquivo)) sujos.delete(id);
       });
@@ -461,6 +482,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       if (divulgacao) {
         await lerIndices(divulgacao);
         await baixarResultados(divulgacao);
+        narrar(divulgacao);
         await publicar(divulgacao);
         if (brasil(divulgacao)) registro.fase = fase(divulgacao);
       }

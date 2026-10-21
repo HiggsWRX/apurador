@@ -1,5 +1,6 @@
 export { criarColetor, type Buscar, type Coletor, type OpcoesDoColetor, type RegistroDaRodada } from "./coletor.ts";
 export { type ArquivoDeRodada, type ArquivoDoLugar, type Fase, type PontoDaCurvaReal } from "./arquivos.ts";
+export { type EventoDaNarracao, type TipoDeEvento } from "./narracao.ts";
 export { pastaLocal, type Destino } from "./destino.ts";
 export { destinoR2, type CredenciaisDoR2 } from "./r2.ts";
 export { republicacaoDoWorker } from "./plano-b.ts";

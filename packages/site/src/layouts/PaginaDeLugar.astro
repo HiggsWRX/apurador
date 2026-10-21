@@ -2,17 +2,20 @@
 import { nomeCompleto, type Lugar } from "@apurador/pipeline";
 import BlocoAoVivo from "../components/BlocoAoVivo";
 import Historico from "../components/Historico.astro";
+import NarracaoDaNoite from "../components/NarracaoDaNoite";
 import Trilha from "../components/Trilha.astro";
 import { CHAVES } from "../lib/chaves";
 import { turnosDoLugar } from "../lib/curvas-passadas";
 import { enderecosDoBuild } from "../lib/enderecos-ao-vivo";
 import { FOTOS } from "../lib/fotos";
+import { emLugar } from "../lib/lugares";
 import Base from "./Base.astro";
 
 // A casca de toda página de lugar (Telas da página de lugar, decisão 1). No celular, uma coluna:
 // cabeçalho, o conteúdo principal, a narração e o histórico. No computador, a narração fica numa
 // coluna fixa à direita da principal, e o histórico embaixo (o mapa, quando entrar, fica ao lado dele).
 // O bloco ao vivo abre o conteúdo principal, e os blocos de antes das 17h vêm depois dele (o slot padrão).
+// A narração é outra ilha, que desenha o quadro que a do bloco ao vivo lê.
 
 interface Props {
   lugar: Lugar;
@@ -36,13 +39,10 @@ const enderecos = enderecosDoBuild(
   </div>
   <div class="colunas">
     <div class="principal">
-      <BlocoAoVivo client:load id={lugar.id} tipo={lugar.tipo} uf={lugar.uf} fotos={FOTOS} enderecos={enderecos} chaves={CHAVES.noite} turnosPassados={turnosDoLugar(lugar.id)} />
+      <BlocoAoVivo client:load id={lugar.id} tipo={lugar.tipo} uf={lugar.uf} em={emLugar(lugar)} fotos={FOTOS} enderecos={enderecos} chaves={CHAVES.noite} turnosPassados={turnosDoLugar(lugar.id)} />
       <slot />
     </div>
-    <aside class="cartao narracao" id="narracao" aria-labelledby="narracao-titulo">
-      <h2 id="narracao-titulo">Narração da noite</h2>
-      <p class="nota">A narração começa às 17h, com as primeiras seções totalizadas.</p>
-    </aside>
+    <NarracaoDaNoite client:load id={lugar.id} chaves={CHAVES.noite} />
   </div>
   <div class="abaixo">
     <Historico lugar={lugar} />

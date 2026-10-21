@@ -5,6 +5,7 @@ import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import type { TurnoPassado } from "../lib/curva-de-comparacao";
 import type { EnderecoAoVivo } from "../lib/enderecos-ao-vivo";
 import { antesDaPrimeiraLeitura, criarLeitorAoVivo, INTERVALO_DAS_LEITURAS } from "../lib/leitor-ao-vivo";
+import { publicarQuadro } from "../lib/quadro-da-pagina";
 import { useComparacao } from "./CurvaDeComparacao";
 import { VistaDoBlocoAoVivo } from "./VistaDoBlocoAoVivo";
 
@@ -18,6 +19,8 @@ interface Props {
   id: string;
   tipo: TipoDeLugar;
   uf?: string;
+  /** O lugar com a preposição, como a manchete o escreve ("na Bahia"). */
+  em: string;
   /** A URL da foto oficial de cada candidato, pelo sequencial do TSE. */
   fotos: Record<string, string>;
   /** Os endereços dos arquivos ao vivo, o principal primeiro, ou nenhum quando não há coletor. */
@@ -29,7 +32,7 @@ interface Props {
 }
 
 /** A ilha do bloco ao vivo de um lugar. */
-export default function BlocoAoVivo({ id, tipo, uf, fotos, enderecos, chaves, turnosPassados }: Props) {
+export default function BlocoAoVivo({ id, tipo, uf, em, fotos, enderecos, chaves, turnosPassados }: Props) {
   const comparacao = useComparacao(id, turnosPassados);
   const leitor = useMemo(
     () => (enderecos.length > 0 ? criarLeitorAoVivo({ enderecos, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now(), chaves }) : null),
@@ -41,6 +44,9 @@ export default function BlocoAoVivo({ id, tipo, uf, fotos, enderecos, chaves, tu
   const [movimentoReduzido, setMovimentoReduzido] = useState(false);
   const [placarNaTela, setPlacarNaTela] = useState(true);
   const raiz = useRef<HTMLDivElement>(null);
+
+  // A coluna da narração, outra ilha, desenha a partir do mesmo quadro.
+  useEffect(() => publicarQuadro(quadro), [quadro]);
 
   // As leituras: a primeira logo ao abrir, as outras 30 s depois do começo da anterior, sem duas ao mesmo tempo. A
   // página volta a ler na hora quando a aba volta a aparecer ou a internet volta.
@@ -115,7 +121,7 @@ export default function BlocoAoVivo({ id, tipo, uf, fotos, enderecos, chaves, tu
     <div ref={raiz}>
       <VistaDoBlocoAoVivo
         quadro={quadro}
-        lugar={{ tipo, uf }}
+        lugar={{ tipo, uf, em }}
         fotos={fotos}
         movimentoReduzido={movimentoReduzido}
         proximaLeitura={proximaLeitura}

@@ -1,9 +1,10 @@
 import type { CandidatoDoResultado, ResultadoDoTse } from "@apurador/tse";
 import type { AvisoPronto, ChavesDaNoite, Controle } from "./chaves.ts";
+import type { EventoDaNarracao } from "./narracao.ts";
 
 // Os arquivos ao vivo que a página lê (spec, "Contratos dos arquivos ao vivo"). O arquivo de rodada traz o que é
-// nacional; o de cada lugar, os dados do TSE do próprio lugar, sem alteração e com as duas casas do TSE, e a
-// curva real. Os votos e os percentuais vão na ordem dos candidatos do arquivo de rodada.
+// nacional; o de cada lugar, os dados do TSE do próprio lugar, sem alteração e com as duas casas do TSE, a curva
+// real e a narração. Os votos e os percentuais vão na ordem dos candidatos do arquivo de rodada.
 
 /** O momento da noite que a página mostra. */
 export type Fase = "antes-das-17h" | "ao-vivo" | "encerrada";
@@ -21,6 +22,11 @@ export interface ArquivoDeRodada {
   chaves: ChavesDaNoite;
   /** O aviso pronto que o dono publicou, pelo número, ou `null`. */
   aviso: AvisoPronto | null;
+  /**
+   * Os eventos do Brasil que as páginas das UFs, do Exterior e dos municípios intercalam na narração delas (a virada, a
+   * indicação do TSE e a totalização final), do mais novo ao mais antigo e sem número na curva. Vazio no plano zero.
+   */
+  eventosDoBrasil: EventoDaNarracao[];
 }
 
 /** Um ponto da curva real: o % de seções totalizadas e o % de cada candidato, como o TSE os publica. */
@@ -39,6 +45,8 @@ export interface ArquivoDoLugar {
     final: boolean;
   };
   curva: PontoDaCurvaReal[];
+  /** A narração do lugar, do evento mais novo ao mais antigo; no Brasil, com os eventos das UFs que entram nela. */
+  narracao: EventoDaNarracao[];
 }
 
 /** Os candidatos na ordem fixa do site: alfabética pelo nome de urna. */
@@ -59,7 +67,7 @@ export function pontoDaCurvaReal(resultado: ResultadoDoTse, ordem: number[]): Po
 }
 
 /** O arquivo do lugar a partir do resultado do TSE, com os candidatos na ordem do arquivo de rodada. */
-export function arquivoDoLugar(lugar: string, resultado: ResultadoDoTse, ordem: number[], curva: PontoDaCurvaReal[]): ArquivoDoLugar {
+export function arquivoDoLugar(lugar: string, resultado: ResultadoDoTse, ordem: number[], curva: PontoDaCurvaReal[], narracao: EventoDaNarracao[]): ArquivoDoLugar {
   const candidatos = naOrdem(resultado, ordem);
   return {
     lugar,
@@ -71,16 +79,21 @@ export function arquivoDoLugar(lugar: string, resultado: ResultadoDoTse, ordem: 
       final: resultado.totalizacaoFinal,
     },
     curva,
+    narracao,
   };
 }
 
-/** O arquivo de rodada, com a hora da rodada e a da última novidade (ms do relógio do coletor) em ISO, e o controle do dono. */
+/**
+ * O arquivo de rodada, com a hora da rodada e a da última novidade (ms do relógio do coletor) em ISO, o controle do
+ * dono e os eventos do Brasil das outras páginas, que ficam de fora no plano zero.
+ */
 export function arquivoDeRodada(
   rodada: number,
   fase: Fase,
   novidade: { totalizacao: string | null; vista: number | null },
   candidatos: CandidatoDoResultado[],
   controle: Controle,
+  eventosDoBrasil: EventoDaNarracao[],
 ): ArquivoDeRodada {
   return {
     rodada: new Date(rodada).toISOString(),
@@ -89,5 +102,6 @@ export function arquivoDeRodada(
     candidatos: candidatos.map((c) => ({ numero: c.numero, nome: c.nomeUrna, partido: c.partido, sequencial: c.sequencial })),
     chaves: controle.chaves,
     aviso: controle.aviso,
+    eventosDoBrasil: controle.chaves.nucleoMinimo ? eventosDoBrasil : [],
   };
 }
