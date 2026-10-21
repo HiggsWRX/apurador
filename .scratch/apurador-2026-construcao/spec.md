@@ -448,7 +448,7 @@ Saem de decisões já aceitas: os testes no CI da [Arquitetura e tecnologia](../
 1. **O replay da noite (a fronteira principal)**: o coletor inteiro, rodada a rodada, sobre o TSE falso servindo o 2º turno de 2022 na velocidade máxima, publicando na pasta local. Exercita `tse`, `modelo`, `coletor` e `ensaio` juntos. Confere:
    - **Placar**: o publicado é idêntico ao do arquivo do TSE falso em todas as rodadas e lugares.
    - **Narração factual do Brasil**: ~50 eventos, uma única virada às ~18:44 (sem a troca de 0,26%) e as 4 viradas em UF (MG duas vezes, AP e AM), conforme a [medição de 2022](../apurador-2026/research/14-narracao-noite-2t-2022.md).
-   - **Janela de 10 minutos**: o mesmo replay em várias fases do relógio do coletor dá sempre uma virada só.
+   - **Janela de 10 minutos**: fica no teste da narração, sobre a série de 2022 ao segundo. O replay lê o Brasil uma vez por minuto, e nesse ritmo nenhuma fase do relógio vê mais de duas trocas: ali, duas fases conferem só que o Brasil tem uma virada (ticket 15).
    - **Textos preditivos**: com a chave desligada, nenhum preditivo em nenhum arquivo público de nenhuma rodada. Ligada no meio, só dali em diante. Desligada de novo, nenhum.
    - **Retomada**: derrubar o coletor numa rodada e retomar do disco ou do objeto da noite não repete nem inventa eventos.
    - **Gravações**: só o que mudou é gravado, o teto de 1.500 por rodada não é atingido, e o total fica na ordem das contas do ticket 24.

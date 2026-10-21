@@ -32,3 +32,4 @@ Decisões: [Plano de lançamento em fases](../../apurador-2026/issues/19-plano-d
 - 20/10/2026, do [ticket 33](33-curva-de-comparacao.md): os turnos passados da curva de comparação são os arquivos de `dados/curvas/`, que o `npm run noites` gera de cada noite reconstruída da lista `NOITES` (`packages/pipeline/src/gerar-noites.ts`). O site os lê todos (`lib/curvas-passadas.ts`).
   - Se o 2º turno de 2026 for reconstruído e entrar nessa lista, o botão "2026 2T" aparece sozinho em toda página de lugar.
   - Decida se ele entra: depois da noite, a curva real da própria página já é esse turno.
+- 21/10/2026, do [ticket 34](34-comparacao-de-dois-turnos.md), que deixou a nota só no próprio registro: com o `dados/turnos/2026-2.json`, a comparação de dois turnos passa a 15 pares, e a de partida vira 2026 1T e 2026 2T sem mudar o código. O aviso de provisório precisa aparecer também nela enquanto o turno vier do último estado da noite.

@@ -23,6 +23,8 @@ function rodada(hora: string, fase: ArquivoDeRodada["fase"], novidade: Partial<A
   return { rodada: new Date(hora).toISOString(), fase, novidade: { totalizacao: null, vista: null, ...novidade }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null, eventosDoBrasil: [], ...controle };
 }
 
+// A hora do TSE (`totalizacao`) é a da noite de 2022, como no ensaio geral, e os relógios do coletor e da CDN são os de
+// 2026: um teste que compare a hora do TSE com um deles falha aqui, e não no ensaio (ticket 15).
 function lugar(percentualDeSecoes: number, totalizacao: string | null = null): ArquivoDoLugar {
   return {
     lugar: "BR",
@@ -90,18 +92,18 @@ describe("leitor ao vivo", () => {
     // O aparelho pode estar adiantado ou atrasado: a fase só muda quando o arquivo de rodada diz.
     passar(30_000);
     responder("rodada.json", { status: 200, date: "2026-10-25T17:00:35-03:00", etag: '"r2"', corpo: rodada("2026-10-25T17:00:15-03:00", "ao-vivo") });
-    responder("lugares/BR.json", { status: 200, date: "2026-10-25T17:00:35-03:00", etag: '"b2"', corpo: lugar(0.01, "2026-10-25 17:00:12") });
+    responder("lugares/BR.json", { status: 200, date: "2026-10-25T17:00:35-03:00", etag: '"b2"', corpo: lugar(0.01, "2022-10-30 17:00:12") });
     await leitor.ler();
 
     expect(leitor.quadro().fase).toBe("ao-vivo");
     expect(leitor.quadro().indicador.estado).toBe("ao-vivo");
-    expect(leitor.quadro().lugar?.tse.totalizacao).toBe("2026-10-25 17:00:12");
+    expect(leitor.quadro().lugar?.tse.totalizacao).toBe("2022-10-30 17:00:12");
   });
 
   it("relê cada arquivo com a ETag da última resposta, e um 304 mantém os dados que a página já tem", async () => {
     const { leitor, responder, pedidos } = montar();
     responder("rodada.json", { status: 200, date: "2026-10-25T18:00:00-03:00", etag: '"r1"', corpo: rodada("2026-10-25T17:59:50-03:00", "ao-vivo") });
-    responder("lugares/BR.json", { status: 200, date: "2026-10-25T18:00:00-03:00", etag: '"b1"', corpo: lugar(12.34, "2026-10-25 17:59:41") });
+    responder("lugares/BR.json", { status: 200, date: "2026-10-25T18:00:00-03:00", etag: '"b1"', corpo: lugar(12.34, "2022-10-30 17:59:41") });
     await leitor.ler();
 
     responder("rodada.json", { status: 304, date: "2026-10-25T18:00:30-03:00", etag: '"r1"' });
@@ -205,7 +207,7 @@ describe("leitor ao vivo", () => {
 
   it("com rodadas em dia e o TSE parado há 2 min, continua ao vivo e diz desde quando o TSE está sem novidade", async () => {
     const { leitor, responder } = montar();
-    const novidade = { totalizacao: "2026-10-25 18:59:52", vista: new Date("2026-10-25T19:00:00-03:00").toISOString() };
+    const novidade = { totalizacao: "2022-10-30 18:59:52", vista: new Date("2026-10-25T19:00:00-03:00").toISOString() };
     const lerCom = async (date: string, horaDaRodada: string) => {
       responder("rodada.json", { status: 200, date, etag: `"${horaDaRodada}"`, corpo: rodada(horaDaRodada, "ao-vivo", novidade) });
       await leitor.ler();
@@ -239,7 +241,7 @@ describe("leitor ao vivo", () => {
   it("diz quais números do placar mudaram na última leitura, para eles piscarem uma vez", async () => {
     const { leitor, responder } = montar();
     const comPlacar = (etag: string, percentual: number, votos: number[], percentuais: number[]) => {
-      const dados = lugar(percentual, "2026-10-25 19:00:00");
+      const dados = lugar(percentual, "2022-10-30 19:00:00");
       responder("lugares/BR.json", { status: 200, date: "2026-10-25T19:00:30-03:00", etag, corpo: { ...dados, tse: { ...dados.tse, votos, percentuais } } });
     };
     responder("rodada.json", { status: 200, date: "2026-10-25T19:00:30-03:00", etag: '"r1"', corpo: rodada("2026-10-25T19:00:20-03:00", "ao-vivo") });

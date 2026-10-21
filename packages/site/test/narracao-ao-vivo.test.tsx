@@ -22,7 +22,7 @@ const LIGADAS: ChavesDaNoite = { nucleoMinimo: true, projecao: true, baseComPesq
 const evento = (lugar: string, tipo: EventoDaNarracao["tipo"], quando: string, texto: string, extra: Partial<EventoDaNarracao> = {}): EventoDaNarracao => ({
   lugar,
   tipo,
-  quando: `2026-10-25 ${quando}`,
+  quando: `2022-10-30 ${quando}`,
   texto,
   ...extra,
 });
@@ -47,7 +47,7 @@ function quadroEm({ lugar = ["BR", { tipo: "brasil", em: "no Brasil" }], agora =
   const rodada: ArquivoDeRodada = {
     rodada: "2026-10-22T23:42:15.000Z",
     fase,
-    novidade: { totalizacao: `2026-10-25 ${agora}`, vista: "2026-10-22T23:42:12.000Z" },
+    novidade: { totalizacao: `2022-10-30 ${agora}`, vista: "2026-10-22T23:42:12.000Z" },
     candidatos: CANDIDATOS,
     chaves: LIGADAS,
     aviso: null,
@@ -55,7 +55,7 @@ function quadroEm({ lugar = ["BR", { tipo: "brasil", em: "no Brasil" }], agora =
   };
   const arquivo: ArquivoDoLugar = {
     lugar: lugar[0],
-    tse: { totalizacao: "2026-10-25 19:42:10", secoes: { totalizadas: 319847, total: 472027, percentual: 67.76 }, votos: [61000000, 61122000], percentuais: [49.95, 50.05], final: false, ...tse },
+    tse: { totalizacao: "2022-10-30 19:42:10", secoes: { totalizadas: 319847, total: 472027, percentual: 67.76 }, votos: [61000000, 61122000], percentuais: [49.95, 50.05], final: false, ...tse },
     curva,
     narracao,
   };

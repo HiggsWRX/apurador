@@ -21,14 +21,16 @@ function quadro(parte: Partial<QuadroAoVivo> = {}): QuadroAoVivo {
   return { fase: "antes-das-17h", indicador: { estado: "antes-das-17h", faltam: null }, rodada: null, lugar: null, ultimaLeitura: null, mudaram: [], chaves: LIGADAS, aviso: null, ...parte };
 }
 
+// A hora do TSE é a da noite de 2022, como no ensaio geral, e o relógio do coletor é o de 2026: um teste que compare os
+// dois relógios falha aqui, e não no ensaio (ticket 15).
 function rodada(fase: ArquivoDeRodada["fase"]): ArquivoDeRodada {
-  return { rodada: "2026-10-25T22:42:15.000Z", fase, novidade: { totalizacao: "2026-10-25 19:42:10", vista: "2026-10-25T22:42:12.000Z" }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null, eventosDoBrasil: [] };
+  return { rodada: "2026-10-25T22:42:15.000Z", fase, novidade: { totalizacao: "2022-10-30 19:42:10", vista: "2026-10-25T22:42:12.000Z" }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null, eventosDoBrasil: [] };
 }
 
 function dadosDoLugar(tse: Partial<ArquivoDoLugar["tse"]>, curva: ArquivoDoLugar["curva"] = []): ArquivoDoLugar {
   return {
     lugar: "BR",
-    tse: { totalizacao: "2026-10-25 19:42:10", secoes: { totalizadas: 0, total: 472027, percentual: 0 }, votos: [0, 0], percentuais: [0, 0], final: false, ...tse },
+    tse: { totalizacao: "2022-10-30 19:42:10", secoes: { totalizadas: 0, total: 472027, percentual: 0 }, votos: [0, 0], percentuais: [0, 0], final: false, ...tse },
     curva,
     narracao: [],
   };

@@ -23,7 +23,7 @@ function rodada(hora: string): ArquivoDeRodada {
 function lugar(percentualDeSecoes: number): ArquivoDoLugar {
   return {
     lugar: "BR",
-    tse: { totalizacao: "2026-10-25 19:41:30", secoes: { totalizadas: 1, total: 472027, percentual: percentualDeSecoes }, votos: [0, 0], percentuais: [0, 0], final: false },
+    tse: { totalizacao: "2022-10-30 19:41:30", secoes: { totalizadas: 1, total: 472027, percentual: percentualDeSecoes }, votos: [0, 0], percentuais: [0, 0], final: false },
     curva: [],
     narracao: [],
   };
