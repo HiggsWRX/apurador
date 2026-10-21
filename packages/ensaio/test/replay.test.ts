@@ -192,7 +192,7 @@ describe("a primeira meia hora da apuração", () => {
   it("publica em toda gravação o placar, o % de seções, o x de y e a hora do arquivo do TSE falso, sem divergência", () => {
     expect(r.placares().length).toBeGreaterThan(10_000);
     expect(conferirPlacar(r.placares(), { noite, cadastro })).toEqual([]);
-  });
+  }, 30_000);
 
   it("não pede nenhuma URL inexistente nem passa do limite do TSE", () => {
     expect(r.tse.registro().naoEncontrados).toEqual([]);

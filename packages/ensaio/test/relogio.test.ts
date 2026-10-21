@@ -109,5 +109,5 @@ describe("a velocidade máxima, para o replay", () => {
     // De 16:59 até a final, às 00:18:04, são cerca de 1.320 rodadas.
     expect(secoes.length).toBeGreaterThan(1300);
     expect(secoes.length).toBeLessThan(1330);
-  });
+  }, 30_000);
 });

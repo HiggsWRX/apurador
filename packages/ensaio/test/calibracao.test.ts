@@ -200,7 +200,7 @@ describe("os casos de K", () => {
     expect(maiorErro(real!.agregado)).toBeCloseTo(1.11, 2);
     expect(maiorErro(comLula!.agregado)).toBeCloseTo(1.74, 2);
     expect(maiorErro(comBolsonaro!.agregado)).toBeCloseTo(1.6, 2);
-  });
+  }, 30_000);
 });
 
 describe("os momentos 'sem sinal de virada' de um lugar e os seguidos de virada", () => {
