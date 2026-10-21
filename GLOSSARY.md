@@ -224,6 +224,10 @@ _Avoid_: simulação, teste da noite, ensaio (o ensaio geral é com gente e infr
 O estado do site em que nenhum dado ao vivo vai ao ar e a página manda o visitante para o app oficial do TSE. É reversível na própria noite.
 _Avoid_: site fora do ar, modo de emergência
 
+**Plano B**:
+O caminho de reserva dos arquivos ao vivo quando o R2 falha: um Worker só com eles, em `*.workers.dev`, republicado a cada minuto. O coletor passa a ele por comando do dono e fica nele até o fim da noite; a página o conhece e passa a ele sozinha.
+_Avoid_: backup, failover, espelho
+
 **Painel do coletor**:
 A tela do dono na noite, com o estado do coletor, do TSE e da publicação, e o site visto de fora. Nenhum visitante a vê.
 _Avoid_: painel (sozinho), dashboard, monitor

@@ -9,9 +9,11 @@
   },
   "scripts": {
     "coletor": "tsx src/principal.ts",
-    "noite": "tsx src/noite.ts"
+    "noite": "tsx src/noite.ts",
+    "conferir-entrega": "tsx src/conferir-entrega.ts"
   },
   "dependencies": {
-    "@apurador/tse": "*"
+    "@apurador/tse": "*",
+    "wrangler": "^4.151.1"
   }
 }

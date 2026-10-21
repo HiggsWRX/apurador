@@ -13,10 +13,16 @@ function ilha(html: string) {
   const elementoDaIlha = elemento(html, /<astro-island[^>]*component-url="[^"]*BlocoAoVivo[^"]*"/);
   const atributo = /props="([^"]*)"/.exec(elementoDaIlha)?.[1] ?? "{}";
   const bruto = JSON.parse(atributo.replaceAll("&quot;", '"').replaceAll("&amp;", "&")) as Record<string, unknown>;
-  // O Astro guarda cada valor como [tipo, valor]; 0 é um valor simples, e os objetos repetem o formato por dentro.
-  const valor = (v: unknown): unknown => (Array.isArray(v) && v[0] === 0 ? (typeof v[1] === "object" && v[1] !== null ? objeto(v[1] as Record<string, unknown>) : v[1]) : v);
+  // O Astro guarda cada valor como [tipo, valor]; 0 é um valor simples, 1 é uma lista, e os objetos e as listas repetem o
+  // formato por dentro.
+  const valor = (v: unknown): unknown => {
+    if (!Array.isArray(v)) return v;
+    if (v[0] === 1) return (v[1] as unknown[]).map(valor);
+    if (v[0] === 0) return typeof v[1] === "object" && v[1] !== null ? objeto(v[1] as Record<string, unknown>) : v[1];
+    return v;
+  };
   const objeto = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, valor(v)]));
-  return { html: elementoDaIlha, props: objeto(bruto) as { id: string; tipo: string; fotos: Record<string, string>; base: string | null; chaves: Record<string, boolean> } };
+  return { html: elementoDaIlha, props: objeto(bruto) as { id: string; tipo: string; fotos: Record<string, string>; enderecos: unknown[]; chaves: Record<string, boolean> } };
 }
 
 describe("bloco ao vivo no build", () => {
@@ -39,7 +45,7 @@ describe("bloco ao vivo no build", () => {
   });
 
   it("sem endereço ao vivo no build, não lê nada: fica no estado de antes das 17h", () => {
-    expect(ilha(pagina("/")).props.base).toBeNull();
+    expect(ilha(pagina("/")).props.enderecos).toEqual([]);
   });
 
   it("leva as chaves da noite do arquivo de chaves, que valem na página até a primeira rodada do coletor, com os textos preditivos desligados", () => {

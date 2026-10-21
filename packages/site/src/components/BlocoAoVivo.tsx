@@ -3,13 +3,15 @@ import type { TipoDeLugar } from "@apurador/pipeline";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import type { TurnoPassado } from "../lib/curva-de-comparacao";
+import type { EnderecoAoVivo } from "../lib/enderecos-ao-vivo";
 import { antesDaPrimeiraLeitura, criarLeitorAoVivo, INTERVALO_DAS_LEITURAS } from "../lib/leitor-ao-vivo";
 import { useComparacao } from "./CurvaDeComparacao";
 import { VistaDoBlocoAoVivo } from "./VistaDoBlocoAoVivo";
 
 // A ilha do bloco ao vivo, em cada página de lugar. No build, ela sai no estado de antes das 17h, sem nenhuma leitura.
-// No navegador, lê o arquivo de rodada e o JSON do lugar a cada 30 s e redesenha sem recarregar. Sem endereço ao vivo
-// (o build da etapa "Antes da noite", sem o coletor), ela fica como saiu do build.
+// No navegador, lê o arquivo de rodada e o JSON do lugar a cada 30 s e redesenha sem recarregar, no endereço principal ou
+// no do plano B (lib/enderecos-ao-vivo.ts). Sem endereço ao vivo (o build da etapa "Antes da noite", sem o coletor), ela
+// fica como saiu do build.
 
 interface Props {
   /** O id do lugar nos arquivos ao vivo (`BR`, `SP`, `ZZ`, `71072`). */
@@ -18,8 +20,8 @@ interface Props {
   uf?: string;
   /** A URL da foto oficial de cada candidato, pelo sequencial do TSE. */
   fotos: Record<string, string>;
-  /** A raiz dos arquivos ao vivo, com a barra no fim, ou `null` quando não há coletor. */
-  base: string | null;
+  /** Os endereços dos arquivos ao vivo, o principal primeiro, ou nenhum quando não há coletor. */
+  enderecos: EnderecoAoVivo[];
   /** As chaves da noite do arquivo de chaves do site, que valem até a primeira rodada do coletor. */
   chaves: ChavesDaNoite;
   /** Os turnos passados que o lugar tem, para os botões da curva de comparação; as curvas só vêm no clique. */
@@ -27,11 +29,11 @@ interface Props {
 }
 
 /** A ilha do bloco ao vivo de um lugar. */
-export default function BlocoAoVivo({ id, tipo, uf, fotos, base, chaves, turnosPassados }: Props) {
+export default function BlocoAoVivo({ id, tipo, uf, fotos, enderecos, chaves, turnosPassados }: Props) {
   const comparacao = useComparacao(id, turnosPassados);
   const leitor = useMemo(
-    () => (base ? criarLeitorAoVivo({ base, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now(), chaves }) : null),
-    [base, id, chaves],
+    () => (enderecos.length > 0 ? criarLeitorAoVivo({ enderecos, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now(), chaves }) : null),
+    [enderecos, id, chaves],
   );
   const [quadro, setQuadro] = useState(() => antesDaPrimeiraLeitura(chaves));
   const [lendo, setLendo] = useState(false);

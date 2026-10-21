@@ -31,3 +31,8 @@ Decisões: [Volume de gravações na noite](../../apurador-2026/issues/24-volume
 ## Comments
 
 - 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): o estado fica em memória, em `criarColetor` (`packages/coletor/src/coletor.ts`): ETags, a hora de cada pedido, resultados, índices, zonas pendentes, hashes, curvas e novidade. Os resultados guardados saem por `coletor.resultado()`.
+- 20/10/2026, do [ticket 20](20-publicacao-r2-e-plano-b.md):
+  - **Contador no estado**: o contador de gravações (`criarContadorDeGravacoes(guardado, agora)`, em `packages/coletor/src/contador.ts`) hoje fica num arquivo só dele, `.cache/coletor/gravacoes.json`, que `principal.ts` grava a cada rodada. Ao montar o estado em disco e o objeto da noite, leve o `GravacoesDoMes` para dentro deles e retome dali.
+  - **Plano B na retomada**: o destino ativo vem do arquivo de controle (`planoB`), que sobrevive ao reinício. O coletor retomado no plano B regrava tudo ali. A pasta do Worker da mesma noite (o `rodada.json` dela com menos de 6 h) fica, para a republicação não sair sem os lugares que a partida a frio ainda não baixou.
+  - **O bucket é público**: tudo em `apurador-ao-vivo` sai por `ao-vivo.apurador.org`. Num prefixo do mesmo bucket, o objeto da noite, com os arquivos do TSE e o estado de retomada, ficaria público. Decida se isso serve ou se ele vai para outro bucket, com outra chave no `.env` e o contador somando os dois.
+  - **Gravar no R2**: `destinoR2` (`packages/coletor/src/r2.ts`) já assina e conta, mas grava JSON com `Content-Type: application/json` e `max-age=15`, e o objeto da noite pede outros cabeçalhos.

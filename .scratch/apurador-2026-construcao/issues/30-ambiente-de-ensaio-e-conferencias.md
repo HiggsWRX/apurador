@@ -39,3 +39,19 @@ Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decis�
 ## Comments
 
 - 19/10/2026, do [ticket 12](12-coletor-minimo-e-replay.md): a conferência do placar existe: `conferirPlacar(publicados, { noite, cadastro })`, em `packages/ensaio/src/conferencia.ts`. Ela recebe cada arquivo de lugar observado, com a ordem dos candidatos do `rodada.json`, e o compara com o TSE falso na hora publicada. Por isso serve ao ensaio, com o atraso da CDN. `resultadosDoTseFalso` lê o TSE falso sem o limite de pedidos.
+- 20/10/2026, do [ticket 20](20-publicacao-r2-e-plano-b.md):
+  - **Como apontar para o R2 do ensaio**: `npm run coletor -- --destino ensaio`.
+    - Grava no bucket `apurador-ensaio`, com a chave `R2_ENSAIO_ACCESS_KEY_ID`/`R2_ENSAIO_SECRET_ACCESS_KEY` de `packages/coletor/.env` (modelo em `.env.exemplo`). Sem ela, o coletor não começa, mesmo com a de produção no arquivo.
+    - O plano B do ensaio é o Worker `apurador-ensaio-plano-b` (`packages/coletor/cloudflare/plano-b-ensaio.jsonc`, pasta `.cache/coletor/plano-b-ensaio/`).
+  - **O que falta criar**, com os nomes de `AMBIENTES.ensaio` (`packages/coletor/src/ambientes.ts`), que podem mudar ali:
+    - o bucket `apurador-ensaio`;
+    - o domínio próprio `ao-vivo-ensaio.apurador.org`, num nível só, para caber no certificado `*.apurador.org` do plano gratuito;
+    - o CORS do bucket, com a origem do site do ensaio;
+    - a Cache Rule e a Transform Rule do host, como os passos 3 e 4 de `packages/coletor/cloudflare/README.md`;
+    - a chave de escrita só nesse bucket.
+
+    O build do site do ensaio leva `PUBLIC_AO_VIVO=https://ao-vivo-ensaio.apurador.org/` e `PUBLIC_AO_VIVO_PLANO_B=https://apurador-ensaio-plano-b.hicampos93.workers.dev/`.
+  - **Conferências**:
+    - **Entrega**: `npm run conferir-entrega -- --destino ensaio --origem <origem do site do ensaio> --plano-b` confere a entrega no ambiente do ensaio.
+    - **Contador**: o do coletor, para comparar com o painel da Cloudflare, é `.cache/coletor/gravacoes.json`, por bucket.
+    - **Atraso no plano B**: o script tem de ler como a página, sem cabeçalho próprio e com o cache do navegador. Os static assets não atendem o preflight do CORS.

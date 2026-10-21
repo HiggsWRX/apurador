@@ -1,5 +1,6 @@
 import type { ArquivoDeRodada, ArquivoDoLugar, Buscar, ChavesDaNoite } from "@apurador/coletor";
 import { describe, expect, it } from "vitest";
+import { enderecosDoBuild } from "../src/lib/enderecos-ao-vivo";
 import { criarLeitorAoVivo } from "../src/lib/leitor-ao-vivo";
 
 // O leitor ao vivo é a lógica da ilha que decide o que mostrar (spec, "Fronteiras de teste", 3): ele lê o arquivo de
@@ -63,7 +64,7 @@ function cdn() {
 function montar() {
   const borda = cdn();
   let agora = 0;
-  const leitor = criarLeitorAoVivo({ base: BASE, lugar: "BR", buscar: borda.buscar, relogio: () => agora, chaves: DO_SITE });
+  const leitor = criarLeitorAoVivo({ enderecos: enderecosDoBuild(BASE, null), lugar: "BR", buscar: borda.buscar, relogio: () => agora, chaves: DO_SITE });
   return { ...borda, leitor, passar: (ms: number) => (agora += ms) };
 }
 

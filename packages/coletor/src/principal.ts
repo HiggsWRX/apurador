@@ -1,18 +1,28 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { AMBIENTES, destinosDoColetor, lerCredenciais, pastaDoPlanoBLocal, type NomeDoDestino } from "./ambientes.ts";
 import { CHAVES_DA_NOITE, NOMES_DAS_CHAVES } from "./chaves.ts";
 import { criarColetor, type RegistroDaRodada } from "./coletor.ts";
+import { ARQUIVO_DO_CONTADOR, criarContadorDeGravacoes, gravarContadorDeGravacoes, lerContadorDeGravacoes, somaDoMes } from "./contador.ts";
 import { ARQUIVO_DE_CONTROLE, controleDoArquivoDeChaves, lerArquivoDeControle } from "./controle.ts";
-import { pastaLocal } from "./destino.ts";
+import { implantarWorker } from "./plano-b.ts";
 import { relogioReal } from "./relogio.ts";
 
-// O coletor no terminal, publicando na pasta local (o R2 e o plano B entram no ticket 20).
-// Uso: npm run coletor -- [--tse <base>] [--eleicao 6258] [--pasta <pasta>] [--pedidos-por-segundo 45] [--minutos 15] [--controle <arquivo>]
+// O coletor no terminal.
+// Uso: npm run coletor -- [--destino pasta|ensaio|producao] [--sem-gzip] [--sem-dominio] [--tse <base>] [--eleicao 6258] [--pasta <pasta>]
+//                         [--pedidos-por-segundo 45] [--minutos 15] [--controle <arquivo>] [--gravacoes <arquivo>]
+//   --destino: onde publicar (ambientes.ts). `pasta`, o padrão, grava em --pasta, com o plano B numa pasta ao lado;
+//              `ensaio` e `producao` gravam no R2 do ensaio e no de produção, com as chaves de packages/coletor/.env, e
+//              o plano B republica o Worker do ambiente pelo login do wrangler (ou pelo CLOUDFLARE_API_TOKEN do .env).
+//              O plano B só vale depois do comando `npm run noite -- plano-b`.
+//   --sem-gzip: grava os JSONs no R2 sem compressão, se a conferência da entrega (npm run conferir-entrega) falhar.
+//   --sem-dominio: com ensaio ou producao, só o Worker do plano B, desde a primeira rodada e sem chave do R2.
 //   --tse: a base do TSE; padrão, o TSE de verdade (https://resultados.tse.jus.br/oficial). Para o TSE falso,
 //          a base que `npm run tse-falso` mostra (http://127.0.0.1:8022/oficial).
 //   --minutos: para sozinho depois desse tempo; sem ele, roda até Ctrl+C.
 //   --controle: o arquivo de controle que `npm run noite` grava (padrão: .cache/coletor/controle.json), lido a cada rodada.
+//   --gravacoes: o contador de gravações nos buckets (padrão: .cache/coletor/gravacoes.json), guardado a cada rodada.
 // O registro de cada rodada vai para .cache/coletor/, uma linha JSON por rodada.
 
 const { values: opcoes } = parseArgs({
@@ -23,6 +33,10 @@ const { values: opcoes } = parseArgs({
     "pedidos-por-segundo": { type: "string", default: "45" },
     minutos: { type: "string" },
     controle: { type: "string", default: ARQUIVO_DE_CONTROLE },
+    destino: { type: "string", default: "pasta" },
+    "sem-gzip": { type: "boolean", default: false },
+    "sem-dominio": { type: "boolean", default: false },
+    gravacoes: { type: "string", default: ARQUIVO_DO_CONTADOR },
   },
 });
 
@@ -34,6 +48,23 @@ const pedidosPorSegundo = Number(opcoes["pedidos-por-segundo"]);
 if (!(pedidosPorSegundo > 0 && pedidosPorSegundo <= 45)) throw new Error(`--pedidos-por-segundo deve ficar entre 0 e 45, e não ${opcoes["pedidos-por-segundo"]}`);
 const fim = opcoes.minutos === undefined ? Infinity : Date.now() + Number(opcoes.minutos) * 60_000;
 if (Number.isNaN(fim)) throw new Error(`--minutos deve ser um número, e não ${opcoes.minutos}`);
+const destino = opcoes.destino as NomeDoDestino;
+if (destino !== "pasta" && !(destino in AMBIENTES)) throw new Error(`--destino deve ser pasta, ensaio ou producao, e não ${opcoes.destino}`);
+
+// As chaves de escrita ficam só no .env do coletor, fora do Git, e só são lidas fora da pasta local.
+const env = destino === "pasta" ? {} : lerCredenciais();
+const contador = criarContadorDeGravacoes(await lerContadorDeGravacoes(opcoes.gravacoes), relogioReal.agora);
+const destinos = destinosDoColetor({
+  destino,
+  env,
+  pasta,
+  comprimir: !opcoes["sem-gzip"],
+  semDominio: opcoes["sem-dominio"],
+  buscar: fetch,
+  contador,
+  agora: relogioReal.agora,
+  implantar: implantarWorker,
+});
 
 mkdirSync(CACHE, { recursive: true });
 const arquivoDoRegistro = new URL(`rodadas-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`, CACHE);
@@ -52,12 +83,19 @@ function resumo(r: RegistroDaRodada): string {
   const falhas = r.falhas.length === 0 ? "" : ` · ${r.falhas.length} falhas (${r.falhas.slice(0, 3).join("; ")})`;
   // O controle do dono só aparece no que foge do inicial: o que está desligado, o aviso no ar e o plano B.
   const desligadas = NOMES_DAS_CHAVES.filter((nome) => !r.controle.chaves[nome]).map((nome) => CHAVES_DA_NOITE[nome].rotulo);
-  const controle = [desligadas.length === 0 ? "" : ` · desligadas: ${desligadas.join(", ")}`, r.controle.aviso === null ? "" : ` · aviso ${r.controle.aviso}`, r.controle.planoB ? " · plano B" : ""].join("");
-  return `#${r.numero} ${hora} ${r.fase ?? "sem fase"} · ${(r.duracao / 1000).toFixed(1)} s · ${r.pedidos} pedidos (${respostas}) · novos: Brasil ${brasil}, UFs ${ufs}, municípios ${municipios}, zonas ${zonas} · ${r.gravacoes} gravações${controle}${falhas}`;
+  const controle = [desligadas.length === 0 ? "" : ` · desligadas: ${desligadas.join(", ")}`, r.controle.aviso === null ? "" : ` · aviso ${r.controle.aviso}`, r.destinoAtivo === "plano B" ? " · plano B" : ""].join("");
+  const doMes = r.gravacoesDoMes && destino !== "pasta" ? ` (${somaDoMes(r.gravacoesDoMes)} no mês)` : "";
+  return `#${r.numero} ${hora} ${r.fase ?? "sem fase"} · ${(r.duracao / 1000).toFixed(1)} s · ${r.pedidos} pedidos (${respostas}) · novos: Brasil ${brasil}, UFs ${ufs}, municípios ${municipios}, zonas ${zonas} · ${r.gravacoes} gravações${doMes}${controle}${falhas}`;
 }
 
+const ondePublica =
+  destino === "pasta"
+    ? `${pasta} (plano B: ${pastaDoPlanoBLocal(pasta)})`
+    : opcoes["sem-dominio"]
+      ? `só no Worker ${AMBIENTES[destino].planoB.worker}, sem domínio`
+      : `R2 ${AMBIENTES[destino].bucket}, ${opcoes["sem-gzip"] ? "sem" : "com"} gzip (plano B: Worker ${AMBIENTES[destino].planoB.worker})`;
 console.log(`Coletor da eleição ${opcoes.eleicao} em ${opcoes.tse}, a ${pedidosPorSegundo} pedidos por segundo.`);
-console.log(`Publica em ${pasta}. Registro: ${fileURLToPath(arquivoDoRegistro)}`);
+console.log(`${destino === "producao" ? "PRODUÇÃO. " : ""}Publica em ${ondePublica}. Registro: ${fileURLToPath(arquivoDoRegistro)}`);
 console.log(`Controle: ${opcoes.controle}, lido a cada rodada (npm run noite -- <comando>). Sem o arquivo, valem as chaves de dados/chaves.json.`);
 
 // Sem arquivo de controle, as chaves são as do arquivo de chaves do site, lidas de novo a cada rodada: um deploy que
@@ -67,7 +105,9 @@ const coletor = criarColetor({
   eleicao: opcoes.eleicao,
   buscar: fetch,
   relogio: relogioReal,
-  destino: pastaLocal(pasta),
+  destino: destinos.principal,
+  planoB: destinos.planoB,
+  contador,
   pedidosPorSegundo,
   controle: async () => (await lerArquivoDeControle(opcoes.controle)) ?? (await controleDoArquivoDeChaves()),
 });
@@ -75,6 +115,9 @@ await coletor.rodar({
   ate: () => parar || Date.now() >= fim,
   aoRodar(registro) {
     appendFileSync(arquivoDoRegistro, `${JSON.stringify(registro)}\n`);
+    if (registro.gravacoesDoMes) {
+      gravarContadorDeGravacoes(opcoes.gravacoes, registro.gravacoesDoMes).catch((erro: Error) => console.log(`O contador de gravações não foi guardado: ${erro.message}`));
+    }
     console.log(resumo(registro));
   },
 });

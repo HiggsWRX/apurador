@@ -1,5 +1,6 @@
 import type { ArquivoDeRodada, ArquivoDoLugar, AvisoPronto, Buscar, ChavesDaNoite, Fase } from "@apurador/coletor";
 import { DIA_DA_ELEICAO } from "@apurador/modelo";
+import { criarArquivosAoVivo, type EnderecoAoVivo } from "./enderecos-ao-vivo";
 import { horaDoTse } from "./formato";
 
 // O leitor ao vivo: a lógica da ilha do bloco ao vivo que lê o arquivo de rodada e o JSON do lugar e decide o que a
@@ -104,8 +105,8 @@ function numerosQueMudaram(antes: ArquivoDoLugar["tse"], depois: ArquivoDoLugar[
 
 /** O leitor ao vivo de um lugar. */
 export function criarLeitorAoVivo(opcoes: {
-  /** A raiz dos arquivos ao vivo, com a barra no fim. */
-  base: string;
+  /** Os endereços dos arquivos ao vivo, o principal primeiro (`enderecosDoBuild`): a troca para o plano B é de `enderecos-ao-vivo.ts`. */
+  enderecos: EnderecoAoVivo[];
   /** O id do lugar nos arquivos ao vivo (`BR`, `SP`, `ZZ`, o código do TSE do município). */
   lugar: string;
   buscar: Buscar;
@@ -122,23 +123,9 @@ export function criarLeitorAoVivo(opcoes: {
   let momentoDaResposta: number | null = null;
   let semConexao = false;
   let mudaram: string[] = [];
-  const etags = new Map<string, string>();
+  const arquivos = criarArquivosAoVivo({ enderecos: opcoes.enderecos, buscar: opcoes.buscar });
+  const caminhoDoLugar = `lugares/${opcoes.lugar}.json`;
   const fase = (): Fase => rodada?.fase ?? "antes-das-17h";
-
-  /**
-   * O corpo novo do arquivo, ou `null` quando a resposta não traz um. O pedido vai com a ETag da última resposta e
-   * sem o cache do navegador, para um 304 chegar até aqui como 304.
-   */
-  async function lerJson<T>(caminho: string, aoResponder: (resposta: Response) => void = () => {}): Promise<T | null> {
-    const etag = etags.get(caminho);
-    const resposta = await opcoes.buscar(`${opcoes.base}${caminho}`, { headers: etag ? { "If-None-Match": etag } : {}, cache: "no-store" });
-    aoResponder(resposta);
-    if (resposta.status !== 200) return null;
-    const corpo = (await resposta.json()) as T;
-    const nova = resposta.headers.get("ETag");
-    if (nova) etags.set(caminho, nova);
-    return corpo;
-  }
 
   function indicador(): Indicador {
     // Depois da totalização final nada mais chega: nem a interrupção nem a conexão do visitante mudam o que se vê.
@@ -172,19 +159,23 @@ export function criarLeitorAoVivo(opcoes: {
 
   return {
     async ler() {
-      const [novaRodada, novoLugar] = await Promise.allSettled([
-        lerJson<ArquivoDeRodada>("rodada.json", (resposta) => {
-          // Fora da mesma origem, o `Date` só chega se a CDN o expuser (Access-Control-Expose-Headers, ticket 20).
-          const hora = Date.parse(resposta.headers.get("Date") ?? "");
-          if (Number.isNaN(hora)) return;
+      const [novaRodada, lidoJunto] = await Promise.allSettled([arquivos.lerRodada(), arquivos.ler<ArquivoDoLugar>(caminhoDoLugar)]);
+      let novoLugar = lidoJunto;
+      // Sem resposta do arquivo de rodada em endereço nenhum, a falta é do lado do visitante; uma resposta de erro ainda
+      // é a CDN no ar.
+      semConexao = novaRodada.status === "rejected";
+      if (novaRodada.status === "fulfilled") {
+        const { resposta, rodada: lida, trocou } = novaRodada.value;
+        // Fora da mesma origem, o `Date` só chega se o endereço o expuser (Access-Control-Expose-Headers).
+        const hora = Date.parse(resposta.headers.get("Date") ?? "");
+        if (!Number.isNaN(hora)) {
           horaDoOutroLado = hora;
           momentoDaResposta = opcoes.relogio();
-        }),
-        lerJson<ArquivoDoLugar>(`lugares/${opcoes.lugar}.json`),
-      ]);
-      // Sem resposta do arquivo de rodada, a falta é do lado do visitante; uma resposta de erro ainda é a CDN no ar.
-      semConexao = novaRodada.status === "rejected";
-      if (novaRodada.status === "fulfilled") rodada = novaRodada.value ?? rodada;
+        }
+        rodada = lida ?? rodada;
+        // O JSON do lugar lido junto é do endereço anterior: a página o lê de novo no endereço da rodada.
+        if (trocou) [novoLugar] = await Promise.allSettled([arquivos.ler<ArquivoDoLugar>(caminhoDoLugar)]);
+      }
       const novo = novoLugar.status === "fulfilled" ? novoLugar.value : null;
       mudaram = novo && lugar ? numerosQueMudaram(lugar.tse, novo.tse) : [];
       lugar = novo ?? lugar;
