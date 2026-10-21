@@ -478,10 +478,10 @@ describe("a noite inteira", () => {
 describe("as fases do relógio do coletor", () => {
   // Lendo a cada 20 s, 7 das 20 fases veem 4 trocas no Brasil entre 18:42 e 18:45: com a fase de +8 ou +9 s, e de +13 a
   // +17 s (seção 2 da medição). O coletor lê o Brasil no máximo uma vez por minuto, e a 60 s nenhuma das 60 fases vê
-  // mais que 2 trocas: aqui ele vê uma virada só em todas, e a janela de 10 minutos, que o teste da narração confere
-  // com a série ao segundo, fica de reserva. As fases são essas, em cada terço do minuto, e o coletor parte a frio às
-  // 18:30 mais a fase.
-  it.each([0, 8, 15, 28, 35, 48, 55])("com o relógio %i s depois da meia hora, dá uma virada só no Brasil", async (fase) => {
+  // mais que 2 trocas. A janela de 10 minutos fica no teste da narração, com a série ao segundo (spec, "Decisões de
+  // teste"); aqui, duas fases conferem só que o Brasil tem uma virada: a de +8 s, uma das que viam 4 trocas a 20 s, e
+  // uma de outro terço do minuto. O coletor parte a frio às 18:30 mais a fase.
+  it.each([8, 35])("com o relógio %i s depois da meia hora, dá uma virada só no Brasil", async (fase) => {
     const r = await replay(`2022-10-30 18:30:${String(fase).padStart(2, "0")}`, "2022-10-30 18:58:00");
     const viradas = r.publicado("lugares/BR.json").narracao.filter((e) => e.lugar === "BR" && e.tipo === "virada");
 
