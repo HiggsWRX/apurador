@@ -58,10 +58,10 @@ const textos = (eventos: { quando: string; texto: string }[]) => eventos.map((e)
 describe("o começo", () => {
   it("no Brasil, é \"Começa a divulgação\" com a primeira seção totalizada", () => {
     const narracao = criarNarracao(LUGARES);
-    narracao.narrar(rodada(["BR", { quando: "2026-10-25 16:59:58", secoes: [0, 472027, 0] }]));
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 16:59:58", secoes: [0, 472027, 0] }]));
     expect(narracao.doLugar("BR")).toEqual([]);
 
-    narracao.narrar(rodada(["BR", { quando: "2026-10-25 17:00:51", secoes: [94, 472027, 0.02], flavio: [21000, 51.2], lula: [20016, 48.8] }]));
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 17:00:51", secoes: [94, 472027, 0.02], flavio: [21000, 51.2], lula: [20016, 48.8] }]));
     expect(textos(narracao.doLugar("BR"))).toEqual(["17:00 · Começa a divulgação: 0,02% das seções totalizadas no Brasil."]);
   });
 });
@@ -69,14 +69,14 @@ describe("o começo", () => {
 describe("os marcos", () => {
   it("no Brasil, dizem o % observado, o placar em ordem alfabética e as duas regiões com a maior fatia das seções que faltam", () => {
     const narracao = criarNarracao(LUGARES);
-    narracao.narrar(rodada(["BR", { quando: "2026-10-25 18:20:00", secoes: [212412, 472027, 45.0], flavio: [50_000_000, 50.9], lula: [48_200_000, 49.1] }]));
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 18:20:00", secoes: [212412, 472027, 45.0], flavio: [50_000_000, 50.9], lula: [48_200_000, 49.1] }]));
     // Das seções que faltam, 51 em São Paulo (Sudeste), 30 na Bahia (Nordeste) e 19 no Distrito Federal (Centro-Oeste).
     narracao.narrar(
       rodada(
-        ["SP", { quando: "2026-10-25 18:26:40", secoes: [949, 1000, 94.9], flavio: [100, 50], lula: [100, 50] }],
-        ["BA", { quando: "2026-10-25 18:26:30", secoes: [970, 1000, 97.0], flavio: [100, 50], lula: [100, 50] }],
-        ["DF", { quando: "2026-10-25 18:26:10", secoes: [981, 1000, 98.1], flavio: [100, 50], lula: [100, 50] }],
-        ["BR", { quando: "2026-10-25 18:26:53", secoes: [237618, 472027, 50.34], flavio: [57_873_281, 50.43], lula: [56_885_102, 49.57] }],
+        ["SP", { quando: "2022-10-30 18:26:40", secoes: [949, 1000, 94.9], flavio: [100, 50], lula: [100, 50] }],
+        ["BA", { quando: "2022-10-30 18:26:30", secoes: [970, 1000, 97.0], flavio: [100, 50], lula: [100, 50] }],
+        ["DF", { quando: "2022-10-30 18:26:10", secoes: [981, 1000, 98.1], flavio: [100, 50], lula: [100, 50] }],
+        ["BR", { quando: "2022-10-30 18:26:53", secoes: [237618, 472027, 50.34], flavio: [57_873_281, 50.43], lula: [56_885_102, 49.57] }],
       ),
     );
 
@@ -87,8 +87,8 @@ describe("os marcos", () => {
 
   it("nas UFs, nomeiam o estado com \"estado\"; quando vários caem na mesma rodada, sai só o mais alto", () => {
     const narracao = criarNarracao(LUGARES);
-    narracao.narrar(rodada(["SP", { quando: "2026-10-25 18:00:00", secoes: [8086, 101073, 8.0], flavio: [1_200_000, 56.1], lula: [939_000, 43.9] }]));
-    narracao.narrar(rodada(["SP", { quando: "2026-10-25 18:38:10", secoes: [50658, 101073, 50.12], flavio: [7_000_000, 55.4], lula: [5_635_379, 44.6] }]));
+    narracao.narrar(rodada(["SP", { quando: "2022-10-30 18:00:00", secoes: [8086, 101073, 8.0], flavio: [1_200_000, 56.1], lula: [939_000, 43.9] }]));
+    narracao.narrar(rodada(["SP", { quando: "2022-10-30 18:38:10", secoes: [50658, 101073, 50.12], flavio: [7_000_000, 55.4], lula: [5_635_379, 44.6] }]));
 
     expect(textos(narracao.doLugar("SP"))).toEqual([
       "18:38 · Passa de 50% das seções totalizadas no estado de São Paulo: 50,12%. Flávio 55,40%, Lula 44,60%.",
@@ -98,9 +98,9 @@ describe("os marcos", () => {
 
   it("nos municípios, são só os 50%, e um município totalizado de uma vez ganha só \"terminou\"", () => {
     const narracao = criarNarracao(LUGARES);
-    narracao.narrar(rodada(["38490", { quando: "2026-10-25 18:10:00", secoes: [1100, 4370, 25.17], flavio: [80_000, 28.1], lula: [204_700, 71.9] }]));
-    narracao.narrar(rodada(["38490", { quando: "2026-10-25 18:40:00", secoes: [3900, 4370, 89.24], flavio: [270_000, 27.9], lula: [697_700, 72.1] }]));
-    narracao.narrar(rodada(["29955", { quando: "2026-10-25 17:01:00", secoes: [52, 52, 100], flavio: [9_000, 40.07], lula: [13_461, 59.93] }]));
+    narracao.narrar(rodada(["38490", { quando: "2022-10-30 18:10:00", secoes: [1100, 4370, 25.17], flavio: [80_000, 28.1], lula: [204_700, 71.9] }]));
+    narracao.narrar(rodada(["38490", { quando: "2022-10-30 18:40:00", secoes: [3900, 4370, 89.24], flavio: [270_000, 27.9], lula: [697_700, 72.1] }]));
+    narracao.narrar(rodada(["29955", { quando: "2022-10-30 17:01:00", secoes: [52, 52, 100], flavio: [9_000, 40.07], lula: [13_461, 59.93] }]));
 
     expect(textos(narracao.doLugar("38490"))).toEqual([
       "18:40 · Passa de 50% das seções totalizadas em Salvador (BA): 89,24%. Flávio 27,90%, Lula 72,10%.",
@@ -115,10 +115,10 @@ describe("o fim", () => {
     const narracao = criarNarracao(LUGARES);
     narracao.narrar(
       rodada(
-        ["SP", { quando: "2026-10-25 21:03:00", secoes: [101073, 101073, 100], flavio: [14_000_000, 55.12], lula: [11_399_000, 44.88] }],
-        ["DF", { quando: "2026-10-25 19:59:37", secoes: [6748, 6748, 100], flavio: [1_041_000, 58.81], lula: [729_000, 41.19] }],
-        ["ZZ", { quando: "2026-10-25 22:31:49", secoes: [1064, 1064, 100], flavio: [130_000, 48.72], lula: [136_800, 51.28] }],
-        ["38490", { quando: "2026-10-25 19:27:00", secoes: [4370, 4370, 100], flavio: [300_000, 27.88], lula: [776_000, 72.12] }],
+        ["SP", { quando: "2022-10-30 21:03:00", secoes: [101073, 101073, 100], flavio: [14_000_000, 55.12], lula: [11_399_000, 44.88] }],
+        ["DF", { quando: "2022-10-30 19:59:37", secoes: [6748, 6748, 100], flavio: [1_041_000, 58.81], lula: [729_000, 41.19] }],
+        ["ZZ", { quando: "2022-10-30 22:31:49", secoes: [1064, 1064, 100], flavio: [130_000, 48.72], lula: [136_800, 51.28] }],
+        ["38490", { quando: "2022-10-30 19:27:00", secoes: [4370, 4370, 100], flavio: [300_000, 27.88], lula: [776_000, 72.12] }],
       ),
     );
 
@@ -130,7 +130,7 @@ describe("o fim", () => {
 
   it("no Brasil, é a totalização final, com o eleito e o % dos votos válidos", () => {
     const narracao = criarNarracao(LUGARES);
-    narracao.narrar(rodada(["BR", { quando: "2026-10-25 20:00:46", secoes: [467354, 472027, 99.01], flavio: [57_400_000, 49.16], lula: [59_370_000, 50.84] }]));
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 20:00:46", secoes: [467354, 472027, 99.01], flavio: [57_400_000, 49.16], lula: [59_370_000, 50.84] }]));
     narracao.narrar(rodada(["BR", { quando: "2026-10-26 00:18:04", secoes: [472027, 472027, 100], flavio: [58_206_354, 49.1], lula: [60_345_999, 50.9], final: true }]));
 
     expect(textos(narracao.doLugar("BR")).at(0)).toBe("00:18 · Totalização final: Lula eleito com 50,90% dos votos válidos.");
@@ -142,7 +142,7 @@ describe("a virada", () => {
   const brasil = (quando: string, secoes: number, lider: "flavio" | "lula" | "empate", lula = lider === "lula" ? 50.01 : lider === "flavio" ? 49.99 : 50): [string, Parte] => {
     const total = 472027;
     const [vf, vl] = lider === "lula" ? [60_000_000, 60_001_000] : lider === "flavio" ? [60_001_000, 60_000_000] : [60_000_000, 60_000_000];
-    return ["BR", { quando: `2026-10-25 ${quando}`, secoes: [Math.round((secoes * total) / 100), total, secoes], flavio: [vf, Number((100 - lula).toFixed(2))], lula: [vl, lula] }];
+    return ["BR", { quando: `2022-10-30 ${quando}`, secoes: [Math.round((secoes * total) / 100), total, secoes], flavio: [vf, Number((100 - lula).toFixed(2))], lula: [vl, lula] }];
   };
   const viradas = (narracao: ReturnType<typeof criarNarracao>) => textos(narracao.doLugar("BR").filter((e) => e.tipo === "virada"));
 
@@ -196,10 +196,10 @@ describe("a virada", () => {
 
   it("nas UFs e nos municípios, nomeia o lugar como os outros eventos", () => {
     const narracao = criarNarracao(LUGARES);
-    narracao.narrar(rodada(["SP", { quando: "2026-10-25 18:00:00", secoes: [10000, 101073, 9.89], flavio: [1000, 50.05], lula: [999, 49.95] }]));
-    narracao.narrar(rodada(["SP", { quando: "2026-10-25 18:01:00", secoes: [10500, 101073, 10.39], flavio: [1000, 49.95], lula: [1002, 50.05] }]));
-    narracao.narrar(rodada(["38490", { quando: "2026-10-25 18:00:00", secoes: [1000, 4370, 22.88], flavio: [1000, 50.05], lula: [999, 49.95] }]));
-    narracao.narrar(rodada(["38490", { quando: "2026-10-25 18:01:00", secoes: [1100, 4370, 25.17], flavio: [1000, 49.95], lula: [1002, 50.05] }]));
+    narracao.narrar(rodada(["SP", { quando: "2022-10-30 18:00:00", secoes: [10000, 101073, 9.89], flavio: [1000, 50.05], lula: [999, 49.95] }]));
+    narracao.narrar(rodada(["SP", { quando: "2022-10-30 18:01:00", secoes: [10500, 101073, 10.39], flavio: [1000, 49.95], lula: [1002, 50.05] }]));
+    narracao.narrar(rodada(["38490", { quando: "2022-10-30 18:00:00", secoes: [1000, 4370, 22.88], flavio: [1000, 50.05], lula: [999, 49.95] }]));
+    narracao.narrar(rodada(["38490", { quando: "2022-10-30 18:01:00", secoes: [1100, 4370, 25.17], flavio: [1000, 49.95], lula: [1002, 50.05] }]));
 
     expect(textos(narracao.doLugar("SP").filter((e) => e.tipo === "virada"))).toEqual([
       "18:01 · Virada no estado de São Paulo: Lula passa à frente no placar parcial, com 10,39% das seções totalizadas.",
@@ -224,10 +224,10 @@ describe("depois da totalização final", () => {
 describe("um arquivo mais velho que o último visto", () => {
   it("não narra nada: uma cópia velha da CDN não volta o líder nem os marcos", () => {
     const narracao = criarNarracao(LUGARES);
-    narracao.narrar(rodada(["SP", { quando: "2026-10-25 18:00:00", secoes: [10000, 101073, 9.89], flavio: [1000, 50.05], lula: [999, 49.95] }]));
-    narracao.narrar(rodada(["SP", { quando: "2026-10-25 18:01:00", secoes: [10500, 101073, 10.39], flavio: [1000, 49.95], lula: [1002, 50.05] }]));
-    const mudaram = narracao.narrar(rodada(["SP", { quando: "2026-10-25 18:00:00", secoes: [10000, 101073, 9.89], flavio: [1000, 50.05], lula: [999, 49.95] }]));
-    narracao.narrar(rodada(["SP", { quando: "2026-10-25 18:02:00", secoes: [10600, 101073, 10.49], flavio: [1000, 49.95], lula: [1003, 50.05] }]));
+    narracao.narrar(rodada(["SP", { quando: "2022-10-30 18:00:00", secoes: [10000, 101073, 9.89], flavio: [1000, 50.05], lula: [999, 49.95] }]));
+    narracao.narrar(rodada(["SP", { quando: "2022-10-30 18:01:00", secoes: [10500, 101073, 10.39], flavio: [1000, 49.95], lula: [1002, 50.05] }]));
+    const mudaram = narracao.narrar(rodada(["SP", { quando: "2022-10-30 18:00:00", secoes: [10000, 101073, 9.89], flavio: [1000, 50.05], lula: [999, 49.95] }]));
+    narracao.narrar(rodada(["SP", { quando: "2022-10-30 18:02:00", secoes: [10600, 101073, 10.49], flavio: [1000, 49.95], lula: [1003, 50.05] }]));
 
     expect(mudaram).toEqual(new Set());
     expect(narracao.doLugar("SP").filter((e) => e.tipo === "virada")).toHaveLength(1);
@@ -237,16 +237,16 @@ describe("um arquivo mais velho que o último visto", () => {
     const narracao = criarNarracao(LUGARES);
     narracao.narrar(
       rodada(
-        ["SP", { quando: "2026-10-25 18:26:40", secoes: [949, 1000, 94.9], flavio: [100, 50], lula: [100, 50] }],
-        ["BA", { quando: "2026-10-25 18:26:30", secoes: [970, 1000, 97.0], flavio: [100, 50], lula: [100, 50] }],
-        ["DF", { quando: "2026-10-25 18:26:10", secoes: [981, 1000, 98.1], flavio: [100, 50], lula: [100, 50] }],
+        ["SP", { quando: "2022-10-30 18:26:40", secoes: [949, 1000, 94.9], flavio: [100, 50], lula: [100, 50] }],
+        ["BA", { quando: "2022-10-30 18:26:30", secoes: [970, 1000, 97.0], flavio: [100, 50], lula: [100, 50] }],
+        ["DF", { quando: "2022-10-30 18:26:10", secoes: [981, 1000, 98.1], flavio: [100, 50], lula: [100, 50] }],
       ),
     );
     // Uma cópia velha de São Paulo, com 400 seções faltando em vez de 51, chega com o marco do Brasil.
     narracao.narrar(
       rodada(
-        ["SP", { quando: "2026-10-25 18:20:00", secoes: [600, 1000, 60.0], flavio: [100, 50], lula: [100, 50] }],
-        ["BR", { quando: "2026-10-25 18:26:53", secoes: [237618, 472027, 50.34], flavio: [57_873_281, 50.43], lula: [56_885_102, 49.57] }],
+        ["SP", { quando: "2022-10-30 18:20:00", secoes: [600, 1000, 60.0], flavio: [100, 50], lula: [100, 50] }],
+        ["BR", { quando: "2022-10-30 18:26:53", secoes: [237618, 472027, 50.34], flavio: [57_873_281, 50.43], lula: [56_885_102, 49.57] }],
       ),
     );
 
@@ -262,17 +262,17 @@ describe("a narração do Brasil e as das outras páginas", () => {
     const narracao = criarNarracao(LUGARES_COM_MG);
     narracao.narrar(
       rodada(
-        ["MG", { quando: "2026-10-25 17:50:00", secoes: [5000, 49981, 10.0], ...placarDe(50.2) }],
-        ["SP", { quando: "2026-10-25 18:16:07", secoes: [25300, 101073, 25.03], ...placarDe(44.0) }],
-        ["DF", { quando: "2026-10-25 17:19:37", secoes: [3400, 6748, 50.39], ...placarDe(41.0) }],
-        ["38490", { quando: "2026-10-25 18:29:00", secoes: [2200, 4370, 50.34], ...placarDe(72.0) }],
+        ["MG", { quando: "2022-10-30 17:50:00", secoes: [5000, 49981, 10.0], ...placarDe(50.2) }],
+        ["SP", { quando: "2022-10-30 18:16:07", secoes: [25300, 101073, 25.03], ...placarDe(44.0) }],
+        ["DF", { quando: "2022-10-30 17:19:37", secoes: [3400, 6748, 50.39], ...placarDe(41.0) }],
+        ["38490", { quando: "2022-10-30 18:29:00", secoes: [2200, 4370, 50.34], ...placarDe(72.0) }],
       ),
     );
     const mudaram = narracao.narrar(
       rodada(
-        ["MG", { quando: "2026-10-25 17:58:40", secoes: [7900, 49981, 15.81], ...placarDe(49.94) }],
-        ["SP", { quando: "2026-10-25 18:38:10", secoes: [50658, 101073, 50.12], ...placarDe(44.6) }],
-        ["DF", { quando: "2026-10-25 19:59:37", secoes: [6748, 6748, 100], ...placarDe(41.19) }],
+        ["MG", { quando: "2022-10-30 17:58:40", secoes: [7900, 49981, 15.81], ...placarDe(49.94) }],
+        ["SP", { quando: "2022-10-30 18:38:10", secoes: [50658, 101073, 50.12], ...placarDe(44.6) }],
+        ["DF", { quando: "2022-10-30 19:59:37", secoes: [6748, 6748, 100], ...placarDe(41.19) }],
       ),
     );
 
@@ -288,9 +288,9 @@ describe("a narração do Brasil e as das outras páginas", () => {
 
   it("nas outras páginas, entram a virada, a indicação do TSE e a totalização final do Brasil, sem número na curva", () => {
     const narracao = criarNarracao(LUGARES);
-    narracao.narrar(rodada(["BR", { quando: "2026-10-25 18:40:00", secoes: [306817, 472027, 65.0], ...placarDe(49.9) }]));
-    narracao.narrar(rodada(["BR", { quando: "2026-10-25 18:44:00", secoes: [319750, 472027, 67.74], ...placarDe(50.01) }]));
-    narracao.narrar(rodada(["BR", { quando: "2026-10-25 19:56:23", secoes: [466257, 472027, 98.81], ...placarDe(50.83), indicacao: true }]));
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 18:40:00", secoes: [306817, 472027, 65.0], ...placarDe(49.9) }]));
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 18:44:00", secoes: [319750, 472027, 67.74], ...placarDe(50.01) }]));
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 19:56:23", secoes: [466257, 472027, 98.81], ...placarDe(50.83), indicacao: true }]));
     narracao.narrar(rodada(["BR", { quando: "2026-10-26 00:18:04", secoes: [472027, 472027, 100], ...placarDe(50.9), final: true }]));
 
     expect(textos(narracao.doBrasil())).toEqual([
@@ -303,8 +303,8 @@ describe("a narração do Brasil e as das outras páginas", () => {
 
   it("na mesma rodada, a virada vem antes da indicação ou da totalização final, que vêm antes do marco, e todo evento entra", () => {
     const narracao = criarNarracao(LUGARES);
-    narracao.narrar(rodada(["BR", { quando: "2026-10-25 18:40:00", secoes: [306817, 472027, 65.0], ...placarDe(49.9) }]));
-    narracao.narrar(rodada(["BR", { quando: "2026-10-25 18:52:00", secoes: [354500, 472027, 75.1], ...placarDe(50.17), indicacao: true }]));
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 18:40:00", secoes: [306817, 472027, 65.0], ...placarDe(49.9) }]));
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 18:52:00", secoes: [354500, 472027, 75.1], ...placarDe(50.17), indicacao: true }]));
 
     expect(narracao.doLugar("BR").slice(0, 3).map((e) => [e.tipo, e.numero])).toEqual([
       ["virada", 4],
@@ -317,10 +317,10 @@ describe("a narração do Brasil e as das outras páginas", () => {
 describe("a indicação do TSE", () => {
   it("entra uma vez, quando o arquivo do Brasil traz `md = \"e\"`, com o eleito e o % das seções", () => {
     const narracao = criarNarracao(LUGARES);
-    const indicado: Parte = { quando: "2026-10-25 19:56:23", secoes: [466257, 472027, 98.81], flavio: [57_000_000, 49.17], lula: [58_920_000, 50.83], indicacao: true };
-    narracao.narrar(rodada(["BR", { quando: "2026-10-25 19:55:40", secoes: [466000, 472027, 98.72], flavio: [57_000_000, 49.17], lula: [58_900_000, 50.83] }]));
+    const indicado: Parte = { quando: "2022-10-30 19:56:23", secoes: [466257, 472027, 98.81], flavio: [57_000_000, 49.17], lula: [58_920_000, 50.83], indicacao: true };
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 19:55:40", secoes: [466000, 472027, 98.72], flavio: [57_000_000, 49.17], lula: [58_900_000, 50.83] }]));
     narracao.narrar(rodada(["BR", indicado]));
-    narracao.narrar(rodada(["BR", { ...indicado, quando: "2026-10-25 19:57:00", secoes: [466300, 472027, 98.82] }]));
+    narracao.narrar(rodada(["BR", { ...indicado, quando: "2022-10-30 19:57:00", secoes: [466300, 472027, 98.82] }]));
 
     expect(textos(narracao.doLugar("BR").filter((e) => e.tipo === "indicacao"))).toEqual([
       "19:56 · O TSE indica Lula eleito: eleição matematicamente definida, com 98,81% das seções totalizadas.",
