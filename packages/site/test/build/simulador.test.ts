@@ -144,7 +144,10 @@ describe("a simulação nunca aparece na manchete, na narração nem na página 
   it("a manchete e a narração da página do Brasil ficam como estavam", () => {
     const h = pagina("/");
     expect(texto(elemento(h, /<p[^>]*data-manchete/))).toBe("A apuração do 2º turno começa às 17h");
-    expect(texto(elemento(h, /<aside[^>]*id="narracao"/))).toBe("Narração da noite A narração começa às 17h, com as primeiras seções totalizadas.");
+    // Com o selo do ticket 15, que a narração leva em todo lugar.
+    expect(texto(elemento(h, /<aside[^>]*id="narracao"/))).toBe(
+      "Narração da noite A narração começa às 17h, com as primeiras seções totalizadas. Narração do Apurador com dados do TSE",
+    );
   });
 });
 
