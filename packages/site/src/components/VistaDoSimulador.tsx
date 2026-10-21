@@ -272,7 +272,7 @@ function LinhaDaBarra({ tipo, rotulo, finalistas, resultado }: PropsDaLinha) {
         <small class="margem">± {formatarCalculo(100 * resultado.margem)}</small>
       </p>
       {/* Compacta para a barra fixa do celular: "Chance 73% ▬▬ 27%", com os nomes, na ordem dos valores, só para o leitor de tela. */}
-      <p class="sim-chance">
+      <p class="sim-chance" data-chance-de-vitoria>
         Chance<span class="so-leitor"> de vitória:</span>
         {ordem.map((f, i) => (
           <>
