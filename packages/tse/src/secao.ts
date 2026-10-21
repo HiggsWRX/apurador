@@ -105,9 +105,10 @@ export interface VotoSecao {
   secao: number;
   /**
    * Como o boletim classifica o votável. Um voto "nominal" num número que não é candidato válido do turno
-   * (como o 28 no 1º turno de 2026) é nulo técnico, e quem soma os votos o conta como nulo.
+   * (como o 28 no 1º turno de 2026) é nulo técnico, e quem soma os votos o conta como nulo. O voto "anulado e
+   * apurado em separado" (o 97 da votação por seção) não é nulo: o TSE o conta só no comparecimento.
    */
-  tipo: "nominal" | "branco" | "nulo" | "legenda";
+  tipo: "nominal" | "branco" | "nulo" | "legenda" | "anulado";
   numero: number;
   votos: number;
 }
@@ -176,7 +177,13 @@ const COLUNAS_VOTACAO_SECAO = [
   "QT_VOTOS",
 ] as const;
 
-/** Os votos por seção da `votacao_secao`, que não diz o tipo do votável: o branco é o 95, e o nulo, o 96. */
+/** Os números que a `votacao_secao` dá aos votos que não são de candidato. */
+const TIPOS_SEM_CANDIDATO: Record<number, VotoSecao["tipo"]> = { 95: "branco", 96: "nulo", 97: "anulado" };
+
+/**
+ * Os votos por seção da `votacao_secao`, que não diz o tipo do votável: o branco é o 95, o nulo, o 96, e o voto
+ * anulado e apurado em separado, o 97 (em Presidente, só em duas seções de Salvador, no 1º turno de 2018).
+ */
 export function* lerVotacaoSecao(bytes: Uint8Array): Generator<VotoSecao> {
   for (const l of percorrerCsvTse(bytes, COLUNAS_VOTACAO_SECAO)) {
     const numero = inteiro(l.NR_VOTAVEL, "NR_VOTAVEL");
@@ -189,7 +196,7 @@ export function* lerVotacaoSecao(bytes: Uint8Array): Generator<VotoSecao> {
       municipio: inteiro(l.CD_MUNICIPIO, "CD_MUNICIPIO"),
       zona: inteiro(l.NR_ZONA, "NR_ZONA"),
       secao: inteiro(l.NR_SECAO, "NR_SECAO"),
-      tipo: numero === 95 ? "branco" : numero === 96 ? "nulo" : "nominal",
+      tipo: TIPOS_SEM_CANDIDATO[numero] ?? "nominal",
       numero,
       votos: inteiro(l.QT_VOTOS, "QT_VOTOS"),
     };

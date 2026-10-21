@@ -135,6 +135,16 @@ describe("lerVotacaoSecao", () => {
     ]);
   });
 
+  it("lê o 97 como voto anulado e apurado em separado, que não é nulo: só duas seções de Salvador o têm, no 1º turno de 2018", () => {
+    // De `votacao_secao_2018_BR.csv`. O detalhe por seção e o munzona os contam em `QT_VOTOS_ANULADOS_APU_SEP`.
+    const linha =
+      '"15/07/2021";"10:53:12";2018;2;"Eleição Ordinária";1;295;"Eleição Geral Federal 2018";"07/10/2018";"F";"BA";"BR";"BRASIL";38490;"SALVADOR";18;328;1;"Presidente";97;"VOTO ANULADO E APURADO EM SEPARADO";383;1376;-1;"CEEPS ANÍSIO TEIXEIRA";"LADEIRA DO PAIVA, N 40  - ZONA URBANA"';
+
+    const [voto] = lerVotacaoSecao(latin1(`${CABECALHO}\n${linha}\n`));
+
+    expect(voto).toMatchObject({ ano: 2018, turno: 1, uf: "BA", municipio: 38490, zona: 18, secao: 328, tipo: "anulado", numero: 97, votos: 383 });
+  });
+
   it("dá o zip de Presidente de um ano e o CSV dele", () => {
     expect(votacaoSecao(2026)).toEqual({
       url: "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2026_BR.zip",

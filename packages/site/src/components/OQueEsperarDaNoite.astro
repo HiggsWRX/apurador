@@ -1,14 +1,17 @@
 ---
+import { turnosDoLugar } from "../lib/curvas-passadas";
 import { corDoPartido } from "../lib/identidade";
 import { FINALISTAS } from "../lib/pesquisas";
 import { BASE_PADRAO, METADE_DAS_SECOES, ORDEM_DE_CHEGADA, PROJECAO_ANTES_DAS_17H } from "../lib/projecao-antes-das-17h";
 import { CurvaProjetada } from "./CurvaProjetada";
+import NoitesPassadas from "./NoitesPassadas";
 
 // "O que esperar da noite" (Telas da página de lugar, decisão 11; Combinação de pesquisas e apuração, decisão 6): a
 // ordem de chegada típica, medida no 1º turno de 2026, e a curva projetada de 0% a 100% das seções em cada base da
 // projeção, com a virada projetada. Antes da primeira seção ninguém está atrás no placar parcial, então não há rótulo
-// do sinal de virada, e nenhuma frase diz quem vence ou quando vira. Com a chave da projeção desligada, fica só o
-// texto da ordem de chegada. A base desenhada é a escolhida no controle da projeção, logo abaixo.
+// do sinal de virada, e nenhuma frase diz quem vence ou quando vira. Com a chave da projeção desligada, fica o texto
+// da ordem de chegada e, sem número de projeção, as curvas reais de noites passadas (Consulta a advogado eleitoral,
+// decisão 2). A base desenhada é a escolhida no controle da projeção, logo abaixo.
 
 const [primeiro, segundo] = FINALISTAS.map((c) => ({ nomeUrna: c.nomeUrna, cor: corDoPartido(c.partido) }));
 const pct = (fracao: number) => `${Math.round(100 * fracao)}%`;
@@ -39,6 +42,7 @@ const chegada =
       </>
     )
   }
+  {!PROJECAO_ANTES_DAS_17H && <NoitesPassadas client:visible turnos={turnosDoLugar("BR")} />}
   <p class="fonte">Cálculo do Apurador com dados do TSE</p>
 </section>
 

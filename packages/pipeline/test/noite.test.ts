@@ -152,6 +152,22 @@ describe("reconstruirNoite", () => {
     expect(r.apurado()).toMatchObject({ votantes: 147, brancos: 3, nulos: 6, votos: [48, 90] });
   });
 
+  it("deixa fora dos nulos os votos anulados e apurados em separado, que contam só nos votantes, como no resultado oficial", () => {
+    // A seção 328 da zona 18 de Salvador, no 1º turno de 2018, com os votantes reduzidos: 383 votos no 97.
+    const noite = reconstruirNoite({
+      ano: 2022,
+      turno: 2,
+      candidatos: CANDIDATOS,
+      secoes: [secao("BA", 38490, 18, 328, "17:40:00", { aptos: 420, votantes: 400, nominais: 15, brancos: 1, nulos: 1 })],
+      votos: [...boletim("BA", 38490, 18, 328, { lula: 10, bolsonaro: 5, brancos: 1, nulos: 1 }), { ...doTurno, uf: "BA", municipio: 38490, zona: 18, secao: 328, tipo: "anulado", numero: 97, votos: 383 }],
+    });
+    const r = reproduzir(noite);
+
+    r.avancarAte(s(18, 0, 0));
+
+    expect(r.apurado()).toMatchObject({ votantes: 400, brancos: 1, nulos: 1, votos: [10, 5] });
+  });
+
   it("recusa um boletim cujos votos não somam os votantes da seção no detalhe", () => {
     const entrada = {
       ano: 2022,
@@ -174,7 +190,7 @@ describe("reconstruirNoite", () => {
 });
 
 describe("conferências da noite contra o TSE", () => {
-  const noite = reconstruirNoite({
+  const entrada = {
     ano: 2022,
     turno: 2,
     candidatos: CANDIDATOS,
@@ -188,7 +204,8 @@ describe("conferências da noite contra o TSE", () => {
       ...boletim("AC", 1392, 2, 9, { lula: 6, bolsonaro: 4 }),
       ...boletim("AC", 1392, 2, 10, { lula: 15, bolsonaro: 5 }),
     ],
-  });
+  };
+  const noite = reconstruirNoite(entrada);
   const linha = (totalizacao: string, secoes: number, aptos: number, lula: number, bolsonaro: number, brancos: number, nulos: number) => ({
     totalizacao,
     secoes,
@@ -204,6 +221,14 @@ describe("conferências da noite contra o TSE", () => {
 
   it("a noite repete o histórico oficial de totalização, instante a instante", () => {
     expect(divergenciasDoHistorico(noite, historico)).toEqual([]);
+  });
+
+  it("acha os candidatos no histórico pelo nome de urna sem acento nem pontuação, como o do 1º turno de 2022 os escreve", () => {
+    // O munzona traz "FELIPE D AVILA" e "LÉO PÉRICLES"; o histórico, as colunas FELIPE DAVILA_… e LEO PERICLES_….
+    const comoNoMunzona = reconstruirNoite({ ...entrada, candidatos: [{ ...CANDIDATOS[0]!, nomeUrna: "LÉO PÉRICLES" }, { ...CANDIDATOS[1]!, nomeUrna: "FELIPE D AVILA" }] });
+    const comoNoHistorico = historico.map((l) => ({ ...l, candidatos: { "LEO PERICLES": l.candidatos.LULA, "FELIPE DAVILA": l.candidatos["JAIR BOLSONARO"] } }));
+
+    expect(divergenciasDoHistorico(comoNoMunzona, comoNoHistorico)).toEqual([]);
   });
 
   it("aponta o instante e o número que diferem do histórico oficial, e os instantes que faltam", () => {

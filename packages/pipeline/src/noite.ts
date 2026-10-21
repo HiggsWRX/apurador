@@ -77,7 +77,9 @@ export function reconstruirNoite(entrada: { ano: number; turno: number; candidat
   const geracao = new Set<string>();
 
   // Os votos de cada seção no boletim de urna. Um voto nominal em quem não é candidato válido do turno é nulo técnico.
+  // Os anulados e apurados em separado não são nulos nem válidos: o TSE os conta só no comparecimento.
   const votosDaSecao = new Map<string, Contagem>();
+  const anuladosDaSecao = new Map<string, number>();
   for (const v of entrada.votos) {
     if (!doTurno(v)) continue;
     geracao.add(v.geracao);
@@ -88,6 +90,7 @@ export function reconstruirNoite(entrada: { ano: number; turno: number; candidat
     if (candidato !== undefined) s.votos[candidato]! += v.votos;
     else if (v.tipo === "branco") s.brancos += v.votos;
     else if (v.tipo === "nulo" || v.tipo === "nominal") s.nulos += v.votos;
+    else if (v.tipo === "anulado") anuladosDaSecao.set(k, (anuladosDaSecao.get(k) ?? 0) + v.votos);
     else throw new Error(`${k}: voto de legenda para Presidente`);
   }
 
@@ -107,7 +110,7 @@ export function reconstruirNoite(entrada: { ano: number; turno: number; candidat
     // Os dois arquivos do TSE precisam contar os mesmos eleitores: cada votante deu um voto para Presidente.
     const secao = votosDaSecao.get(chaveDaSecao(s)) ?? contagemVazia(candidatos.length);
     votosDaSecao.delete(chaveDaSecao(s));
-    const noBoletim = secao.brancos + secao.nulos + secao.votos.reduce((a, n) => a + n, 0);
+    const noBoletim = secao.brancos + secao.nulos + secao.votos.reduce((a, n) => a + n, 0) + (anuladosDaSecao.get(chaveDaSecao(s)) ?? 0);
     if (noBoletim !== s.votantes) throw new Error(`${chaveDaSecao(s)}: o boletim de urna tem ${noBoletim} votos, e o detalhe, ${s.votantes} votantes`);
     Object.assign(secao, { secoes: 1, aptos: s.aptos, votantes: s.votantes });
     if (s.primeiraTotalizacao !== null) totalizadas.push({ instante: 0, zona: k, dataHora: s.primeiraTotalizacao, secao });
@@ -190,8 +193,19 @@ export function dataHoraDoInstante(noite: Pick<Noite, "dia">, instante: number):
 }
 
 /**
+ * O nome de urna só com as letras, sem acento: o histórico de totalização escreve "LEO PERICLES" e "FELIPE DAVILA" onde
+ * o munzona escreve "LÉO PÉRICLES" e "FELIPE D AVILA".
+ */
+const soLetras = (nome: string) =>
+  nome
+    .normalize("NFD")
+    .replace(/[^A-Za-z]/g, "")
+    .toUpperCase();
+
+/**
  * Confere a noite com o histórico oficial de totalização do Brasil (só existe para 2022): os mesmos instantes
- * e, em cada um, o mesmo acumulado. Devolve as diferenças, vazio se a noite repete o histórico.
+ * e, em cada um, o mesmo acumulado. Os candidatos se acham pelo nome de urna, só com as letras. Devolve as
+ * diferenças, vazio se a noite repete o histórico.
  */
 export function divergenciasDoHistorico(noite: Noite, historico: LinhaDoHistorico[]): string[] {
   const divergencias: string[] = [];
@@ -212,7 +226,8 @@ export function divergenciasDoHistorico(noite: Noite, historico: LinhaDoHistoric
     comparar("válidos", a.votos.reduce((s, v) => s + v, 0), l.validos);
     comparar("brancos", a.brancos, l.brancos);
     comparar("nulos", a.nulos, l.nulos);
-    noite.candidatos.forEach((c, i) => comparar(c.nomeUrna, a.votos[i]!, l.candidatos[c.nomeUrna]));
+    const noHistorico = new Map(Object.entries(l.candidatos).map(([nome, votos]) => [soLetras(nome), votos]));
+    noite.candidatos.forEach((c, i) => comparar(c.nomeUrna, a.votos[i]!, noHistorico.get(soLetras(c.nomeUrna))));
   }
   const daNoite = new Set(noite.chegadas.map((c) => c.instante));
   for (const i of daNoite) if (!instantes.has(i)) divergencias.push(`a noite tem uma chegada às ${dataHoraDoInstante(noite, i)}, que não está no histórico`);

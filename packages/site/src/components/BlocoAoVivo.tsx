@@ -2,7 +2,9 @@ import type { ChavesDaNoite } from "@apurador/coletor";
 import type { TipoDeLugar } from "@apurador/pipeline";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { emPlanoZero } from "../lib/chaves-ao-vivo";
+import type { TurnoPassado } from "../lib/curva-de-comparacao";
 import { antesDaPrimeiraLeitura, criarLeitorAoVivo, INTERVALO_DAS_LEITURAS } from "../lib/leitor-ao-vivo";
+import { useComparacao } from "./CurvaDeComparacao";
 import { VistaDoBlocoAoVivo } from "./VistaDoBlocoAoVivo";
 
 // A ilha do bloco ao vivo, em cada página de lugar. No build, ela sai no estado de antes das 17h, sem nenhuma leitura.
@@ -20,10 +22,13 @@ interface Props {
   base: string | null;
   /** As chaves da noite do arquivo de chaves do site, que valem até a primeira rodada do coletor. */
   chaves: ChavesDaNoite;
+  /** Os turnos passados que o lugar tem, para os botões da curva de comparação; as curvas só vêm no clique. */
+  turnosPassados: TurnoPassado[];
 }
 
 /** A ilha do bloco ao vivo de um lugar. */
-export default function BlocoAoVivo({ id, tipo, uf, fotos, base, chaves }: Props) {
+export default function BlocoAoVivo({ id, tipo, uf, fotos, base, chaves, turnosPassados }: Props) {
+  const comparacao = useComparacao(id, turnosPassados);
   const leitor = useMemo(
     () => (base ? criarLeitorAoVivo({ base, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now(), chaves }) : null),
     [base, id, chaves],
@@ -114,6 +119,7 @@ export default function BlocoAoVivo({ id, tipo, uf, fotos, base, chaves }: Props
         proximaLeitura={proximaLeitura}
         lendo={lendo}
         placarNaTela={placarNaTela}
+        comparacao={comparacao}
       />
     </div>
   );

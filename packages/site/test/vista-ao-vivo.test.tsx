@@ -2,8 +2,9 @@ import type { ArquivoDeRodada, ArquivoDoLugar, ChavesDaNoite } from "@apurador/c
 import { render } from "preact-render-to-string";
 import { describe, expect, it } from "vitest";
 import { VistaDoBlocoAoVivo, type PropsDaVista } from "../src/components/VistaDoBlocoAoVivo";
+import { COMPARACAO_DESLIGADA, type EstadoDaComparacao, type TurnoPassado } from "../src/lib/curva-de-comparacao";
 import type { QuadroAoVivo } from "../src/lib/leitor-ao-vivo";
-import { elemento, texto } from "./html";
+import { botoes, elemento, texto } from "./html";
 
 // O que o bloco ao vivo mostra para cada quadro do leitor, renderizado em HTML como a ilha o desenha. Os números de
 // referência são os dos exemplos das decisões (Narração da noite, decisão 9), com as seções e os candidatos de 2026.
@@ -202,6 +203,70 @@ describe("curva real", () => {
 
   it("leva a atribuição da camada analítica", () => {
     expect(texto(curvaDe(pontos))).toContain("Cálculo do Apurador com dados do TSE");
+  });
+
+  describe("com a curva de comparação", () => {
+    const TURNOS: TurnoPassado[] = [
+      { id: "2018-1", nome: "2018 1T", turno: 1, partidoDeBolsonaro: "PSL" },
+      { id: "2018-2", nome: "2018 2T", turno: 2, partidoDeBolsonaro: "PSL" },
+      { id: "2022-1", nome: "2022 1T", turno: 1, partidoDeBolsonaro: "PL" },
+      { id: "2022-2", nome: "2022 2T", turno: 2, partidoDeBolsonaro: "PL" },
+      { id: "2026-1", nome: "2026 1T", turno: 1, partidoDeBolsonaro: "PL" },
+    ];
+    // O PT entre os dois, no começo instável com 25% e depois nunca mais de 11,4 pontos de 50%, até os 44,9% do fim.
+    const DE_2018 = { secoes: [0.1, 2, 10, 50, 100], pt: [12.5, 25, 38.6, 41.2, 44.9] };
+    const comparadaCom = (estado: Partial<EstadoDaComparacao>, turnos = TURNOS) => {
+      const lugar = dadosDoLugar({ secoes: { totalizadas: 1, total: 4, percentual: 25 } }, pontos);
+      const comparacao = { turnos, estado: { ...COMPARACAO_DESLIGADA, ...estado }, alternar: () => {} };
+      return elemento(vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar }), { comparacao }), /<section[^>]*data-curva-real/);
+    };
+    const legenda = (html: string) => texto(elemento(html, /<p[^>]*data-legenda-da-comparacao/));
+
+    it("abre desligada: um botão por turno passado, nenhum apertado, e só as linhas da curva real", () => {
+      const html = comparadaCom({});
+
+      expect(botoes(html)).toEqual([
+        ["2018 1T", "false"],
+        ["2018 2T", "false"],
+        ["2022 1T", "false"],
+        ["2022 2T", "false"],
+        ["2026 1T", "false"],
+      ]);
+      expect(html).not.toContain("linha-de-comparacao");
+      expect(html).not.toContain("data-legenda-da-comparacao");
+    });
+
+    it("ligada, aparece sobre a curva real, pontilhada, com o PT na cor de Lula e o partido de Bolsonaro na de Flávio, e a legenda", () => {
+      const html = comparadaCom({ ligado: "2018-2", situacao: "pronta", curva: DE_2018 });
+
+      expect(botoes(html).filter(([, apertado]) => apertado === "true")).toEqual([["2018 2T", "true"]]);
+      expect([...html.matchAll(/<path class="linha-de-comparacao" data-cor="(\w+)"/g)].map((m) => m[1])).toEqual(["lula", "flavio"]);
+      // As linhas da comparação vêm antes, por baixo das da curva real, que continua inteira à vista.
+      expect(html.indexOf("data-linha-real")).toBeGreaterThan(html.lastIndexOf("linha-de-comparacao"));
+      expect(legenda(html)).toBe("Curva real de 2018 2T: PT × PSL");
+    });
+
+    it("entra na conta da escala como a curva real: só depois de 3% das seções", () => {
+      // Sem ela, de 46% a 54%; com ela, os 38,6% pedem de 40% a 60%, e os 25% e 12,5% do começo ficam de fora.
+      expect(rotulosDoEixo(comparadaCom({ ligado: "2018-2", situacao: "pronta", curva: DE_2018 }))).toEqual(["40%", "45%", "50%", "55%", "60%"]);
+    });
+
+    it("num 1º turno, a legenda diz que a fatia é só entre os dois partidos", () => {
+      expect(legenda(comparadaCom({ ligado: "2018-1", situacao: "pronta", curva: DE_2018 }))).toBe("Curva real de 2018 1T, só entre os dois: PT × PSL");
+    });
+
+    it("enquanto as curvas chegam, e se elas não vêm, a legenda diz isso, sem linha nenhuma", () => {
+      const baixando = comparadaCom({ ligado: "2022-2", situacao: "baixando" });
+      const falhou = comparadaCom({ ligado: "2022-2", situacao: "falhou" });
+
+      expect(legenda(baixando)).toBe("Baixando a curva de 2022 2T…");
+      expect(legenda(falhou)).toBe("Não foi possível baixar a curva de 2022 2T. Tente de novo.");
+      expect(baixando + falhou).not.toContain("linha-de-comparacao");
+    });
+
+    it("um lugar sem nenhum turno passado, como Abuja, não tem botões nem legenda", () => {
+      expect(comparadaCom({}, [])).not.toContain("data-comparacao");
+    });
   });
 });
 

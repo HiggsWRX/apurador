@@ -68,3 +68,6 @@ O endereço só abre com os nove itens verdadeiros, registrados com o de acordo 
   - **Tempo**: ~170 KB com gzip na tela do simulador, contra um orçamento de 300 KB pela conta do "Slow 4G" para 5 s, e ~2,2 s numa medição emulada (Slow 4G e CPU 4 vezes mais lenta). Não foi medido num aparelho.
   - **Decididas pelo dono em 20/10** (registro do ticket 24): as hipóteses prontas usam os 2,1 pontos que a metodologia cita, e não os 1,4 da decisão 9; e as duas frases novas de "o que seria preciso" ficam, e entram com a da decisão 10 no pedido da [Confirmação dos textos preditivos](../../apurador-2026/issues/22-confirmacao-dos-textos-preditivos.md). Se o advogado não confirmar, "o que seria preciso" sai inteiro do simulador.
   - **Números do instante do build**: como a projeção, o simulador usa o agregado do instante do build; os números mudam a cada deploy até o congelamento das 23h de 24/10.
+- 20/10/2026, do [ticket 33](33-curva-de-comparacao.md): o build gera um `/curvas/<id>.json` por lugar, 5.749 arquivos com 3,6 MB no total.
+  - O `dist` passa a 11.569 arquivos, dentro dos 20.000 por versão do Worker de static assets.
+  - Ao conferir o deploy, abra um deles (`/curvas/BR.json`): a página só o pede quando o visitante liga uma curva de comparação.
