@@ -26,7 +26,6 @@ describe("os módulos dos pacotes", () => {
   const REPETIDOS: Record<string, string> = {
     Buscar: "a mesma função de rede, com a forma do `fetch`, no tse e no coletor",
     BaseDoModelo: "a base que o pipeline grava e a parte dela que o modelo lê",
-    ResultadoDoLugar: "dois sentidos (o resultado oficial no pipeline, a projeção no modelo): um deles muda de nome quando os tickets abertos entrarem",
   };
 
   it("exportam cada nome de um módulo só", () => {

@@ -13,7 +13,7 @@ export interface CandidatoDoTurno {
 }
 
 /** O resultado oficial de um lugar num turno. */
-export interface ResultadoDoLugar {
+export interface ResultadoOficialDoLugar {
   aptos: number;
   votantes: number;
   abstencoes: number;
@@ -39,7 +39,7 @@ export interface Turno {
    * O resultado de cada lugar que votou no turno: o Brasil (`BR`, que inclui o Exterior), cada UF,
    * o Exterior (`ZZ`) e cada município, pelo id de `idDoMunicipio`.
    */
-  lugares: Record<string, ResultadoDoLugar>;
+  lugares: Record<string, ResultadoOficialDoLugar>;
 }
 
 /** Os totais de um lugar, além dos votos por candidato. */
@@ -77,7 +77,7 @@ export function resultadoDoTurno(entrada: { ano: number; turno: number; candidat
   const posicao = new Map(ordenados.map((c, i) => [c.candidato.numero, i]));
 
   // Cada linha do TSE (um município e zona) soma no Brasil, na UF (ou no Exterior) e no município.
-  const lugares = new Map<string, ResultadoDoLugar>();
+  const lugares = new Map<string, ResultadoOficialDoLugar>();
   const lugaresDa = (linha: { uf: string; municipio: number }) =>
     ["BR", linha.uf, idDoMunicipio(linha.municipio)].map((id) => {
       let r = lugares.get(id);
