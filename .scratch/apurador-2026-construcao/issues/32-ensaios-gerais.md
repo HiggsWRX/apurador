@@ -56,3 +56,5 @@ Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decis�
   - **Publicado**: com uma casa, chega a 0,50 (49,6 contra os 49,10 do TSE).
   - **No replay**: a conta é na precisão da página, contra o resultado como o TSE o publica, e passa. Se o ensaio medir contra o resultado com mais casas, o arredondamento a reprova.
   - **Decisão do dono em 22/10**: no ensaio, o critério se mede como no replay, no número publicado contra o resultado publicado. O erro do modelo sem arredondar fica com o teste do `modelo` (`packages/modelo/test/noites.test.ts`), com as constantes congeladas.
+
+- 22/10/2026, do [ticket 29](29-metodologia-acerto-e-calibracao.md): o build do ensaio 2 leva as seções 6 e 7 da metodologia. Nos celulares, vale olhar a página `/metodologia/#acerto`: os botões "2022 | 2018" trocam a noite, as tabelas das seções 6 e 7 (e as de "Os números de cada candidato") rolam de lado sem rolar a página, e os gráficos cabem na largura.

@@ -132,3 +132,7 @@ O protótipo roda a noite real do 2T de 2022, seção por seção, com o módulo
 - O rodapé e "quem faz" usam o nome do dono e o e-mail do projeto (decisão 7 da [Consulta a advogado eleitoral](16-consulta-advogado-eleitoral.md)).
 
 **Glossário**: entram "Página de metodologia" e "Histórico de acerto".
+
+## Comments
+
+- 22/10/2026, do [ticket 29 da construção](../../apurador-2026-construcao/issues/29-metodologia-acerto-e-calibracao.md): a página mostra a noite de 2022 com as constantes congeladas pela calibração, e não com os ajustes provisórios do protótipo. Com 5% das seções, a projeção erra menos de 0,1 ponto (0,0398 na Apuração + pesquisas, 0,0432 na Só apuração) e o placar parcial, 4,2; com 1%, 1,7 ponto na Só apuração e 1,3 na Apuração + pesquisas; com o agregado deslocado, as versões ficam a menos de 0,1 ponto da Só apuração a partir de 5% das seções, e não de 7%; e o resultado fica dentro da faixa de 95% em todos os momentos depois de 1% das seções, e não em 98%.
