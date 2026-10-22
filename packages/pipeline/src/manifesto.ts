@@ -58,7 +58,8 @@ export function atualizarManifesto(
   for (const f of gerado.fontes) {
     const antes = fontes.get(f.url);
     const afetados = outros.filter((d) => d.fontes.includes(f.url)).map((d) => d.arquivo);
-    if (antes && antes.sha256 !== f.sha256 && afetados.length > 0) avisar(`A fonte ${f.url} mudou e ainda serve a ${afetados.join(", ")}: rode também o gerador desses derivados`);
+    if (antes && antes.sha256 !== f.sha256 && afetados.length > 0)
+      avisar(`A fonte ${f.url} mudou e ainda serve a ${afetados.join(", ")}: rode também o gerador desses derivados`);
     fontes.set(f.url, f);
   }
   const usadas = new Set(derivados.flatMap((d) => d.fontes));

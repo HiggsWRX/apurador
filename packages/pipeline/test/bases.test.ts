@@ -9,7 +9,12 @@ const BOA_ESPERANCA_DO_NORTE = { uf: "MT", municipio: 73709 };
 
 function noBrasil(base: BaseDoModelo) {
   const soma = (f: (m: BaseDoModelo["municipios"][number]) => number) => base.municipios.reduce((s, m) => s + f(m), 0);
-  return { aptos: soma((m) => m.aptos), secoes: soma((m) => m.secoes), validos: soma((m) => m.validos), votos: base.finalistas.map((_, i) => soma((m) => m.votos[i]!)) };
+  return {
+    aptos: soma((m) => m.aptos),
+    secoes: soma((m) => m.secoes),
+    validos: soma((m) => m.validos),
+    votos: base.finalistas.map((_, i) => soma((m) => m.votos[i]!)),
+  };
 }
 
 /** A ordem em que os grupos de UFs chegam à metade das suas seções, pelo perfil de chegada. */
@@ -47,7 +52,10 @@ describe("a base da noite de 25/10: o 1º turno de 2026", () => {
   it("tem os 5.571 municípios e os 186 postos do Exterior, com Boa Esperança do Norte (MT)", () => {
     expect(base.municipios.filter((m) => m.uf !== "ZZ")).toHaveLength(5_571);
     expect(base.municipios.filter((m) => m.uf === "ZZ")).toHaveLength(186);
-    expect(base.municipios.find((m) => m.uf === BOA_ESPERANCA_DO_NORTE.uf && m.municipio === BOA_ESPERANCA_DO_NORTE.municipio)).toMatchObject({ aptos: 4_326, secoes: 13 });
+    expect(base.municipios.find((m) => m.uf === BOA_ESPERANCA_DO_NORTE.uf && m.municipio === BOA_ESPERANCA_DO_NORTE.municipio)).toMatchObject({
+      aptos: 4_326,
+      secoes: 13,
+    });
   });
 
   it("o perfil de chegada põe as UFs na ordem da metade das seções medida no 1º turno de 2026", () => {
@@ -65,7 +73,9 @@ describe("a base da noite de 25/10: o 1º turno de 2026", () => {
 });
 
 const REGIAO: Record<string, string> = Object.fromEntries(
-  Object.entries({ N: "AC AM AP PA RO RR TO", NE: "AL BA CE MA PB PE PI RN SE", CO: "DF GO MS MT", SE: "ES MG RJ SP", S: "PR RS SC", Exterior: "ZZ" }).flatMap(([r, ufs]) => ufs.split(" ").map((uf) => [uf, r])),
+  Object.entries({ N: "AC AM AP PA RO RR TO", NE: "AL BA CE MA PB PE PI RN SE", CO: "DF GO MS MT", SE: "ES MG RJ SP", S: "PR RS SC", Exterior: "ZZ" }).flatMap(
+    ([r, ufs]) => ufs.split(" ").map((uf) => [uf, r]),
+  ),
 );
 
 describe("a base da noite de 2022: o 1º turno de 2022", () => {
@@ -132,7 +142,12 @@ describe("a base da noite do 1º turno de 2026, da calibração: o 1º turno de 
   it("tem a geografia da noite de 2026, com Boa Esperança do Norte (MT) zerada, porque ela não votou em 2022", () => {
     expect(base.municipios.filter((m) => m.uf !== "ZZ")).toHaveLength(5_571);
     expect(base.municipios.filter((m) => m.uf === "ZZ")).toHaveLength(186);
-    expect(base.municipios.find((m) => m.uf === BOA_ESPERANCA_DO_NORTE.uf && m.municipio === BOA_ESPERANCA_DO_NORTE.municipio)).toMatchObject({ aptos: 0, secoes: 0, validos: 0, degrausDeChegada: [] });
+    expect(base.municipios.find((m) => m.uf === BOA_ESPERANCA_DO_NORTE.uf && m.municipio === BOA_ESPERANCA_DO_NORTE.municipio)).toMatchObject({
+      aptos: 0,
+      secoes: 0,
+      validos: 0,
+      degrausDeChegada: [],
+    });
   });
 });
 
@@ -147,7 +162,11 @@ describe("as bases por zona das noites da calibração", () => {
 
   it("deixam São Paulo inteiro em 2026, porque ele tinha 58 zonas em 2022 e tem 57", () => {
     expect(ler("2022-2-zonas").municipios.filter((m) => m.uf === "SP" && m.municipio === 71072)).toHaveLength(58);
-    expect(ler("2026-1-zonas").municipios.filter((m) => m.uf === "SP" && m.municipio === 71072).map((m) => m.zona)).toEqual([undefined]);
+    expect(
+      ler("2026-1-zonas")
+        .municipios.filter((m) => m.uf === "SP" && m.municipio === 71072)
+        .map((m) => m.zona),
+    ).toEqual([undefined]);
   });
 
   it("somam no Brasil os totais do resultado oficial do 1º turno de 2022 e de 2018", () => {

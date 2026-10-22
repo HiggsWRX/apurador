@@ -4,7 +4,7 @@ import type { ArquivoDoSimulador } from "../lib/arquivo-do-simulador";
 import type { IdDaBase } from "../lib/bases-da-projecao";
 import { enderecoDaSimulacao, lerEndereco, mexidas, type FinalistasDoSimulador } from "../lib/hipoteses";
 import { baseNoSimulador, prepararSimulador, regiaoDaUf, simularNaTela, type DadosDoSimulador } from "../lib/simulador";
-import { VistaDoSimulador, type PropsDaVista } from "./VistaDoSimulador";
+import { VistaDoSimulador, type PropsDaVistaDoSimulador } from "./VistaDoSimulador";
 
 // A ilha do simulador "e se", na tela própria dele (Simulador "e se", decisões 5, 6, 11 e 13). No build, ela sai como
 // "Carregando o simulador…": o modelo e o arquivo só carregam quando a tela abre, nunca na página de lugar. No
@@ -30,7 +30,7 @@ export default function Simulador({ arquivo, finalistas, basePadrao, viesDoPrime
   const [base, setBase] = useState<IdDaBase>(basePadrao);
   const [deOutraPessoa, setDeOutraPessoa] = useState(false);
   const [regioesAbertas, setRegioesAbertas] = useState<number[]>([]);
-  const [copia, setCopia] = useState<PropsDaVista["copia"]>(null);
+  const [copia, setCopia] = useState<PropsDaVistaDoSimulador["copia"]>(null);
 
   useEffect(() => {
     const endereco = lerEndereco(location.search, finalistas);

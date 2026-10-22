@@ -190,11 +190,19 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
     const secoes = pct(r.secoes.percentual);
     const evento = (tipo: TipoDeEvento, texto: string): EventoDaNarracao => ({ lugar: lugar.id, tipo, quando, texto });
     if (nivel === COMECO) {
-      return evento("comeco", lugar.tipo === "brasil" ? `Começa a divulgação: ${secoes} das seções totalizadas no Brasil.` : `Começa a totalização: ${secoes} das seções totalizadas ${nome.em}.`);
+      return evento(
+        "comeco",
+        lugar.tipo === "brasil"
+          ? `Começa a divulgação: ${secoes} das seções totalizadas no Brasil.`
+          : `Começa a totalização: ${secoes} das seções totalizadas ${nome.em}.`,
+      );
     }
     if (nivel === FIM && lugar.tipo === "brasil") {
       const eleito = lider(r);
-      return evento("totalizacao-final", `Totalização final: ${eleito ? `${nomeCurto(eleito.nomeUrna)} eleito com ${pct(eleito.percentual)} dos votos válidos` : placar(r.candidatos)}.`);
+      return evento(
+        "totalizacao-final",
+        `Totalização final: ${eleito ? `${nomeCurto(eleito.nomeUrna)} eleito com ${pct(eleito.percentual)} dos votos válidos` : placar(r.candidatos)}.`,
+      );
     }
     if (nivel === FIM) return evento("fim", `${maiuscula(nome.sujeito)} terminou a totalização. ${placar(r.candidatos)}.`);
     const texto = `Passa de ${nivel}% das seções totalizadas ${nome.em}: ${secoes}. ${placar(r.candidatos)}.${lugar.tipo === "brasil" ? ondeFalta() : ""}`;
@@ -254,7 +262,13 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
       aberta.texto = `Virada ${em}: a liderança trocou ${aberta.trocas} vezes entre ${hora(aberta.quando)} e ${hora(quando)}; ${nomeCurto(novoLider.nomeUrna)} à frente ${comSecoes}`;
       return aberta;
     }
-    const evento: EventoDaNarracao = { lugar: lugar.id, tipo: "virada", quando, texto: `Virada ${em}: ${nomeCurto(novoLider.nomeUrna)} passa à frente ${comSecoes}`, trocas: 1 };
+    const evento: EventoDaNarracao = {
+      lugar: lugar.id,
+      tipo: "virada",
+      quando,
+      texto: `Virada ${em}: ${nomeCurto(novoLider.nomeUrna)} passa à frente ${comSecoes}`,
+      trocas: 1,
+    };
     narrado.virada = evento;
     novos.push(evento);
     return undefined;

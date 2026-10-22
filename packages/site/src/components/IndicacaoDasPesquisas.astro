@@ -27,25 +27,25 @@ function explicacao(i: { placarEntreFinalistas: number; indicacao: number }): st
 }
 ---
 
-{
-  indicacao && (
-    <section class="cartao indicacao" data-bloco="indicacao-das-pesquisas" aria-labelledby="indicacao-titulo">
-      <h2 id="indicacao-titulo">Indicação das pesquisas</h2>
-      {indicacao.tipo === "indicacao" ? (
-        <>
-          <ValoresDosFinalistas valores={entreOsFinalistas(umaCasa(indicacao.indicacao))} />
-          <p>{explicacao(indicacao)}</p>
-          <p class="nota">Cálculo do Apurador com dados do TSE e o agregado de pesquisas de {formatarDia(AGREGADO!.dia)}. Não é uma pesquisa própria.</p>
-        </>
-      ) : (
-        <p>
-          Não há indicação das pesquisas aqui:{" "}
-          {indicacao.tipo === "sem-votacao" ? "este lugar não teve votação no 1º turno de 2026." : "nenhum dos dois finalistas teve voto aqui no 1º turno de 2026."}
-        </p>
-      )}
-    </section>
-  )
-}
+{indicacao && (
+  <section class="cartao indicacao" data-bloco="indicacao-das-pesquisas" aria-labelledby="indicacao-titulo">
+    <h2 id="indicacao-titulo">Indicação das pesquisas</h2>
+    {indicacao.tipo === "indicacao" ? (
+      <>
+        <ValoresDosFinalistas valores={entreOsFinalistas(umaCasa(indicacao.indicacao))} />
+        <p>{explicacao(indicacao)}</p>
+        <p class="nota">Cálculo do Apurador com dados do TSE e o agregado de pesquisas de {formatarDia(AGREGADO!.dia)}. Não é uma pesquisa própria.</p>
+      </>
+    ) : (
+      <p>
+        Não há indicação das pesquisas aqui:{" "}
+        {indicacao.tipo === "sem-votacao"
+          ? "este lugar não teve votação no 1º turno de 2026."
+          : "nenhum dos dois finalistas teve voto aqui no 1º turno de 2026."}
+      </p>
+    )}
+  </section>
+)}
 
 <style>
   p {

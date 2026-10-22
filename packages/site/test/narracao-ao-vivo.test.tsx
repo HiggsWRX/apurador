@@ -22,12 +22,14 @@ const LIGADAS: ChavesDaNoite = { nucleoMinimo: true, projecao: true, baseComPesq
 const evento = (lugar: string, tipo: EventoDaNarracao["tipo"], quando: string, texto: string, extra: Partial<EventoDaNarracao> = {}): EventoDaNarracao => ({
   lugar,
   tipo,
-  quando: `2026-10-25 ${quando}`,
+  quando: `2022-10-30 ${quando}`,
   texto,
   ...extra,
 });
 
-const VIRADA_NO_BRASIL = evento("BR", "virada", "18:44:00", "Virada no Brasil: Lula passa à frente no placar parcial, com 67,74% das seções totalizadas.", { trocas: 1 });
+const VIRADA_NO_BRASIL = evento("BR", "virada", "18:44:00", "Virada no Brasil: Lula passa à frente no placar parcial, com 67,74% das seções totalizadas.", {
+  trocas: 1,
+});
 const INDICACAO = evento("BR", "indicacao", "19:56:23", "O TSE indica Lula eleito: eleição matematicamente definida, com 98,81% das seções totalizadas.");
 
 interface Momento {
@@ -42,12 +44,20 @@ interface Momento {
   fase?: QuadroAoVivo["fase"];
 }
 
-function quadroEm({ lugar = ["BR", { tipo: "brasil", em: "no Brasil" }], agora = "19:42:15", tse = {}, narracao = [], eventosDoBrasil = [], curva = [], fase = "ao-vivo" }: Momento = {}): QuadroAoVivo {
+function quadroEm({
+  lugar = ["BR", { tipo: "brasil", em: "no Brasil" }],
+  agora = "19:42:15",
+  tse = {},
+  narracao = [],
+  eventosDoBrasil = [],
+  curva = [],
+  fase = "ao-vivo",
+}: Momento = {}): QuadroAoVivo {
   // A rodada vem do relógio do coletor, que no ensaio geral está em outro dia: a manchete não pode depender dele.
   const rodada: ArquivoDeRodada = {
     rodada: "2026-10-22T23:42:15.000Z",
     fase,
-    novidade: { totalizacao: `2026-10-25 ${agora}`, vista: "2026-10-22T23:42:12.000Z" },
+    novidade: { totalizacao: `2022-10-30 ${agora}`, vista: "2026-10-22T23:42:12.000Z" },
     candidatos: CANDIDATOS,
     chaves: LIGADAS,
     aviso: null,
@@ -55,7 +65,14 @@ function quadroEm({ lugar = ["BR", { tipo: "brasil", em: "no Brasil" }], agora =
   };
   const arquivo: ArquivoDoLugar = {
     lugar: lugar[0],
-    tse: { totalizacao: "2026-10-25 19:42:10", secoes: { totalizadas: 319847, total: 472027, percentual: 67.76 }, votos: [61000000, 61122000], percentuais: [49.95, 50.05], final: false, ...tse },
+    tse: {
+      totalizacao: "2022-10-30 19:42:10",
+      secoes: { totalizadas: 319847, total: 472027, percentual: 67.76 },
+      votos: [61000000, 61122000],
+      percentuais: [49.95, 50.05],
+      final: false,
+      ...tse,
+    },
     curva,
     narracao,
   };
@@ -63,32 +80,55 @@ function quadroEm({ lugar = ["BR", { tipo: "brasil", em: "no Brasil" }], agora =
 }
 
 const vista = (m: Momento = {}) =>
-  render(<VistaDoBlocoAoVivo quadro={quadroEm(m)} lugar={(m.lugar ?? ["BR", { tipo: "brasil", em: "no Brasil" }])[1]} fotos={{}} movimentoReduzido={false} proximaLeitura={30} lendo={false} />);
+  render(
+    <VistaDoBlocoAoVivo
+      quadro={quadroEm(m)}
+      lugar={(m.lugar ?? ["BR", { tipo: "brasil", em: "no Brasil" }])[1]}
+      fotos={{}}
+      movimentoReduzido={false}
+      proximaLeitura={30}
+      lendo={false}
+    />,
+  );
 const manchete = (m: Momento) => texto(elemento(vista(m), /<p[^>]*data-manchete/));
 const BAHIA: [string, PropsDaVista["lugar"]] = ["BA", { tipo: "uf", uf: "BA", em: "na Bahia" }];
 const SALVADOR: [string, PropsDaVista["lugar"]] = ["38490", { tipo: "municipio", uf: "BA", em: "em Salvador (BA)" }];
 
 describe("a manchete com a narração", () => {
-  it("diz \"Virada: …\" por 10 minutos depois de uma virada no próprio lugar, pela hora do TSE", () => {
+  it('diz "Virada: …" por 10 minutos depois de uma virada no próprio lugar, pela hora do TSE', () => {
     const virada = { narracao: [{ ...VIRADA_NO_BRASIL, numero: 5, ponto: [67.74, 49.99, 50.01] }] };
     expect(manchete({ ...virada, agora: "18:53:59" })).toBe("Virada: Lula passa à frente com 50,05%, com 67,76% das seções totalizadas");
     expect(manchete({ ...virada, agora: "18:54:01" })).toBe("Lula lidera com 50,05% dos votos válidos e 67,76% das seções totalizadas");
     // A virada do Brasil, intercalada na página da Bahia, não muda a manchete dela.
-    expect(manchete({ lugar: BAHIA, eventosDoBrasil: [VIRADA_NO_BRASIL], agora: "18:45:00" })).toBe("Lula lidera com 50,05% dos votos válidos e 67,76% das seções totalizadas");
+    expect(manchete({ lugar: BAHIA, eventosDoBrasil: [VIRADA_NO_BRASIL], agora: "18:45:00" })).toBe(
+      "Lula lidera com 50,05% dos votos válidos e 67,76% das seções totalizadas",
+    );
   });
 
-  it("não diz \"Virada\" quando as trocas da janela voltaram a liderança a quem estava à frente", () => {
-    const idaEVolta = evento("BR", "virada", "18:42:53", "Virada no Brasil: a liderança trocou 2 vezes entre 18:42 e 18:43; Lula à frente no placar parcial, com 66,85% das seções totalizadas.", {
-      trocas: 2,
-      numero: 5,
-    });
+  it('não diz "Virada" quando as trocas da janela voltaram a liderança a quem estava à frente', () => {
+    const idaEVolta = evento(
+      "BR",
+      "virada",
+      "18:42:53",
+      "Virada no Brasil: a liderança trocou 2 vezes entre 18:42 e 18:43; Lula à frente no placar parcial, com 66,85% das seções totalizadas.",
+      {
+        trocas: 2,
+        numero: 5,
+      },
+    );
     expect(manchete({ narracao: [idaEVolta], agora: "18:44:00" })).toBe("Lula lidera com 50,05% dos votos válidos e 67,76% das seções totalizadas");
   });
 
-  it("no Brasil, com a indicação do TSE, diz \"O TSE indica X eleito\"; na totalização final, \"X foi eleito com Y% dos votos válidos\"", () => {
-    const indicado = { narracao: [{ ...INDICACAO, numero: 9, ponto: [98.81, 49.17, 50.83] }], tse: { percentuais: [49.17, 50.83], votos: [57_000_000, 58_920_000] } };
+  it('no Brasil, com a indicação do TSE, diz "O TSE indica X eleito"; na totalização final, "X foi eleito com Y% dos votos válidos"', () => {
+    const indicado = {
+      narracao: [{ ...INDICACAO, numero: 9, ponto: [98.81, 49.17, 50.83] }],
+      tse: { percentuais: [49.17, 50.83], votos: [57_000_000, 58_920_000] },
+    };
     expect(manchete(indicado)).toBe("O TSE indica Lula eleito");
-    const final = { ...indicado, tse: { final: true, secoes: { totalizadas: 472027, total: 472027, percentual: 100 }, percentuais: [49.1, 50.9], votos: [58_206_354, 60_345_999] } };
+    const final = {
+      ...indicado,
+      tse: { final: true, secoes: { totalizadas: 472027, total: 472027, percentual: 100 }, percentuais: [49.1, 50.9], votos: [58_206_354, 60_345_999] },
+    };
     expect(manchete(final)).toBe("Lula foi eleito com 50,90% dos votos válidos");
   });
 
@@ -116,10 +156,12 @@ describe("a manchete com a narração", () => {
 describe("o placar com a indicação do TSE", () => {
   const placar = (m: Momento) => texto(elemento(vista(m), /<section[^>]*data-placar-oficial/));
 
-  it("mostra \"matematicamente definida: X eleito\" só no Brasil, e só com a indicação", () => {
+  it('mostra "matematicamente definida: X eleito" só no Brasil, e só com a indicação', () => {
     const tse = { percentuais: [49.17, 50.83], votos: [57_000_000, 58_920_000] };
     const html = vista({ tse, narracao: [{ ...INDICACAO, numero: 9 }] });
-    expect(texto(elemento(elemento(html, /<section[^>]*data-placar-oficial/), /<p[^>]*data-indicacao-do-tse/))).toBe("Indicação do TSE · matematicamente definida: Lula eleito");
+    expect(texto(elemento(elemento(html, /<section[^>]*data-placar-oficial/), /<p[^>]*data-indicacao-do-tse/))).toBe(
+      "Indicação do TSE · matematicamente definida: Lula eleito",
+    );
     expect(placar({ tse })).not.toContain("matematicamente definida");
     expect(placar({ tse, lugar: BAHIA, eventosDoBrasil: [INDICACAO] })).not.toContain("matematicamente definida");
   });
@@ -160,9 +202,15 @@ describe("a coluna da narração", () => {
     const narracao = [
       { ...VIRADA_NO_BRASIL, numero: 5 },
       evento("SP", "marco", "18:38:10", "Passa de 50% das seções totalizadas no estado de São Paulo: 50,12%. Flávio 55,40%, Lula 44,60%."),
-      evento("BR", "marco", "18:26:53", "Passa de 50% das seções totalizadas no Brasil: 50,34%. Flávio 50,43%, Lula 49,57%. Das seções que faltam, 51% são do Sudeste e 30% do Nordeste.", {
-        numero: 4,
-      }),
+      evento(
+        "BR",
+        "marco",
+        "18:26:53",
+        "Passa de 50% das seções totalizadas no Brasil: 50,34%. Flávio 50,43%, Lula 49,57%. Das seções que faltam, 51% são do Sudeste e 30% do Nordeste.",
+        {
+          numero: 4,
+        },
+      ),
     ];
     const html = coluna({ narracao });
     expect(itens(html).map(texto)).toEqual([
@@ -173,7 +221,7 @@ describe("a coluna da narração", () => {
     expect(texto(html)).toContain("Narração do Apurador com dados do TSE");
   });
 
-  it("numa UF, intercala os eventos do Brasil pela hora, marcados como \"Brasil\" e sem número", () => {
+  it('numa UF, intercala os eventos do Brasil pela hora, marcados como "Brasil" e sem número', () => {
     const narracao = [
       evento("BA", "marco", "18:52:45", "Passa de 75% das seções totalizadas no estado da Bahia: 75,02%. Flávio 27,90%, Lula 72,10%.", { numero: 5 }),
       evento("BA", "marco", "18:29:23", "Passa de 50% das seções totalizadas no estado da Bahia: 50,01%. Flávio 28,10%, Lula 71,90%.", { numero: 4 }),
@@ -187,8 +235,10 @@ describe("a coluna da narração", () => {
     ]);
   });
 
-  it("no celular, mostra os 5 últimos e \"Ver toda a narração\"; os outros ficam na lista, para o computador", () => {
-    const narracao = Array.from({ length: 8 }, (_, i) => evento("BR", "marco", `18:${String(10 + i).padStart(2, "0")}:00`, `Evento ${i + 1}.`, { numero: i + 1 })).reverse();
+  it('no celular, mostra os 5 últimos e "Ver toda a narração"; os outros ficam na lista, para o computador', () => {
+    const narracao = Array.from({ length: 8 }, (_, i) =>
+      evento("BR", "marco", `18:${String(10 + i).padStart(2, "0")}:00`, `Evento ${i + 1}.`, { numero: i + 1 }),
+    ).reverse();
     const html = coluna({ narracao });
     expect(itens(html)).toHaveLength(8);
     expect(itens(html).map((li) => li.includes("data-fora-do-resumo"))).toEqual([false, false, false, false, false, true, true, true]);
@@ -224,7 +274,7 @@ describe("a narração na curva", () => {
     expect(marcas.map(([, x]) => Math.round(x as number))).toEqual([Math.round(34 + 2.9 * 50.34), Math.round(34 + 2.9 * 67.74)]);
   });
 
-  it("mostra a virada real como ponto cheio, com \"Virada às HH:MM, com X% das seções\"", () => {
+  it('mostra a virada real como ponto cheio, com "Virada às HH:MM, com X% das seções"', () => {
     expect(svg).toMatch(/<circle[^>]*data-virada-real/);
     expect(texto(svg)).toContain("Virada às 18:44, com 67,74% das seções");
   });

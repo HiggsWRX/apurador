@@ -23,12 +23,19 @@ describe("o cadastro da noite do 2º turno de 2022", () => {
         nomeUrna: "LULA",
         nascimento: "1945-10-06",
         partido: { numero: 13, sigla: "PT", nome: "PARTIDO DOS TRABALHADORES" },
-        federacao: { numero: 2, sigla: "PT/PC do B/PV", nome: "FEDERAÇÃO BRASIL DA ESPERANÇA - FE BRASIL", composicao: "PT/PC do B/PV", partidos: [13, 43, 65] },
+        federacao: {
+          numero: 2,
+          sigla: "PT/PC do B/PV",
+          nome: "FEDERAÇÃO BRASIL DA ESPERANÇA - FE BRASIL",
+          composicao: "PT/PC do B/PV",
+          partidos: [13, 43, 65],
+        },
         agremiacao: {
           tipo: "c",
           sequencial: "280001681359",
           nome: "COLIGAÇÃO BRASIL DA ESPERANÇA",
-          composicao: "Federação Brasil da Esperança - FE BRASIL (PT / PC do B / PV) / SOLIDARIEDADE / Federação PSOL REDE (PSOL / REDE) / PSB / AGIR / AVANTE / PROS",
+          composicao:
+            "Federação Brasil da Esperança - FE BRASIL (PT / PC do B / PV) / SOLIDARIEDADE / Federação PSOL REDE (PSOL / REDE) / PSB / AGIR / AVANTE / PROS",
         },
         vice: { sequencial: "280001607830", nome: "GERALDO JOSÉ RODRIGUES ALCKMIN FILHO", nomeUrna: "GERALDO ALCKMIN", partido: "PSB" },
       },
@@ -67,8 +74,16 @@ describe("o cadastro da noite do 2º turno de 2022", () => {
   it("os municípios vêm com o nome do TSE, o código do IBGE e as 27 capitais", () => {
     expect(municipio(71072)).toEqual({ uf: "SP", codigo: 71072, ibge: 3550308, nome: "SÃO PAULO", capital: true });
     expect(municipio(1120)).toEqual({ uf: "AC", codigo: 1120, ibge: 1200013, nome: "ACRELÂNDIA", capital: false });
-    expect(municipios.filter((m) => m.capital).map((m) => m.codigo).sort((a, b) => a - b)).toEqual(
-      [35, 1392, 3018, 4278, 6050, 9210, 2550, 12190, 13897, 17612, 20516, 25313, 27855, 31054, 38490, 41238, 57053, 60011, 71072, 73440, 75353, 81051, 88013, 90514, 90670, 93734, 97012].sort((a, b) => a - b),
+    expect(
+      municipios
+        .filter((m) => m.capital)
+        .map((m) => m.codigo)
+        .sort((a, b) => a - b),
+    ).toEqual(
+      [
+        35, 1392, 3018, 4278, 6050, 9210, 2550, 12190, 13897, 17612, 20516, 25313, 27855, 31054, 38490, 41238, 57053, 60011, 71072, 73440, 75353, 81051, 88013,
+        90514, 90670, 93734, 97012,
+      ].sort((a, b) => a - b),
     );
     expect(municipios.filter((m) => m.uf !== "ZZ").every((m) => m.ibge !== null)).toBe(true);
   });

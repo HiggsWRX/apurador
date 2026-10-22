@@ -18,23 +18,56 @@ const CANDIDATOS: ArquivoDeRodada["candidatos"] = [
 const LIGADAS: ChavesDaNoite = { nucleoMinimo: true, projecao: true, baseComPesquisas: true, simulador: true, mapa: true, textosPreditivos: false };
 
 function quadro(parte: Partial<QuadroAoVivo> = {}): QuadroAoVivo {
-  return { fase: "antes-das-17h", indicador: { estado: "antes-das-17h", faltam: null }, rodada: null, lugar: null, ultimaLeitura: null, mudaram: [], chaves: LIGADAS, aviso: null, ...parte };
+  return {
+    fase: "antes-das-17h",
+    indicador: { estado: "antes-das-17h", faltam: null },
+    rodada: null,
+    lugar: null,
+    ultimaLeitura: null,
+    mudaram: [],
+    chaves: LIGADAS,
+    aviso: null,
+    ...parte,
+  };
 }
 
+// A hora do TSE é a da noite de 2022, como no ensaio geral, e o relógio do coletor é o de 2026: um teste que compare os
+// dois relógios falha aqui, e não no ensaio (ticket 15).
 function rodada(fase: ArquivoDeRodada["fase"]): ArquivoDeRodada {
-  return { rodada: "2026-10-25T22:42:15.000Z", fase, novidade: { totalizacao: "2026-10-25 19:42:10", vista: "2026-10-25T22:42:12.000Z" }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null, eventosDoBrasil: [] };
+  return {
+    rodada: "2026-10-25T22:42:15.000Z",
+    fase,
+    novidade: { totalizacao: "2022-10-30 19:42:10", vista: "2026-10-25T22:42:12.000Z" },
+    candidatos: CANDIDATOS,
+    chaves: LIGADAS,
+    aviso: null,
+    eventosDoBrasil: [],
+  };
 }
 
 function dadosDoLugar(tse: Partial<ArquivoDoLugar["tse"]>, curva: ArquivoDoLugar["curva"] = []): ArquivoDoLugar {
   return {
     lugar: "BR",
-    tse: { totalizacao: "2026-10-25 19:42:10", secoes: { totalizadas: 0, total: 472027, percentual: 0 }, votos: [0, 0], percentuais: [0, 0], final: false, ...tse },
+    tse: {
+      totalizacao: "2022-10-30 19:42:10",
+      secoes: { totalizadas: 0, total: 472027, percentual: 0 },
+      votos: [0, 0],
+      percentuais: [0, 0],
+      final: false,
+      ...tse,
+    },
     curva,
     narracao: [],
   };
 }
 
-const PADRAO: Omit<PropsDaVista, "quadro"> = { lugar: { tipo: "brasil", em: "no Brasil" }, fotos: {}, movimentoReduzido: false, proximaLeitura: 30, lendo: false };
+const PADRAO: Omit<PropsDaVista, "quadro"> = {
+  lugar: { tipo: "brasil", em: "no Brasil" },
+  fotos: {},
+  movimentoReduzido: false,
+  proximaLeitura: 30,
+  lendo: false,
+};
 const vista = (q: QuadroAoVivo, outras: Partial<PropsDaVista> = {}) => render(<VistaDoBlocoAoVivo quadro={q} {...PADRAO} {...outras} />);
 
 describe("bloco ao vivo antes das 17h", () => {
@@ -48,7 +81,8 @@ describe("bloco ao vivo antes das 17h", () => {
 });
 
 describe("manchete durante a apuração", () => {
-  const aoVivo = (tse: Partial<ArquivoDoLugar["tse"]>) => quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar: dadosDoLugar(tse) });
+  const aoVivo = (tse: Partial<ArquivoDoLugar["tse"]>) =>
+    quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar: dadosDoLugar(tse) });
   const mancheteDe = (q: QuadroAoVivo, outras: Partial<PropsDaVista> = {}) => texto(elemento(vista(q, outras), /<p[^>]*data-manchete/));
 
   it("começa pelo placar oficial: quem lidera, com o % dos votos válidos e o % das seções", () => {
@@ -76,7 +110,9 @@ describe("manchete durante a apuração", () => {
 
   it("depois das 17h, sem o arquivo do lugar ainda, não afirma nada sobre ele nem volta a falar das 17h", () => {
     // O arquivo pode faltar por um erro da CDN na primeira leitura: dizer que a apuração não começou seria falso.
-    const html = vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar: null }), { lugar: { tipo: "brasil", em: "no Brasil" } });
+    const html = vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar: null }), {
+      lugar: { tipo: "brasil", em: "no Brasil" },
+    });
     expect(html).not.toContain("data-manchete");
     const placar = texto(elemento(html, /<section[^>]*data-placar-oficial/));
     expect(placar).not.toContain("17h");
@@ -85,7 +121,9 @@ describe("manchete durante a apuração", () => {
 
   it("com os mesmos votos, diz que estão empatados", () => {
     const q = aoVivo({ secoes: { totalizadas: 1, total: 12, percentual: 8.33 }, votos: [104, 104], percentuais: [50, 50] });
-    expect(mancheteDe(q, { lugar: { tipo: "municipio", uf: "RR", em: "em Uiramutã (RR)" } })).toBe("Flávio e Lula empatam com 104 votos cada, com 8,33% das seções totalizadas");
+    expect(mancheteDe(q, { lugar: { tipo: "municipio", uf: "RR", em: "em Uiramutã (RR)" } })).toBe(
+      "Flávio e Lula empatam com 104 votos cada, com 8,33% das seções totalizadas",
+    );
   });
 });
 
@@ -97,7 +135,7 @@ describe("indicador ao vivo, no cartão do placar", () => {
     return { placar, indicador: elemento(placar, /<div[^>]*data-indicador/) };
   };
 
-  it("ao vivo: o ponto pulsante, o anel de 30 s e \"Atualiza sozinho, sem recarregar\", com o detalhe da última leitura e da última totalização", () => {
+  it('ao vivo: o ponto pulsante, o anel de 30 s e "Atualiza sozinho, sem recarregar", com o detalhe da última leitura e da última totalização', () => {
     const { indicador } = com({ estado: "ao-vivo" });
     expect(indicador).toContain("data-pulso");
     expect(indicador).toContain("data-anel");
@@ -113,7 +151,7 @@ describe("indicador ao vivo, no cartão do placar", () => {
     expect(indicador).not.toContain("data-anel");
   });
 
-  it("com movimento reduzido, não há pulso, e o anel vira \"próxima leitura em N s\"", () => {
+  it('com movimento reduzido, não há pulso, e o anel vira "próxima leitura em N s"', () => {
     const { indicador } = com({ estado: "ao-vivo" }, { movimentoReduzido: true });
     expect(indicador).not.toContain("data-pulso");
     expect(indicador).not.toContain("data-anel");
@@ -140,18 +178,18 @@ describe("indicador ao vivo, no cartão do placar", () => {
     expect(texto(dezMinutos.placar)).toContain("50,43%");
   });
 
-  it("sem conexão: \"Sem conexão · tentando de novo\"", () => {
+  it('sem conexão: "Sem conexão · tentando de novo"', () => {
     expect(texto(com({ estado: "sem-conexao" }).indicador)).toContain("Sem conexão · tentando de novo");
   });
 
-  it("encerrada: \"Apuração encerrada\", sem anel, e o detalhe com a última totalização", () => {
+  it('encerrada: "Apuração encerrada", sem anel, e o detalhe com a última totalização', () => {
     const { indicador } = com({ estado: "encerrada" }, {}, "encerrada");
     expect(texto(indicador)).toMatch(/^Apuração encerrada/);
     expect(indicador).not.toContain("data-anel");
     expect(texto(elemento(indicador, /<details/))).toContain("Última totalização do TSE às 19:42:10.");
   });
 
-  it("antes das 17h: sem \"Ao vivo\", com a contagem regressiva só na última hora", () => {
+  it('antes das 17h: sem "Ao vivo", com a contagem regressiva só na última hora', () => {
     const longe = com({ estado: "antes-das-17h", faltam: null }, {}, "antes-das-17h").indicador;
     expect(texto(longe)).not.toContain("Ao vivo");
     expect(texto(longe)).not.toContain("Começa em");
@@ -219,7 +257,10 @@ describe("curva real", () => {
     const comparadaCom = (estado: Partial<EstadoDaComparacao>, turnos = TURNOS) => {
       const lugar = dadosDoLugar({ secoes: { totalizadas: 1, total: 4, percentual: 25 } }, pontos);
       const comparacao = { turnos, estado: { ...COMPARACAO_DESLIGADA, ...estado }, alternar: () => {} };
-      return elemento(vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar }), { comparacao }), /<section[^>]*data-curva-real/);
+      return elemento(
+        vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar }), { comparacao }),
+        /<section[^>]*data-curva-real/,
+      );
     };
     const legenda = (html: string) => texto(elemento(html, /<p[^>]*data-legenda-da-comparacao/));
 
@@ -306,16 +347,26 @@ describe("plano zero", () => {
   // Ensaio geral, decisão 24: com o núcleo mínimo desligado, a partir das 17h, nenhum dado ao vivo vai ao ar.
   const lugar = dadosDoLugar({ secoes: { totalizadas: 237618, total: 472027, percentual: 50.34 }, votos: [57873281, 56885102], percentuais: [50.43, 49.57] });
   const comNucleoMinimo = (nucleoMinimo: boolean, fase: QuadroAoVivo["fase"] = "ao-vivo") =>
-    vista(quadro({ fase, indicador: fase === "ao-vivo" ? { estado: "ao-vivo" } : { estado: "antes-das-17h", faltam: null }, rodada: rodada(fase), lugar, chaves: { ...LIGADAS, nucleoMinimo } }), {
-      placarNaTela: false,
-    });
+    vista(
+      quadro({
+        fase,
+        indicador: fase === "ao-vivo" ? { estado: "ao-vivo" } : { estado: "antes-das-17h", faltam: null },
+        rodada: rodada(fase),
+        lugar,
+        chaves: { ...LIGADAS, nucleoMinimo },
+      }),
+      {
+        placarNaTela: false,
+      },
+    );
 
-  it("com o núcleo mínimo desligado, na fase ao vivo, o bloco dá lugar a \"Acompanhe a apuração no app oficial do TSE\", com o link", () => {
+  it('com o núcleo mínimo desligado, na fase ao vivo, o bloco dá lugar a "Acompanhe a apuração no app oficial do TSE", com o link', () => {
     const html = comNucleoMinimo(false);
     const planoZero = elemento(html, /<section[^>]*data-plano-zero/);
     expect(texto(planoZero)).toBe("Acompanhe a apuração no app oficial do TSE");
     expect(planoZero).toMatch(/<a[^>]*href="https:\/\/resultados\.tse\.jus\.br\/oficial\/app\/index\.html"[^>]*>app oficial do TSE<\/a>/);
-    for (const dado of ["data-placar-oficial", "data-manchete", "data-linha-fixa", "data-curva-real", "data-indicador", "50,43"]) expect(html).not.toContain(dado);
+    for (const dado of ["data-placar-oficial", "data-manchete", "data-linha-fixa", "data-curva-real", "data-indicador", "50,43"])
+      expect(html).not.toContain(dado);
   });
 
   it("antes das 17h, a chave desligada não muda nada: fica o bloco de antes das 17h", () => {
@@ -335,7 +386,8 @@ describe("plano zero", () => {
 describe("faixa de aviso", () => {
   // Operação na noite, decisão 10: os três avisos prontos, com os textos exatos, numa faixa abaixo da manchete.
   const lugar = dadosDoLugar({ secoes: { totalizadas: 237618, total: 472027, percentual: 50.34 }, votos: [57873281, 56885102], percentuais: [50.43, 49.57] });
-  const comAviso = (aviso: QuadroAoVivo["aviso"], chaves: ChavesDaNoite = LIGADAS) => vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar, aviso, chaves }));
+  const comAviso = (aviso: QuadroAoVivo["aviso"], chaves: ChavesDaNoite = LIGADAS) =>
+    vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar, aviso, chaves }));
   const faixa = (html: string) => elemento(html, /<p[^>]*data-aviso/);
 
   it("mostra o aviso pronto publicado, com o texto exato, abaixo da manchete e antes do placar", () => {

@@ -10,7 +10,12 @@ const CURVAS = Object.values(import.meta.glob<CurvasDoTurno>("../../../../dados/
   (a, b) => a.ano - b.ano || a.turno - b.turno,
 );
 
-const turnoPassado = (c: CurvasDoTurno): TurnoPassado => ({ id: idDoTurno(c), nome: `${c.ano} ${c.turno}T`, turno: c.turno, partidoDeBolsonaro: c.partidoDeBolsonaro });
+const turnoPassado = (c: CurvasDoTurno): TurnoPassado => ({
+  id: idDoTurno(c),
+  nome: `${c.ano} ${c.turno}T`,
+  turno: c.turno,
+  partidoDeBolsonaro: c.partidoDeBolsonaro,
+});
 
 /** As curvas de um lugar, nos turnos passados em que ele teve voto no PT ou no partido de Bolsonaro. */
 export const curvasDoLugar = (id: string): CurvasDoLugar => Object.fromEntries(CURVAS.flatMap((c) => (c.lugares[id] ? [[idDoTurno(c), c.lugares[id]]] : [])));

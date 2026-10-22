@@ -38,15 +38,19 @@ describe("abrangenciaDoRegistro", () => {
     ["BR-03163/2026", "Distrito Federal"],
     ["BR-07193/2026", "Amazonas"],
     ["BR-03826/2026", "Tocantins"],
-    ["BR-02367/2026", "\"em todo o RN\""],
-    ["BR-04487/2026", "\"estado do RN\""],
+    ["BR-02367/2026", '"em todo o RN"'],
+    ["BR-04487/2026", '"estado do RN"'],
   ])("%s é estadual (%s)", (numero) => {
     expect(abrangenciaDoRegistro(registro(numero))).toBe("estadual");
   });
 
   it("é estadual quando o plano diz que a pesquisa é restrita a uma UF", () => {
     // Plano amostral do registro BR-07065/2018 da Real Time Big Data.
-    const restrita = { metodologia: "Pesquisa quantitativa, que consiste na realização de entrevistas por telefone.", planoAmostral: "Pesquisa restrita ao Distrito Federal: Universo: 2.084.356 eleitores (TSE).", municipios: "" };
+    const restrita = {
+      metodologia: "Pesquisa quantitativa, que consiste na realização de entrevistas por telefone.",
+      planoAmostral: "Pesquisa restrita ao Distrito Federal: Universo: 2.084.356 eleitores (TSE).",
+      municipios: "",
+    };
     expect(abrangenciaDoRegistro(restrita)).toBe("estadual");
   });
 
@@ -58,8 +62,12 @@ describe("abrangenciaDoRegistro", () => {
     expect(abrangenciaDoRegistro({ metodologia: "Pesquisa quantitativa por telefone.", planoAmostral: "Amostra por cotas.", municipios })).toBe("estadual");
   });
 
-  it("não confunde a preposição \"para\" com o Pará", () => {
-    const nacional = { metodologia: "Universo: eleitorado brasileiro.", planoAmostral: "Usamos o eleitorado para o dimensionamento da amostra.", municipios: "" };
+  it('não confunde a preposição "para" com o Pará', () => {
+    const nacional = {
+      metodologia: "Universo: eleitorado brasileiro.",
+      planoAmostral: "Usamos o eleitorado para o dimensionamento da amostra.",
+      municipios: "",
+    };
     expect(abrangenciaDoRegistro(nacional)).toBe("nacional");
   });
 

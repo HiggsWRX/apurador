@@ -13,4 +13,5 @@ export const getStaticPaths = (() =>
   })) satisfies GetStaticPaths;
 
 /** As curvas do lugar, em JSON. */
-export const GET: APIRoute = ({ props }) => new Response(JSON.stringify((props as { curvas: CurvasDoLugar }).curvas), { headers: { "Content-Type": "application/json" } });
+export const GET: APIRoute = ({ props }) =>
+  new Response(JSON.stringify((props as { curvas: CurvasDoLugar }).curvas), { headers: { "Content-Type": "application/json" } });

@@ -50,7 +50,10 @@ export function curvasDoTurno(noite: Noite): CurvasDoTurno {
   // Os candidatos da noite vêm do mais ao menos votado: num 1º turno, os dois primeiros são os finalistas.
   const posicao = (partidos: string[]) => {
     const i = noite.candidatos.findIndex((c) => partidos.includes(c.partido));
-    if (i < 0 || i > 1) throw new Error(`${noite.ano} ${noite.turno}º turno: o ${partidos.join(" ou ")} não está entre os dois mais votados, e a fatia não seria o placar entre finalistas`);
+    if (i < 0 || i > 1)
+      throw new Error(
+        `${noite.ano} ${noite.turno}º turno: o ${partidos.join(" ou ")} não está entre os dois mais votados, e a fatia não seria o placar entre finalistas`,
+      );
     return i;
   };
   const [doPartido, doPt] = [posicao(PARTIDO_DE_BOLSONARO), posicao(PT)];
@@ -59,7 +62,11 @@ export function curvasDoTurno(noite: Noite): CurvasDoTurno {
   const daZona = noite.zonas.map((z) =>
     ["BR", z.uf, idDoMunicipio(z.municipio)].map((id) => {
       let l = lugares.get(id);
-      if (!l) lugares.set(id, (l = { secoesTotais: 0, totalizadas: 0, votosDoPartido: 0, votosDoPt: 0, alcancado: -1, pendente: false, curva: { secoes: [], pt: [] } }));
+      if (!l)
+        lugares.set(
+          id,
+          (l = { secoesTotais: 0, totalizadas: 0, votosDoPartido: 0, votosDoPt: 0, alcancado: -1, pendente: false, curva: { secoes: [], pt: [] } }),
+        );
       l.secoesTotais += z.secoes;
       return l;
     }),

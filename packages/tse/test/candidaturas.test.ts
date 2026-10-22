@@ -33,7 +33,8 @@ describe("lerCandidaturas", () => {
         coligacao: {
           sequencial: "280001681359",
           nome: "COLIGAÇÃO BRASIL DA ESPERANÇA",
-          composicao: "Federação Brasil da Esperança - FE BRASIL (PT / PC do B / PV) / SOLIDARIEDADE / Federação PSOL REDE (PSOL / REDE) / PSB / AGIR / AVANTE / PROS",
+          composicao:
+            "Federação Brasil da Esperança - FE BRASIL (PT / PC do B / PV) / SOLIDARIEDADE / Federação PSOL REDE (PSOL / REDE) / PSB / AGIR / AVANTE / PROS",
         },
       },
       {

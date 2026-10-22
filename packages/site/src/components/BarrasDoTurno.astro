@@ -24,61 +24,63 @@ const linhas: { rotulo: string; partido: string; votos: number; cor: Cor }[] = t
 const demais = linhas.slice(MAIORES);
 const barras = [
   ...linhas.slice(0, MAIORES),
-  ...(demais.length > 0 ? [{ rotulo: `Demais candidatos (${demais.length})`, partido: "", votos: demais.reduce((s, l) => s + l.votos, 0), cor: "cinza" as const }] : []),
+  ...(demais.length > 0
+    ? [{ rotulo: `Demais candidatos (${demais.length})`, partido: "", votos: demais.reduce((s, l) => s + l.votos, 0), cor: "cinza" as const }]
+    : []),
 ];
 ---
 
 <div class="turno" id={`turno-${id}`} data-turno={id} data-ativo={ativo ? "" : undefined}>
-  <h3>{turno.turno}º turno de {turno.ano}</h3>
-  {
-    !resultado ? (
-      <p class="nota">{nomeCompleto(lugar)} não teve votação neste turno.</p>
-    ) : (
-      <>
-        {resultado.validos === 0 ? (
-          <p class="nota">Nenhum voto válido neste turno.</p>
-        ) : (
-          <ol class="barras">
-            {barras.map((b) => (
-              <li class="barra" data-barra data-cor={b.cor}>
-                <span class="b-nome">
-                  {b.rotulo}
-                  {b.partido && <small>{b.partido}</small>}
-                </span>
-                <span class="b-pct">{formatarPct(b.votos, resultado.validos)}</span>
-                <span class="b-trilho">
-                  <span class="b-cheia" style={`width:${((100 * b.votos) / resultado.validos).toFixed(2)}%`} />
-                </span>
-                <span class="b-votos">{formatarVotos(b.votos)} votos</span>
-              </li>
-            ))}
-          </ol>
-        )}
-        <dl class="totais">
+  <h3>
+    {turno.turno}º turno de {turno.ano}
+  </h3>
+  {!resultado ? (
+    <p class="nota">{nomeCompleto(lugar)} não teve votação neste turno.</p>
+  ) : (
+    <>
+      {resultado.validos === 0 ? (
+        <p class="nota">Nenhum voto válido neste turno.</p>
+      ) : (
+        <ol class="barras">
+          {barras.map((b) => (
+            <li class="barra" data-barra data-cor={b.cor}>
+              <span class="b-nome">
+                {b.rotulo}
+                {b.partido && <small>{b.partido}</small>}
+              </span>
+              <span class="b-pct">{formatarPct(b.votos, resultado.validos)}</span>
+              <span class="b-trilho">
+                <span class="b-cheia" style={`width:${((100 * b.votos) / resultado.validos).toFixed(2)}%`} />
+              </span>
+              <span class="b-votos">{formatarVotos(b.votos)} votos</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      <dl class="totais">
+        <div>
+          <dt>Aptos</dt>
+          <dd>{formatarVotos(resultado.aptos)}</dd>
+        </div>
+        {resultado.aptos > 0 && (
           <div>
-            <dt>Aptos</dt>
-            <dd>{formatarVotos(resultado.aptos)}</dd>
+            <dt>Comparecimento</dt>
+            <dd>{formatarPct(resultado.votantes, resultado.aptos)}</dd>
           </div>
-          {resultado.aptos > 0 && (
+        )}
+        {resultado.votantes > 0 && (
+          <>
             <div>
-              <dt>Comparecimento</dt>
-              <dd>{formatarPct(resultado.votantes, resultado.aptos)}</dd>
+              <dt>Brancos</dt>
+              <dd>{formatarPct(resultado.brancos, resultado.votantes)}</dd>
             </div>
-          )}
-          {resultado.votantes > 0 && (
-            <>
-              <div>
-                <dt>Brancos</dt>
-                <dd>{formatarPct(resultado.brancos, resultado.votantes)}</dd>
-              </div>
-              <div>
-                <dt>Nulos</dt>
-                <dd>{formatarPct(resultado.nulos, resultado.votantes)}</dd>
-              </div>
-            </>
-          )}
-        </dl>
-      </>
-    )
-  }
+            <div>
+              <dt>Nulos</dt>
+              <dd>{formatarPct(resultado.nulos, resultado.votantes)}</dd>
+            </div>
+          </>
+        )}
+      </dl>
+    </>
+  )}
 </div>

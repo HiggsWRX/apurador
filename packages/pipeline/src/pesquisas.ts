@@ -93,7 +93,8 @@ export function verificarPesquisas(entrada: {
       divergencias.push(`o campo começa em ${dataBr(pesquisa.campoInicio)}, antes de ${dataBr(INICIO_DO_2O_TURNO)}: só entram pesquisas do 2º turno`);
     }
     if (pesquisa.campoFim >= DIA_DA_ELEICAO) divergencias.push("o campo vai até o dia da eleição: boca de urna nunca entra");
-    if (pesquisa.divulgacao >= DIA_DA_ELEICAO) divergencias.push(`a divulgação (${dataBr(pesquisa.divulgacao)}) é do dia da eleição ou depois; o agregado congela em 24/10`);
+    if (pesquisa.divulgacao >= DIA_DA_ELEICAO)
+      divergencias.push(`a divulgação (${dataBr(pesquisa.divulgacao)}) é do dia da eleição ou depois; o agregado congela em 24/10`);
     else if (pesquisa.divulgacao > dataDaConferencia) {
       divergencias.push(`a divulgação (${dataBr(pesquisa.divulgacao)}) é posterior à conferência no TSE (${dataBr(dataDaConferencia)})`);
     }
@@ -126,7 +127,9 @@ export function verificarPesquisas(entrada: {
       );
     }
     if (Math.abs(pesquisa.entrevistas - registro.entrevistas) > TOLERANCIA_DAS_ENTREVISTAS * registro.entrevistas) {
-      divergencias.push(`as entrevistas divulgadas (${pesquisa.entrevistas}) diferem mais de ${100 * TOLERANCIA_DAS_ENTREVISTAS}% das registradas no TSE (${registro.entrevistas})`);
+      divergencias.push(
+        `as entrevistas divulgadas (${pesquisa.entrevistas}) diferem mais de ${100 * TOLERANCIA_DAS_ENTREVISTAS}% das registradas no TSE (${registro.entrevistas})`,
+      );
     }
     return { pesquisa, registro, institutoDaLista: instituto?.institutoDaLista, divergencias };
   });
@@ -137,7 +140,13 @@ export function verificarPesquisas(entrada: {
  * conferência, e contra o registro das conferências, que diz quando cada pesquisa entrou na lista. Falha, em vez de
  * esconder a linha, se qualquer pesquisa não bater: o build e o CI quebram.
  */
-export function listaDasPesquisas(entrada: { pesquisas: string; institutos: string; extrato: ExtratoDoTse; verificacoes: string; turno: Turno }): PesquisaDaLista[] {
+export function listaDasPesquisas(entrada: {
+  pesquisas: string;
+  institutos: string;
+  extrato: ExtratoDoTse;
+  verificacoes: string;
+  turno: Turno;
+}): PesquisaDaLista[] {
   const conferencias = verificarPesquisas({
     pesquisas: lerPesquisas(entrada.pesquisas),
     registros: entrada.extrato.registros,
@@ -215,7 +224,11 @@ export function lerPesquisas(texto: string): Pesquisa[] {
     entrevistas: valor("entrevistas", (v) => /^\d+$/.test(v), Number),
     margem: valor("margem", ehDecimal, Number),
     confianca: valor("confianca", ehDecimal, Number),
-    modo: valor("modo", (v) => MODOS.includes(v as Modo), (v) => v as Modo),
+    modo: valor(
+      "modo",
+      (v) => MODOS.includes(v as Modo),
+      (v) => v as Modo,
+    ),
     votos: new Map(extras.map((coluna) => [Number(coluna.slice("votos_".length)), valor(coluna, ehDecimal, Number)])),
     brancosNulos: valor("brancos_nulos", (v) => v === "" || ehDecimal(v), opcional),
     indecisos: valor("indecisos", (v) => v === "" || ehDecimal(v), opcional),

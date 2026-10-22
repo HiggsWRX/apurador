@@ -1,5 +1,8 @@
 import { colunas } from "./csv.ts";
 
+// Os CSVs por seção do TSE têm centenas de MB e não cabem na memória como texto: este leitor anda sobre os bytes, com
+// as mesmas regras de formato de `csv.ts`, e decodifica só as colunas pedidas.
+
 const ASPAS = 0x22;
 const PONTO_E_VIRGULA = 0x3b;
 const LF = 0x0a;
@@ -24,11 +27,16 @@ export function* percorrerCsvTse<N extends string>(bytes: Uint8Array, nomes: rea
   while (i < b.length) {
     const registro = {} as Record<N, string>;
     let campos = 0;
-    i = lerLinha(b, i, (campo, valor) => {
-      campos++;
-      const nome = nomeDoCampo[campo];
-      if (nome !== undefined) registro[nome] = valor;
-    }, nomeDoCampo);
+    i = lerLinha(
+      b,
+      i,
+      (campo, valor) => {
+        campos++;
+        const nome = nomeDoCampo[campo];
+        if (nome !== undefined) registro[nome] = valor;
+      },
+      nomeDoCampo,
+    );
     if (campos > 1) yield registro;
   }
 }

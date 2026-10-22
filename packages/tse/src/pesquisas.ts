@@ -87,15 +87,64 @@ function data(valor: string, coluna: string): string {
 }
 
 const UFS = [
-  "acre", "alagoas", "amapa", "amazonas", "bahia", "ceara", "distrito federal", "espirito santo", "goias", "maranhao",
-  "mato grosso", "mato grosso do sul", "minas gerais", "para", "paraiba", "parana", "pernambuco", "piaui", "rio de janeiro",
-  "rio grande do norte", "rio grande do sul", "rondonia", "roraima", "santa catarina", "sao paulo", "sergipe", "tocantins",
+  "acre",
+  "alagoas",
+  "amapa",
+  "amazonas",
+  "bahia",
+  "ceara",
+  "distrito federal",
+  "espirito santo",
+  "goias",
+  "maranhao",
+  "mato grosso",
+  "mato grosso do sul",
+  "minas gerais",
+  "para",
+  "paraiba",
+  "parana",
+  "pernambuco",
+  "piaui",
+  "rio de janeiro",
+  "rio grande do norte",
+  "rio grande do sul",
+  "rondonia",
+  "roraima",
+  "santa catarina",
+  "sao paulo",
+  "sergipe",
+  "tocantins",
 ];
 const SIGLAS = "ac|al|ap|am|ba|ce|df|es|go|ma|mt|ms|mg|pa|pb|pr|pe|pi|rj|rn|rs|ro|rr|sc|sp|se|to";
 const GENTILICOS = [
-  "acreano", "alagoano", "amapaense", "amazonense", "baiano", "cearense", "brasiliense", "capixaba", "goiano", "maranhense",
-  "mato-grossense", "sul-mato-grossense", "mineiro", "paraense", "paraibano", "paranaense", "pernambucano", "piauiense",
-  "fluminense", "carioca", "potiguar", "gaucho", "rondoniense", "roraimense", "catarinense", "paulista", "sergipano", "tocantinense",
+  "acreano",
+  "alagoano",
+  "amapaense",
+  "amazonense",
+  "baiano",
+  "cearense",
+  "brasiliense",
+  "capixaba",
+  "goiano",
+  "maranhense",
+  "mato-grossense",
+  "sul-mato-grossense",
+  "mineiro",
+  "paraense",
+  "paraibano",
+  "paranaense",
+  "pernambucano",
+  "piauiense",
+  "fluminense",
+  "carioca",
+  "potiguar",
+  "gaucho",
+  "rondoniense",
+  "roraimense",
+  "catarinense",
+  "paulista",
+  "sergipano",
+  "tocantinense",
 ];
 // "eleitorado do estado do Tocantins", "residente no Distrito Federal", "restrita ao Distrito Federal", "corresponde ao
 // Distrito Federal", "estado do RN", "em todo o RN", "eleitorado potiguar"... A preposição antes da UF é obrigatória:
@@ -116,12 +165,7 @@ const NACIONAL = /\bbrasil\b|\bbrasileir[ao]s?\b|\bnacional\b|\bpais\b|\b(?:cinc
  * vence, porque as pesquisas estaduais também repetem trechos sobre a população brasileira.
  */
 export function abrangenciaDoRegistro(r: Pick<RegistroDePesquisa, "metodologia" | "planoAmostral" | "municipios">): "nacional" | "estadual" | "indefinida" {
-  const texto = [r.metodologia, r.planoAmostral, r.municipios]
-    .join(" ")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ");
+  const texto = [r.metodologia, r.planoAmostral, r.municipios].join(" ").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ");
   if (ESTADUAL.test(texto)) return "estadual";
   if (NACIONAL.test(texto)) return "nacional";
   return "indefinida";

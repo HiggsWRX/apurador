@@ -60,7 +60,10 @@ const eObjeto = (v: unknown): v is Record<string, unknown> | JaEscrito => typeof
 function escrever(v: unknown): string {
   if (v instanceof JaEscrito) return v.texto;
   if (Array.isArray(v)) return `[ ${v.map((x) => (eObjeto(x) ? `\n${escrever(x)}` : escrever(x))).join(", ")} ]`;
-  if (eObjeto(v)) return `{ ${Object.entries(v).map(([k, x]) => `${JSON.stringify(k)} : ${eObjeto(x) ? "\n" : ""}${escrever(x)}`).join(", ")} }`;
+  if (eObjeto(v))
+    return `{ ${Object.entries(v)
+      .map(([k, x]) => `${JSON.stringify(k)} : ${eObjeto(x) ? "\n" : ""}${escrever(x)}`)
+      .join(", ")} }`;
   return JSON.stringify(v);
 }
 

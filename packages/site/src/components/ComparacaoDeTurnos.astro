@@ -30,78 +30,84 @@ const abaixo = lugar.tipo === "exterior" ? "as cidades" : lugar.tipo === "uf" ? 
   <h3>Comparar dois turnos</h3>
   <div class="escolha">
     <select data-comparar aria-label="Um turno">
-      {TURNOS.map((t) => <option value={idDoTurno(t)} selected={t === partida.antes}>{curto(t)}</option>)}
+      {TURNOS.map((t) => (
+        <option value={idDoTurno(t)} selected={t === partida.antes}>
+          {curto(t)}
+        </option>
+      ))}
     </select>
     <span>com</span>
     <select data-comparar aria-label="Outro turno">
-      {TURNOS.map((t) => <option value={idDoTurno(t)} selected={t === partida.depois}>{curto(t)}</option>)}
+      {TURNOS.map((t) => (
+        <option value={idDoTurno(t)} selected={t === partida.depois}>
+          {curto(t)}
+        </option>
+      ))}
     </select>
   </div>
   <p class="nota">
-    Só entre o PT e o partido de Bolsonaro (PSL em 2018, PL depois), do turno mais antigo ao mais recente. Nos 2º turnos, o % dos votos
-    válidos, como o TSE publica; nos 1º turnos, o placar entre finalistas, com uma casa. A mudança é em pontos.
+    Só entre o PT e o partido de Bolsonaro (PSL em 2018, PL depois), do turno mais antigo ao mais recente. Nos 2º turnos, o % dos votos válidos, como o TSE
+    publica; nos 1º turnos, o placar entre finalistas, com uma casa. A mudança é em pontos.
   </p>
   <p class="nota" data-mesmo-turno role="status"></p>
-  {
-    pares.map(({ id, comparacao: c, ondeMaisMudou }, i) => (
-      <div class="par" data-par={id} data-ativo={i === 0 ? "" : undefined}>
-        <h4 class="par-titulo">
-          {curto(c.antes)} e {curto(c.depois)}
-        </h4>
-        {c.tipo !== "comparacao" ? (
-          <p>
-            {c.tipo === "sem-votacao"
-              ? `${nomeCompleto(lugar)} não teve votação no ${turnos(c.turnos)}.`
-              : `Nem o PT nem o partido de Bolsonaro tiveram voto aqui no ${turnos(c.turnos)}.`}
-          </p>
-        ) : (
-          <table class="tabela-comparacao">
-            <thead>
-              <tr>
-                <th scope="col">
-                  <span class="so-leitor">Partido</span>
+  {pares.map(({ id, comparacao: c, ondeMaisMudou }, i) => (
+    <div class="par" data-par={id} data-ativo={i === 0 ? "" : undefined}>
+      <h4 class="par-titulo">
+        {curto(c.antes)} e {curto(c.depois)}
+      </h4>
+      {c.tipo !== "comparacao" ? (
+        <p>
+          {c.tipo === "sem-votacao"
+            ? `${nomeCompleto(lugar)} não teve votação no ${turnos(c.turnos)}.`
+            : `Nem o PT nem o partido de Bolsonaro tiveram voto aqui no ${turnos(c.turnos)}.`}
+        </p>
+      ) : (
+        <table class="tabela-comparacao">
+          <thead>
+            <tr>
+              <th scope="col">
+                <span class="so-leitor">Partido</span>
+              </th>
+              <th scope="col">{curto(c.antes)}</th>
+              <th scope="col">{curto(c.depois)}</th>
+              <th scope="col">Mudança</th>
+            </tr>
+          </thead>
+          <tbody>
+            {c.lados.map((l) => (
+              <tr data-cor={l.cor}>
+                <th scope="row">
+                  {l.partido}
+                  <small>{l.candidatos[0] === l.candidatos[1] ? l.candidatos[0] : `${l.candidatos[0]} → ${l.candidatos[1]}`}</small>
                 </th>
-                <th scope="col">{curto(c.antes)}</th>
-                <th scope="col">{curto(c.depois)}</th>
-                <th scope="col">Mudança</th>
+                <td>{formatarPctComCasas(l.pct[0], casasDoTurno(c.antes))}</td>
+                <td>{formatarPctComCasas(l.pct[1], casasDoTurno(c.depois))}</td>
+                <td>{formatarMudanca(l.mudanca)}</td>
               </tr>
-            </thead>
-            <tbody>
-              {c.lados.map((l) => (
-                <tr data-cor={l.cor}>
-                  <th scope="row">
-                    {l.partido}
-                    <small>{l.candidatos[0] === l.candidatos[1] ? l.candidatos[0] : `${l.candidatos[0]} → ${l.candidatos[1]}`}</small>
-                  </th>
-                  <td>{formatarPctComCasas(l.pct[0], casasDoTurno(c.antes))}</td>
-                  <td>{formatarPctComCasas(l.pct[1], casasDoTurno(c.depois))}</td>
-                  <td>{formatarMudanca(l.mudanca)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        {ondeMaisMudou.length > 0 && (
-          <>
-            <h5>Onde mais mudou</h5>
-            <ol class="mudou">
-              {ondeMaisMudou.map((m) => (
-                <li data-mudou>
-                  <a href={caminhoDe(m.lugar)}>{m.lugar.nome}</a>
-                  <span data-cor={m.ganhou?.cor}>{m.ganhou ? `${m.ganhou.partido} ${formatarMudanca(m.ganhou.mudanca)}` : "Sem mudança"}</span>
-                </li>
-              ))}
-            </ol>
-            {abaixo && (
-              <p class="nota">
-                Entre {abaixo} com ao menos {formatarVotos(MINIMO_DE_VOTOS)} votos nos dois partidos em cada turno.
-              </p>
-            )}
-          </>
-        )}
-      </div>
-    ))
-  }
+            ))}
+          </tbody>
+        </table>
+      )}
+      {ondeMaisMudou.length > 0 && (
+        <>
+          <h5>Onde mais mudou</h5>
+          <ol class="mudou">
+            {ondeMaisMudou.map((m) => (
+              <li data-mudou>
+                <a href={caminhoDe(m.lugar)}>{m.lugar.nome}</a>
+                <span data-cor={m.ganhou?.cor}>{m.ganhou ? `${m.ganhou.partido} ${formatarMudanca(m.ganhou.mudanca)}` : "Sem mudança"}</span>
+              </li>
+            ))}
+          </ol>
+          {abaixo && (
+            <p class="nota">
+              Entre {abaixo} com ao menos {formatarVotos(MINIMO_DE_VOTOS)} votos nos dois partidos em cada turno.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  ))}
   <p class="nota">Cálculo do Apurador com dados do TSE (CC-BY).</p>
 </div>
 

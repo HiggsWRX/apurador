@@ -55,7 +55,12 @@ export function prepararSimulador(arquivo: ArquivoDoSimulador): DadosDoSimulador
   const naBase = (id: IdDaBase, agregado?: ArquivoDoSimulador["agregado"]): BaseNoSimulador => {
     const projecao = agregado ? projetar(modelo, apuracao, constantes, agregado) : projetar(modelo, apuracao, constantes);
     const partida = { modelo, apuracao, projecao, constantes, comparecimentoEsperado };
-    return { id, partida, curva: curvaProjetada(modelo, apuracao, projecao, constantes).brasil, regioes: simular(partida, HIPOTESES_ZERADAS).regioes.map((r) => r.fatia) };
+    return {
+      id,
+      partida,
+      curva: curvaProjetada(modelo, apuracao, projecao, constantes).brasil,
+      regioes: simular(partida, HIPOTESES_ZERADAS).regioes.map((r) => r.fatia),
+    };
   };
   const soApuracao = naBase("so-apuracao");
   const comPesquisas = arquivo.agregado ? naBase("com-pesquisas", arquivo.agregado) : null;
@@ -103,7 +108,12 @@ export function simularNaTela(dados: DadosDoSimulador, id: IdDaBase, hipoteses: 
     brasilNaProjecao: partida.projecao.brasil,
     curvaDaSimulacao: curvaProjetada(partida.modelo, partida.apuracao, simulacao, partida.constantes).brasil,
     curvaDoSite: escolhida.curva,
-    regioes: REGIOES.map((nome, r) => ({ nome, naSimulacao: simulacao.regioes[r]!.fatia, naProjecao: escolhida.regioes[r]!, primeiroTurno: dados.regioes[r]!.placarEntreFinalistas })),
+    regioes: REGIOES.map((nome, r) => ({
+      nome,
+      naSimulacao: simulacao.regioes[r]!.fatia,
+      naProjecao: escolhida.regioes[r]!,
+      primeiroTurno: dados.regioes[r]!.placarEntreFinalistas,
+    })),
     preciso: oQueSeriaPreciso(partida, hipoteses),
   };
 }

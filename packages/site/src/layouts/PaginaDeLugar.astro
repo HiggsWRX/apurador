@@ -39,7 +39,17 @@ const enderecos = enderecosDoBuild(
   </div>
   <div class="colunas">
     <div class="principal">
-      <BlocoAoVivo client:load id={lugar.id} tipo={lugar.tipo} uf={lugar.uf} em={emLugar(lugar)} fotos={FOTOS} enderecos={enderecos} chaves={CHAVES.noite} turnosPassados={turnosDoLugar(lugar.id)} />
+      <BlocoAoVivo
+        client:load
+        id={lugar.id}
+        tipo={lugar.tipo}
+        uf={lugar.uf}
+        em={emLugar(lugar)}
+        fotos={FOTOS}
+        enderecos={enderecos}
+        chaves={CHAVES.noite}
+        turnosPassados={turnosDoLugar(lugar.id)}
+      />
       <slot />
     </div>
     <NarracaoDaNoite client:load id={lugar.id} chaves={CHAVES.noite} />

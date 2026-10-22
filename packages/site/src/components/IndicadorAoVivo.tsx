@@ -34,7 +34,11 @@ export function IndicadorAoVivo(props: Props) {
     <div class="indicador" data-indicador data-estado={indicador.estado}>
       <details class="indicador-detalhe">
         <summary>
-          <span class="indicador-ponto" data-ponto={aoVivo || indicador.estado === "encerrada" ? "grafite" : "cinza"} {...(aoVivo && !props.movimentoReduzido ? { "data-pulso": "" } : {})} />
+          <span
+            class="indicador-ponto"
+            data-ponto={aoVivo || indicador.estado === "encerrada" ? "grafite" : "cinza"}
+            {...(aoVivo && !props.movimentoReduzido ? { "data-pulso": "" } : {})}
+          />
           {aoVivo ? (
             <>
               <span class="indicador-rotulo">Ao vivo</span>

@@ -70,7 +70,13 @@ const chave = (r: Recorte) => `${r.uf ?? ""}/${r.municipio ?? ""}/${r.zona ?? ""
 const chaveDaSecao = (s: { uf: string; municipio: number; zona: number; secao: number }) => `${chave(s)}/${s.secao}`;
 
 /** A noite de um turno, a partir das seções (primeira totalização) e dos votos de cada seção. */
-export function reconstruirNoite(entrada: { ano: number; turno: number; candidatos: CandidatoDoTurno[]; secoes: Iterable<DetalheSecao>; votos: Iterable<VotoSecao> }): Noite {
+export function reconstruirNoite(entrada: {
+  ano: number;
+  turno: number;
+  candidatos: CandidatoDoTurno[];
+  secoes: Iterable<DetalheSecao>;
+  votos: Iterable<VotoSecao>;
+}): Noite {
   const { ano, turno, candidatos } = entrada;
   const doTurno = doTurnoDePresidente(entrada);
   const posicaoDoCandidato = new Map(candidatos.map((c, i) => [c.numero, i]));
@@ -156,7 +162,11 @@ export function gravarNoite(noite: Noite): Uint8Array {
 
 /** Lê uma noite gravada em `dados/noites/` (JSON com gzip). */
 export function lerNoite(bytes: Uint8Array): Noite {
-  const { zonas: z, chegadas: c, ...cabecalho } = JSON.parse(gunzipSync(bytes).toString("utf8")) as Omit<Noite, "zonas" | "chegadas"> & {
+  const {
+    zonas: z,
+    chegadas: c,
+    ...cabecalho
+  } = JSON.parse(gunzipSync(bytes).toString("utf8")) as Omit<Noite, "zonas" | "chegadas"> & {
     zonas: { uf: string[]; municipio: number[]; zona: number[]; secoes: number[]; aptos: number[] };
     chegadas: Record<"segundosDepois" | "zona" | "secoes" | "aptos" | "votantes" | "brancos" | "nulos", number[]> & { votos: number[][] };
   };
@@ -223,7 +233,11 @@ export function divergenciasDoHistorico(noite: Noite, historico: LinhaDoHistoric
     comparar("seções", a.secoes, l.secoes);
     comparar("aptos", a.aptos, l.aptos);
     comparar("votos", a.votantes, l.votos);
-    comparar("válidos", a.votos.reduce((s, v) => s + v, 0), l.validos);
+    comparar(
+      "válidos",
+      a.votos.reduce((s, v) => s + v, 0),
+      l.validos,
+    );
     comparar("brancos", a.brancos, l.brancos);
     comparar("nulos", a.nulos, l.nulos);
     const noHistorico = new Map(Object.entries(l.candidatos).map(([nome, votos]) => [soLetras(nome), votos]));
@@ -262,7 +276,11 @@ export function divergenciasDoResultado(noite: Noite, oficial: { candidatos: Vot
     };
     comparar("aptos", r.total(zona).aptos, o.aptos);
     comparar("votantes", a.votantes, o.votantes);
-    comparar("válidos", a.votos.reduce((s, v) => s + v, 0), o.validos);
+    comparar(
+      "válidos",
+      a.votos.reduce((s, v) => s + v, 0),
+      o.validos,
+    );
     comparar("brancos", a.brancos, o.brancos);
     comparar("nulos", a.nulos, o.nulos);
     noite.candidatos.forEach((c, i) => comparar(c.nomeUrna, a.votos[i]!, o.porNumero.get(c.numero) ?? 0));

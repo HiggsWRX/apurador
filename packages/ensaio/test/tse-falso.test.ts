@@ -131,14 +131,21 @@ describe("os arquivos de UF, município e zona", () => {
 
     const indice = arquivo(tse, ab("sp"));
     const capital = arquivo(tse, u("sp", "71072"));
-    const zonas = noite.zonas.filter((z) => z.uf === "SP" && z.municipio === 71072).map((z) => arquivo(tse, u("sp", `71072-z${String(z.zona).padStart(4, "0")}`)));
+    const zonas = noite.zonas
+      .filter((z) => z.uf === "SP" && z.municipio === 71072)
+      .map((z) => arquivo(tse, u("sp", `71072-z${String(z.zona).padStart(4, "0")}`)));
 
     expect(item(indice, "71072")).toMatchObject({ tpabr: "mun", and: "p", dt: capital.dt, ht: capital.ht, s: capital.s, e: capital.e });
     expect(capital.ht <= "19:00:00").toBe(true);
     const soma = (campo: (a: Arquivo) => string) => zonas.reduce((s, z) => s + Number(campo(z)), 0);
     expect(soma((z) => z.s.st)).toBe(Number(capital.s.st));
     expect(soma((z) => candidatos(z)["LULA"]!["vap"]!)).toBe(Number(candidatos(capital)["LULA"]!["vap"]));
-    expect(zonas.map((z) => z.ht).sort().at(-1)).toBe(capital.ht);
+    expect(
+      zonas
+        .map((z) => z.ht)
+        .sort()
+        .at(-1),
+    ).toBe(capital.ht);
   });
 });
 
@@ -193,7 +200,9 @@ describe("os candidatos e a geografia vêm só dos arquivos", () => {
     const brasil = arquivo(tseFalsoAs("2022-10-30 19:00:00").tse, BRASIL);
 
     expect(candidatos(brasil)["LULA"]).toMatchObject({ n: "13", sqcand: "280001607829", nm: "LUIZ INÁCIO LULA DA SILVA" });
-    expect(candidatos(brasil)["LULA"]!["vs"]).toEqual([{ tp: "v", sqcand: "280001607830", nm: "GERALDO JOSÉ RODRIGUES ALCKMIN FILHO", nmu: "GERALDO ALCKMIN", sgp: "PSB" }]);
+    expect(candidatos(brasil)["LULA"]!["vs"]).toEqual([
+      { tp: "v", sqcand: "280001607830", nm: "GERALDO JOSÉ RODRIGUES ALCKMIN FILHO", nmu: "GERALDO ALCKMIN", sgp: "PSB" },
+    ]);
     expect(candidatos(brasil)["JAIR BOLSONARO"]).toMatchObject({ n: "22", sqcand: "280001618036", nm: "JAIR MESSIAS BOLSONARO" });
     expect(brasil.carg[0].agr.map((g: Arquivo) => g.nm)).toEqual(["COLIGAÇÃO BRASIL DA ESPERANÇA", "PELO BEM DO BRASIL"]);
   });

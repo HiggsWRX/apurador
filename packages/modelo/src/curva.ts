@@ -63,7 +63,12 @@ export function viradaProjetada(pontos: PontoDaCurva[]): ViradaProjetada | null 
  * A curva projetada do Brasil, de cada UF e do Exterior, com a virada projetada de cada um, a partir do voto que falta
  * de uma projeção ou de uma simulação.
  */
-export function curvaProjetada(modelo: Modelo, apuracao: Apuracao, projecao: Pick<Projecao, "brasil" | "ufs" | "votoQueFalta" | "fatiaDoQueFalta">, constantes: Constantes): CurvasProjetadas {
+export function curvaProjetada(
+  modelo: Modelo,
+  apuracao: Apuracao,
+  projecao: Pick<Projecao, "brasil" | "ufs" | "votoQueFalta" | "fatiaDoQueFalta">,
+  constantes: Constantes,
+): CurvasProjetadas {
   const nUfs = modelo.ufs.length;
   // Agora, por UF: seções, votos dos finalistas, votos do 1º finalista e o voto que falta.
   const secoes = new Float64Array(nUfs);
@@ -168,7 +173,15 @@ export function curvaProjetada(modelo: Modelo, apuracao: Apuracao, projecao: Pic
 
   modelo.ufs.forEach((sigla, u) => {
     const r = projecao.ufs[sigla]!;
-    const uf = { secoes: secoes[u]!, secoesTotais: secoesTotais[u]!, votos: votos[u]!, votos1: votos1[u]!, falta: votoQueFalta[u]!, validos: r.validos, desvio: r.desvio };
+    const uf = {
+      secoes: secoes[u]!,
+      secoesTotais: secoesTotais[u]!,
+      votos: votos[u]!,
+      votos1: votos1[u]!,
+      falta: votoQueFalta[u]!,
+      validos: r.validos,
+      desvio: r.desvio,
+    };
     const pontos = comecaEm(uf);
     if (falta[0][u]! > 0) {
       // As seções que chegam na UF crescem com o % do país, em linha reta entre os pontos inteiros e o joelho em

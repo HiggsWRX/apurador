@@ -15,14 +15,12 @@ const { valores, margem } = Astro.props;
 ---
 
 <p class="valores">
-  {
-    valores.map((c) => (
-      <span data-cor={corDoPartido(c.candidato.partido)}>
-        {c.candidato.nomeUrna} <strong>{formatarCalculo(c.pct)}%</strong>
-        {margem !== undefined && <small class="margem">± {formatarCalculo(margem)}</small>}
-      </span>
-    ))
-  }
+  {valores.map((c) => (
+    <span data-cor={corDoPartido(c.candidato.partido)}>
+      {c.candidato.nomeUrna} <strong>{formatarCalculo(c.pct)}%</strong>
+      {margem !== undefined && <small class="margem">± {formatarCalculo(margem)}</small>}
+    </span>
+  ))}
 </p>
 
 <style>

@@ -34,7 +34,10 @@ export interface FonteBaixada {
 
 /** O membro de Presidente de um zip do TSE, do cache ou, se não estiver lá (ou com `atualizar`), da rede. */
 export async function membroDePresidenteComCache(url: string, opcoes: { atualizar: boolean }): Promise<FonteBaixada> {
-  const base = url.split("/").pop()!.replace(/\.zip$/, "");
+  const base = url
+    .split("/")
+    .pop()!
+    .replace(/\.zip$/, "");
   return membroComCache(url, `${base}_BR.csv`, opcoes);
 }
 

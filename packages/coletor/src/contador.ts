@@ -60,7 +60,8 @@ export async function lerContadorDeGravacoes(caminho: string): Promise<Gravacoes
     throw erro;
   }
   const valor = JSON.parse(texto) as GravacoesDoMes;
-  if (typeof valor.mes !== "string" || typeof valor.buckets !== "object" || valor.buckets === null) throw new Error(`O contador de gravações em ${caminho} não serve`);
+  if (typeof valor.mes !== "string" || typeof valor.buckets !== "object" || valor.buckets === null)
+    throw new Error(`O contador de gravações em ${caminho} não serve`);
   return valor;
 }
 

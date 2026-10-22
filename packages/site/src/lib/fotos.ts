@@ -5,4 +5,12 @@
 const arquivos = import.meta.glob<string>("../../../../dados/fotos/*.jpeg", { eager: true, import: "default", query: "?url" });
 
 /** A URL de cada foto no site, pelo sequencial do candidato no TSE. */
-export const FOTOS: Record<string, string> = Object.fromEntries(Object.entries(arquivos).map(([caminho, url]) => [caminho.split("/").pop()!.replace(/\.jpeg$/, ""), url]));
+export const FOTOS: Record<string, string> = Object.fromEntries(
+  Object.entries(arquivos).map(([caminho, url]) => [
+    caminho
+      .split("/")
+      .pop()!
+      .replace(/\.jpeg$/, ""),
+    url,
+  ]),
+);

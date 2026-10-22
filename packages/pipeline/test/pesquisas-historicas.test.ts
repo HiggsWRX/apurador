@@ -5,11 +5,14 @@ import type { ResultadoHistorico } from "../src/resultados-historicos.ts";
 const CABECALHO =
   "ano,turno,instituto,contratante,registro,campo_inicio,campo_fim,divulgacao,entrevistas,base,votos_13,votos_22,votos_45,votos_outros,fonte,observacao";
 // O Datafolha final de 2022, como está no repositório.
-const DATAFOLHA = "2022,2,Datafolha,Folha de S.Paulo e TV Globo,BR-08297/2022,2022-10-28,2022-10-29,2022-10-29,8308,totais,49,45,,,https://g1.globo.com/a.ghtml,";
+const DATAFOLHA =
+  "2022,2,Datafolha,Folha de S.Paulo e TV Globo,BR-08297/2022,2022-10-28,2022-10-29,2022-10-29,8308,totais,49,45,,,https://g1.globo.com/a.ghtml,";
 const ler = (...linhas: string[]) => lerPesquisasHistoricas([CABECALHO, ...linhas].join("\n"));
 const trocar = (coluna: string, valor: string) => {
   const i = CABECALHO.split(",").indexOf(coluna);
-  return DATAFOLHA.split(",").map((v, j) => (j === i ? valor : v)).join(",");
+  return DATAFOLHA.split(",")
+    .map((v, j) => (j === i ? valor : v))
+    .join(",");
 };
 
 describe("lerPesquisasHistoricas", () => {

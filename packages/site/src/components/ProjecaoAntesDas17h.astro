@@ -29,61 +29,63 @@ const mudanca = (de: number, base: ProjecaoDeUmaBase) => {
   return ganhou ? `${ganhou.candidato.nomeUrna} +${formatarCalculo(ganhou.pontos)}` : "sem mudança";
 };
 const chances = (base: ProjecaoDeUmaBase) =>
-  entreOsFinalistas(100 * base.brasil.chance).map((c) => ({ finalista: { nomeUrna: c.candidato.nomeUrna, cor: corDoPartido(c.candidato.partido) }, chance: c.pct / 100 }));
+  entreOsFinalistas(100 * base.brasil.chance).map((c) => ({
+    finalista: { nomeUrna: c.candidato.nomeUrna, cor: corDoPartido(c.candidato.partido) },
+    chance: c.pct / 100,
+  }));
 ---
 
-{
-  projecao && (
-    <section class="cartao projecao" data-bloco="projecao-antes-das-17h" aria-labelledby="projecao-titulo">
-      <header class="projecao-topo">
-        <span class="selo" id="projecao-titulo">
-          Projeção do Apurador
-        </span>
-        <p class="aviso">Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.</p>
-      </header>
-      {projecao.bases.map((base) => (
-        <div data-base={base.id} data-ativa={base.id === BASE_PADRAO ? "" : undefined}>
-          <h3 class="base-titulo">Base da projeção: {base.nome}</h3>
-          <ValoresDosFinalistas valores={entreOsFinalistas(umaCasa(100 * base.brasil.projecao))} margem={100 * base.brasil.margem} />
-          <p class="nota">Resultado final estimado, em votos válidos, com a margem de 95%.</p>
-          <ChanceDeVitoria chances={chances(base)} href={`${METODOLOGIA}#chance`} />
-          <p class="nota">
-            A projeção, comparada: com o 1º turno, pelo placar entre finalistas ({osDois(PLACAR_ENTRE_FINALISTAS_DO_BRASIL)}), {mudanca(PLACAR_ENTRE_FINALISTAS_DO_BRASIL, base)}
-            {AGREGADO && comPesquisas ? `; com a indicação das pesquisas (${osDois(AGREGADO.valor)}), ${mudanca(AGREGADO.valor, base)}` : ""}.
-          </p>
-        </div>
-      ))}
-      {comPesquisas && (
-        <div class="base-da-projecao" role="group" aria-label="Base da projeção">
-          <span class="base-rotulo">Base da projeção</span>
-          {projecao.bases.map((base) => (
-            <button type="button" data-base-botao={base.id} aria-pressed={base.id === BASE_PADRAO ? "true" : "false"}>
-              {base.nome}
-            </button>
-          ))}
-        </div>
-      )}
-      {comPesquisas && (
+{projecao && (
+  <section class="cartao projecao" data-bloco="projecao-antes-das-17h" aria-labelledby="projecao-titulo">
+    <header class="projecao-topo">
+      <span class="selo" id="projecao-titulo">
+        Projeção do Apurador
+      </span>
+      <p class="aviso">Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.</p>
+    </header>
+    {projecao.bases.map((base) => (
+      <div data-base={base.id} data-ativa={base.id === BASE_PADRAO ? "" : undefined}>
+        <h3 class="base-titulo">Base da projeção: {base.nome}</h3>
+        <ValoresDosFinalistas valores={entreOsFinalistas(umaCasa(100 * base.brasil.projecao))} margem={100 * base.brasil.margem} />
+        <p class="nota">Resultado final estimado, em votos válidos, com a margem de 95%.</p>
+        <ChanceDeVitoria chances={chances(base)} href={`${METODOLOGIA}#chance`} />
         <p class="nota">
-          {projecao.coincidem ? (
-            <a href={`${METODOLOGIA}#juntas`}>As duas bases já coincidem aqui.</a>
-          ) : (
-            <a href={`${METODOLOGIA}#juntas`}>As pesquisas pesam {Math.round(100 * comPesquisas.pesoDasPesquisas)}% na projeção agora.</a>
-          )}
+          A projeção, comparada: com o 1º turno, pelo placar entre finalistas ({osDois(PLACAR_ENTRE_FINALISTAS_DO_BRASIL)}),{" "}
+          {mudanca(PLACAR_ENTRE_FINALISTAS_DO_BRASIL, base)}
+          {AGREGADO && comPesquisas ? `; com a indicação das pesquisas (${osDois(AGREGADO.valor)}), ${mudanca(AGREGADO.valor, base)}` : ""}.
         </p>
-      )}
-      <p class="links">
-        {SIMULADOR_ANTES_DAS_17H && (
-          <a href={caminhoDoSimulador(BASE_PADRAO)} data-simular>
-            Simular "e se" →
-          </a>
+      </div>
+    ))}
+    {comPesquisas && (
+      <div class="base-da-projecao" role="group" aria-label="Base da projeção">
+        <span class="base-rotulo">Base da projeção</span>
+        {projecao.bases.map((base) => (
+          <button type="button" data-base-botao={base.id} aria-pressed={base.id === BASE_PADRAO ? "true" : "false"}>
+            {base.nome}
+          </button>
+        ))}
+      </div>
+    )}
+    {comPesquisas && (
+      <p class="nota">
+        {projecao.coincidem ? (
+          <a href={`${METODOLOGIA}#juntas`}>As duas bases já coincidem aqui.</a>
+        ) : (
+          <a href={`${METODOLOGIA}#juntas`}>As pesquisas pesam {Math.round(100 * comPesquisas.pesoDasPesquisas)}% na projeção agora.</a>
         )}
-        <a href={METODOLOGIA}>Como calculamos →</a>
       </p>
-      <p class="fonte">Cálculo do Apurador com dados do TSE</p>
-    </section>
-  )
-}
+    )}
+    <p class="links">
+      {SIMULADOR_ANTES_DAS_17H && (
+        <a href={caminhoDoSimulador(BASE_PADRAO)} data-simular>
+          Simular "e se" →
+        </a>
+      )}
+      <a href={METODOLOGIA}>Como calculamos →</a>
+    </p>
+    <p class="fonte">Cálculo do Apurador com dados do TSE</p>
+  </section>
+)}
 
 <script>
   // O controle Base da projeção: troca, na projeção e em "O que esperar da noite", o que cada base mostra, e leva a base

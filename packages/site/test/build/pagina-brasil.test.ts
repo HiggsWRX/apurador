@@ -18,7 +18,7 @@ describe("página do Brasil, 1º turno de 2026", () => {
     expect(texto).toContain("53.879.538");
   });
 
-  it("mostra os 5 mais votados e junta o resto em \"demais\"", () => {
+  it('mostra os 5 mais votados e junta o resto em "demais"', () => {
     expect(texto).toContain("RONALDO CAIADO");
     expect(texto).not.toContain("ZEMA");
     expect(texto).toMatch(/Demais candidatos \(7\)/);

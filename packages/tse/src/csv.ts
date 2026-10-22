@@ -1,3 +1,6 @@
+// O formato dos CSVs do portal de dados abertos do TSE e a conversão dos campos (inteiros, datas, datas e horas), com
+// um erro que nomeia a coluna quando um valor não tem a forma esperada. Os arquivos por seção vão por `csv-em-fluxo.ts`.
+
 /**
  * Lê um CSV do portal de dados abertos do TSE: Latin-1, separado por `;`, com os textos entre aspas
  * (aspas dobradas dentro do texto) e os números sem aspas. Devolve o cabeçalho e as linhas como listas.

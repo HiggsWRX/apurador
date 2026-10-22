@@ -49,12 +49,18 @@ export function assinarPedidoS3(pedido: {
   quando: Date;
 }): Record<string, string> {
   const url = new URL(pedido.url);
-  const dataHora = pedido.quando.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const dataHora = pedido.quando
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}/, "");
   const dia = dataHora.slice(0, 8);
   const hashDoCorpo = sha256(pedido.corpo);
   const assinados = { ...pedido.cabecalhos, host: url.host, "x-amz-content-sha256": hashDoCorpo, "x-amz-date": dataHora };
   const nomes = Object.keys(assinados).sort();
-  const consulta = [...url.searchParams].map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).sort().join("&");
+  const consulta = [...url.searchParams]
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .sort()
+    .join("&");
   const canonico = [
     pedido.metodo,
     caminhoCanonico(url.pathname),

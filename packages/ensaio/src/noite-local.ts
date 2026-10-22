@@ -78,7 +78,10 @@ gravarPids();
 
 /** Um processo `node` com o tsx, com a saída prefixada pelo nome. */
 function iniciar(nome: string, script: URL, argumentos: string[]): ChildProcess {
-  const filho = spawn(process.execPath, ["--import", "tsx", fileURLToPath(script), ...argumentos], { cwd: fileURLToPath(RAIZ), stdio: ["pipe", "pipe", "pipe"] });
+  const filho = spawn(process.execPath, ["--import", "tsx", fileURLToPath(script), ...argumentos], {
+    cwd: fileURLToPath(RAIZ),
+    stdio: ["pipe", "pipe", "pipe"],
+  });
   for (const saida of [filho.stdout, filho.stderr]) createInterface({ input: saida }).on("line", (linha) => console.log(`[${nome}] ${linha}`));
   return filho;
 }
@@ -105,11 +108,18 @@ function parar(motivo: string): void {
 const pronto = createInterface({ input: tseFalso.stdout! });
 pronto.on("line", (linha) => {
   if (coletor || !linha.startsWith("TSE falso da noite")) return;
-  coletor = iniciar("coletor", new URL("../../coletor/src/principal.ts", import.meta.url), ["--tse", `http://127.0.0.1:${porta}/oficial`, "--minutos", opcoes.minutos]);
+  coletor = iniciar("coletor", new URL("../../coletor/src/principal.ts", import.meta.url), [
+    "--tse",
+    `http://127.0.0.1:${porta}/oficial`,
+    "--minutos",
+    opcoes.minutos,
+  ]);
   pids.coletor = coletor.pid;
   gravarPids();
   coletor.on("exit", () => parar("o coletor terminou"));
-  console.log(`Publicando em ${fileURLToPath(PUBLICADO)}. A página: npm run dev -w @apurador/site, em /. Para parar: Ctrl+C ou npm run noite-local -- --parar.`);
+  console.log(
+    `Publicando em ${fileURLToPath(PUBLICADO)}. A página: npm run dev -w @apurador/site, em /. Para parar: Ctrl+C ou npm run noite-local -- --parar.`,
+  );
 });
 tseFalso.on("exit", () => parar("o TSE falso terminou"));
 

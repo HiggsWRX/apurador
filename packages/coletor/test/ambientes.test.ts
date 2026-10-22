@@ -65,12 +65,23 @@ describe("os destinos do coletor", () => {
   });
 
   it("sem a chave do ensaio no `.env`, o ensaio não começa, mesmo com a chave de produção ali", () => {
-    expect(() => montar("ensaio", CHAVES_DE_PRODUCAO)).toThrow("Falta R2_ENSAIO_ACCESS_KEY_ID ou R2_ENSAIO_SECRET_ACCESS_KEY no .env do coletor (packages/coletor/.env)");
+    expect(() => montar("ensaio", CHAVES_DE_PRODUCAO)).toThrow(
+      "Falta R2_ENSAIO_ACCESS_KEY_ID ou R2_ENSAIO_SECRET_ACCESS_KEY no .env do coletor (packages/coletor/.env)",
+    );
   });
 
   it("nada do ensaio é de produção: bucket, endereço, Worker, configuração, pasta e chave", () => {
     const { producao, ensaio } = AMBIENTES;
-    const valores = (a: typeof producao | typeof ensaio) => [a.bucket, a.endereco, a.variaveis.chave, a.variaveis.segredo, a.planoB.worker, a.planoB.configuracao, a.planoB.pasta, a.planoB.endereco];
+    const valores = (a: typeof producao | typeof ensaio) => [
+      a.bucket,
+      a.endereco,
+      a.variaveis.chave,
+      a.variaveis.segredo,
+      a.planoB.worker,
+      a.planoB.configuracao,
+      a.planoB.pasta,
+      a.planoB.endereco,
+    ];
     expect(valores(ensaio).filter((v) => valores(producao).includes(v))).toEqual([]);
   });
 

@@ -1267,9 +1267,7 @@ a {
 */
 .simulacao {
   border: 2px dotted var(--borda-forte);
-  background:
-    repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--texto) 5%, transparent) 7px 8px),
-    var(--cartao);
+  background: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--texto) 5%, transparent) 7px 8px), var(--cartao);
 }
 
 .sim-intro {
@@ -1376,9 +1374,7 @@ a {
 
 .sim-linha-simulacao {
   border: 2px dotted var(--borda-forte);
-  background:
-    repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--texto) 5%, transparent) 7px 8px),
-    var(--cartao);
+  background: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--texto) 5%, transparent) 7px 8px), var(--cartao);
 }
 
 .sim-linha-projecao {

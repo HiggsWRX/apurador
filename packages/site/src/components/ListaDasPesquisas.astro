@@ -23,39 +23,43 @@ const conferidoEm = dataEmBrasilia(new Date(EXTRATO.fonte.conferidoEm));
 
 <section class="pesquisas" id="pesquisas-registradas" data-bloco="lista-das-pesquisas">
   <details open={aberta}>
-    <summary><h2>Pesquisas registradas no TSE ({pesquisas.length})</h2></summary>
+    <summary>
+      <h2>Pesquisas registradas no TSE ({pesquisas.length})</h2>
+    </summary>
     <p class="nota">
-      Pesquisas nacionais do 2º turno, de institutos que fizeram pesquisa final no 2º turno de 2018 ou de 2022, conferidas no
-      registro do TSE em {formatarData(conferidoEm)}. Votos totais, como a fonte divulgou.
+      Pesquisas nacionais do 2º turno, de institutos que fizeram pesquisa final no 2º turno de 2018 ou de 2022, conferidas no registro do TSE em{" "}
+      {formatarData(conferidoEm)}. Votos totais, como a fonte divulgou.
     </p>
     <ol>
-      {
-        pesquisas.map((p) => (
-          <li data-pesquisa={p.registro}>
-            <h3>{p.instituto}</h3>
-            <p class="votos">
-              {candidatos.map((c) => (
-                <span>
-                  {c.nomeUrna} <strong>{pct(p.votos.get(c.numero)!)}</strong>
-                </span>
-              ))}
-              {p.brancosNulos !== null && <span>Brancos e nulos {pct(p.brancosNulos)}</span>}
-              {p.indecisos !== null && <span>Indecisos {pct(p.indecisos)}</span>}
-            </p>
-            <ul class="ficha">
-              <li>Período de coleta: {formatarData(p.campoInicio)} a {formatarData(p.campoFim)}</li>
-              <li>Entrevistas: {formatarNumero(p.entrevistas)}, {MODOS[p.modo]}</li>
-              <li>Margem de erro: {margem(p.margem)}, para mais ou para menos</li>
-              <li>Nível de confiança: {pct(p.confianca)}</li>
-              <li>Contratante: {p.contratante}</li>
-              <li>Registro no TSE: {p.registro}</li>
-            </ul>
-            <p class="fonte">
-              Divulgada em {formatarData(p.divulgacao)}. <a href={p.fonte}>Fonte</a>
-            </p>
-          </li>
-        ))
-      }
+      {pesquisas.map((p) => (
+        <li data-pesquisa={p.registro}>
+          <h3>{p.instituto}</h3>
+          <p class="votos">
+            {candidatos.map((c) => (
+              <span>
+                {c.nomeUrna} <strong>{pct(p.votos.get(c.numero)!)}</strong>
+              </span>
+            ))}
+            {p.brancosNulos !== null && <span>Brancos e nulos {pct(p.brancosNulos)}</span>}
+            {p.indecisos !== null && <span>Indecisos {pct(p.indecisos)}</span>}
+          </p>
+          <ul class="ficha">
+            <li>
+              Período de coleta: {formatarData(p.campoInicio)} a {formatarData(p.campoFim)}
+            </li>
+            <li>
+              Entrevistas: {formatarNumero(p.entrevistas)}, {MODOS[p.modo]}
+            </li>
+            <li>Margem de erro: {margem(p.margem)}, para mais ou para menos</li>
+            <li>Nível de confiança: {pct(p.confianca)}</li>
+            <li>Contratante: {p.contratante}</li>
+            <li>Registro no TSE: {p.registro}</li>
+          </ul>
+          <p class="fonte">
+            Divulgada em {formatarData(p.divulgacao)}. <a href={p.fonte}>Fonte</a>
+          </p>
+        </li>
+      ))}
     </ol>
   </details>
 </section>

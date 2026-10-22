@@ -26,31 +26,29 @@ const titulo = 'Simulador "e se"';
     <h1>{titulo}</h1>
     <p class="subtitulo">Eleição para Presidente · 2º turno em 25 de outubro de 2026</p>
   </div>
-  {
-    SIMULADOR_ANTES_DAS_17H ? (
-      <>
-        <p class="sim-intro">
-          Mude quanto o voto que falta pende para cada candidato e o comparecimento em cada região, e veja a simulação ao lado da projeção do Apurador. A
-          simulação usa o mesmo modelo da projeção, com os dados de agora. <a href="/metodologia/#virada">Como funciona →</a>
-        </p>
-        <Simulador
-          client:load
-          arquivo={CAMINHO_DO_ARQUIVO}
-          finalistas={FINALISTAS_DO_SIMULADOR}
-          basePadrao={BASE_PADRAO}
-          viesDoPrimeiroTurno={VIES_DAS_HIPOTESES_PRONTAS}
-        />
-        <noscript>
-          <p class="cartao sim-aviso">O simulador roda no seu navegador e precisa de JavaScript.</p>
-        </noscript>
-      </>
-    ) : (
-      <section class="cartao sim-aviso" data-simulador-fechado>
-        <p>O simulador abre às 17h, com a apuração.</p>
-        <p>
-          <a href="/">Voltar à página do Brasil</a>
-        </p>
-      </section>
-    )
-  }
+  {SIMULADOR_ANTES_DAS_17H ? (
+    <>
+      <p class="sim-intro">
+        Mude quanto o voto que falta pende para cada candidato e o comparecimento em cada região, e veja a simulação ao lado da projeção do Apurador. A
+        simulação usa o mesmo modelo da projeção, com os dados de agora. <a href="/metodologia/#virada">Como funciona →</a>
+      </p>
+      <Simulador
+        client:load
+        arquivo={CAMINHO_DO_ARQUIVO}
+        finalistas={FINALISTAS_DO_SIMULADOR}
+        basePadrao={BASE_PADRAO}
+        viesDoPrimeiroTurno={VIES_DAS_HIPOTESES_PRONTAS}
+      />
+      <noscript>
+        <p class="cartao sim-aviso">O simulador roda no seu navegador e precisa de JavaScript.</p>
+      </noscript>
+    </>
+  ) : (
+    <section class="cartao sim-aviso" data-simulador-fechado>
+      <p>O simulador abre às 17h, com a apuração.</p>
+      <p>
+        <a href="/">Voltar à página do Brasil</a>
+      </p>
+    </section>
+  )}
 </Base>

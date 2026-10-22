@@ -60,12 +60,24 @@ export function lerPesquisasHistoricas(texto: string): PesquisaHistorica[] {
       turno,
       instituto: valor("instituto", naoVazio, String),
       contratante: valor("contratante", () => true, textoOuNulo),
-      registro: valor("registro", ou((v) => /^BR-\d{5}\/\d{4}$/.test(v)), textoOuNulo),
+      registro: valor(
+        "registro",
+        ou((v) => /^BR-\d{5}\/\d{4}$/.test(v)),
+        textoOuNulo,
+      ),
       campoInicio: valor("campo_inicio", ehData, String),
       campoFim: valor("campo_fim", ehData, String),
       divulgacao: valor("divulgacao", ou(ehData), textoOuNulo),
-      entrevistas: valor("entrevistas", ou((v) => /^\d+$/.test(v)), (v) => (v === "" ? null : Number(v))),
-      base: valor("base", (v) => (BASES as readonly string[]).includes(v), (v) => v as PesquisaHistorica["base"]),
+      entrevistas: valor(
+        "entrevistas",
+        ou((v) => /^\d+$/.test(v)),
+        (v) => (v === "" ? null : Number(v)),
+      ),
+      base: valor(
+        "base",
+        (v) => (BASES as readonly string[]).includes(v),
+        (v) => v as PesquisaHistorica["base"],
+      ),
       votos: new Map(
         extras.flatMap((c) => {
           const votos = valor(c, ou(ehDecimal), textoOuNulo);
@@ -127,7 +139,11 @@ function exigirResultados(pesquisas: readonly PesquisaHistorica[], resultados: r
 }
 
 /** As pesquisas de uma eleição como o agregado as lê, com os votos na ordem dos finalistas dados. */
-function pesquisasDaEleicao(pesquisas: readonly PesquisaHistorica[], resultado: ResultadoHistorico, [primeiro, segundo]: readonly [number, number]): PesquisaDoAgregado[] {
+function pesquisasDaEleicao(
+  pesquisas: readonly PesquisaHistorica[],
+  resultado: ResultadoHistorico,
+  [primeiro, segundo]: readonly [number, number],
+): PesquisaDoAgregado[] {
   const rotulo = `${resultado.ano}, ${resultado.turno}º turno`;
   const daEleicao = new Set(resultado.finalistas.map((f) => f.numero));
   if (!daEleicao.has(primeiro) || !daEleicao.has(segundo) || primeiro === segundo) {

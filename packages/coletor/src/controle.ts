@@ -41,7 +41,8 @@ export async function lerArquivoDeControle(caminho: string): Promise<ArquivoDeCo
   const valor = JSON.parse(texto) as unknown;
   const controle = lerControle(valor);
   const gravadoEm = (valor as { gravadoEm?: unknown }).gravadoEm;
-  if (typeof gravadoEm !== "string" || Number.isNaN(Date.parse(gravadoEm))) throw new Error(`gravadoEm deveria ser uma data ISO, não ${JSON.stringify(gravadoEm)}`);
+  if (typeof gravadoEm !== "string" || Number.isNaN(Date.parse(gravadoEm)))
+    throw new Error(`gravadoEm deveria ser uma data ISO, não ${JSON.stringify(gravadoEm)}`);
   return { ...controle, gravadoEm };
 }
 

@@ -30,7 +30,8 @@ export function LinhasDaComparacao({ turnos, estado, eixos }: PropsDaComparacao 
   const turno = turnos.find((t) => t.id === estado.ligado);
   const curva = estado.curva;
   if (!turno || !curva) return null;
-  const linha = (y: (pt: number) => number) => curva.secoes.map((s, i) => `${i ? "L" : "M"}${eixos.x(s).toFixed(1)},${eixos.y(y(curva.pt[i]!)).toFixed(1)}`).join("");
+  const linha = (y: (pt: number) => number) =>
+    curva.secoes.map((s, i) => `${i ? "L" : "M"}${eixos.x(s).toFixed(1)},${eixos.y(y(curva.pt[i]!)).toFixed(1)}`).join("");
   return (
     <g data-curva-de-comparacao={turno.id}>
       <path class="linha-de-comparacao" data-cor={corDoPartido(PT[0]!)} d={linha((p) => p)} />

@@ -21,7 +21,9 @@ import { pastaLocal } from "./destino.ts";
 // libera a origem e expõe o `Date` e a ETag, que ela lê.
 
 /** O `_headers` da pasta do plano B, que o Worker aplica a todo arquivo. */
-const CABECALHOS_DO_PLANO_B = ["/*", "  Access-Control-Allow-Origin: *", "  Access-Control-Expose-Headers: Date, ETag", "  X-Robots-Tag: noindex", ""].join("\n");
+const CABECALHOS_DO_PLANO_B = ["/*", "  Access-Control-Allow-Origin: *", "  Access-Control-Expose-Headers: Date, ETag", "  X-Robots-Tag: noindex", ""].join(
+  "\n",
+);
 
 /**
  * O tempo desde a republicação anterior a partir do qual o fim da rodada republica: um minuto menos meia rodada. O fim
@@ -120,7 +122,12 @@ export function implantarWorker(configuracao: string, variaveis: Record<string, 
     processo.on("close", (codigo) => {
       clearTimeout(limite);
       if (codigo === 0) return pronto();
-      const ultimas = saida.trim().split("\n").filter((l) => l.trim()).slice(-3).join(" | ");
+      const ultimas = saida
+        .trim()
+        .split("\n")
+        .filter((l) => l.trim())
+        .slice(-3)
+        .join(" | ");
       falhou(new Error(`wrangler saiu com ${codigo ?? "o processo parado"}: ${ultimas}`));
     });
   });

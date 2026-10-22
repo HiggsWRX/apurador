@@ -22,6 +22,4 @@ export const getStaticPaths = (() => {
 const { id } = Astro.props;
 ---
 
-<PaginaDeLugar lugar={lugar(id)}>
-  {CHAVES.antesDas17h.agregado && <IndicacaoDasPesquisas lugar={lugar(id)} />}
-</PaginaDeLugar>
+<PaginaDeLugar lugar={lugar(id)}>{CHAVES.antesDas17h.agregado && <IndicacaoDasPesquisas lugar={lugar(id)} />}</PaginaDeLugar>

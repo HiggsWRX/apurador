@@ -27,9 +27,14 @@ if (opcoes.destino !== "producao" && opcoes.destino !== "ensaio") throw new Erro
 const ambiente = AMBIENTES[opcoes.destino];
 
 if (opcoes["plano-b"]) {
-  const noWorker = await fetch(`${ambiente.planoB.endereco}rodada.json`, { method: "HEAD" }).then((r) => r.status === 200, () => false);
+  const noWorker = await fetch(`${ambiente.planoB.endereco}rodada.json`, { method: "HEAD" }).then(
+    (r) => r.status === 200,
+    () => false,
+  );
   if (noWorker || existsSync(join(ambiente.planoB.pasta, "rodada.json"))) {
-    throw new Error(`O plano B do ${opcoes.destino} já tem rodada.json (${noWorker ? "no Worker" : "na pasta"}): está em uso, e a conferência o trocaria pelo objeto dela.`);
+    throw new Error(
+      `O plano B do ${opcoes.destino} já tem rodada.json (${noWorker ? "no Worker" : "na pasta"}): está em uso, e a conferência o trocaria pelo objeto dela.`,
+    );
   }
 }
 
@@ -60,8 +65,12 @@ function mostrar(titulo: string, itens: ItemDaConferencia[]): boolean {
 console.log(`Grava ${caminho} no bucket ${ambiente.bucket}, ${opcoes["sem-gzip"] ? "sem" : "com"} gzip, e lê por ${ambiente.endereco}.`);
 await destinos.principal.gravar(caminho, bytes);
 await gravarContadorDeGravacoes(ARQUIVO_DO_CONTADOR, contador.doMes());
-let certo = mostrar(`R2 (${ambiente.endereco})`, await conferirEntrega({ url: `${ambiente.endereco}${caminho}`, esperado: bytes, origem: opcoes.origem, tipo: "r2", buscar: fetch }));
-if (!certo && !opcoes["sem-gzip"]) console.log("\nSe só o corpo, a ETag ou o 304 falharam, rode de novo com --sem-gzip: se passar, o coletor grava sem compressão (--sem-gzip).");
+let certo = mostrar(
+  `R2 (${ambiente.endereco})`,
+  await conferirEntrega({ url: `${ambiente.endereco}${caminho}`, esperado: bytes, origem: opcoes.origem, tipo: "r2", buscar: fetch }),
+);
+if (!certo && !opcoes["sem-gzip"])
+  console.log("\nSe só o corpo, a ETag ou o 304 falharam, rode de novo com --sem-gzip: se passar, o coletor grava sem compressão (--sem-gzip).");
 
 if (opcoes["plano-b"]) {
   console.log(`\nRepublica o Worker ${ambiente.planoB.worker} só com ${caminho} e o _headers (wrangler deploy).`);
@@ -76,6 +85,10 @@ if (opcoes["plano-b"]) {
     await new Promise((pronto) => setTimeout(pronto, 2000));
   }
   console.log(`Na borda em ${((Date.now() - inicio) / 1000).toFixed(0)} s depois do deploy.`);
-  certo = mostrar(`Worker do plano B (${ambiente.planoB.endereco})`, await conferirEntrega({ url, esperado: bytes, origem: opcoes.origem, tipo: "worker", buscar: fetch })) && certo;
+  certo =
+    mostrar(
+      `Worker do plano B (${ambiente.planoB.endereco})`,
+      await conferirEntrega({ url, esperado: bytes, origem: opcoes.origem, tipo: "worker", buscar: fetch }),
+    ) && certo;
 }
 process.exit(certo ? 0 : 1);

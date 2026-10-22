@@ -33,7 +33,8 @@ const datafolha: Pesquisa = {
   divulgacao: "2026-10-15",
 };
 
-const conferir = (...pesquisas: Pesquisa[]) => verificarPesquisas({ pesquisas, registros, institutos, finalistas: [22, 13], conferidoEm: "2026-10-18T12:00:00Z" });
+const conferir = (...pesquisas: Pesquisa[]) =>
+  verificarPesquisas({ pesquisas, registros, institutos, finalistas: [22, 13], conferidoEm: "2026-10-18T12:00:00Z" });
 const divergencias = (p: Partial<Pesquisa>) => conferir({ ...datafolha, ...p })[0]!.divergencias;
 
 describe("verificarPesquisas", () => {
@@ -70,8 +71,12 @@ describe("verificarPesquisas", () => {
 
   it("aceita um campo divulgado dentro do registrado e recusa um que sai dele", () => {
     expect(divergencias({ campoInicio: "2026-10-14", campoFim: "2026-10-15" })).toEqual([]);
-    expect(divergencias({ campoFim: "2026-10-16" })).toEqual(["o campo divulgado (13/10/2026 a 16/10/2026) sai do registrado no TSE (13/10/2026 a 15/10/2026)"]);
-    expect(divergencias({ campoInicio: "2026-10-12" })).toEqual(["o campo divulgado (12/10/2026 a 15/10/2026) sai do registrado no TSE (13/10/2026 a 15/10/2026)"]);
+    expect(divergencias({ campoFim: "2026-10-16" })).toEqual([
+      "o campo divulgado (13/10/2026 a 16/10/2026) sai do registrado no TSE (13/10/2026 a 15/10/2026)",
+    ]);
+    expect(divergencias({ campoInicio: "2026-10-12" })).toEqual([
+      "o campo divulgado (12/10/2026 a 15/10/2026) sai do registrado no TSE (13/10/2026 a 15/10/2026)",
+    ]);
   });
 
   it("aceita entrevistas um pouco diferentes das registradas, que são as previstas, e recusa uma diferença maior", () => {
@@ -124,7 +129,13 @@ describe("verificarPesquisas", () => {
   describe("só entram pesquisas nacionais de Presidente do 2º turno, nunca boca de urna", () => {
     const comRegistro = (mudanca: Partial<(typeof registros)[number]>, p: Partial<Pesquisa> = {}) => {
       const alterados = registros.map((r) => (r.registro === datafolha.registro ? { ...r, ...mudanca } : r));
-      return verificarPesquisas({ pesquisas: [{ ...datafolha, ...p }], registros: alterados, institutos, finalistas: [22, 13], conferidoEm: "2026-10-18T12:00:00Z" })[0]!.divergencias;
+      return verificarPesquisas({
+        pesquisas: [{ ...datafolha, ...p }],
+        registros: alterados,
+        institutos,
+        finalistas: [22, 13],
+        conferidoEm: "2026-10-18T12:00:00Z",
+      })[0]!.divergencias;
     };
 
     it("recusa outro cargo", () => {
@@ -133,7 +144,15 @@ describe("verificarPesquisas", () => {
 
     it("recusa uma pesquisa estadual, pelo plano amostral registrado", () => {
       // A Paraná Pesquisas de 14 a 17/10 é do Tocantins, embora o registro diga UF "BR".
-      const parana: Pesquisa = { ...datafolha, registro: "BR-09051/2026", instituto: "Paraná Pesquisas", campoInicio: "2026-10-14", campoFim: "2026-10-17", entrevistas: 1500, divulgacao: "2026-10-19" };
+      const parana: Pesquisa = {
+        ...datafolha,
+        registro: "BR-09051/2026",
+        instituto: "Paraná Pesquisas",
+        campoInicio: "2026-10-14",
+        campoFim: "2026-10-17",
+        entrevistas: 1500,
+        divulgacao: "2026-10-19",
+      };
       const [conferencia] = verificarPesquisas({ pesquisas: [parana], registros, institutos, finalistas: [22, 13], conferidoEm: "2026-10-19T12:00:00Z" });
       expect(conferencia!.divergencias).toEqual(["o plano amostral registrado no TSE é de uma UF: só entram pesquisas nacionais"]);
     });
@@ -145,7 +164,9 @@ describe("verificarPesquisas", () => {
     });
 
     it("recusa um campo que começa antes de 05/10", () => {
-      expect(comRegistro({ inicio: "2026-10-03" }, { campoInicio: "2026-10-03" })).toEqual(["o campo começa em 03/10/2026, antes de 05/10/2026: só entram pesquisas do 2º turno"]);
+      expect(comRegistro({ inicio: "2026-10-03" }, { campoInicio: "2026-10-03" })).toEqual([
+        "o campo começa em 03/10/2026, antes de 05/10/2026: só entram pesquisas do 2º turno",
+      ]);
     });
 
     it("recusa boca de urna, pelo campo no dia da eleição ou pela metodologia registrada", () => {
@@ -158,17 +179,43 @@ describe("verificarPesquisas", () => {
 
   describe("pega erros de digitação nos números divulgados", () => {
     it("exige os votos dos dois finalistas", () => {
-      expect(divergencias({ votos: new Map([[22, 47], [10, 45]]) })).toEqual(["os votos são de 22 e 10, mas os finalistas são 22 e 13"]);
+      expect(
+        divergencias({
+          votos: new Map([
+            [22, 47],
+            [10, 45],
+          ]),
+        }),
+      ).toEqual(["os votos são de 22 e 10, mas os finalistas são 22 e 13"]);
     });
 
     it("exige que votos, brancos e nulos e indecisos somem perto de 100%", () => {
-      expect(divergencias({ votos: new Map([[22, 4.7], [13, 45]]) })).toEqual(["votos, brancos e nulos e indecisos somam 57,7%, não perto de 100%"]);
+      expect(
+        divergencias({
+          votos: new Map([
+            [22, 4.7],
+            [13, 45],
+          ]),
+        }),
+      ).toEqual(["votos, brancos e nulos e indecisos somam 57,7%, não perto de 100%"]);
       expect(divergencias({ brancosNulos: null, indecisos: null })).toEqual([]);
-      expect(divergencias({ brancosNulos: null, indecisos: null, votos: new Map([[22, 57], [13, 45]]) })).toEqual(["votos, brancos e nulos e indecisos somam 102%, mais de 100%"]);
+      expect(
+        divergencias({
+          brancosNulos: null,
+          indecisos: null,
+          votos: new Map([
+            [22, 57],
+            [13, 45],
+          ]),
+        }),
+      ).toEqual(["votos, brancos e nulos e indecisos somam 102%, mais de 100%"]);
     });
 
     it("exige margem de erro e nível de confiança plausíveis", () => {
-      expect(divergencias({ margem: 95, confianca: 2 })).toEqual(["a margem de erro (95) não está entre 0 e 10 pontos", "o nível de confiança (2%) não está entre 90% e 100%"]);
+      expect(divergencias({ margem: 95, confianca: 2 })).toEqual([
+        "a margem de erro (95) não está entre 0 e 10 pontos",
+        "o nível de confiança (2%) não está entre 90% e 100%",
+      ]);
     });
   });
 
@@ -182,7 +229,8 @@ describe("verificarPesquisas", () => {
 });
 
 describe("lerPesquisas", () => {
-  const cabecalho = "registro,instituto,contratante,campo_inicio,campo_fim,entrevistas,margem,confianca,modo,votos_22,votos_13,brancos_nulos,indecisos,fonte,divulgacao";
+  const cabecalho =
+    "registro,instituto,contratante,campo_inicio,campo_fim,entrevistas,margem,confianca,modo,votos_22,votos_13,brancos_nulos,indecisos,fonte,divulgacao";
   const linha =
     'BR-00466/2026,Datafolha,"Folha de S.Paulo, TV Globo",2026-10-13,2026-10-15,2520,2,95,presencial,47,45,6,2,https://www.moneytimes.com.br/pesquisa-datafolha-15-de-outubro-gaep/,2026-10-15';
 
@@ -198,21 +246,33 @@ describe("lerPesquisas", () => {
 
   it("aponta a linha e a coluna de um valor inválido", () => {
     expect(() => lerPesquisas(`${cabecalho}\n${linha.replace(",2520,", ",2.520,")}`)).toThrow("pesquisas.csv, linha 2: entrevistas inválido: 2.520");
-    expect(() => lerPesquisas(`${cabecalho}\n${linha.replace(",presencial,", ",boca de urna,")}`)).toThrow("pesquisas.csv, linha 2: modo inválido: boca de urna");
-    expect(() => lerPesquisas(`${cabecalho}\n${linha.replace("2026-10-15,2520", "15/10/2026,2520")}`)).toThrow("pesquisas.csv, linha 2: campo_fim inválido: 15/10/2026");
-    expect(() => lerPesquisas(`${cabecalho}\n${linha.replace("BR-00466/2026", "BR-0466/2026")}`)).toThrow("pesquisas.csv, linha 2: registro inválido: BR-0466/2026");
+    expect(() => lerPesquisas(`${cabecalho}\n${linha.replace(",presencial,", ",boca de urna,")}`)).toThrow(
+      "pesquisas.csv, linha 2: modo inválido: boca de urna",
+    );
+    expect(() => lerPesquisas(`${cabecalho}\n${linha.replace("2026-10-15,2520", "15/10/2026,2520")}`)).toThrow(
+      "pesquisas.csv, linha 2: campo_fim inválido: 15/10/2026",
+    );
+    expect(() => lerPesquisas(`${cabecalho}\n${linha.replace("BR-00466/2026", "BR-0466/2026")}`)).toThrow(
+      "pesquisas.csv, linha 2: registro inválido: BR-0466/2026",
+    );
     expect(() => lerPesquisas(`${cabecalho}\n${linha.replace("https://www", "www")}`)).toThrow(/pesquisas.csv, linha 2: fonte inválido: www\.moneytimes/);
   });
 
   it("recusa um cabeçalho sem as colunas esperadas", () => {
-    expect(() => lerPesquisas(cabecalho.replace(",margem", ",margem_de_erro"))).toThrow("pesquisas.csv: colunas faltando (margem) ou desconhecidas (margem_de_erro)");
+    expect(() => lerPesquisas(cabecalho.replace(",margem", ",margem_de_erro"))).toThrow(
+      "pesquisas.csv: colunas faltando (margem) ou desconhecidas (margem_de_erro)",
+    );
   });
 });
 
 describe("lerInstitutos", () => {
   it("lê um CNPJ por linha, com o instituto da lista a que pertence", () => {
     const texto = 'instituto_da_lista,instituto,cnpj,origem\nFSB,Nexus,11077560000160,"Instituto FSB Pesquisa (IPRI), 2º turno de 2018: BR-03689/2018"\n';
-    expect(lerInstitutos(texto)).toEqual([{ institutoDaLista: "FSB", instituto: "Nexus", cnpj: "11077560000160", origem: "Instituto FSB Pesquisa (IPRI), 2º turno de 2018: BR-03689/2018" }]);
-    expect(() => lerInstitutos("instituto_da_lista,instituto,cnpj,origem\nFSB,Nexus,11.077.560/0001-60,x\n")).toThrow("pesquisas-institutos.csv, linha 2: cnpj inválido: 11.077.560/0001-60");
+    expect(lerInstitutos(texto)).toEqual([
+      { institutoDaLista: "FSB", instituto: "Nexus", cnpj: "11077560000160", origem: "Instituto FSB Pesquisa (IPRI), 2º turno de 2018: BR-03689/2018" },
+    ]);
+    expect(() => lerInstitutos("instituto_da_lista,instituto,cnpj,origem\nFSB,Nexus,11.077.560/0001-60,x\n")).toThrow(
+      "pesquisas-institutos.csv, linha 2: cnpj inválido: 11.077.560/0001-60",
+    );
   });
 });

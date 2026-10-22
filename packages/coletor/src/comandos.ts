@@ -1,4 +1,13 @@
-import { AVISOS_PRONTOS, CHAVES_DA_NOITE, chavesEfetivas, ehAvisoPronto, NOMES_DAS_CHAVES, type AvisoPronto, type Controle, type NomeDaChave } from "./chaves.ts";
+import {
+  AVISOS_PRONTOS,
+  CHAVES_DA_NOITE,
+  chavesEfetivas,
+  ehAvisoPronto,
+  NOMES_DAS_CHAVES,
+  type AvisoPronto,
+  type Controle,
+  type NomeDaChave,
+} from "./chaves.ts";
 
 // Os comandos da noite (Operação na noite, decisão 9; spec, "Comandos da noite"): o conjunto fechado do que o dono faz
 // com o arquivo de controle. Ligar e desligar cada chave (desligar o núcleo mínimo é o plano zero), publicar e retirar
@@ -6,7 +15,8 @@ import { AVISOS_PRONTOS, CHAVES_DA_NOITE, chavesEfetivas, ehAvisoPronto, NOMES_D
 // módulo é a parte pura: lê o comando dos argumentos e o aplica ao controle. O terminal (`noite.ts`) pede a confirmação.
 
 /** Um comando da noite, já lido dos argumentos. */
-export type ComandoDaNoite = { tipo: "ligar" | "desligar"; chave: NomeDaChave } | { tipo: "aviso"; aviso: AvisoPronto } | { tipo: "retirar-aviso" } | { tipo: "plano-b" };
+export type ComandoDaNoite =
+  { tipo: "ligar" | "desligar"; chave: NomeDaChave } | { tipo: "aviso"; aviso: AvisoPronto } | { tipo: "retirar-aviso" } | { tipo: "plano-b" };
 
 const nomesNoComando = () => NOMES_DAS_CHAVES.map((nome) => CHAVES_DA_NOITE[nome].comando).join(", ");
 
@@ -79,12 +89,17 @@ export function aplicarComando(controle: Controle, comando: ComandoDaNoite): Com
       const { rotulo, genero } = CHAVES_DA_NOITE[chave];
       const ligar = comando.tipo === "ligar";
       if (controle.chaves[chave] === ligar) throw new ComandoInvalido(jaEsta(chave, ligar));
-      if (ligar && chave === "simulador" && !controle.chaves.projecao) throw new ComandoInvalido("O simulador só liga com a projeção ligada. Ligue a projeção antes.");
+      if (ligar && chave === "simulador" && !controle.chaves.projecao)
+        throw new ComandoInvalido("O simulador só liga com a projeção ligada. Ligue a projeção antes.");
       const chaves = chavesEfetivas({ ...controle.chaves, [chave]: ligar });
       const mudancas = [`${ligar ? "Liga" : "Desliga"} ${genero} ${rotulo}.`];
-      if (chave === "nucleoMinimo") mudancas.push(ligar ? "O bloco ao vivo volta à página." : "É o plano zero: o coletor publica só o arquivo de rodada, e a página manda para o app oficial do TSE.");
+      if (chave === "nucleoMinimo")
+        mudancas.push(
+          ligar ? "O bloco ao vivo volta à página." : "É o plano zero: o coletor publica só o arquivo de rodada, e a página manda para o app oficial do TSE.",
+        );
       // A chave do simulador fica gravada desligada, de propósito: religar a projeção não liga nada sozinho.
-      if (!ligar && chave === "projecao" && controle.chaves.simulador) mudancas.push("O simulador também fica desligado, porque parte da projeção. Religar a projeção não o religa.");
+      if (!ligar && chave === "projecao" && controle.chaves.simulador)
+        mudancas.push("O simulador também fica desligado, porque parte da projeção. Religar a projeção não o religa.");
       return { controle: { ...controle, chaves }, confirmacao: CHAVES_DA_NOITE[chave].comando, mudancas };
     }
     case "aviso": {
@@ -98,6 +113,10 @@ export function aplicarComando(controle: Controle, comando: ComandoDaNoite): Com
       return { controle: { ...controle, aviso: null }, confirmacao: "aviso", mudancas: [`Tira o aviso ${controle.aviso} do ar.`] };
     case "plano-b":
       if (controle.planoB) throw new ComandoInvalido("O destino já é o plano B.");
-      return { controle: { ...controle, planoB: true }, confirmacao: "plano-b", mudancas: ["Passa o destino ao plano B, até o fim da noite. Não há comando de volta."] };
+      return {
+        controle: { ...controle, planoB: true },
+        confirmacao: "plano-b",
+        mudancas: ["Passa o destino ao plano B, até o fim da noite. Não há comando de volta."],
+      };
   }
 }

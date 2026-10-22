@@ -16,15 +16,15 @@ const aberto = TURNOS.find((t) => t.lugares[lugar.id]) ?? TURNOS[0]!;
 <section class="cartao historico" aria-labelledby="historico-titulo" data-historico>
   <h2 id="historico-titulo">Histórico · {nomeCompleto(lugar)}</h2>
   <div class="turnos" role="group" aria-label="Turno">
-    {
-      TURNOS.map((t) => (
-        <button type="button" data-turno-botao={idDoTurno(t)} aria-controls={`turno-${idDoTurno(t)}`} aria-pressed={t === aberto ? "true" : "false"}>
-          {t.ano} {t.turno}T
-        </button>
-      ))
-    }
+    {TURNOS.map((t) => (
+      <button type="button" data-turno-botao={idDoTurno(t)} aria-controls={`turno-${idDoTurno(t)}`} aria-pressed={t === aberto ? "true" : "false"}>
+        {t.ano} {t.turno}T
+      </button>
+    ))}
   </div>
-  {TURNOS.map((t) => <BarrasDoTurno turno={t} lugar={lugar} ativo={t === aberto} />)}
+  {TURNOS.map((t) => (
+    <BarrasDoTurno turno={t} lugar={lugar} ativo={t === aberto} />
+  ))}
   <p class="nota">Percentuais dos candidatos sobre os votos válidos; brancos e nulos sobre os votantes. Fonte: TSE (CC-BY).</p>
   <ComparacaoDeTurnos lugar={lugar} />
 </section>

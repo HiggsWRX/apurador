@@ -55,3 +55,4 @@ Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decis�
     - **Entrega**: `npm run conferir-entrega -- --destino ensaio --origem <origem do site do ensaio> --plano-b` confere a entrega no ambiente do ensaio.
     - **Contador**: o do coletor, para comparar com o painel da Cloudflare, é `.cache/coletor/gravacoes.json`, por bucket.
     - **Atraso no plano B**: o script tem de ler como a página, sem cabeçalho próprio e com o cache do navegador. Os static assets não atendem o preflight do CORS.
+- 21/10/2026, da retro do [ticket 20](20-publicacao-r2-e-plano-b.md): a entrega pela borda dos objetos gravados com gzip no R2 (ETag e 304), que a spec deixa "Em aberto", ficou sem medir no ticket 20 por falta da chave de escrita. Antes deste ticket, o dono cola no `.env` do coletor a chave do bucket do ensaio (as "Pendências do dono" da spec), para as conferências daqui rodarem contra o ensaio.

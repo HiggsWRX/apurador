@@ -40,7 +40,10 @@ describe("conferirPlacar", () => {
     // Acrelândia (AC, 01120) antes da primeira seção: 0 de todas, sem hora.
     const zerado: PlacarPublicado = {
       candidatos: [22, 13],
-      lugar: { lugar: "01120", tse: { totalizacao: null, secoes: { totalizadas: 0, total: 0, percentual: 0 }, votos: [0, 0], percentuais: [0, 0], final: false } },
+      lugar: {
+        lugar: "01120",
+        tse: { totalizacao: null, secoes: { totalizadas: 0, total: 0, percentual: 0 }, votos: [0, 0], percentuais: [0, 0], final: false },
+      },
     };
 
     const [divergencia] = conferirPlacar([zerado], { noite, cadastro });

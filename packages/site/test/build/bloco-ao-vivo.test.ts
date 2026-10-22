@@ -22,7 +22,10 @@ function ilha(html: string) {
     return v;
   };
   const objeto = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, valor(v)]));
-  return { html: elementoDaIlha, props: objeto(bruto) as { id: string; tipo: string; fotos: Record<string, string>; enderecos: unknown[]; chaves: Record<string, boolean> } };
+  return {
+    html: elementoDaIlha,
+    props: objeto(bruto) as { id: string; tipo: string; fotos: Record<string, string>; enderecos: unknown[]; chaves: Record<string, boolean> },
+  };
 }
 
 describe("bloco ao vivo no build", () => {
@@ -33,7 +36,7 @@ describe("bloco ao vivo no build", () => {
     expect(ilha(pagina("/sp/campinas/")).props).toMatchObject({ id: campinas.id, tipo: "municipio" });
   });
 
-  it("leva o lugar como a manchete o escreve no fim da totalização (\"Lula vence na Bahia\")", () => {
+  it('leva o lugar como a manchete o escreve no fim da totalização ("Lula vence na Bahia")', () => {
     expect(ilha(pagina("/ba/")).props).toMatchObject({ em: "na Bahia" });
     expect(ilha(pagina("/sp/")).props).toMatchObject({ em: "em São Paulo" });
     expect(ilha(pagina("/df/")).props).toMatchObject({ em: "no Distrito Federal" });

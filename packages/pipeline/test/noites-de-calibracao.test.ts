@@ -150,7 +150,12 @@ describe("as zonas nas três noites da calibração", () => {
 
     for (const zonas of [...zonasPorMunicipio(noite).values()].filter((z) => z.length > 1)) {
       const somar = (valor: (t: ReturnType<typeof r.apurado>) => number) => zonas.reduce((s, z) => s + valor(r.apurado(z)), 0);
-      const naNoite = [somar((t) => t.votantes), somar((t) => t.brancos), somar((t) => t.nulos), ...oficial.candidatos.map((c) => somar((t) => t.votos[noite.candidatos.findIndex((n) => n.numero === c.numero)]!))];
+      const naNoite = [
+        somar((t) => t.votantes),
+        somar((t) => t.brancos),
+        somar((t) => t.nulos),
+        ...oficial.candidatos.map((c) => somar((t) => t.votos[noite.candidatos.findIndex((n) => n.numero === c.numero)]!)),
+      ];
       const o = oficial.lugares[String(zonas[0]!.municipio).padStart(5, "0")]!;
       if (naNoite.join() !== [o.votantes, o.brancos, o.nulos, ...o.votos].join()) difere.push(`${zonas[0]!.uf}/${zonas[0]!.municipio}`);
     }

@@ -35,7 +35,10 @@ const detalhesDosTurnos: DetalheMunzona[] = [];
 for (const { ano, turno } of TURNOS) {
   const urlCandidatos = urlDadosAbertos("votacao_candidato_munzona", ano);
   const urlDetalhes = urlDadosAbertos("detalhe_votacao_munzona", ano);
-  const [arqCandidatos, arqDetalhes] = await Promise.all([membroDePresidenteComCache(urlCandidatos, { atualizar }), membroDePresidenteComCache(urlDetalhes, { atualizar })]);
+  const [arqCandidatos, arqDetalhes] = await Promise.all([
+    membroDePresidenteComCache(urlCandidatos, { atualizar }),
+    membroDePresidenteComCache(urlDetalhes, { atualizar }),
+  ]);
   const candidatos = lerVotacaoCandidatoMunzona(arqCandidatos.dados);
   const detalhes = lerDetalheVotacaoMunzona(arqDetalhes.dados);
 

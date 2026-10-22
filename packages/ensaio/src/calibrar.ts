@@ -17,7 +17,11 @@ const calibracao = calibrar(noites, CONSTANTES_PROVISORIAS, (texto) => console.l
 
 mkdirSync(new URL("docs/calibracao/", raiz), { recursive: true });
 for (const [arquivo, texto] of Object.entries(tabelasDaCalibracao(calibracao))) writeFileSync(new URL(`docs/calibracao/${arquivo}`, raiz), texto);
-for (const noite of noites) writeFileSync(new URL(`docs/calibracao/noite-${noite.id}.csv`, raiz), csvMomentoAMomento(noiteMomentoAMomento(noite, calibracao.constantes), noite.modelo.finalistas[0]!));
+for (const noite of noites)
+  writeFileSync(
+    new URL(`docs/calibracao/noite-${noite.id}.csv`, raiz),
+    csvMomentoAMomento(noiteMomentoAMomento(noite, calibracao.constantes), noite.modelo.finalistas[0]!),
+  );
 
 const registro = new URL("docs/calibracao.md", raiz);
 const texto = readFileSync(registro, "utf8");

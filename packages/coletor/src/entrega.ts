@@ -27,7 +27,11 @@ export interface ItemDaConferencia {
 const PREFLIGHT_MINIMO = 7200;
 
 const iguais = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((x, i) => x === b[i]);
-const valoresDoCabecalho = (valor: string | null) => (valor ?? "").toLowerCase().split(",").map((v) => v.trim());
+const valoresDoCabecalho = (valor: string | null) =>
+  (valor ?? "")
+    .toLowerCase()
+    .split(",")
+    .map((v) => v.trim());
 
 /** Confere a entrega de um objeto recém-gravado, pelo endereço público, com uma borda de cache ainda fria para ele. */
 export async function conferirEntrega(opcoes: {
@@ -50,7 +54,12 @@ export async function conferirEntrega(opcoes: {
   const primeira = await buscar(url, { headers: { "accept-encoding": "gzip, br" } });
   const corpo = new Uint8Array(await primeira.arrayBuffer());
   const codificacao = primeira.headers.get("content-encoding") ?? "sem Content-Encoding";
-  item("corpo", "o JSON chega igual ao gravado", primeira.status === 200 && iguais(corpo, esperado), `${primeira.status}, ${codificacao}, ${corpo.length} bytes`);
+  item(
+    "corpo",
+    "o JSON chega igual ao gravado",
+    primeira.status === 200 && iguais(corpo, esperado),
+    `${primeira.status}, ${codificacao}, ${corpo.length} bytes`,
+  );
   const etag = primeira.headers.get("etag");
   item("etag", "a resposta traz ETag", etag !== null, etag ?? "sem ETag");
   if (tipo === "r2") {
@@ -74,10 +83,18 @@ export async function conferirEntrega(opcoes: {
 
   const terceira = await buscar(url, { headers: { origin: origem, "if-none-match": etag ?? "" } });
   await terceira.body?.cancel();
-  item("304", "com If-None-Match, a borda responde 304, com o CORS", terceira.status === 304 && permiteAOrigem(terceira), `${terceira.status}, ${origemNaResposta(terceira)}`);
+  item(
+    "304",
+    "com If-None-Match, a borda responde 304, com o CORS",
+    terceira.status === 304 && permiteAOrigem(terceira),
+    `${terceira.status}, ${origemNaResposta(terceira)}`,
+  );
 
   if (tipo === "r2") {
-    const preflight = await buscar(url, { method: "OPTIONS", headers: { origin: origem, "access-control-request-method": "GET", "access-control-request-headers": "if-none-match" } });
+    const preflight = await buscar(url, {
+      method: "OPTIONS",
+      headers: { origin: origem, "access-control-request-method": "GET", "access-control-request-headers": "if-none-match" },
+    });
     await preflight.body?.cancel();
     const permitidos = valoresDoCabecalho(preflight.headers.get("access-control-allow-headers"));
     const validade = Number(preflight.headers.get("access-control-max-age") ?? 0);

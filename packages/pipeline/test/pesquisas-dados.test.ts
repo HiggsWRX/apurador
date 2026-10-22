@@ -71,7 +71,22 @@ describe("lista fechada de institutos", () => {
     // Agregado de pesquisas e erro histórico (wayfinder, ticket 10), decisão 2.
     const institutos = lerInstitutos(entrada.institutos);
     expect(new Set(institutos.map((i) => i.institutoDaLista))).toEqual(
-      new Set(["Datafolha", "Ipec/Ibope", "Quaest", "AtlasIntel", "MDA", "Paraná Pesquisas", "Futura", "Gerp", "PoderData", "Ipespe", "Veritá", "Brasmarket", "Real Time Big Data", "FSB"]),
+      new Set([
+        "Datafolha",
+        "Ipec/Ibope",
+        "Quaest",
+        "AtlasIntel",
+        "MDA",
+        "Paraná Pesquisas",
+        "Futura",
+        "Gerp",
+        "PoderData",
+        "Ipespe",
+        "Veritá",
+        "Brasmarket",
+        "Real Time Big Data",
+        "FSB",
+      ]),
     );
     expect(new Set(institutos.map((i) => i.cnpj)).size).toBe(institutos.length);
   });

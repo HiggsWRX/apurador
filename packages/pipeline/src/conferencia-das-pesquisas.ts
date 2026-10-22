@@ -2,7 +2,15 @@ import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { lerMembroRemoto, lerRegistrosDePesquisas, membroDoBrasil, urlRegistrosDePesquisas, type Buscar } from "@apurador/tse";
 import { escreverCsv } from "./csv.ts";
-import { finalistas, lerInstitutos, lerPesquisas, primeiraConferencia, verificarPesquisas, type ConferenciaDaPesquisa, type ExtratoDoTse } from "./pesquisas.ts";
+import {
+  finalistas,
+  lerInstitutos,
+  lerPesquisas,
+  primeiraConferencia,
+  verificarPesquisas,
+  type ConferenciaDaPesquisa,
+  type ExtratoDoTse,
+} from "./pesquisas.ts";
 import type { Turno } from "./turno.ts";
 
 // A conferência diária do `pesquisas.csv` contra o CSV de registros do TSE do dia. Ela guarda no repositório o

@@ -33,6 +33,11 @@ describe("buscarLugares", () => {
 
   it("só busca a partir de 2 letras e devolve no máximo 8 lugares", () => {
     expect(rotulos("s")).toEqual([]);
-    expect(buscarLugares(Array.from({ length: 20 }, (_, i) => [`Santa ${i} (SC)`, `/sc/santa-${i}/`, `Santa ${i}`] as ItemDaBusca), "santa")).toHaveLength(8);
+    expect(
+      buscarLugares(
+        Array.from({ length: 20 }, (_, i) => [`Santa ${i} (SC)`, `/sc/santa-${i}/`, `Santa ${i}`] as ItemDaBusca),
+        "santa",
+      ),
+    ).toHaveLength(8);
   });
 });

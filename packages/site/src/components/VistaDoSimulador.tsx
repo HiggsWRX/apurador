@@ -29,7 +29,7 @@ const METODOLOGIA = "/metodologia/";
 export const SELO_DA_SIMULACAO = "Simulação · com as suas hipóteses, não é a projeção do Apurador";
 
 /** O que a vista recebe da ilha. */
-export interface PropsDaVista {
+export interface PropsDaVistaDoSimulador {
   /** Na ordem da base do modelo: as fatias e as hipóteses são do primeiro. */
   finalistas: FinalistasDoSimulador;
   tela: TelaDoSimulador;
@@ -64,7 +64,7 @@ const emOrdemAlfabetica = (finalistas: FinalistasDoSimulador) =>
 const naRegiao = (nome: string) => `no ${nome}`;
 
 /** A simulação no Brasil, ao lado da projeção do Apurador: a barra fixa no celular, o topo do resultado no computador. */
-export function VistaDoSimulador(props: PropsDaVista) {
+export function VistaDoSimulador(props: PropsDaVistaDoSimulador) {
   const { finalistas, tela, hipoteses, base, deOutraPessoa } = props;
   const mudar = (h: Partial<Hipoteses["voto"]> & { comparecimento?: readonly number[] }) =>
     props.aoMudarHipoteses({
@@ -100,8 +100,8 @@ export function VistaDoSimulador(props: PropsDaVista) {
               doSite={tela.curvaDoSite}
             />
             <p class="nota">
-              Resultado final estimado no Brasil, em votos válidos, com a margem de 95%, e <a href={`${METODOLOGIA}#chance`}>chance de vitória</a>.
-              Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.
+              Resultado final estimado no Brasil, em votos válidos, com a margem de 95%, e <a href={`${METODOLOGIA}#chance`}>chance de vitória</a>. Estimativa
+              do Apurador. Não é resultado oficial nem garantia do resultado.
             </p>
             <p class="fonte">Cálculo do Apurador com dados do TSE</p>
           </section>

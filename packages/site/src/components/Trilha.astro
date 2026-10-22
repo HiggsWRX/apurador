@@ -8,21 +8,19 @@ interface Props {
 const trilha = trilhaDe(Astro.props.lugar);
 ---
 
-{
-  trilha.length > 1 && (
-    <nav class="trilha" aria-label="Onde você está">
-      <ol>
-        {trilha.map((l, i) =>
-          i < trilha.length - 1 ? (
-            <li>
-              <a href={caminhoDe(l)}>{l.nome}</a>
-              <span aria-hidden="true">›</span>
-            </li>
-          ) : (
-            <li aria-current="page">{l.nome}</li>
-          ),
-        )}
-      </ol>
-    </nav>
-  )
-}
+{trilha.length > 1 && (
+  <nav class="trilha" aria-label="Onde você está">
+    <ol>
+      {trilha.map((l, i) =>
+        i < trilha.length - 1 ? (
+          <li>
+            <a href={caminhoDe(l)}>{l.nome}</a>
+            <span aria-hidden="true">›</span>
+          </li>
+        ) : (
+          <li aria-current="page">{l.nome}</li>
+        ),
+      )}
+    </ol>
+  </nav>
+)}
