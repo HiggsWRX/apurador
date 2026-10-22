@@ -16,7 +16,9 @@ const barras = (html: string) =>
 describe("páginas de lugar", () => {
   it("existem para o Brasil, as 27 UFs, o Exterior e todos os municípios", () => {
     // As páginas de metodologia e do simulador não são de lugar: ficam fora da conta.
-    const paginas = readdirSync(DIST, { recursive: true, encoding: "utf8" }).filter((f) => f.endsWith("index.html") && !f.startsWith("metodologia") && !f.startsWith("simulador"));
+    const paginas = readdirSync(DIST, { recursive: true, encoding: "utf8" }).filter(
+      (f) => f.endsWith("index.html") && !f.startsWith("metodologia") && !f.startsWith("simulador"),
+    );
 
     expect(paginas).toHaveLength(lugares.length);
     for (const caminho of ["/", "/sp/", "/df/", "/exterior/", "/sp/sao-paulo/", "/sp/campinas/", "/mt/boa-esperanca-do-norte/", "/exterior/lisboa/"]) {
@@ -74,7 +76,7 @@ describe("histórico do lugar", () => {
     expect(turno(pagina("/sp/campinas/"), "2026-1")).toContain("data-ativo");
   });
 
-  it("mostra nos 1º turnos os 5 maiores e \"demais\", e nos 2º turnos os dois candidatos", () => {
+  it('mostra nos 1º turnos os 5 maiores e "demais", e nos 2º turnos os dois candidatos', () => {
     const html = pagina("/");
 
     expect(barras(turno(html, "2018-1"))).toHaveLength(6);
@@ -124,7 +126,8 @@ describe("comparação de dois turnos", () => {
   const comparacao = (html: string) => elemento(html, /<div[^>]*data-comparacao/);
   const par = (html: string, id: string) => elemento(comparacao(html), new RegExp(`<div[^>]*data-par="${id}"`));
   const linhas = (html: string) => elementos(html, /<tr[^>]*data-cor/).map((l) => [texto(l), /data-cor="([a-z]+)"/.exec(l)?.[1]]);
-  const mudou = (html: string) => elementos(html, /<li[^>]*data-mudou/).map((m) => [texto(m), /href="([^"]+)"/.exec(m)?.[1], /data-cor="([a-z]+)"/.exec(m)?.[1]]);
+  const mudou = (html: string) =>
+    elementos(html, /<li[^>]*data-mudou/).map((m) => [texto(m), /href="([^"]+)"/.exec(m)?.[1], /data-cor="([a-z]+)"/.exec(m)?.[1]]);
 
   it("deixa escolher quaisquer dois dos cinco turnos, com 2022 2T e 2026 1T de partida", () => {
     const html = pagina("/sp/campinas/");

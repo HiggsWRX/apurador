@@ -182,7 +182,16 @@ export function criarLeitorAoVivo(opcoes: {
     },
     quadro() {
       const ultimaLeitura = momentoDaResposta === null ? null : Math.floor((opcoes.relogio() - momentoDaResposta) / 1000);
-      return { fase: fase(), indicador: indicador(), rodada, lugar, ultimaLeitura, mudaram, chaves: rodada?.chaves ?? opcoes.chaves, aviso: rodada?.aviso ?? null };
+      return {
+        fase: fase(),
+        indicador: indicador(),
+        rodada,
+        lugar,
+        ultimaLeitura,
+        mudaram,
+        chaves: rodada?.chaves ?? opcoes.chaves,
+        aviso: rodada?.aviso ?? null,
+      };
     },
   };
 }

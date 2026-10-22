@@ -67,7 +67,13 @@ export function pontoDaCurvaReal(resultado: ResultadoDoTse, ordem: number[]): Po
 }
 
 /** O arquivo do lugar a partir do resultado do TSE, com os candidatos na ordem do arquivo de rodada. */
-export function arquivoDoLugar(lugar: string, resultado: ResultadoDoTse, ordem: number[], curva: PontoDaCurvaReal[], narracao: EventoDaNarracao[]): ArquivoDoLugar {
+export function arquivoDoLugar(
+  lugar: string,
+  resultado: ResultadoDoTse,
+  ordem: number[],
+  curva: PontoDaCurvaReal[],
+  narracao: EventoDaNarracao[],
+): ArquivoDoLugar {
   const candidatos = naOrdem(resultado, ordem);
   return {
     lugar,

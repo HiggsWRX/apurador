@@ -15,11 +15,66 @@ const TURNOS = ["2018-1", "2018-2", "2022-1", "2022-2", "2026-1"];
 describe("dados derivados de cada turno", () => {
   // O resultado oficial do Brasil, com o Exterior, como o TSE o divulgou.
   const OFICIAL = [
-    { turno: "2018-1", aptos: 147_306_295, votantes: 117_364_654, validos: 107_050_749, brancos: 3_106_937, nulos: 7_206_222, primeiros: [["JAIR BOLSONARO", 49_277_010, "46.03"], ["FERNANDO HADDAD", 31_342_051, "29.28"]] },
-    { turno: "2018-2", aptos: 147_306_294, votantes: 115_933_451, validos: 104_838_753, brancos: 2_486_593, nulos: 8_608_105, primeiros: [["JAIR BOLSONARO", 57_797_847, "55.13"], ["FERNANDO HADDAD", 47_040_906, "44.87"]] },
-    { turno: "2022-1", aptos: 156_454_011, votantes: 123_682_372, validos: 118_229_719, brancos: 1_964_779, nulos: 3_487_874, primeiros: [["LULA", 57_259_504, "48.43"], ["JAIR BOLSONARO", 51_072_345, "43.20"]] },
-    { turno: "2022-2", aptos: 156_454_011, votantes: 124_252_796, validos: 118_552_353, brancos: 1_769_678, nulos: 3_930_765, primeiros: [["LULA", 60_345_999, "50.90"], ["JAIR BOLSONARO", 58_206_354, "49.10"]] },
-    { turno: "2026-1", aptos: 158_745_502, votantes: 125_275_835, validos: 119_300_788, brancos: 2_300_798, nulos: 3_674_249, primeiros: [["FLAVIO BOLSONARO", 56_104_503, "47.03"], ["LULA", 53_879_538, "45.16"]] },
+    {
+      turno: "2018-1",
+      aptos: 147_306_295,
+      votantes: 117_364_654,
+      validos: 107_050_749,
+      brancos: 3_106_937,
+      nulos: 7_206_222,
+      primeiros: [
+        ["JAIR BOLSONARO", 49_277_010, "46.03"],
+        ["FERNANDO HADDAD", 31_342_051, "29.28"],
+      ],
+    },
+    {
+      turno: "2018-2",
+      aptos: 147_306_294,
+      votantes: 115_933_451,
+      validos: 104_838_753,
+      brancos: 2_486_593,
+      nulos: 8_608_105,
+      primeiros: [
+        ["JAIR BOLSONARO", 57_797_847, "55.13"],
+        ["FERNANDO HADDAD", 47_040_906, "44.87"],
+      ],
+    },
+    {
+      turno: "2022-1",
+      aptos: 156_454_011,
+      votantes: 123_682_372,
+      validos: 118_229_719,
+      brancos: 1_964_779,
+      nulos: 3_487_874,
+      primeiros: [
+        ["LULA", 57_259_504, "48.43"],
+        ["JAIR BOLSONARO", 51_072_345, "43.20"],
+      ],
+    },
+    {
+      turno: "2022-2",
+      aptos: 156_454_011,
+      votantes: 124_252_796,
+      validos: 118_552_353,
+      brancos: 1_769_678,
+      nulos: 3_930_765,
+      primeiros: [
+        ["LULA", 60_345_999, "50.90"],
+        ["JAIR BOLSONARO", 58_206_354, "49.10"],
+      ],
+    },
+    {
+      turno: "2026-1",
+      aptos: 158_745_502,
+      votantes: 125_275_835,
+      validos: 119_300_788,
+      brancos: 2_300_798,
+      nulos: 3_674_249,
+      primeiros: [
+        ["FLAVIO BOLSONARO", 56_104_503, "47.03"],
+        ["LULA", 53_879_538, "45.16"],
+      ],
+    },
   ] as const;
 
   it.each(OFICIAL)("$turno bate com o resultado oficial do Brasil", ({ turno: arquivo, primeiros, ...totais }) => {
@@ -116,7 +171,8 @@ describe("manifesto de origem", () => {
         const daDivulgacao = /^https:\/\/resultados\.tse\.jus\.br\/oficial\/.+\.json$/.test(fonte!.url) && fonte!.url.endsWith(`/${fonte!.membro}`);
         // As fotos: as da divulgação vêm soltas; as do portal, de dentro do zip de fotos, com o membro na URL. O TSE
         // não põe data de geração numa foto.
-        const fotoDaDivulgacao = /^https:\/\/resultados\.tse\.jus\.br\/oficial\/.+\/fotos\/br\/\d+\.jpeg$/.test(fonte!.url) && fonte!.url.endsWith(`/${fonte!.membro}`);
+        const fotoDaDivulgacao =
+          /^https:\/\/resultados\.tse\.jus\.br\/oficial\/.+\/fotos\/br\/\d+\.jpeg$/.test(fonte!.url) && fonte!.url.endsWith(`/${fonte!.membro}`);
         const fotoDoPortal = /^https:\/\/cdn\.tse\.jus\.br\/.+\.zip#FBR\d+_div\.jpe?g$/.test(fonte!.url) && fonte!.url.endsWith(`#${fonte!.membro}`);
         expect(doPortal || daDivulgacao || fotoDaDivulgacao || fotoDoPortal, url).toBe(true);
         if (!d.arquivo.startsWith("fotos/")) expect(fonte!.geracao.length).toBeGreaterThan(0);
@@ -146,7 +202,9 @@ describe("fotos oficiais dos candidatos", () => {
       ["280001618036", "FBR280001618036_div.jpeg"],
     ]) {
       expect(ehJpeg(ler(`fotos/${sequencial}.jpeg`)), sequencial).toBe(true);
-      expect(fonteDa(`fotos/${sequencial}.jpeg`)).toEqual([`https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2022/fotos/foto_cand2022_BR_div.zip#${membro}`]);
+      expect(fonteDa(`fotos/${sequencial}.jpeg`)).toEqual([
+        `https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2022/fotos/foto_cand2022_BR_div.zip#${membro}`,
+      ]);
     }
   });
 });

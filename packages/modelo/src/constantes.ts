@@ -58,11 +58,13 @@ const ORDENS: OrdemDeChegada[] = ["mistura", "primeiro-turno", "ritmo-da-noite"]
 export function lerConstantes(dados: unknown): Constantes {
   const d = dados as Record<string, unknown>;
   const numero = (valor: unknown, nome: string, min: number, max: number) => {
-    if (typeof valor !== "number" || !Number.isFinite(valor) || valor < min || valor > max) throw new Error(`constantes do modelo: ${nome} deve ser um número de ${min} a ${max}, e é ${JSON.stringify(valor)}`);
+    if (typeof valor !== "number" || !Number.isFinite(valor) || valor < min || valor > max)
+      throw new Error(`constantes do modelo: ${nome} deve ser um número de ${min} a ${max}, e é ${JSON.stringify(valor)}`);
     return valor;
   };
   if (typeof d.zona !== "boolean") throw new Error(`constantes do modelo: zona deve ser true ou false, e é ${JSON.stringify(d.zona)}`);
-  if (!ORDENS.includes(d.ordemDeChegada as OrdemDeChegada)) throw new Error(`constantes do modelo: ordemDeChegada deve ser ${ORDENS.join(", ")}, e é ${JSON.stringify(d.ordemDeChegada)}`);
+  if (!ORDENS.includes(d.ordemDeChegada as OrdemDeChegada))
+    throw new Error(`constantes do modelo: ordemDeChegada deve ser ${ORDENS.join(", ")}, e é ${JSON.stringify(d.ordemDeChegada)}`);
   const sinal = (d.sinalDeVirada ?? {}) as Record<string, unknown>;
   const local = (d.incertezaLocalDasPesquisas ?? {}) as Record<string, unknown>;
   const constantes: Constantes = {
@@ -80,6 +82,7 @@ export function lerConstantes(dados: unknown): Constantes {
     },
     zona: d.zona,
   };
-  if (constantes.sinalDeVirada.possivel > constantes.sinalDeVirada.projetada) throw new Error("constantes do modelo: o limite da virada possível passa o da virada projetada");
+  if (constantes.sinalDeVirada.possivel > constantes.sinalDeVirada.projetada)
+    throw new Error("constantes do modelo: o limite da virada possível passa o da virada projetada");
   return constantes;
 }

@@ -93,7 +93,14 @@ export function simular(partida: PartidaDaSimulacao, hipoteses: Hipoteses): Simu
     const fatia = projecao.votoQueFalta[m]! > 0 ? limitar(projecao.fatiaDoQueFalta[m]! + deslocamento[u]!, 0, 1) : projecao.fatiaDoQueFalta[m]!;
     votoQueFalta[m] = falta;
     fatiaDoQueFalta[m] = fatia;
-    somarVotos(porUf[u]!, { votos1: a.votos[0]!, votos: a.votos[0]! + a.votos[1]!, secoes: a.secoes, secoesTotais: a.secoesTotais, falta, falta1: falta * fatia });
+    somarVotos(porUf[u]!, {
+      votos1: a.votos[0]!,
+      votos: a.votos[0]! + a.votos[1]!,
+      secoes: a.secoes,
+      secoesTotais: a.secoesTotais,
+      falta,
+      falta1: falta * fatia,
+    });
   });
 
   const brasil = semVotos();

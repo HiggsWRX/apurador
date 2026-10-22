@@ -105,7 +105,13 @@ export interface ArquivoParaBaixar {
 
 const kb = (texto: string) => Math.max(1, Math.ceil(new TextEncoder().encode(texto).length / 1024));
 
-const paraBaixar = (nome: string, descricao: string, texto: string): ArquivoParaBaixar => ({ caminho: `/dados/${nome}`, nome, descricao, kb: kb(texto), texto });
+const paraBaixar = (nome: string, descricao: string, texto: string): ArquivoParaBaixar => ({
+  caminho: `/dados/${nome}`,
+  nome,
+  descricao,
+  kb: kb(texto),
+  texto,
+});
 
 /**
  * Os CSVs para baixar (Página de metodologia, decisão 6): os mesmos arquivos do repositório, servidos em `/dados/` pelo
@@ -113,5 +119,9 @@ const paraBaixar = (nome: string, descricao: string, texto: string): ArquivoPara
  */
 export const PARA_BAIXAR: ArquivoParaBaixar[] = [
   paraBaixar("pesquisas.csv", "as pesquisas da lista, com a fonte de cada uma", pesquisasCsv),
-  paraBaixar("pesquisas-historicas.csv", `as pesquisas finais dos 2º turnos de ${ERRO_HISTORICO.anos[0]} a ${ERRO_HISTORICO.anos[1]} e as do 1º turno de 2026, com a fonte`, historicasCsv),
+  paraBaixar(
+    "pesquisas-historicas.csv",
+    `as pesquisas finais dos 2º turnos de ${ERRO_HISTORICO.anos[0]} a ${ERRO_HISTORICO.anos[1]} e as do 1º turno de 2026, com a fonte`,
+    historicasCsv,
+  ),
 ];

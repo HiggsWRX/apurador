@@ -54,7 +54,8 @@ describe("antes da primeira seção, em 25/10", () => {
   });
 
   it("projeta cada UF, o Exterior e cada município na indicação das pesquisas dele", () => {
-    for (const uf of modelo.ufs) expect(projecao.ufs[uf]!.projecao, uf).toBeCloseTo(indicacao(base2026.municipios.filter((m) => m.uf === uf)), ATE_UM_MILESIMO_DE_PONTO);
+    for (const uf of modelo.ufs)
+      expect(projecao.ufs[uf]!.projecao, uf).toBeCloseTo(indicacao(base2026.municipios.filter((m) => m.uf === uf)), ATE_UM_MILESIMO_DE_PONTO);
     base2026.municipios.forEach((m, i) => {
       const esperada = indicacao([m]);
       if (esperada > 0.01 && esperada < 0.99) expect(projecao.municipios[i]!.projecao, `${m.uf}/${m.municipio}`).toBeCloseTo(esperada, 12);
@@ -111,7 +112,11 @@ describe("as duas bases coincidem", () => {
     const modelo = prepararModelo(base2022);
     const deslocado = { ...agregado2022, valor: agregado2022.valor - 2 };
     const momentos = [...momentosDaNoite(modelo, noite2022)];
-    const lugares = (coincidem: ProjecaoNasDuasBases["coincidem"]) => [coincidem.brasil, ...modelo.ufs.map((uf) => coincidem.ufs[uf]!), ...coincidem.municipios];
+    const lugares = (coincidem: ProjecaoNasDuasBases["coincidem"]) => [
+      coincidem.brasil,
+      ...modelo.ufs.map((uf) => coincidem.ufs[uf]!),
+      ...coincidem.municipios,
+    ];
 
     it("dá as duas bases e, em cada lugar, se elas diferem em menos de 0,1 ponto na projeção e de 1 ponto na chance", () => {
       const { soApuracao, comPesquisas, coincidem } = projetarNasDuasBases(modelo, momentos.find((m) => m.secoes >= 10)!.apuracao, constantes, deslocado);
@@ -142,7 +147,9 @@ describe("a curva projetada antes da apuração", () => {
   const apuracao = antesDaPrimeiraSecao(base2022);
   const curvas = (agregado?: typeof agregado2022) => {
     const projecao = projetar(modelo, apuracao, constantes, agregado);
-    const ordens = (["mistura", "primeiro-turno", "ritmo-da-noite"] as const).map((ordemDeChegada) => curvaProjetada(modelo, apuracao, projecao, { ...constantes, ordemDeChegada }));
+    const ordens = (["mistura", "primeiro-turno", "ritmo-da-noite"] as const).map((ordemDeChegada) =>
+      curvaProjetada(modelo, apuracao, projecao, { ...constantes, ordemDeChegada }),
+    );
     return { projecao, curva: ordens[0]!, ordens };
   };
   const soApuracao = curvas();

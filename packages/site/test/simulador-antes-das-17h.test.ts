@@ -14,7 +14,8 @@ describe("o simulador antes das 17h", () => {
       [true, false, true, false],
       [false, false, true, false],
     ];
-    for (const [agregado, projecao, simulador, noAr] of casos) expect(simuladorNoAr({ agregado, projecao, simulador }), JSON.stringify({ agregado, projecao, simulador })).toBe(noAr);
+    for (const [agregado, projecao, simulador, noAr] of casos)
+      expect(simuladorNoAr({ agregado, projecao, simulador }), JSON.stringify({ agregado, projecao, simulador })).toBe(noAr);
   });
 });
 

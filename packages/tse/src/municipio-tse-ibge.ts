@@ -21,16 +21,7 @@ export interface MunicipioTseIbge {
   nomeIbge: string;
 }
 
-const COLUNAS = [
-  "DT_GERACAO",
-  "HH_GERACAO",
-  "SG_UF",
-  "NM_UF",
-  "CD_MUNICIPIO_TSE",
-  "NM_MUNICIPIO_TSE",
-  "CD_MUNICIPIO_IBGE",
-  "NM_MUNICIPIO_IBGE",
-] as const;
+const COLUNAS = ["DT_GERACAO", "HH_GERACAO", "SG_UF", "NM_UF", "CD_MUNICIPIO_TSE", "NM_MUNICIPIO_TSE", "CD_MUNICIPIO_IBGE", "NM_MUNICIPIO_IBGE"] as const;
 
 /** Lê a tabela `municipio_tse_ibge` do TSE. */
 export function lerMunicipioTseIbge(bytes: Uint8Array): MunicipioTseIbge[] {

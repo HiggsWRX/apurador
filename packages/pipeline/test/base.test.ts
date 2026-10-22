@@ -109,7 +109,15 @@ describe("baseDoModelo", () => {
       { uf: "AC", municipio: 1201 },
     ];
 
-    const paraOutraNoite = baseDoModelo({ noite: { ano: 2026, turno: 1 }, turnoDaBase: { ano: 2022, turno: 1 }, finalistas: [22, 13], candidatos, detalhes, secoes, municipios: daNoite });
+    const paraOutraNoite = baseDoModelo({
+      noite: { ano: 2026, turno: 1 },
+      turnoDaBase: { ano: 2022, turno: 1 },
+      finalistas: [22, 13],
+      candidatos,
+      detalhes,
+      secoes,
+      municipios: daNoite,
+    });
 
     expect(paraOutraNoite.municipios.map((m) => [m.uf, m.municipio, m.secoes, m.votos])).toEqual([
       ["AC", 1201, 1, [80, 0]],
@@ -127,7 +135,15 @@ describe("baseDoModelo", () => {
       { uf: "ZZ", municipio: 30066, zona: 1 },
     ];
 
-    const porZona = baseDoModelo({ noite: { ano: 2022, turno: 2 }, turnoDaBase: { ano: 2022, turno: 1 }, finalistas: [22, 13], candidatos, detalhes, secoes, zonas });
+    const porZona = baseDoModelo({
+      noite: { ano: 2022, turno: 2 },
+      turnoDaBase: { ano: 2022, turno: 1 },
+      finalistas: [22, 13],
+      candidatos,
+      detalhes,
+      secoes,
+      zonas,
+    });
 
     expect(porZona.municipios).toEqual([
       { uf: "AC", municipio: 1201, aptos: 150, secoes: 1, validos: 100, votos: [80, 0], degrausDeChegada: [[50, 1]] },
@@ -145,7 +161,15 @@ describe("baseDoModelo", () => {
       { uf: "AC", municipio: 1201, zona: 1 },
     ];
 
-    const porZona = baseDoModelo({ noite: { ano: 2026, turno: 1 }, turnoDaBase: { ano: 2022, turno: 1 }, finalistas: [22, 13], candidatos, detalhes, secoes, zonas });
+    const porZona = baseDoModelo({
+      noite: { ano: 2026, turno: 1 },
+      turnoDaBase: { ano: 2022, turno: 1 },
+      finalistas: [22, 13],
+      candidatos,
+      detalhes,
+      secoes,
+      zonas,
+    });
 
     expect(porZona.municipios.map((m) => [m.municipio, m.zona, m.votos])).toEqual([
       [1201, undefined, [80, 0]],
@@ -154,7 +178,9 @@ describe("baseDoModelo", () => {
   });
 
   it("recusa um finalista da noite que não disputou o turno da base", () => {
-    expect(() => baseDoModelo({ noite: { ano: 2026, turno: 1 }, turnoDaBase: { ano: 2022, turno: 1 }, finalistas: [22, 14], candidatos, detalhes, secoes })).toThrow(/14/);
+    expect(() =>
+      baseDoModelo({ noite: { ano: 2026, turno: 1 }, turnoDaBase: { ano: 2022, turno: 1 }, finalistas: [22, 14], candidatos, detalhes, secoes }),
+    ).toThrow(/14/);
   });
 });
 

@@ -76,7 +76,9 @@ describe("o que cada comando faz com o controle", () => {
   it("não grava o que já está assim", () => {
     expect(() => aplicarComando(SEM_COMANDO, { tipo: "ligar", chave: "mapa" })).toThrow(/O mapa já está ligado/);
     expect(() => aplicarComando(SEM_COMANDO, { tipo: "desligar", chave: "textosPreditivos" })).toThrow(/Os textos preditivos já estão desligados/);
-    expect(() => aplicarComando(comChaves({ projecao: false, simulador: false }), { tipo: "desligar", chave: "projecao" })).toThrow(/A projeção já está desligada/);
+    expect(() => aplicarComando(comChaves({ projecao: false, simulador: false }), { tipo: "desligar", chave: "projecao" })).toThrow(
+      /A projeção já está desligada/,
+    );
     expect(() => aplicarComando(SEM_COMANDO, { tipo: "retirar-aviso" })).toThrow(/Nenhum aviso/);
     expect(() => aplicarComando({ ...SEM_COMANDO, aviso: 2 }, { tipo: "aviso", aviso: 2 })).toThrow(/já está publicado/);
     expect(() => aplicarComando({ ...SEM_COMANDO, planoB: true }, { tipo: "plano-b" })).toThrow(/já é o plano B/);

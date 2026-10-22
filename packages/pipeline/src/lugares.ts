@@ -133,6 +133,9 @@ function grafiaDoNome(nome: string): string {
 
 function grafiaDoNomeEmCaixaAlta(nome: string): string {
   const inicial = (s: string) => s.charAt(0).toLocaleUpperCase("pt-BR") + s.slice(1);
-  const palavras = nome.toLocaleLowerCase("pt-BR").split(/([ -])/).map((p) => (p.startsWith("d'") ? `d'${inicial(p.slice(2))}` : inicial(p)));
+  const palavras = nome
+    .toLocaleLowerCase("pt-BR")
+    .split(/([ -])/)
+    .map((p) => (p.startsWith("d'") ? `d'${inicial(p.slice(2))}` : inicial(p)));
   return grafiaDoNome(palavras.join(""));
 }

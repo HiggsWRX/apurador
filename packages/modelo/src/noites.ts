@@ -52,7 +52,8 @@ function posicaoDasZonas(modelo: Modelo, noite: NoiteDoModelo): number[] {
  * A apuração antes da primeira seção a partir da base do modelo: nada totalizado, com as seções e os eleitores aptos
  * do 1º turno de cada município. É a de 25/10 antes das 17h; numa noite passada, vale a `apuracaoAntesDaPrimeiraSecao`.
  */
-export const antesDaPrimeiraSecao = (base: BaseDoModelo): Apuracao => base.municipios.map((m) => ({ secoes: 0, secoesTotais: m.secoes, aptos: 0, aptosTotais: m.aptos, votos: [0, 0] }));
+export const antesDaPrimeiraSecao = (base: BaseDoModelo): Apuracao =>
+  base.municipios.map((m) => ({ secoes: 0, secoesTotais: m.secoes, aptos: 0, aptosTotais: m.aptos, votos: [0, 0] }));
 
 /** A apuração antes da primeira seção: nada totalizado, com as seções e os eleitores de cada município na noite. */
 export function apuracaoAntesDaPrimeiraSecao(modelo: Modelo, noite: NoiteDoModelo, posicao = posicaoDasZonas(modelo, noite)): Apuracao {
@@ -81,7 +82,10 @@ export function* momentosDaNoite(modelo: Modelo, noite: NoiteDoModelo, pontos: n
   let secoes = 0;
   let ultima = 0;
   const ordenados = [...pontos].sort((a, b) => a - b);
-  const alvos = [...ordenados.map((p) => ({ ponto: p, secoes: Math.min(comHora, Math.max(1, Math.round((p / 100) * total))) })), { ponto: 100, secoes: comHora }];
+  const alvos = [
+    ...ordenados.map((p) => ({ ponto: p, secoes: Math.min(comHora, Math.max(1, Math.round((p / 100) * total))) })),
+    { ponto: 100, secoes: comHora },
+  ];
   for (const { ponto, secoes: alvo } of alvos) {
     for (; proxima < noite.chegadas.length && secoes < alvo; proxima++) {
       const c = noite.chegadas[proxima]!;
@@ -93,7 +97,12 @@ export function* momentosDaNoite(modelo: Modelo, noite: NoiteDoModelo, pontos: n
     }
     if (proxima === ultima) continue;
     ultima = proxima;
-    yield { instante: noite.chegadas[proxima - 1]!.instante, secoes: (100 * secoes) / total, ponto, apuracao: apuracao.map((a) => ({ ...a, votos: [...a.votos] })) };
+    yield {
+      instante: noite.chegadas[proxima - 1]!.instante,
+      secoes: (100 * secoes) / total,
+      ponto,
+      apuracao: apuracao.map((a) => ({ ...a, votos: [...a.votos] })),
+    };
   }
 }
 

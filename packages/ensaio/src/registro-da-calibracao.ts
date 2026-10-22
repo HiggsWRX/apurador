@@ -14,7 +14,8 @@ const milhar = (x: number) => x.toLocaleString("pt-BR");
 const ORDENS: Record<string, string> = { mistura: '"mistura"', "primeiro-turno": '"1º turno"', "ritmo-da-noite": '"ritmo da noite"' };
 
 /** Uma tabela em Markdown. */
-const tabela = (cabecalho: string[], linhas: string[][]) => [`| ${cabecalho.join(" | ")} |`, `|${cabecalho.map(() => "---").join("|")}|`, ...linhas.map((l) => `| ${l.join(" | ")} |`)].join("\n");
+const tabela = (cabecalho: string[], linhas: string[][]) =>
+  [`| ${cabecalho.join(" | ")} |`, `|${cabecalho.map(() => "---").join("|")}|`, ...linhas.map((l) => `| ${l.join(" | ")} |`)].join("\n");
 
 /**
  * A seção "Resultados" do registro. Ela não leva a data: o CI a gera de novo e falha se ela mudar, e quando ela rodou
@@ -27,11 +28,18 @@ export function resultadosDaCalibracao(c: Calibracao, provisorias: Constantes): 
   const empatados = p1.candidatos.filter((x) => x.empata).sort((a, b) => b.margemMedia - a.margemMedia);
   const escolhido1 = p1.candidatos.find((x) => x.candidato === p1.escolhido);
   const provisorio1 = p1.candidatos.find(
-    (x) => x.candidato.incertezaRegional === provisorias.incertezaRegional && x.candidato.incertezaNacional === provisorias.incertezaNacional && x.candidato.pesoDoMunicipio === provisorias.pesoDoMunicipio,
+    (x) =>
+      x.candidato.incertezaRegional === provisorias.incertezaRegional &&
+      x.candidato.incertezaNacional === provisorias.incertezaNacional &&
+      x.candidato.pesoDoMunicipio === provisorias.pesoDoMunicipio,
   );
   const porNoite = (rotulo: string, medidas: MedidaDaNoite[]) =>
     medidas.map((m, i) => [rotulo, c.noites[i]!.nome, pctBr(m.cobertura, 1), pctBr(m.maiorChanceDeQuemPerdeu, 1), br(m.erroMedio, 3), br(m.margemMedia, 2)]);
-  const incertezas = (x: (typeof p1.candidatos)[number]) => [br(x.candidato.incertezaRegional, 1), br(x.candidato.incertezaNacional, 1), milhar(x.candidato.pesoDoMunicipio)];
+  const incertezas = (x: (typeof p1.candidatos)[number]) => [
+    br(x.candidato.incertezaRegional, 1),
+    br(x.candidato.incertezaNacional, 1),
+    milhar(x.candidato.pesoDoMunicipio),
+  ];
 
   return [
     "## Resultados",
@@ -81,7 +89,12 @@ export function resultadosDaCalibracao(c: Calibracao, provisorias: Constantes): 
     "",
     tabela(
       ["Ordem", ...c.noites.map((n) => n.nome), "Média", ""],
-      c.passo2.candidatos.map((x) => [ORDENS[x.candidato]!, ...x.porNoite.map((v) => br(v, 3)), br(x.erroDaCurva, 3), x.candidato === c.passo2.escolhido ? "escolhida" : ""]),
+      c.passo2.candidatos.map((x) => [
+        ORDENS[x.candidato]!,
+        ...x.porNoite.map((v) => br(v, 3)),
+        br(x.erroDaCurva, 3),
+        x.candidato === c.passo2.escolhido ? "escolhida" : "",
+      ]),
     ),
     "",
     "### 3. K",
@@ -99,7 +112,7 @@ export function resultadosDaCalibracao(c: Calibracao, provisorias: Constantes): 
       ]),
     ),
     "",
-    '### 4. Sinal de virada',
+    "### 4. Sinal de virada",
     "",
     'Nas oito execuções, os lugares de cima (Brasil, UFs e Exterior) com algum momento "sem sinal de virada" seguido de virada, e a maior fração dos momentos "sem sinal de virada" de municípios seguidos de virada:',
     "",
@@ -108,7 +121,12 @@ export function resultadosDaCalibracao(c: Calibracao, provisorias: Constantes): 
       c.passo4.candidatos.map((x) => {
         const lugares = [...new Set(x.porExecucao.flatMap((m) => m.deCima.lugares))];
         const fracao = Math.max(...x.porExecucao.map((m) => (m.municipios.semSinal > 0 ? m.municipios.seguidosDeVirada / m.municipios.semSinal : 0)));
-        return [pctBr(x.candidato, 0), lugares.length === 0 ? "nenhum" : lugares.join(", "), pctBr(fracao, 2), x.candidato === c.passo4.escolhido ? "escolhido" : x.passa ? "" : "falha"];
+        return [
+          pctBr(x.candidato, 0),
+          lugares.length === 0 ? "nenhum" : lugares.join(", "),
+          pctBr(fracao, 2),
+          x.candidato === c.passo4.escolhido ? "escolhido" : x.passa ? "" : "falha",
+        ];
       }),
     ),
     "",
@@ -143,7 +161,17 @@ export function tabelasDaCalibracao(c: Calibracao): Record<string, string> {
   const noites = c.noites.map((n) => n.id);
   return {
     "constantes.csv": csv(
-      ["incerteza_regional", "incerteza_nacional", "peso_do_municipio", ...noites.flatMap((n) => [`cobertura_${n}`, `maior_chance_de_quem_perdeu_${n}`, `erro_medio_${n}`, `margem_media_${n}`]), "erro_medio", "margem_media", "passa", "empata", "escolhido"],
+      [
+        "incerteza_regional",
+        "incerteza_nacional",
+        "peso_do_municipio",
+        ...noites.flatMap((n) => [`cobertura_${n}`, `maior_chance_de_quem_perdeu_${n}`, `erro_medio_${n}`, `margem_media_${n}`]),
+        "erro_medio",
+        "margem_media",
+        "passa",
+        "empata",
+        "escolhido",
+      ],
       c.passo1.candidatos.map((x) => [
         x.candidato.incertezaRegional,
         x.candidato.incertezaNacional,
@@ -172,10 +200,28 @@ export function tabelasDaCalibracao(c: Calibracao): Record<string, string> {
     ),
     "zona.csv": csv(
       ["noite", "erro_medio_municipio", "erro_medio_zonas", "reducao", "cobertura_municipio", "cobertura_zonas", "passa"],
-      c.passo5.porNoite.map((x, i) => [noites[i]!, num(x.municipio.erroMedio), num(x.zona.erroMedio), num(x.reducao), num(100 * x.municipio.cobertura, 2), num(100 * x.zona.cobertura, 2), x.passa ? "sim" : "não"]),
+      c.passo5.porNoite.map((x, i) => [
+        noites[i]!,
+        num(x.municipio.erroMedio),
+        num(x.zona.erroMedio),
+        num(x.reducao),
+        num(100 * x.municipio.cobertura, 2),
+        num(100 * x.zona.cobertura, 2),
+        x.passa ? "sim" : "não",
+      ]),
     ),
     "sinal-de-virada.csv": csv(
-      ["limite", "execucao", "de_cima_sem_sinal", "de_cima_seguidos_de_virada", "lugares_de_cima_com_virada", "municipios_sem_sinal", "municipios_seguidos_de_virada", "passa", "escolhido"],
+      [
+        "limite",
+        "execucao",
+        "de_cima_sem_sinal",
+        "de_cima_seguidos_de_virada",
+        "lugares_de_cima_com_virada",
+        "municipios_sem_sinal",
+        "municipios_seguidos_de_virada",
+        "passa",
+        "escolhido",
+      ],
       c.passo4.candidatos.flatMap((x) =>
         x.porExecucao.map((m, i) => [
           num(100 * x.candidato, 0),
@@ -199,7 +245,12 @@ export function tabelasDaCalibracao(c: Calibracao): Record<string, string> {
  */
 export function csvMomentoAMomento({ bases, linhas }: { bases: string[]; linhas: LinhaMomentoAMomento[] }, finalista: number): string {
   return csv(
-    ["hora", "secoes", `placar_${finalista}`, ...bases.flatMap((b) => [`${b}_peso_das_pesquisas`, `${b}_projecao_${finalista}`, `${b}_margem`, `${b}_chance_${finalista}`])],
+    [
+      "hora",
+      "secoes",
+      `placar_${finalista}`,
+      ...bases.flatMap((b) => [`${b}_peso_das_pesquisas`, `${b}_projecao_${finalista}`, `${b}_margem`, `${b}_chance_${finalista}`]),
+    ],
     linhas.map((l) => [
       l.hora ?? "",
       num(l.secoes),

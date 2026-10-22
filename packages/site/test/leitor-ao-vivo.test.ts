@@ -19,8 +19,22 @@ const LIGADAS: ChavesDaNoite = { nucleoMinimo: true, projecao: true, baseComPesq
 /** O arquivo de chaves do site deste teste, com o mapa desligado para se distinguir do que o coletor publica. */
 const DO_SITE: ChavesDaNoite = { ...LIGADAS, mapa: false };
 
-function rodada(hora: string, fase: ArquivoDeRodada["fase"], novidade: Partial<ArquivoDeRodada["novidade"]> = {}, controle: Partial<Pick<ArquivoDeRodada, "chaves" | "aviso">> = {}): ArquivoDeRodada {
-  return { rodada: new Date(hora).toISOString(), fase, novidade: { totalizacao: null, vista: null, ...novidade }, candidatos: CANDIDATOS, chaves: LIGADAS, aviso: null, eventosDoBrasil: [], ...controle };
+function rodada(
+  hora: string,
+  fase: ArquivoDeRodada["fase"],
+  novidade: Partial<ArquivoDeRodada["novidade"]> = {},
+  controle: Partial<Pick<ArquivoDeRodada, "chaves" | "aviso">> = {},
+): ArquivoDeRodada {
+  return {
+    rodada: new Date(hora).toISOString(),
+    fase,
+    novidade: { totalizacao: null, vista: null, ...novidade },
+    candidatos: CANDIDATOS,
+    chaves: LIGADAS,
+    aviso: null,
+    eventosDoBrasil: [],
+    ...controle,
+  };
 }
 
 // A hora do TSE (`totalizacao`) é a da noite de 2022, como no ensaio geral, e os relógios do coletor e da CDN são os de
@@ -154,7 +168,7 @@ describe("leitor ao vivo", () => {
     expect(leitor.quadro().indicador).toEqual({ estado: "antes-das-17h", faltam: null });
   });
 
-  it("sem resposta nenhuma (a internet do visitante caiu), é \"sem conexão\" com os últimos dados à vista, até uma leitura responder", async () => {
+  it('sem resposta nenhuma (a internet do visitante caiu), é "sem conexão" com os últimos dados à vista, até uma leitura responder', async () => {
     const { leitor, responder } = montar();
     responder("rodada.json", { status: 200, date: "2026-10-25T18:00:00-03:00", etag: '"r1"', corpo: rodada("2026-10-25T17:59:50-03:00", "ao-vivo") });
     responder("lugares/BR.json", { status: 200, date: "2026-10-25T18:00:00-03:00", etag: '"b1"', corpo: lugar(12.34) });
@@ -283,7 +297,12 @@ describe("leitor ao vivo", () => {
 
     // O dono desligou a projeção: a rodada seguinte traz a chave desligada, e o simulador com ela, sem recarregar.
     const semProjecao = { ...LIGADAS, projecao: false, simulador: false };
-    responder("rodada.json", { status: 200, date: "2026-10-25T18:00:30-03:00", etag: '"r2"', corpo: rodada("2026-10-25T18:00:20-03:00", "ao-vivo", {}, { chaves: semProjecao }) });
+    responder("rodada.json", {
+      status: 200,
+      date: "2026-10-25T18:00:30-03:00",
+      etag: '"r2"',
+      corpo: rodada("2026-10-25T18:00:20-03:00", "ao-vivo", {}, { chaves: semProjecao }),
+    });
     await leitor.ler();
     expect(leitor.quadro().chaves).toEqual(semProjecao);
 
@@ -297,7 +316,12 @@ describe("leitor ao vivo", () => {
     const { leitor, responder } = montar();
     expect(leitor.quadro().aviso).toBeNull();
 
-    responder("rodada.json", { status: 200, date: "2026-10-25T19:00:00-03:00", etag: '"r1"', corpo: rodada("2026-10-25T18:59:50-03:00", "ao-vivo", {}, { aviso: 2 }) });
+    responder("rodada.json", {
+      status: 200,
+      date: "2026-10-25T19:00:00-03:00",
+      etag: '"r1"',
+      corpo: rodada("2026-10-25T18:59:50-03:00", "ao-vivo", {}, { aviso: 2 }),
+    });
     await leitor.ler();
     expect(leitor.quadro().aviso).toBe(2);
 

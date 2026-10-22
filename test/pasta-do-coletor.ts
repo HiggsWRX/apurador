@@ -13,7 +13,9 @@ export default function conferirPastaDoColetor() {
   if (existsSync(PASTA)) return;
   return () => {
     if (existsSync(PASTA)) {
-      throw new Error(`Os testes criaram ${PASTA}, a pasta do coletor de verdade: grave numa pasta temporária (mkdtemp). Se foi a noite local, rodando junto, rode os testes de novo.`);
+      throw new Error(
+        `Os testes criaram ${PASTA}, a pasta do coletor de verdade: grave numa pasta temporária (mkdtemp). Se foi a noite local, rodando junto, rode os testes de novo.`,
+      );
     }
   };
 }

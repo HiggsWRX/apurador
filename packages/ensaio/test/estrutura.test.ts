@@ -53,7 +53,15 @@ function semCampos(e: Record<string, string[]>, campos: string[]) {
   return Object.fromEntries(
     Object.entries(e)
       .filter(([k]) => !fora(k))
-      .map(([k, formas]) => [k, formas.map((f) => f.split(",").filter((c) => !campos.includes(c)).join(","))]),
+      .map(([k, formas]) => [
+        k,
+        formas.map((f) =>
+          f
+            .split(",")
+            .filter((c) => !campos.includes(c))
+            .join(","),
+        ),
+      ]),
   );
 }
 
@@ -93,7 +101,9 @@ describe("a estrutura dos arquivos servidos", () => {
     esperado[""] = esperado[""]!.map((chaves) => chaves.replace(",and,", ",and,md,"));
     esperado[".md"] = ["string"];
 
-    expect(estrutura(servido("2022-10-30 20:00:00", `${D}/br/br-c0001-e006258-u.json`))).toEqual(Object.fromEntries(Object.entries(esperado).sort(([a], [b]) => a.localeCompare(b))));
+    expect(estrutura(servido("2022-10-30 20:00:00", `${D}/br/br-c0001-e006258-u.json`))).toEqual(
+      Object.fromEntries(Object.entries(esperado).sort(([a], [b]) => a.localeCompare(b))),
+    );
   });
 
   it("a configuração das eleições tem só campos e formas que a real tem, e a eleição 6258 igual à real", () => {

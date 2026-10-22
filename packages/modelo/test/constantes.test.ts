@@ -23,7 +23,8 @@ describe("as constantes do modelo", () => {
   });
 
   it("aceitam as três ordens de chegada da calibração", () => {
-    for (const ordemDeChegada of ["mistura", "primeiro-turno", "ritmo-da-noite"]) expect(lerConstantes({ ...arquivo, ordemDeChegada }).ordemDeChegada).toBe(ordemDeChegada);
+    for (const ordemDeChegada of ["mistura", "primeiro-turno", "ritmo-da-noite"])
+      expect(lerConstantes({ ...arquivo, ordemDeChegada }).ordemDeChegada).toBe(ordemDeChegada);
   });
 
   it("recusam um arquivo com um valor fora do lugar, antes de ele chegar à noite", () => {

@@ -9,7 +9,11 @@ const eleicao = (ano: number, dia: string, vespera: string, primeiro: number, re
   resultado,
   pesquisas: [{ registro: `BR-00001/${ano}`, instituto: "Datafolha", campoFim: vespera, divulgacao: vespera, votos: [primeiro, 100 - primeiro] }],
 });
-const ELEICOES = [eleicao(2010, "2010-10-31", "2010-10-30", 52, 50), eleicao(2014, "2014-10-26", "2014-10-25", 49, 50), eleicao(2018, "2018-10-28", "2018-10-27", 55, 53)];
+const ELEICOES = [
+  eleicao(2010, "2010-10-31", "2010-10-30", 52, 50),
+  eleicao(2014, "2014-10-26", "2014-10-25", 49, 50),
+  eleicao(2018, "2018-10-28", "2018-10-27", 55, 53),
+];
 
 describe("histórico do agregado", () => {
   it("dá, em cada ano, o agregado congelado na véspera e o erro contra o resultado", () => {

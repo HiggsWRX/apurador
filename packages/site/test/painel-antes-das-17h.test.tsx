@@ -21,7 +21,8 @@ function curva(virada: CurvaDoLugar["virada"]): CurvaDoLugar {
   return { pontos, virada };
 }
 
-const desenhar = (c: CurvaDoLugar, base = "Apuração + pesquisas") => render(<CurvaProjetada id="teste" base={base} primeiro={FLAVIO} segundo={LULA} curva={c} />);
+const desenhar = (c: CurvaDoLugar, base = "Apuração + pesquisas") =>
+  render(<CurvaProjetada id="teste" base={base} primeiro={FLAVIO} segundo={LULA} curva={c} />);
 
 describe("curva projetada", () => {
   const html = desenhar(curva({ x: 86, cedo: 70, tarde: 95, quem: 1 }));
@@ -54,7 +55,9 @@ describe("curva projetada", () => {
   it("não tem frase preditiva nem rótulo do sinal de virada, nem na descrição para o leitor de tela", () => {
     expect(texto(html)).not.toMatch(/deve |vai |chance de virada|sem sinal|virada possível ·|virada projetada ·/i);
     const descricao = /aria-label="([^"]+)"/.exec(html)?.[1];
-    expect(descricao).toBe("Curva projetada na base Apuração + pesquisas: FLAVIO BOLSONARO de 56,0% a 49,0% e LULA de 44,0% a 51,0%, de 2,0% a 100,0% das seções totalizadas");
+    expect(descricao).toBe(
+      "Curva projetada na base Apuração + pesquisas: FLAVIO BOLSONARO de 56,0% a 49,0% e LULA de 44,0% a 51,0%, de 2,0% a 100,0% das seções totalizadas",
+    );
   });
 
   it("sem virada projetada, fica só com a faixa a partir de onde a virada é possível", () => {
@@ -82,7 +85,15 @@ describe("curva projetada", () => {
 });
 
 describe("chance de vitória", () => {
-  const html = render(<ChanceDeVitoria chances={[{ finalista: FLAVIO, chance: 0.734185 }, { finalista: LULA, chance: 0.265815 }]} href="/metodologia/#chance" />);
+  const html = render(
+    <ChanceDeVitoria
+      chances={[
+        { finalista: FLAVIO, chance: 0.734185 },
+        { finalista: LULA, chance: 0.265815 },
+      ]}
+      href="/metodologia/#chance"
+    />,
+  );
 
   it("é uma barra dividida com a chance de cada um, em inteiros que somam 100", () => {
     const barra = elemento(html, /<div[^>]*class="chance-barra"/);
@@ -99,7 +110,17 @@ describe("chance de vitória", () => {
   });
 
   it("diz '<1%' e '>99%' nas pontas, sem 0% nem 100%", () => {
-    const extrema = texto(render(<ChanceDeVitoria chances={[{ finalista: FLAVIO, chance: 0.998 }, { finalista: LULA, chance: 0.002 }]} href="#" />));
+    const extrema = texto(
+      render(
+        <ChanceDeVitoria
+          chances={[
+            { finalista: FLAVIO, chance: 0.998 },
+            { finalista: LULA, chance: 0.002 },
+          ]}
+          href="#"
+        />,
+      ),
+    );
     expect(extrema).toContain("FLAVIO BOLSONARO >99%");
     expect(extrema).toContain("LULA <1%");
   });

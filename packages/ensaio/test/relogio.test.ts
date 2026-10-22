@@ -43,11 +43,14 @@ describe("o relógio do ensaio geral", () => {
     expect(as(partida)).toBe("18:30:00");
     expect(as(partida + minutos(40))).toBe("20:30:00");
     expect(as(partida + minutos(41))).toBe("21:00:00");
-    expect(hora(relogioAcelerado({ partida, ritmo: ritmoDesde(instante("2022-10-30 22:00:00")), agoraReal: () => partida + minutos(1) }).agora().instante)).toBe("22:30:00");
+    expect(
+      hora(relogioAcelerado({ partida, ritmo: ritmoDesde(instante("2022-10-30 22:00:00")), agoraReal: () => partida + minutos(1) }).agora().instante),
+    ).toBe("22:30:00");
   });
 
   it("aceita outro ritmo, como o trecho de 30 min a 1x das 18:30 às 19:00", () => {
-    const umaVez = (real: number) => relogioAcelerado({ partida, ritmo: [{ desde: instante("2022-10-30 18:30:00"), velocidade: 1 }], agoraReal: () => real }).agora();
+    const umaVez = (real: number) =>
+      relogioAcelerado({ partida, ritmo: [{ desde: instante("2022-10-30 18:30:00"), velocidade: 1 }], agoraReal: () => real }).agora();
 
     expect(hora(umaVez(partida + minutos(10)).instante)).toBe("18:40:00");
   });
@@ -58,7 +61,9 @@ describe("a velocidade máxima, para o replay", () => {
   const pedidosDaRodada = [
     "br/br-e006258-ab.json",
     ...cadastro.ufs.map((uf) => `${uf.sigla.toLowerCase()}/${uf.sigla.toLowerCase()}-e006258-ab.json`),
-    ...cadastro.ufs.flatMap((uf) => uf.municipios.slice(0, 22).map((m) => `${uf.sigla.toLowerCase()}/${uf.sigla.toLowerCase()}${String(m.codigo).padStart(5, "0")}-c0001-e006258-u.json`)),
+    ...cadastro.ufs.flatMap((uf) =>
+      uf.municipios.slice(0, 22).map((m) => `${uf.sigla.toLowerCase()}/${uf.sigla.toLowerCase()}${String(m.codigo).padStart(5, "0")}-c0001-e006258-u.json`),
+    ),
   ].map((caminho) => `/oficial/ele2026/6258/dados/${caminho}`);
 
   it("no relógio do replay, o limite conta pelo relógio do coletor: espaçados a 50 por segundo, 630 pedidos numa rodada não violam", () => {

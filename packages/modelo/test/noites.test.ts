@@ -67,7 +67,9 @@ describe("o executor de noites na base 'Apuração + pesquisas', no 2º turno de
     for (const noite of [real, comLula, comBolsonaro]) {
       expect(noite.final).toBe(so.final);
       expect(noite.momentos).toHaveLength(so.momentos.length);
-      noite.momentos.forEach((m, i) => expect(m).toMatchObject({ instante: so.momentos[i]!.instante, secoes: so.momentos[i]!.secoes, placar: so.momentos[i]!.placar }));
+      noite.momentos.forEach((m, i) =>
+        expect(m).toMatchObject({ instante: so.momentos[i]!.instante, secoes: so.momentos[i]!.secoes, placar: so.momentos[i]!.placar }),
+      );
       expect(noite.momentos.at(-1)).toMatchObject({ projecao: noite.final, erro: 0 });
     }
     expect(so.momentos.every((m) => m.pesoDasPesquisas === 0)).toBe(true);

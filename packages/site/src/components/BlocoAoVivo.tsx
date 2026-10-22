@@ -35,7 +35,10 @@ interface Props {
 export default function BlocoAoVivo({ id, tipo, uf, em, fotos, enderecos, chaves, turnosPassados }: Props) {
   const comparacao = useComparacao(id, turnosPassados);
   const leitor = useMemo(
-    () => (enderecos.length > 0 ? criarLeitorAoVivo({ enderecos, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now(), chaves }) : null),
+    () =>
+      enderecos.length > 0
+        ? criarLeitorAoVivo({ enderecos, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now(), chaves })
+        : null,
     [enderecos, id, chaves],
   );
   const [quadro, setQuadro] = useState(() => antesDaPrimeiraLeitura(chaves));

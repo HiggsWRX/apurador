@@ -53,11 +53,15 @@ function estado() {
   const e = tse.estado();
   const r = tse.registro();
   const bloqueio = e.bloqueadoAte !== null && e.bloqueadoAte > e.momento.real ? `, 403 por mais ${Math.ceil((e.bloqueadoAte - e.momento.real) / 1000)} s` : "";
-  console.log(`Noite: ${e.dataHora}${bloqueio}. Pedidos: ${r.pedidos} (${JSON.stringify(r.porStatus)}), 404: ${r.naoEncontrados.length}, violações: ${r.violacoes.length}.`);
+  console.log(
+    `Noite: ${e.dataHora}${bloqueio}. Pedidos: ${r.pedidos} (${JSON.stringify(r.porStatus)}), 404: ${r.naoEncontrados.length}, violações: ${r.violacoes.length}.`,
+  );
 }
 
 console.log(`TSE falso da noite ${NOITE} em ${servidor.url}/oficial/ (base do coletor: ${servidor.url}/oficial)`);
-console.log(`Relógio: ${ritmo.map((t) => `${Math.floor(t.desde / 3600)}:${String(Math.floor((t.desde % 3600) / 60)).padStart(2, "0")} a ${t.velocidade}x`).join(", ")}.`);
+console.log(
+  `Relógio: ${ritmo.map((t) => `${Math.floor(t.desde / 3600)}:${String(Math.floor((t.desde % 3600) / 60)).padStart(2, "0")} a ${t.velocidade}x`).join(", ")}.`,
+);
 console.log(`Indicação do TSE: ${tse.estado().dataHoraDaIndicacao}. Totalização final: ${tse.estado().dataHoraDaTotalizacaoFinal}.`);
 console.log(`Registro: ${fileURLToPath(arquivoDoRegistro)}`);
 console.log(`Comandos: "403 <segundos>", "liberar", "estado", "sair".`);

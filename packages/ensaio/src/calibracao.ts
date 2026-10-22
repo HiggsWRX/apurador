@@ -1,4 +1,16 @@
-import { apuracaoAntesDaPrimeiraSecao, curvaProjetada, executarNoite, momentosDaNoite, projetar, Z_95, type Agregado, type Constantes, type OrdemDeChegada, type PontoDaCurva, type ResultadoDaNoite } from "@apurador/modelo";
+import {
+  apuracaoAntesDaPrimeiraSecao,
+  curvaProjetada,
+  executarNoite,
+  momentosDaNoite,
+  projetar,
+  Z_95,
+  type Agregado,
+  type Constantes,
+  type OrdemDeChegada,
+  type PontoDaCurva,
+  type ResultadoDaNoite,
+} from "@apurador/modelo";
 import { dataHoraDoInstante } from "@apurador/pipeline";
 import type { NoiteDaCalibracao } from "./noites-da-calibracao.ts";
 
@@ -62,7 +74,10 @@ export interface CandidatoDoPasso1<C> {
  * O passo 1 da regra: tira quem não cobre 95% em alguma noite e quem dá mais de 95% a quem perdeu, fica com o menor
  * erro médio e, no empate, com a margem média mais larga. Sem ninguém que passe, não escolhe.
  */
-export function escolherConstantesDoModelo<C>(avaliacoes: { candidato: C; porNoite: MedidaDaNoite[] }[]): { candidatos: CandidatoDoPasso1<C>[]; escolhido: C | null } {
+export function escolherConstantesDoModelo<C>(avaliacoes: { candidato: C; porNoite: MedidaDaNoite[] }[]): {
+  candidatos: CandidatoDoPasso1<C>[];
+  escolhido: C | null;
+} {
   const candidatos: CandidatoDoPasso1<C>[] = avaliacoes.map(({ candidato, porNoite }) => ({
     candidato,
     porNoite,
@@ -242,7 +257,12 @@ export interface Execucao {
 export function execucoesDoSinal(noites: NoiteDaCalibracao[]): Execucao[] {
   return [
     ...noites.map((noite) => ({ base: "so_apuracao", nome: `${noite.nome}, Só apuração`, noite })),
-    ...casosDoK(noites).map(({ id, nome, noite, agregado }) => ({ base: `com_pesquisas${id.slice(noite.id.length)}`, nome: `${nome}, Apuração + pesquisas`, noite, agregado })),
+    ...casosDoK(noites).map(({ id, nome, noite, agregado }) => ({
+      base: `com_pesquisas${id.slice(noite.id.length)}`,
+      nome: `${nome}, Apuração + pesquisas`,
+      noite,
+      agregado,
+    })),
   ];
 }
 
@@ -316,8 +336,16 @@ export interface LinhaMomentoAMomento {
 export function noiteMomentoAMomento(noite: NoiteDaCalibracao, constantes: Constantes): { bases: string[]; linhas: LinhaMomentoAMomento[] } {
   const execucoes = execucoesDoSinal([noite]);
   const antes = apuracaoAntesDaPrimeiraSecao(noite.modelo, noite.noite);
-  const porBase = execucoes.map(({ agregado }) => ({ antes: projetar(noite.modelo, antes, constantes, agregado), noite: executarNoite(noite.modelo, noite.noite, constantes, { agregado }) }));
-  const base = (pesoDasPesquisas: number, { projecao, desvio, chance }: { projecao: number; desvio: number; chance: number }) => ({ pesoDasPesquisas, projecao, margem: Z_95 * desvio, chance });
+  const porBase = execucoes.map(({ agregado }) => ({
+    antes: projetar(noite.modelo, antes, constantes, agregado),
+    noite: executarNoite(noite.modelo, noite.noite, constantes, { agregado }),
+  }));
+  const base = (pesoDasPesquisas: number, { projecao, desvio, chance }: { projecao: number; desvio: number; chance: number }) => ({
+    pesoDasPesquisas,
+    projecao,
+    margem: Z_95 * desvio,
+    chance,
+  });
   return {
     bases: execucoes.map((e) => e.base),
     linhas: [
@@ -372,18 +400,30 @@ export interface Calibracao {
 export function calibrar(noites: NoiteDaCalibracao[], provisorias: Constantes, aviso: (texto: string) => void = () => {}): Calibracao {
   const semEscolha: string[] = [];
 
-  aviso(`passo 1: ${CANDIDATOS.incertezaRegional.length * CANDIDATOS.incertezaNacional.length * CANDIDATOS.pesoDoMunicipio.length} candidatos nas ${noites.length} noites`);
+  aviso(
+    `passo 1: ${CANDIDATOS.incertezaRegional.length * CANDIDATOS.incertezaNacional.length * CANDIDATOS.pesoDoMunicipio.length} candidatos nas ${noites.length} noites`,
+  );
   const candidatos1 = CANDIDATOS.incertezaRegional.flatMap((incertezaRegional) =>
-    CANDIDATOS.incertezaNacional.flatMap((incertezaNacional) => CANDIDATOS.pesoDoMunicipio.map((pesoDoMunicipio): IncertezasEPeso => ({ incertezaRegional, incertezaNacional, pesoDoMunicipio }))),
+    CANDIDATOS.incertezaNacional.flatMap((incertezaNacional) =>
+      CANDIDATOS.pesoDoMunicipio.map((pesoDoMunicipio): IncertezasEPeso => ({ incertezaRegional, incertezaNacional, pesoDoMunicipio })),
+    ),
   );
   const passo1 = escolherConstantesDoModelo(
-    candidatos1.map((candidato) => ({ candidato, porNoite: noites.map((n) => medirNoite(executarNoite(n.modelo, n.noite, { ...provisorias, ...candidato }))) })),
+    candidatos1.map((candidato) => ({
+      candidato,
+      porNoite: noites.map((n) => medirNoite(executarNoite(n.modelo, n.noite, { ...provisorias, ...candidato }))),
+    })),
   );
   if (!passo1.escolhido) semEscolha.push("passo 1: incertezas e peso do próprio município");
   const constantes1 = { ...provisorias, ...(passo1.escolhido ?? {}) };
 
   aviso("passo 2: ordem de chegada");
-  const passo2 = escolherOrdem(CANDIDATOS.ordemDeChegada.map((ordemDeChegada) => ({ candidato: ordemDeChegada, porNoite: noites.map((n) => medirOrdem(n, { ...constantes1, ordemDeChegada })) })));
+  const passo2 = escolherOrdem(
+    CANDIDATOS.ordemDeChegada.map((ordemDeChegada) => ({
+      candidato: ordemDeChegada,
+      porNoite: noites.map((n) => medirOrdem(n, { ...constantes1, ordemDeChegada })),
+    })),
+  );
   const constantes2 = { ...constantes1, ordemDeChegada: passo2.escolhido };
 
   aviso("passo 3: K");
@@ -406,7 +446,10 @@ export function calibrar(noites: NoiteDaCalibracao[], provisorias: Constantes, a
 
   aviso("passo 5: zona");
   const passo5 = escolherZona(
-    noites.map((n) => ({ municipio: medirNoite(executarNoite(n.modelo, n.noite, constantes3)), zona: medirNoite(executarNoite(n.modeloPorZona, n.noite, constantes3)) })),
+    noites.map((n) => ({
+      municipio: medirNoite(executarNoite(n.modelo, n.noite, constantes3)),
+      zona: medirNoite(executarNoite(n.modeloPorZona, n.noite, constantes3)),
+    })),
   );
   const constantes = { ...constantes4, zona: passo5.escolhido };
 

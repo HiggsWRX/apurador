@@ -65,9 +65,7 @@ export const PLACAR_ENTRE_FINALISTAS_DO_BRASIL = placarEntreFinalistasDoLugar("B
 
 /** A indicação das pesquisas de um lugar, com o placar entre finalistas dele, ou por que ela não existe. */
 export type IndicacaoDoLugar =
-  | { tipo: "indicacao"; placarEntreFinalistas: number; indicacao: number }
-  | { tipo: "sem-votacao" }
-  | { tipo: "sem-voto-nos-finalistas" };
+  { tipo: "indicacao"; placarEntreFinalistas: number; indicacao: number } | { tipo: "sem-votacao" } | { tipo: "sem-voto-nos-finalistas" };
 
 /** A indicação das pesquisas de uma UF, do Exterior ou de um município, ou o motivo de não haver. */
 export function indicacaoDoLugar(id: string): IndicacaoDoLugar | undefined {

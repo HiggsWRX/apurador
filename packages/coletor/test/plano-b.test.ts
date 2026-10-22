@@ -21,7 +21,13 @@ const BYTES = new TextEncoder().encode('{"rodada":"2026-10-25T21:00:00.000Z"}');
 function republicacoes() {
   const feitas: { arquivos: string[]; terminar: (erro?: Error) => void }[] = [];
   const publicar = async () => {
-    const arquivos = (await readdir(pasta, { recursive: true, withFileTypes: true })).filter((a) => a.isFile()).map((a) => join(a.parentPath, a.name).slice(pasta.length + 1).replaceAll("\\", "/"));
+    const arquivos = (await readdir(pasta, { recursive: true, withFileTypes: true }))
+      .filter((a) => a.isFile())
+      .map((a) =>
+        join(a.parentPath, a.name)
+          .slice(pasta.length + 1)
+          .replaceAll("\\", "/"),
+      );
     return new Promise<void>((pronto, falhou) => feitas.push({ arquivos: arquivos.sort(), terminar: (erro) => (erro ? falhou(erro) : pronto()) }));
   };
   return { feitas, publicar };
@@ -52,7 +58,9 @@ describe("a republicação do Worker do plano B", () => {
     expect(feitas[0]!.arquivos).toEqual(["_headers", "lugares/BR.json", "rodada.json"]);
     // Os static assets respondem 405 a todo OPTIONS (medido em 20/10/2026): a página lê o plano B sem preflight, e o
     // `_headers` só precisa liberar a origem e expor o `Date` e a ETag.
-    expect(await readFile(join(pasta, "_headers"), "utf8")).toBe("/*\n  Access-Control-Allow-Origin: *\n  Access-Control-Expose-Headers: Date, ETag\n  X-Robots-Tag: noindex\n");
+    expect(await readFile(join(pasta, "_headers"), "utf8")).toBe(
+      "/*\n  Access-Control-Allow-Origin: *\n  Access-Control-Expose-Headers: Date, ETag\n  X-Robots-Tag: noindex\n",
+    );
   });
 
   it("o coletor que volta no plano B na mesma noite mantém a pasta: a partida a frio leva minutos, e o Worker não perde os lugares", async () => {

@@ -168,7 +168,9 @@ describe("as hipóteses", () => {
     expect(prontas(vista())).toEqual(["As pesquisas subestimam Flávio como no 1º turno", "As pesquisas subestimam Lula na mesma medida"]);
     expect(prontas(vista({ base: "so-apuracao" }))).toEqual([]);
     // a pronta escolhida fica marcada
-    const marcadas = elementos(vista({ hipoteses: hipoteses({ brasil: 2.1 }) }), /<button[^>]*class="sim-pronta"/).map((b) => /aria-pressed="(\w+)"/.exec(b)?.[1]);
+    const marcadas = elementos(vista({ hipoteses: hipoteses({ brasil: 2.1 }) }), /<button[^>]*class="sim-pronta"/).map(
+      (b) => /aria-pressed="(\w+)"/.exec(b)?.[1],
+    );
     expect(marcadas).toEqual(["true", "false"]);
   });
 
@@ -178,7 +180,9 @@ describe("as hipóteses", () => {
     expect(elemento(acoes(vista()), /<button/)).toMatch(/disabled/);
     expect(elemento(acoes(vista({ hipoteses: hipoteses({ comparecimento: { Norte: 2 } }) })), /<button/)).not.toMatch(/disabled/);
     expect(texto(acoes(vista({ outras: { copia: { estado: "copiado" } } })))).toContain("Link copiado.");
-    expect(acoes(vista({ outras: { copia: { estado: "manual", endereco: "https://apurador.org/simulador/?base=so-apuracao" } } }))).toContain('value="https://apurador.org/simulador/?base=so-apuracao"');
+    expect(acoes(vista({ outras: { copia: { estado: "manual", endereco: "https://apurador.org/simulador/?base=so-apuracao" } } }))).toContain(
+      'value="https://apurador.org/simulador/?base=so-apuracao"',
+    );
   });
 });
 
@@ -186,7 +190,9 @@ describe("o que seria preciso", () => {
   it("diz quanto o voto que falta precisaria pender para quem está atrás, com 'Aplicar'", () => {
     // com Flávio em 51,1, Lula precisaria de 1,1 ponto no país
     const preciso = elemento(vista(), /<section[^>]*data-preciso/);
-    expect(texto(preciso)).toMatch(/^O que seria preciso Para Lula passar à frente, o voto que falta precisaria pender mais 1,1 ponto para ele no país\. Aplicar$/);
+    expect(texto(preciso)).toMatch(
+      /^O que seria preciso Para Lula passar à frente, o voto que falta precisaria pender mais 1,1 ponto para ele no país\. Aplicar$/,
+    );
   });
 
   it("fora da faixa do controle, diz 'mais de 5 pontos', sem 'Aplicar'", () => {

@@ -94,14 +94,33 @@ const resultadoPorZona = umaVezPorAno(async (ano) => {
   ]);
   const candidatos = lerVotacaoCandidatoMunzona(c.dados);
   const detalhes = lerDetalheVotacaoMunzona(d.dados);
-  return { urls: [registrar(c, candidatos.map((l) => l.geracao)), registrar(d, detalhes.map((l) => l.geracao))], candidatos, detalhes };
+  return {
+    urls: [
+      registrar(
+        c,
+        candidatos.map((l) => l.geracao),
+      ),
+      registrar(
+        d,
+        detalhes.map((l) => l.geracao),
+      ),
+    ],
+    candidatos,
+    detalhes,
+  };
 });
 
 /** O detalhe de cada seção de um ano, os dois turnos. */
 const detalheDasSecoes = umaVezPorAno(async (ano) => {
   const arquivo = await membroDePresidenteComCache(urlDadosAbertos("detalhe_votacao_secao", ano), { atualizar });
   const secoes = [...lerDetalheVotacaoSecao(arquivo.dados)];
-  return { url: registrar(arquivo, secoes.map((s) => s.geracao)), secoes };
+  return {
+    url: registrar(
+      arquivo,
+      secoes.map((s) => s.geracao),
+    ),
+    secoes,
+  };
 });
 
 /**
@@ -128,7 +147,14 @@ async function votosDaNoite(n: NoiteAReconstruir, ufs: string[]): Promise<{ voto
   const urls: string[] = [];
   for (const uf of ufs) {
     const { url, membro } = boletimDeUrna({ ano: n.ano, turno: n.turno, uf, carimbo: n.votos.carimboDoBoletim });
-    const arquivo = await membroComCache(url, url.split("/").pop()!.replace(/\.zip$/, ".csv"), { atualizar, casa: membro });
+    const arquivo = await membroComCache(
+      url,
+      url
+        .split("/")
+        .pop()!
+        .replace(/\.zip$/, ".csv"),
+      { atualizar, casa: membro },
+    );
     const geracao = new Set<string>();
     for (const v of lerBoletimDeUrna(arquivo.dados)) {
       geracao.add(v.geracao);
@@ -163,7 +189,9 @@ for (const n of NOITES) {
   const arquivo = `noites/${n.ano}-${n.turno}.json.gz`;
   const gravada = gravarNoite(noite);
   gravar(arquivo, gravada, [detalhe.url, ...urlsDosVotos, ...oficial.urls]);
-  console.log(`${arquivo}: ${noite.chegadas.length} chegadas em ${noite.zonas.length} zonas, ${(gravada.length / 1e6).toFixed(2)} MB, em ${((Date.now() - inicio) / 1000).toFixed(0)} s`);
+  console.log(
+    `${arquivo}: ${noite.chegadas.length} chegadas em ${noite.zonas.length} zonas, ${(gravada.length / 1e6).toFixed(2)} MB, em ${((Date.now() - inicio) / 1000).toFixed(0)} s`,
+  );
 
   const curvas = curvasDoTurno(noite);
   const arquivoDasCurvas = `curvas/${n.ano}-${n.turno}.json`;
@@ -194,11 +222,21 @@ for (const b of BASES) {
 
   // Para o teste da zona da calibração, a mesma base com os municípios de mais de uma zona divididos nas zonas da noite.
   if (!noite) continue;
-  const porZona = baseDoModelo({ ...b, finalistas, candidatos: daBase.candidatos, detalhes: daBase.detalhes, secoes: detalhe.secoes, municipios, zonas: noite.zonas });
+  const porZona = baseDoModelo({
+    ...b,
+    finalistas,
+    candidatos: daBase.candidatos,
+    detalhes: daBase.detalhes,
+    secoes: detalhe.secoes,
+    municipios,
+    zonas: noite.zonas,
+  });
   const arquivoPorZona = `bases/${b.noite.ano}-${b.noite.turno}-zonas.json`;
   const conteudoPorZona = gravarBase(porZona);
   gravar(arquivoPorZona, conteudoPorZona, deOnde);
-  console.log(`${arquivoPorZona}: ${porZona.municipios.length} partes, ${new Set(porZona.municipios.filter((m) => m.zona !== undefined).map((m) => `${m.uf}/${m.municipio}`)).size} municípios divididos, ${(conteudoPorZona.length / 1e6).toFixed(2)} MB`);
+  console.log(
+    `${arquivoPorZona}: ${porZona.municipios.length} partes, ${new Set(porZona.municipios.filter((m) => m.zona !== undefined).map((m) => `${m.uf}/${m.municipio}`)).size} municípios divididos, ${(conteudoPorZona.length / 1e6).toFixed(2)} MB`,
+  );
 }
 
 const manifesto = atualizarManifesto(lerManifesto(), { pastas: ["noites/", "curvas/", "bases/"], fontes: [...fontes.values()], derivados });

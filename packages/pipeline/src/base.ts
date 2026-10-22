@@ -125,7 +125,9 @@ export function baseDoModelo(entrada: {
   }
   const totalizadas = secoes
     .filter((s) => s.primeiraTotalizacao !== null)
-    .sort((a, b) => cmp(a.primeiraTotalizacao!, b.primeiraTotalizacao!) || cmp(a.uf, b.uf) || a.municipio - b.municipio || a.zona - b.zona || a.secao - b.secao);
+    .sort(
+      (a, b) => cmp(a.primeiraTotalizacao!, b.primeiraTotalizacao!) || cmp(a.uf, b.uf) || a.municipio - b.municipio || a.zona - b.zona || a.secao - b.secao,
+    );
   const n = secoes.length;
 
   // A j-ésima seção a chegar (de 1 a n) já tinha chegado quando o país tinha x% das seções se 100·j ≤ x·n.

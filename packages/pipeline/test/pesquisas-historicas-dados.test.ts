@@ -51,7 +51,10 @@ describe("resultados conferidos no TSE", () => {
     for (const r of resultados.filter((r) => r.ano >= 2018)) {
       const turno = JSON.parse(ler(`turnos/${r.ano}-${r.turno}.json`)) as Turno;
       const votos = (n: number) => turno.lugares.BR!.votos[turno.candidatos.findIndex((c) => c.numero === n)];
-      expect(r.finalistas.map((f) => f.votos), `${r.ano}`).toEqual(r.finalistas.map((f) => votos(f.numero)));
+      expect(
+        r.finalistas.map((f) => f.votos),
+        `${r.ano}`,
+      ).toEqual(r.finalistas.map((f) => votos(f.numero)));
       expect(r.validos, `${r.ano}`).toBe(turno.lugares.BR!.validos);
     }
   });
@@ -146,7 +149,8 @@ describe("pesquisas do 1º turno de 2026 entre os dois finalistas", () => {
   const [flavio, lula] = resultado.finalistas;
   // A margem de Flávio sobre Lula nos válidos, com todos os candidatos: na pesquisa e no resultado.
   const margem = (p: PesquisaHistorica) => (100 * (p.votos.get(22)! - p.votos.get(13)!)) / (p.votos.get(22)! + p.votos.get(13)! + p.outros!);
-  const erroMedioNaMargem = (ps: PesquisaHistorica[]) => ps.reduce((s, p) => s + margem(p), 0) / ps.length - (100 * (flavio.votos - lula.votos)) / resultado.validos;
+  const erroMedioNaMargem = (ps: PesquisaHistorica[]) =>
+    ps.reduce((s, p) => s + margem(p), 0) / ps.length - (100 * (flavio.votos - lula.votos)) / resultado.validos;
 
   it("confere os 2,8 pontos contra Flávio na margem, nas 8 finais da seção 2.4 (campo terminando de 1 a 3/10)", () => {
     const finais = doPrimeiroTurno.filter((p) => p.campoFim >= "2026-10-01");

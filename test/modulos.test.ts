@@ -33,7 +33,9 @@ describe("os módulos dos pacotes", () => {
     const modulos = arquivos("packages/*/src/**/*.{ts,tsx}").filter((arquivo) => !arquivo.includes("/src/pages/"));
     const ondeEsta = new Map<string, string[]>();
     for (const arquivo of modulos) {
-      for (const [, nome] of ler(arquivo).matchAll(/^export\s+(?:declare\s+)?(?:async\s+)?(?:const|let|function\*?|type|interface|class|enum)\s+([A-Za-z_$][\w$]*)/gm)) {
+      for (const [, nome] of ler(arquivo).matchAll(
+        /^export\s+(?:declare\s+)?(?:async\s+)?(?:const|let|function\*?|type|interface|class|enum)\s+([A-Za-z_$][\w$]*)/gm,
+      )) {
         ondeEsta.set(nome!, [...(ondeEsta.get(nome!) ?? []), arquivo]);
       }
     }

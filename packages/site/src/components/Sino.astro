@@ -38,13 +38,11 @@ const descricao =
   <text class="rotulo" data-cor={corDoPartido(segundo.partido)} x={s.x50 - 8} y={s.topo + 4} text-anchor="end">
     {nome(segundo)} vence: {chances[1]}
   </text>
-  {
-    s.marcas.map((m) => (
-      <text class="eixo" x={m.x} y={s.base + 14} text-anchor="middle">
-        {m.valor}%
-      </text>
-    ))
-  }
+  {s.marcas.map((m) => (
+    <text class="eixo" x={m.x} y={s.base + 14} text-anchor="middle">
+      {m.valor}%
+    </text>
+  ))}
   <text class="eixo titulo" x={LARGURA / 2} y={ALTURA - 2} text-anchor="middle">
     % de {nome(primeiro)} nos votos válidos, no fim da apuração
   </text>

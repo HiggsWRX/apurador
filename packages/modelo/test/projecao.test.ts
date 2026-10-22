@@ -33,7 +33,11 @@ describe("antes da primeira seção", () => {
   });
 
   it("projeta cada UF, o Exterior e cada município no placar entre finalistas dele", () => {
-    for (const uf of modelo2026.ufs) expect(projecao.ufs[uf]!.projecao, uf).toBeCloseTo(placarEntreFinalistasDos(base2026.municipios.filter((m) => m.uf === uf)), ATE_UM_DECIMO_MILESIMO_DE_PONTO);
+    for (const uf of modelo2026.ufs)
+      expect(projecao.ufs[uf]!.projecao, uf).toBeCloseTo(
+        placarEntreFinalistasDos(base2026.municipios.filter((m) => m.uf === uf)),
+        ATE_UM_DECIMO_MILESIMO_DE_PONTO,
+      );
     base2026.municipios.forEach((m, i) => {
       const placar = placarEntreFinalistasDos([m]);
       // a fatia do voto que falta de um município fica entre 1% e 99%

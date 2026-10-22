@@ -85,7 +85,11 @@ describe("lerAcompanhamento", () => {
     expect(indice.itens).toHaveLength(29);
     expect(indice.itens.slice(-2)).toEqual([
       { abrangencia: { tipo: "uf", codigo: "zz" }, ultimaTotalizacao: "2026-10-05 09:19:47", secoes: { totalizadas: 1351, total: 1351, percentual: 100 } },
-      { abrangencia: { tipo: "br", codigo: "br" }, ultimaTotalizacao: "2026-10-05 12:51:05", secoes: { totalizadas: 499_248, total: 499_248, percentual: 100 } },
+      {
+        abrangencia: { tipo: "br", codigo: "br" },
+        ultimaTotalizacao: "2026-10-05 12:51:05",
+        secoes: { totalizadas: 499_248, total: 499_248, percentual: 100 },
+      },
     ]);
   });
 
@@ -109,7 +113,13 @@ describe("lerAcompanhamento", () => {
 
 describe("eleicaoDaConfiguracao", () => {
   it("acha no ele-c.json o ciclo, o pleito, o dia e o turno de uma eleição", () => {
-    expect(eleicaoDaConfiguracao(amostra("comum/ele-c.json"), "6258")).toEqual({ codigo: "6258", ciclo: "ele2026", pleito: "3221", dia: "2026-10-25", turno: 2 });
+    expect(eleicaoDaConfiguracao(amostra("comum/ele-c.json"), "6258")).toEqual({
+      codigo: "6258",
+      ciclo: "ele2026",
+      pleito: "3221",
+      dia: "2026-10-25",
+      turno: 2,
+    });
   });
 
   it("falha com uma eleição que não está na configuração", () => {
@@ -131,7 +141,9 @@ describe("urlsDaDivulgacao", () => {
     expect(urls.resultado({ uf: "ZZ" })).toBe("https://resultados.tse.jus.br/oficial/ele2026/6258/dados/zz/zz-c0001-e006258-u.json");
     expect(urls.resultado({ uf: "SP", municipio: 71072 })).toBe("https://resultados.tse.jus.br/oficial/ele2026/6258/dados/sp/sp71072-c0001-e006258-u.json");
     expect(urls.resultado({ uf: "ZZ", municipio: 29254 })).toBe("https://resultados.tse.jus.br/oficial/ele2026/6258/dados/zz/zz29254-c0001-e006258-u.json");
-    expect(urls.resultado({ uf: "SP", municipio: 71072, zona: 1 })).toBe("https://resultados.tse.jus.br/oficial/ele2026/6258/dados/sp/sp71072-z0001-c0001-e006258-u.json");
+    expect(urls.resultado({ uf: "SP", municipio: 71072, zona: 1 })).toBe(
+      "https://resultados.tse.jus.br/oficial/ele2026/6258/dados/sp/sp71072-z0001-c0001-e006258-u.json",
+    );
     expect(urls.resultado({ uf: "AC", municipio: 1120 })).toBe("https://resultados.tse.jus.br/oficial/ele2026/6258/dados/ac/ac01120-c0001-e006258-u.json");
   });
 });

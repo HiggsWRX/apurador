@@ -150,8 +150,23 @@ describe("as curvas dos turnos passados no repositório", () => {
 
   it.each([
     // O 1º instante em que o histórico oficial de totalização passa de cada marco, com o % de seções e o PT entre os dois.
-    { turno: "2022-1", marcos: [[1, 46.1], [50.1, 49.1], [90, 51.5], [99, 52.6]] },
-    { turno: "2022-2", marcos: [[1, 43.7], [50, 49.7], [99, 50.8]] },
+    {
+      turno: "2022-1",
+      marcos: [
+        [1, 46.1],
+        [50.1, 49.1],
+        [90, 51.5],
+        [99, 52.6],
+      ],
+    },
+    {
+      turno: "2022-2",
+      marcos: [
+        [1, 43.7],
+        [50, 49.7],
+        [99, 50.8],
+      ],
+    },
   ])("no Brasil, a de $turno passa pelos pontos do histórico oficial nos marcos do % de seções", ({ turno, marcos }) => {
     expect(pontos(curvas(turno).lugares.BR)).toEqual(expect.arrayContaining(marcos));
   });

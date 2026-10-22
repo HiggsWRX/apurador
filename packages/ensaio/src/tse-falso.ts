@@ -92,7 +92,12 @@ export function criarTseFalso(opcoes: { noite: Noite; cadastro: Cadastro; relogi
     const antes = escritos.get(caminho);
     if (antes?.versao === versao) return antes;
     const corpo = new TextEncoder().encode(escreverComoTse(divulgacao.escrever(documento, e)));
-    const novo: Escrito = { versao, corpo, etag: `"${createHash("md5").update(`${caminho}@${versao}`).digest("hex")}"`, geracao: divulgacao.geracao(documento, e) };
+    const novo: Escrito = {
+      versao,
+      corpo,
+      etag: `"${createHash("md5").update(`${caminho}@${versao}`).digest("hex")}"`,
+      geracao: divulgacao.geracao(documento, e),
+    };
     escritos.set(caminho, novo);
     return novo;
   }

@@ -66,7 +66,16 @@ describe("lerDetalheVotacaoSecao", () => {
 
     const [secao] = [...lerDetalheVotacaoSecao(latin1(`${CABECALHO_DETALHE}\n${SECAO_DE_SAO_LUIS}\n`))];
 
-    expect(secao).toMatchObject({ ano: 2018, turno: 2, dataDaEleicao: "2018-10-28", uf: "MA", municipio: 9210, votantes: 313, primeiraTotalizacao: "2018-10-28 18:37:11", instalada: null });
+    expect(secao).toMatchObject({
+      ano: 2018,
+      turno: 2,
+      dataDaEleicao: "2018-10-28",
+      uf: "MA",
+      municipio: 9210,
+      votantes: 313,
+      primeiraTotalizacao: "2018-10-28 18:37:11",
+      instalada: null,
+    });
   });
 
   it("falha com o nome da coluna quando o TSE muda o formato", () => {
@@ -97,7 +106,9 @@ describe("lerBoletimDeUrna", () => {
 
     const votos = [...lerBoletimDeUrna(latin1(`${CABECALHO_2018}\n${VOTO_BRANCO_2018}\n`))];
 
-    expect(votos).toEqual([{ geracao: "30/10/2018 17:44:27", ano: 2018, turno: 2, cargo: 1, uf: "AC", municipio: 1007, zona: 9, secao: 1, tipo: "branco", numero: 95, votos: 1 }]);
+    expect(votos).toEqual([
+      { geracao: "30/10/2018 17:44:27", ano: 2018, turno: 2, cargo: 1, uf: "AC", municipio: 1007, zona: 9, secao: 1, tipo: "branco", numero: 95, votos: 1 },
+    ]);
   });
 
   it("pula a seção sem nenhum voto, que o boletim de 2018 traz sem votável, mas não um voto sem votável", () => {

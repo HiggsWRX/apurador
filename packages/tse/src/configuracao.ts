@@ -28,7 +28,8 @@ type Bruto = Record<string, unknown>;
 
 function campo<T>(objeto: unknown, nome: string, tipo: "string" | "array"): T {
   const valor = (objeto as Bruto | null)?.[nome];
-  if (tipo === "array" ? !Array.isArray(valor) : typeof valor !== tipo) throw new ArquivoDoTseInvalido(`Configuração de municípios do TSE: campo "${nome}" ausente ou de outro tipo`);
+  if (tipo === "array" ? !Array.isArray(valor) : typeof valor !== tipo)
+    throw new ArquivoDoTseInvalido(`Configuração de municípios do TSE: campo "${nome}" ausente ou de outro tipo`);
   return valor as T;
 }
 

@@ -27,11 +27,16 @@ export function* percorrerCsvTse<N extends string>(bytes: Uint8Array, nomes: rea
   while (i < b.length) {
     const registro = {} as Record<N, string>;
     let campos = 0;
-    i = lerLinha(b, i, (campo, valor) => {
-      campos++;
-      const nome = nomeDoCampo[campo];
-      if (nome !== undefined) registro[nome] = valor;
-    }, nomeDoCampo);
+    i = lerLinha(
+      b,
+      i,
+      (campo, valor) => {
+        campos++;
+        const nome = nomeDoCampo[campo];
+        if (nome !== undefined) registro[nome] = valor;
+      },
+      nomeDoCampo,
+    );
     if (campos > 1) yield registro;
   }
 }

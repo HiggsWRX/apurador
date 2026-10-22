@@ -109,7 +109,8 @@ export function destinosDoColetor(opcoes: {
   ambientes?: Record<keyof typeof AMBIENTES, AmbienteDoR2>;
 }): DestinosDoColetor {
   const { destino, env, agora } = opcoes;
-  if (destino === "pasta") return { principal: pastaLocal(opcoes.pasta), planoB: republicacaoDoWorker({ pasta: pastaDoPlanoBLocal(opcoes.pasta), publicar: async () => {}, agora }) };
+  if (destino === "pasta")
+    return { principal: pastaLocal(opcoes.pasta), planoB: republicacaoDoWorker({ pasta: pastaDoPlanoBLocal(opcoes.pasta), publicar: async () => {}, agora }) };
   const ambiente = (opcoes.ambientes ?? AMBIENTES)[destino];
   // Sem token no .env, o wrangler republica pelo login do computador (`npx wrangler login`).
   const token = env.CLOUDFLARE_API_TOKEN;
@@ -119,6 +120,13 @@ export function destinosDoColetor(opcoes: {
   const chave = env[ambiente.variaveis.chave];
   const segredo = env[ambiente.variaveis.segredo];
   if (!chave || !segredo) throw new Error(`Falta ${ambiente.variaveis.chave} ou ${ambiente.variaveis.segredo} no .env do coletor (packages/coletor/.env)`);
-  const principal = destinoR2({ conta: CONTA_DA_CLOUDFLARE, bucket: ambiente.bucket, credenciais: { chave, segredo }, buscar: opcoes.buscar, contador: opcoes.contador, comprimir: opcoes.comprimir });
+  const principal = destinoR2({
+    conta: CONTA_DA_CLOUDFLARE,
+    bucket: ambiente.bucket,
+    credenciais: { chave, segredo },
+    buscar: opcoes.buscar,
+    contador: opcoes.contador,
+    comprimir: opcoes.comprimir,
+  });
   return { principal, planoB };
 }

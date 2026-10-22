@@ -28,7 +28,10 @@ describe("o porte fiel do protótipo no 2º turno de 2022", () => {
   });
 
   it("dá a projeção, o desvio e a chance de vitória do Brasil do protótipo em cada momento", () => {
-    const pares = comReferencia.map((m) => ({ modelo: projetar(modelo, m.apuracao, constantes).brasil, prototipo: Projecao.projetar(P, fotoDoPrototipo(m.apuracao), "transferencia", prm) }));
+    const pares = comReferencia.map((m) => ({
+      modelo: projetar(modelo, m.apuracao, constantes).brasil,
+      prototipo: Projecao.projetar(P, fotoDoPrototipo(m.apuracao), "transferencia", prm),
+    }));
 
     expect(maiorDiferenca(pares.map((p) => [p.modelo.projecao, p.prototipo.P]))).toBeLessThan(UM_CENTESIMO_DE_PONTO);
     expect(maiorDiferenca(pares.map((p) => [p.modelo.desvio, p.prototipo.sigma]))).toBeLessThan(UM_CENTESIMO_DE_PONTO);
@@ -125,7 +128,10 @@ describe("o porte fiel da base 'Apuração + pesquisas' do protótipo da página
       const foto = fotoDoPrototipo(m.apuracao);
       const doPrototipo = Projecao.projetar(P, foto, "transferencia", prm);
       const { shat, ...prototipo } = comPesquisas(P, foto, doPrototipo, valor / 100, constantes.secoesDasPesquisas, prm);
-      const { pesoDasPesquisas, brasil, votoQueFalta, fatiaDoQueFalta } = projetar(modelo, m.apuracao, constantes, { valor, incerteza: agregado2022.incerteza });
+      const { pesoDasPesquisas, brasil, votoQueFalta, fatiaDoQueFalta } = projetar(modelo, m.apuracao, constantes, {
+        valor,
+        incerteza: agregado2022.incerteza,
+      });
       return {
         modelo: { pesoDasPesquisas, brasil },
         prototipo,

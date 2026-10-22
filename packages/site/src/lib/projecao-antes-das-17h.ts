@@ -1,4 +1,17 @@
-import { antesDaPrimeiraSecao, curvaProjetada, lerConstantes, prepararModelo, projetar, projetarNasDuasBases, REGIOES, type Apuracao, type BaseDoModelo, type CurvaDoLugar, type Projecao, type ResultadoDoLugar } from "@apurador/modelo";
+import {
+  antesDaPrimeiraSecao,
+  curvaProjetada,
+  lerConstantes,
+  prepararModelo,
+  projetar,
+  projetarNasDuasBases,
+  REGIOES,
+  type Apuracao,
+  type BaseDoModelo,
+  type CurvaDoLugar,
+  type Projecao,
+  type ResultadoDoLugar,
+} from "@apurador/modelo";
 import constantesDoModelo from "@apurador/modelo/constantes.json";
 import { indicadoresDaBase } from "@apurador/pipeline";
 import base from "../../../../dados/bases/2026-2.json";
@@ -45,7 +58,8 @@ function projetarAntesDas17h(): { bases: ProjecaoDeUmaBase[]; coincidem: boolean
   });
   // A base com pesquisas deriva do agregado, como a indicação das pesquisas: sem ele no ar (a chave dele desligada, ou
   // nenhuma pesquisa na janela), fica só a "Só apuração", sem o controle. Nenhuma decisão define esse caso.
-  if (!CHAVES.antesDas17h.agregado || !AGREGADO) return { bases: [deUmaBase("so-apuracao", projetar(MODELO, ANTES_DA_PRIMEIRA_SECAO, CONSTANTES))], coincidem: null };
+  if (!CHAVES.antesDas17h.agregado || !AGREGADO)
+    return { bases: [deUmaBase("so-apuracao", projetar(MODELO, ANTES_DA_PRIMEIRA_SECAO, CONSTANTES))], coincidem: null };
   const duas = projetarNasDuasBases(MODELO, ANTES_DA_PRIMEIRA_SECAO, CONSTANTES, AGREGADO);
   return { bases: [deUmaBase("so-apuracao", duas.soApuracao), deUmaBase("com-pesquisas", duas.comPesquisas)], coincidem: duas.coincidem.brasil };
 }

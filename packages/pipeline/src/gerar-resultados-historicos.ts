@@ -33,7 +33,9 @@ for (const eleicao of ELEICOES_DO_HISTORICO) {
   const resultado = resultadoHistorico(candidatos, eleicao);
   resultados.push(resultado);
   const [a, b] = resultado.finalistas;
-  console.log(`${eleicao.ano}, ${eleicao.turno}º turno (${resultado.dia}): ${a.nomeUrna} ${pct(a.votos, resultado.validos)}, ${b.nomeUrna} ${pct(b.votos, resultado.validos)} dos válidos`);
+  console.log(
+    `${eleicao.ano}, ${eleicao.turno}º turno (${resultado.dia}): ${a.nomeUrna} ${pct(a.votos, resultado.validos)}, ${b.nomeUrna} ${pct(b.votos, resultado.validos)} dos válidos`,
+  );
 }
 
 // Um resultado por linha, para o diff mostrar o ano que mudou.

@@ -39,12 +39,15 @@ export function CurvaProjetada({ id, base, primeiro, segundo, curva, doSite }: P
   const cedo = virada?.cedo ?? null;
   const tarde = virada?.tarde ?? null;
   // Só o que a curva desenha, sem afirmar nada sobre a virada: os marcos dela ficam nos atributos e na legenda.
-  const deAte = (c: { y: number }, d: { y: number }) => `${primeiro.nomeUrna} de ${pct(c.y)} a ${pct(d.y)} e ${segundo.nomeUrna} de ${pct(1 - c.y)} a ${pct(1 - d.y)}`;
+  const deAte = (c: { y: number }, d: { y: number }) =>
+    `${primeiro.nomeUrna} de ${pct(c.y)} a ${pct(d.y)} e ${segundo.nomeUrna} de ${pct(1 - c.y)} a ${pct(1 - d.y)}`;
   const fimDoSite = doSite?.pontos.at(-1);
   const descricao =
     `${doSite ? "Curva da simulação" : "Curva projetada"} na base ${base}: ${deAte(inicio, fim)}, ` +
     `de ${formatarCalculo(inicio.x)}% a ${formatarCalculo(fim.x)}% das seções totalizadas` +
-    (doSite && fimDoSite ? `; a curva projetada do Apurador termina com ${primeiro.nomeUrna} ${pct(fimDoSite.y)} e ${segundo.nomeUrna} ${pct(1 - fimDoSite.y)}` : "");
+    (doSite && fimDoSite
+      ? `; a curva projetada do Apurador termina com ${primeiro.nomeUrna} ${pct(fimDoSite.y)} e ${segundo.nomeUrna} ${pct(1 - fimDoSite.y)}`
+      : "");
 
   return (
     <figure
@@ -116,7 +119,12 @@ function Grafico({ id, primeiro, segundo, pontos, doSite = [], virada, descricao
   // Na simulação, as linhas dela são pontilhadas, e as do site, tracejadas e mais claras, vão por baixo.
   const classeDaLinha = doSite.length > 0 ? "linha-da-simulacao" : "linha-projetada";
   const faixa = (valor: (p: PontoDaCurva) => number) =>
-    pontos.map((p, i) => `${i ? "L" : "M"}${ponto(p, valor(p) + Z_95 * p.desvio)}`).join("") + [...pontos].reverse().map((p) => `L${ponto(p, valor(p) - Z_95 * p.desvio)}`).join("") + "Z";
+    pontos.map((p, i) => `${i ? "L" : "M"}${ponto(p, valor(p) + Z_95 * p.desvio)}`).join("") +
+    [...pontos]
+      .reverse()
+      .map((p) => `L${ponto(p, valor(p) - Z_95 * p.desvio)}`)
+      .join("") +
+    "Z";
   const doPrimeiro = (p: PontoDaCurva) => p.y;
   const doSegundo = (p: PontoDaCurva) => 1 - p.y;
   const fim = pontos.at(-1)!;
@@ -133,7 +141,13 @@ function Grafico({ id, primeiro, segundo, pontos, doSite = [], virada, descricao
     <svg class="grafico-curva" viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={descricao}>
       <EixosDaCurva eixos={eixos} escala={escala} recorte={recorte} />
       {virada.cedo !== null && (
-        <rect class="faixa-virada" x={x(virada.cedo).toFixed(1)} y={MARGEM.topo} width={Math.max(2, x(virada.tarde ?? 100) - x(virada.cedo)).toFixed(1)} height={altura} />
+        <rect
+          class="faixa-virada"
+          x={x(virada.cedo).toFixed(1)}
+          y={MARGEM.topo}
+          width={Math.max(2, x(virada.tarde ?? 100) - x(virada.cedo)).toFixed(1)}
+          height={altura}
+        />
       )}
       <g clip-path={`url(#${recorte})`}>
         {doSite.length > 0 && (

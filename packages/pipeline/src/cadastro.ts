@@ -109,7 +109,9 @@ export function cadastroDaNoite(entrada: {
     };
   });
 
-  const nomeNaNoite = new Map(entrada.detalhes.filter((d) => d.ano === noite.ano && d.turno === noite.turno).map((d) => [`${d.uf}/${d.municipio}`, d.nomeMunicipio]));
+  const nomeNaNoite = new Map(
+    entrada.detalhes.filter((d) => d.ano === noite.ano && d.turno === noite.turno).map((d) => [`${d.uf}/${d.municipio}`, d.nomeMunicipio]),
+  );
   const ibge = new Map(entrada.tseIbge.map((m) => [m.municipio, m.ibge]));
   const capitais = new Set(entrada.configuracao.ufs.flatMap((uf) => uf.municipios.filter((m) => m.capital).map((m) => m.codigo)));
   const municipiosDaUf = new Map<string, Set<number>>();
@@ -143,7 +145,12 @@ export function gravarCadastro(cadastro: Cadastro): string {
     ...Object.entries(cabecalho).map(([k, v]) => `${JSON.stringify(k)}:${JSON.stringify(v)}`),
     `"candidatos":[\n${candidatos.map((c) => JSON.stringify(c)).join(",\n")}\n]`,
     `"ufs":[\n${ufs
-      .map(({ municipios, ...uf }) => `{${Object.entries(uf).map(([k, v]) => `${JSON.stringify(k)}:${JSON.stringify(v)}`).join(",")},"municipios":[\n${municipios.map((m) => JSON.stringify(m)).join(",\n")}\n]}`)
+      .map(
+        ({ municipios, ...uf }) =>
+          `{${Object.entries(uf)
+            .map(([k, v]) => `${JSON.stringify(k)}:${JSON.stringify(v)}`)
+            .join(",")},"municipios":[\n${municipios.map((m) => JSON.stringify(m)).join(",\n")}\n]}`,
+      )
       .join(",\n")}\n]`,
   ];
   return `{${linhas.join(",\n")}}\n`;

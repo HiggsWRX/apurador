@@ -14,7 +14,9 @@ const { id, numero, titulo } = Astro.props;
 ---
 
 <section class="secao" id={id} aria-labelledby={`${id}-titulo`}>
-  <span class="numero" aria-hidden="true">{numero}</span>
+  <span class="numero" aria-hidden="true">
+    {numero}
+  </span>
   <h2 id={`${id}-titulo`}>{titulo}</h2>
   <slot />
 </section>

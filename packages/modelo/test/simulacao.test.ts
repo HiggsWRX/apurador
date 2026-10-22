@@ -33,7 +33,12 @@ function primeiroTurnoDasRegioes(modelo: Modelo, turno: Turno, finalistas: [numb
     const r = modelo.regiaoDaUf[u]!;
     if (r < 0) return;
     const l = turno.lugares[uf]!;
-    Object.assign(somas[r]!, { votantes: somas[r]!.votantes + l.votantes, aptos: somas[r]!.aptos + l.aptos, primeiro: somas[r]!.primeiro + l.votos[a]!, segundo: somas[r]!.segundo + l.votos[b]! });
+    Object.assign(somas[r]!, {
+      votantes: somas[r]!.votantes + l.votantes,
+      aptos: somas[r]!.aptos + l.aptos,
+      primeiro: somas[r]!.primeiro + l.votos[a]!,
+      segundo: somas[r]!.segundo + l.votos[b]!,
+    });
   });
   return somas.map((s) => ({ comparecimento: s.votantes / s.aptos, placarEntreFinalistas: s.primeiro / (s.primeiro + s.segundo) }));
 }
@@ -50,12 +55,21 @@ describe("a simulação antes da primeira seção, em 25/10", () => {
   const modelo = prepararModelo(base2026);
   const apuracao = antesDaPrimeiraSecao(base2026);
   const primeiroTurno = primeiroTurnoDasRegioes(modelo, lerTurno("2026-1.json"), [22, 13]);
-  const partida = (projecao: Projecao): PartidaDaSimulacao => ({ modelo, apuracao, projecao, constantes, comparecimentoEsperado: primeiroTurno.map((r) => r.comparecimento) });
+  const partida = (projecao: Projecao): PartidaDaSimulacao => ({
+    modelo,
+    apuracao,
+    projecao,
+    constantes,
+    comparecimentoEsperado: primeiroTurno.map((r) => r.comparecimento),
+  });
   // Um agregado longe do placar entre finalistas do 1º turno (Flávio 51,0), com a incerteza do agregado na eleição.
   const comPesquisas = partida(projetar(modelo, apuracao, constantes, { valor: 52, incerteza: 1.5 }));
   const soApuracao = partida(projetar(modelo, apuracao, constantes));
   const projetado = comPesquisas.projecao;
-  const lugares = (s: { brasil: { projecao: number }; ufs: Record<string, { projecao: number }> }) => [s.brasil.projecao, ...modelo.ufs.map((uf) => s.ufs[uf]!.projecao)];
+  const lugares = (s: { brasil: { projecao: number }; ufs: Record<string, { projecao: number }> }) => [
+    s.brasil.projecao,
+    ...modelo.ufs.map((uf) => s.ufs[uf]!.projecao),
+  ];
 
   it("com as hipóteses zeradas, reproduz a projeção: o Brasil, cada UF, as margens, as chances e a curva projetada", () => {
     for (const p of [comPesquisas, soApuracao]) {
@@ -146,14 +160,21 @@ describe("a simulação antes da primeira seção, em 25/10", () => {
     // O Nordeste dá mais a Lula: com mais votos de lá, o Brasil anda para ele, na média das regiões e do Exterior com o
     // Nordeste pesando o fator a mais.
     expect(zerada.regioes[NORDESTE]!.fatia).toBeLessThan(0.45);
-    const partes = [...zerada.regioes.map((r, i) => ({ fatia: r.fatia, validos: r.validos * (i === NORDESTE ? fator : 1) })), { fatia: zerada.ufs.ZZ!.projecao, validos: zerada.ufs.ZZ!.validos }];
+    const partes = [
+      ...zerada.regioes.map((r, i) => ({ fatia: r.fatia, validos: r.validos * (i === NORDESTE ? fator : 1) })),
+      { fatia: zerada.ufs.ZZ!.projecao, validos: zerada.ufs.ZZ!.validos },
+    ];
     expect(s.brasil.projecao).toBeCloseTo(partes.reduce((t, p) => t + p.validos * p.fatia, 0) / partes.reduce((t, p) => t + p.validos, 0), 12);
     expect(s.brasil.projecao).toBeLessThan(zerada.brasil.projecao - 0.002);
   });
 
   describe("o que seria preciso", () => {
     it("é o valor do controle Brasil que leva o resultado final da simulação no Brasil a 50%", () => {
-      const casos = [hipoteses({}), hipoteses({ regioes: { Nordeste: -6, Sul: 4 }, comparecimento: { Sudeste: -3, Norte: 5 } }), hipoteses({ brasil: 3, regioes: { Sudeste: 10 } })];
+      const casos = [
+        hipoteses({}),
+        hipoteses({ regioes: { Nordeste: -6, Sul: 4 }, comparecimento: { Sudeste: -3, Norte: 5 } }),
+        hipoteses({ brasil: 3, regioes: { Sudeste: 10 } }),
+      ];
       for (const p of [comPesquisas, soApuracao]) {
         for (const h of casos) {
           const preciso = oQueSeriaPreciso(p, h);
@@ -180,7 +201,13 @@ describe("a simulação durante a apuração, na noite de 2022", () => {
   const comparecimentoEsperado = primeiroTurnoDasRegioes(modelo, lerTurno("2022-1.json"), [13, 22]).map((r) => r.comparecimento);
   const momentos = [...momentosDaNoite(modelo, noite2022)];
   const naMetade = momentos.find((m) => m.secoes >= 50)!;
-  const partida = (apuracao: typeof naMetade.apuracao): PartidaDaSimulacao => ({ modelo, apuracao, projecao: projetar(modelo, apuracao, constantes, agregado2022), constantes, comparecimentoEsperado });
+  const partida = (apuracao: typeof naMetade.apuracao): PartidaDaSimulacao => ({
+    modelo,
+    apuracao,
+    projecao: projetar(modelo, apuracao, constantes, agregado2022),
+    constantes,
+    comparecimentoEsperado,
+  });
   const comMetade = partida(naMetade.apuracao);
   const projetado = comMetade.projecao;
 

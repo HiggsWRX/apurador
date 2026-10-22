@@ -42,7 +42,13 @@ const arqConfiguracao = await arquivoComCache(CONFIGURACAO, { atualizar });
 const configuracao = lerConfiguracaoDeMunicipios(arqConfiguracao.dados);
 const arqIbge = await membroComCache(URL_MUNICIPIO_TSE_IBGE, MEMBRO_MUNICIPIO_TSE_IBGE, { atualizar });
 const tseIbge = lerMunicipioTseIbge(arqIbge.dados);
-const urlsComuns = [registrar(arqConfiguracao, [configuracao.geracao]), registrar(arqIbge, tseIbge.map((m) => m.geracao))];
+const urlsComuns = [
+  registrar(arqConfiguracao, [configuracao.geracao]),
+  registrar(
+    arqIbge,
+    tseIbge.map((m) => m.geracao),
+  ),
+];
 
 for (const { ano, turno } of NOITES) {
   const noite = lerNoite(new Uint8Array(readFileSync(new URL(`noites/${ano}-${turno}.json.gz`, DADOS))));
@@ -59,7 +65,17 @@ for (const { ano, turno } of NOITES) {
   derivados.push({
     arquivo,
     sha256: createHash("sha256").update(conteudo).digest("hex"),
-    fontes: [registrar(arqCandidaturas, candidaturas.map((c) => c.geracao)), registrar(arqDetalhes, detalhes.map((d) => d.geracao)), ...urlsComuns],
+    fontes: [
+      registrar(
+        arqCandidaturas,
+        candidaturas.map((c) => c.geracao),
+      ),
+      registrar(
+        arqDetalhes,
+        detalhes.map((d) => d.geracao),
+      ),
+      ...urlsComuns,
+    ],
   });
   const municipios = cadastro.ufs.reduce((s, uf) => s + uf.municipios.length, 0);
   console.log(`${arquivo}: ${cadastro.candidatos.length} candidatos, ${cadastro.ufs.length} UFs, ${municipios} municípios`);

@@ -40,7 +40,10 @@ function borda(defeitos: Defeitos = {}) {
     if (url !== URL_DO_OBJETO) return new Response(null, { status: 404 });
     if (init?.method === "OPTIONS") {
       const permitidos = defeitos.preflightSemIfNoneMatch ? "" : "if-none-match";
-      return new Response(null, { status: 204, headers: { ...cors(true), "access-control-allow-methods": "GET, HEAD", "access-control-allow-headers": permitidos, "access-control-max-age": "86400" } });
+      return new Response(null, {
+        status: 204,
+        headers: { ...cors(true), "access-control-allow-methods": "GET, HEAD", "access-control-allow-headers": permitidos, "access-control-max-age": "86400" },
+      });
     }
     const status = defeitos.semCacheRule ? "DYNAMIC" : copia ? "HIT" : "MISS";
     if (!defeitos.semCacheRule) copia ??= { comCors: origem !== null };
@@ -63,7 +66,9 @@ function borda(defeitos: Defeitos = {}) {
 
 /** O resultado de cada item da conferência, pelo id. */
 const resultado = async (tipo: "r2" | "worker", defeitos?: Defeitos) =>
-  Object.fromEntries((await conferirEntrega({ url: URL_DO_OBJETO, esperado: JSON_GRAVADO, origem: ORIGEM, tipo, buscar: borda(defeitos) })).map((i) => [i.id, i.ok]));
+  Object.fromEntries(
+    (await conferirEntrega({ url: URL_DO_OBJETO, esperado: JSON_GRAVADO, origem: ORIGEM, tipo, buscar: borda(defeitos) })).map((i) => [i.id, i.ok]),
+  );
 
 describe("a conferência da entrega", () => {
   it("no R2 pela borda certa, todos os itens passam", async () => {

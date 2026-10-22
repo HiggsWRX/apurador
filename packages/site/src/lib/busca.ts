@@ -8,7 +8,10 @@ import { semAcentos } from "./texto";
 
 const LIMITE = 8;
 
-const palavras = (texto: string) => semAcentos(texto).split(/[^a-z0-9]+/).filter(Boolean);
+const palavras = (texto: string) =>
+  semAcentos(texto)
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
 
 /**
  * Os lugares em que cada palavra da consulta começa uma palavra do nome, com o nome exato primeiro.

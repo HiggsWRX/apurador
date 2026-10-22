@@ -46,7 +46,8 @@ const CACHE = new URL(".cache/coletor/", RAIZ);
 const pasta = opcoes.pasta ?? fileURLToPath(new URL("publicado/", CACHE));
 const pedidosPorSegundo = Number(opcoes["pedidos-por-segundo"]);
 // Acima de 50 pedidos num segundo o dono recebe um alerta, e a fila do coletor recupera até 4 pedidos atrasados.
-if (!(pedidosPorSegundo > 0 && pedidosPorSegundo <= 45)) throw new Error(`--pedidos-por-segundo deve ficar entre 0 e 45, e não ${opcoes["pedidos-por-segundo"]}`);
+if (!(pedidosPorSegundo > 0 && pedidosPorSegundo <= 45))
+  throw new Error(`--pedidos-por-segundo deve ficar entre 0 e 45, e não ${opcoes["pedidos-por-segundo"]}`);
 const fim = opcoes.minutos === undefined ? Infinity : Date.now() + Number(opcoes.minutos) * 60_000;
 if (Number.isNaN(fim)) throw new Error(`--minutos deve ser um número, e não ${opcoes.minutos}`);
 const destino = opcoes.destino as NomeDoDestino;
@@ -79,12 +80,18 @@ process.on("SIGINT", () => {
 
 function resumo(r: RegistroDaRodada): string {
   const hora = new Date(r.inicio).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" });
-  const respostas = Object.entries(r.respostas).map(([status, n]) => `${status}: ${n}`).join(", ");
+  const respostas = Object.entries(r.respostas)
+    .map(([status, n]) => `${status}: ${n}`)
+    .join(", ");
   const { brasil, ufs, municipios, zonas } = r.baixados;
   const falhas = r.falhas.length === 0 ? "" : ` · ${r.falhas.length} falhas (${r.falhas.slice(0, 3).join("; ")})`;
   // O controle do dono só aparece no que foge do inicial: o que está desligado, o aviso no ar e o plano B.
   const desligadas = NOMES_DAS_CHAVES.filter((nome) => !r.controle.chaves[nome]).map((nome) => CHAVES_DA_NOITE[nome].rotulo);
-  const controle = [desligadas.length === 0 ? "" : ` · desligadas: ${desligadas.join(", ")}`, r.controle.aviso === null ? "" : ` · aviso ${r.controle.aviso}`, r.destinoAtivo === "plano B" ? " · plano B" : ""].join("");
+  const controle = [
+    desligadas.length === 0 ? "" : ` · desligadas: ${desligadas.join(", ")}`,
+    r.controle.aviso === null ? "" : ` · aviso ${r.controle.aviso}`,
+    r.destinoAtivo === "plano B" ? " · plano B" : "",
+  ].join("");
   const doMes = r.gravacoesDoMes && destino !== "pasta" ? ` (${somaDoMes(r.gravacoesDoMes)} no mês)` : "";
   return `#${r.numero} ${hora} ${r.fase ?? "sem fase"} · ${(r.duracao / 1000).toFixed(1)} s · ${r.pedidos} pedidos (${respostas}) · novos: Brasil ${brasil}, UFs ${ufs}, municípios ${municipios}, zonas ${zonas} · ${r.gravacoes} gravações${doMes}${controle}${falhas}`;
 }
@@ -118,7 +125,9 @@ await coletor.rodar({
   aoRodar(registro) {
     appendFileSync(arquivoDoRegistro, `${JSON.stringify(registro)}\n`);
     if (registro.gravacoesDoMes) {
-      gravarContadorDeGravacoes(opcoes.gravacoes, registro.gravacoesDoMes).catch((erro: Error) => console.log(`O contador de gravações não foi guardado: ${erro.message}`));
+      gravarContadorDeGravacoes(opcoes.gravacoes, registro.gravacoesDoMes).catch((erro: Error) =>
+        console.log(`O contador de gravações não foi guardado: ${erro.message}`),
+      );
     }
     console.log(resumo(registro));
   },

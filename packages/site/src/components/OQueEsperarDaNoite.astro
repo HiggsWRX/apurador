@@ -26,22 +26,18 @@ const chegada =
 
 <section class="cartao esperar" data-bloco="o-que-esperar-da-noite" aria-labelledby="esperar-titulo">
   <h2 id="esperar-titulo">O que esperar da noite</h2>
-  <p>
-    As seções não chegam na mesma ordem em todo o país, e o placar parcial do começo da noite é o dos lugares que chegam cedo. {chegada}
-  </p>
-  {
-    PROJECAO_ANTES_DAS_17H && (
-      <>
-        {PROJECAO_ANTES_DAS_17H.bases.map((base) => (
-          <div data-base={base.id} data-ativa={base.id === BASE_PADRAO ? "" : undefined}>
-            <h3 class="base-titulo">Base da projeção: {base.nome}</h3>
-            <CurvaProjetada id={base.id} base={base.nome} primeiro={primeiro!} segundo={segundo!} curva={base.curva} />
-          </div>
-        ))}
-        <p class="nota">A curva projetada supõe, em 25/10, a ordem de chegada do 1º turno de 2026, e parte da projeção de cada base, que se escolhe abaixo.</p>
-      </>
-    )
-  }
+  <p>As seções não chegam na mesma ordem em todo o país, e o placar parcial do começo da noite é o dos lugares que chegam cedo. {chegada}</p>
+  {PROJECAO_ANTES_DAS_17H && (
+    <>
+      {PROJECAO_ANTES_DAS_17H.bases.map((base) => (
+        <div data-base={base.id} data-ativa={base.id === BASE_PADRAO ? "" : undefined}>
+          <h3 class="base-titulo">Base da projeção: {base.nome}</h3>
+          <CurvaProjetada id={base.id} base={base.nome} primeiro={primeiro!} segundo={segundo!} curva={base.curva} />
+        </div>
+      ))}
+      <p class="nota">A curva projetada supõe, em 25/10, a ordem de chegada do 1º turno de 2026, e parte da projeção de cada base, que se escolhe abaixo.</p>
+    </>
+  )}
   {!PROJECAO_ANTES_DAS_17H && <NoitesPassadas client:visible turnos={turnosDoLugar("BR")} />}
   <p class="fonte">Cálculo do Apurador com dados do TSE</p>
 </section>

@@ -44,7 +44,9 @@ let divergencias = 0;
 for (const turno of turnos) {
   const doTurno = conferirTotais(turno, oficiais.get(turno.ano)!);
   divergencias += doTurno.length;
-  console.log(`${turno.ano} ${turno.turno}º turno: ${doTurno.length === 0 ? "o Brasil, as 27 UFs e o Exterior batem com o TSE" : `${doTurno.length} divergência(s)`}`);
+  console.log(
+    `${turno.ano} ${turno.turno}º turno: ${doTurno.length === 0 ? "o Brasil, as 27 UFs e o Exterior batem com o TSE" : `${doTurno.length} divergência(s)`}`,
+  );
   for (const d of doTurno) console.log(`  ${d.lugar}, ${d.total}: repositório ${d.repositorio ?? "sem o lugar"}, TSE ${d.tse ?? "sem o lugar"}`);
 }
 if (divergencias > 0) {
@@ -54,7 +56,9 @@ if (divergencias > 0) {
 
 const candidatosPorAno = new Map([...[...oficiais].map(([ano, o]) => [ano, o.candidatos] as const), ...soDoHistorico]);
 const doHistorico = conferirResultadosHistoricos(historicos, candidatosPorAno);
-console.log(`Resultados do histórico das pesquisas: ${doHistorico.length === 0 ? `as ${historicos.length} eleições batem com o TSE` : `${doHistorico.length} divergência(s)`}`);
+console.log(
+  `Resultados do histórico das pesquisas: ${doHistorico.length === 0 ? `as ${historicos.length} eleições batem com o TSE` : `${doHistorico.length} divergência(s)`}`,
+);
 for (const d of doHistorico) console.log(`  ${d}`);
 if (doHistorico.length > 0) {
   console.error("resultados-historicos.json não bate com os arquivos do TSE. Gere de novo com `npm run historico -- --atualizar` e confira a diferença.");

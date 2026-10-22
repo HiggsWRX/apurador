@@ -76,7 +76,13 @@ describe("conferirNoTse", () => {
   it("confere a divulgação contra a data de Brasília, não a UTC", async () => {
     // 01h de 20/10 em UTC ainda é 19/10 em Brasília: a pesquisa divulgada em 20/10 não pode estar na lista.
     const dados = pastaDeDados();
-    writeFileSync(new URL("pesquisas.csv", dados), PESQUISAS.split("\n").slice(0, 2).join("\n").replace(/2026-10-15$/, "2026-10-20"));
+    writeFileSync(
+      new URL("pesquisas.csv", dados),
+      PESQUISAS.split("\n")
+        .slice(0, 2)
+        .join("\n")
+        .replace(/2026-10-15$/, "2026-10-20"),
+    );
 
     const [conferencia] = await conferirNoTse({ dados, buscar, agora: new Date("2026-10-20T01:00:00Z") });
 

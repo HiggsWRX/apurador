@@ -3,7 +3,7 @@ import tseslint from "typescript-eslint";
 
 // Só as regras mecânicas que já pegaram um erro de verdade. Os julgamentos ficam no CODING_STANDARDS.md.
 export default tseslint.config(
-  { ignores: ["**/node_modules/", "**/dist/", "**/dist-chaves-desligadas/", "**/dist-projecao-desligada/","**/.astro/", ".cache/", "prototipos/"] },
+  { ignores: ["**/node_modules/", "**/dist/", "**/dist-chaves-desligadas/", "**/dist-projecao-desligada/", "**/.astro/", ".cache/", "prototipos/"] },
   {
     files: ["**/*.ts", "**/*.tsx"],
     languageOptions: { parser: tseslint.parser },
@@ -20,7 +20,7 @@ export default tseslint.config(
           // "Simulado" é do TSE, e "simulação", do simulador "e se" (GLOSSARY.md). A regra em prosa não segurou: o ticket 12
           // quase teve um relógio "simulado", e o 24 teve `curvaSimulada` e `linha-simulada`. "Simulador" passa.
           selector: ":matches(Identifier[name=/[Ss]imulad(a|o(?!r))/], Literal[value=/[Ss]imulad(a|o(?!r))/])",
-          message: "\"Simulado\" é do TSE (GLOSSARY.md). Para o simulador \"e se\", use \"da simulação\" (`curvaDaSimulacao`).",
+          message: '"Simulado" é do TSE (GLOSSARY.md). Para o simulador "e se", use "da simulação" (`curvaDaSimulacao`).',
         },
       ],
     },

@@ -27,7 +27,8 @@ const BLOCO_DA_PROJECAO = /<section[^>]*data-bloco="projecao-antes-das-17h"/;
 const BLOCO_DA_LISTA = /<section[^>]*data-bloco="lista-das-pesquisas"/;
 const PALAVRAS_PROIBIDAS = /aprend|\bIA\b|intelig[eê]ncia artificial|previs/i;
 /** Uma frase preditiva ou o rótulo do sinal de virada, que não existem antes das 17h. */
-const PREDITIVO = /deve (seguir|passar|vencer)|vai (vencer|virar)|chance de virada|sem sinal de virada|virada poss[ií]vel ·|virada projetada (·|em)|faixa da virada de|indica .* (eleito|à frente)/i;
+const PREDITIVO =
+  /deve (seguir|passar|vencer)|vai (vencer|virar)|chance de virada|sem sinal de virada|virada poss[ií]vel ·|virada projetada (·|em)|faixa da virada de|indica .* (eleito|à frente)/i;
 
 const porBase = (bloco: string, id: string) => elemento(bloco, new RegExp(`<div[^>]*data-base="${id}"`));
 
@@ -81,7 +82,9 @@ describe("painel de antes das 17h na página do Brasil", () => {
     const [flavio, lula] = [umaCasa(agregado.valor), umaCasa(100 - umaCasa(agregado.valor))];
     // Na "Só apuração", a projeção parte do placar entre finalistas; na base com pesquisas, ela é a indicação das pesquisas.
     expect(texto(porBase(projecao, "so-apuracao"))).toContain(`com o 1º turno, pelo placar entre finalistas (FLAVIO BOLSONARO 51,0%, LULA 49,0%), sem mudança`);
-    expect(texto(porBase(projecao, "com-pesquisas"))).toContain(`com a indicação das pesquisas (FLAVIO BOLSONARO ${comUmaCasa(flavio)}%, LULA ${comUmaCasa(lula)}%), sem mudança`);
+    expect(texto(porBase(projecao, "com-pesquisas"))).toContain(
+      `com a indicação das pesquisas (FLAVIO BOLSONARO ${comUmaCasa(flavio)}%, LULA ${comUmaCasa(lula)}%), sem mudança`,
+    );
     // a mudança entre as duas, nos números como a página os mostra, no formato da decisão 3
     const mudanca = umaCasa(flavio - 51);
     const esperado = mudanca === 0 ? "sem mudança" : mudanca > 0 ? `FLAVIO BOLSONARO +${comUmaCasa(mudanca)}` : `LULA +${comUmaCasa(-mudanca)}`;

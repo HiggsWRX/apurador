@@ -36,7 +36,10 @@ const ponto = (dia: string, v: number) => `${x(dia).toFixed(1)},${y(v).toFixed(1
 const linha = (valor: (a: (typeof TENDENCIA)[number]) => number) => TENDENCIA.map((a, i) => `${i ? "L" : "M"}${ponto(a.dia, valor(a))}`).join("");
 const faixa =
   TENDENCIA.map((a, i) => `${i ? "L" : "M"}${ponto(a.dia, a.faixa[1])}`).join("") +
-  [...TENDENCIA].reverse().map((a) => `L${ponto(a.dia, a.faixa[0])}`).join("") +
+  [...TENDENCIA]
+    .reverse()
+    .map((a) => `L${ponto(a.dia, a.faixa[0])}`)
+    .join("") +
   "Z";
 const marcas = [INICIO_DO_2O_TURNO, "2026-10-15", DIA_DA_ELEICAO];
 const [primeiroDia, ultimoDia] = [TENDENCIA[0], TENDENCIA.at(-1)];
@@ -52,51 +55,49 @@ const descricao =
 
 <section class="cartao agregado" data-bloco="agregado-de-pesquisas" aria-labelledby="agregado-titulo">
   <h2 id="agregado-titulo">Agregado de pesquisas</h2>
-  {
-    !AGREGADO ? (
-      <p>Ainda não há agregado: nenhuma pesquisa da lista tem campo terminando nos 14 dias anteriores.</p>
-    ) : (
-      <>
-        <ValoresDosFinalistas valores={entreOsFinalistas(umaCasa(AGREGADO.valor))} />
-        <p>
-          Em votos válidos, em {formatarDia(AGREGADO.dia)}. Faixa de 95%: de {pct(AGREGADO.faixa[0])} a {pct(AGREGADO.faixa[1])} para {primeiro.nomeUrna}.
-        </p>
-        <figure>
-          <svg class="tendencia" viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={descricao}>
-            {[50 - desvio, 50, 50 + desvio].map((v) => (
-              <>
-                <line class:list={["grade", { meio: v === 50 }]} x1={MARGEM.esq} x2={LARGURA - MARGEM.dir} y1={y(v)} y2={y(v)} />
-                <text class="eixo" x={MARGEM.esq - 5} y={y(v) + 3} text-anchor="end">
-                  {v}%
-                </text>
-              </>
-            ))}
-            {marcas.map((dia, i) => (
-              <text class="eixo" x={x(dia)} y={ALTURA - 6} text-anchor={i === 0 ? "start" : i === marcas.length - 1 ? "end" : "middle"}>
-                {formatarDia(dia)}
+  {!AGREGADO ? (
+    <p>Ainda não há agregado: nenhuma pesquisa da lista tem campo terminando nos 14 dias anteriores.</p>
+  ) : (
+    <>
+      <ValoresDosFinalistas valores={entreOsFinalistas(umaCasa(AGREGADO.valor))} />
+      <p>
+        Em votos válidos, em {formatarDia(AGREGADO.dia)}. Faixa de 95%: de {pct(AGREGADO.faixa[0])} a {pct(AGREGADO.faixa[1])} para {primeiro.nomeUrna}.
+      </p>
+      <figure>
+        <svg class="tendencia" viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={descricao}>
+          {[50 - desvio, 50, 50 + desvio].map((v) => (
+            <>
+              <line class:list={["grade", { meio: v === 50 }]} x1={MARGEM.esq} x2={LARGURA - MARGEM.dir} y1={y(v)} y2={y(v)} />
+              <text class="eixo" x={MARGEM.esq - 5} y={y(v) + 3} text-anchor="end">
+                {v}%
               </text>
-            ))}
-            <path class="faixa" data-cor={corDoPartido(primeiro.partido)} d={faixa} />
-            <path class="linha" data-cor={corDoPartido(segundo.partido)} d={linha((a) => 100 - a.valor)} />
-            <path class="linha" data-cor={corDoPartido(primeiro.partido)} d={linha((a) => a.valor)} />
-            {TENDENCIA.map((a) => (
-              <circle class="ponto" data-cor={corDoPartido(segundo.partido)} cx={x(a.dia).toFixed(1)} cy={y(100 - a.valor).toFixed(1)} r="2" />
-            ))}
-            {TENDENCIA.map((a) => (
-              <circle class="ponto" data-cor={corDoPartido(primeiro.partido)} data-dia={a.dia} cx={x(a.dia).toFixed(1)} cy={y(a.valor).toFixed(1)} r="2" />
-            ))}
-          </svg>
-          <figcaption class="nota">Tendência desde 05/10, recalculada dia a dia com a mesma regra, com a faixa de 95% de {primeiro.nomeUrna}.</figcaption>
-        </figure>
-        <p>
-          No 1º turno, entre os dois finalistas: {primeiroTurno.map((c) => `${c.candidato.nomeUrna} ${pct(c.pct)}`).join(", ")}.{" "}
-          {ganhou ? `Desde então: ${ganhou.candidato.nomeUrna} +${formatarPontos(ganhou.pontos)}.` : "Sem mudança desde então."}
-        </p>
-        <p class="nota">{regra}</p>
-        <p class="aviso">Média calculada pelo Apurador sobre pesquisas registradas no TSE. Não é uma pesquisa própria.</p>
-      </>
-    )
-  }
+            </>
+          ))}
+          {marcas.map((dia, i) => (
+            <text class="eixo" x={x(dia)} y={ALTURA - 6} text-anchor={i === 0 ? "start" : i === marcas.length - 1 ? "end" : "middle"}>
+              {formatarDia(dia)}
+            </text>
+          ))}
+          <path class="faixa" data-cor={corDoPartido(primeiro.partido)} d={faixa} />
+          <path class="linha" data-cor={corDoPartido(segundo.partido)} d={linha((a) => 100 - a.valor)} />
+          <path class="linha" data-cor={corDoPartido(primeiro.partido)} d={linha((a) => a.valor)} />
+          {TENDENCIA.map((a) => (
+            <circle class="ponto" data-cor={corDoPartido(segundo.partido)} cx={x(a.dia).toFixed(1)} cy={y(100 - a.valor).toFixed(1)} r="2" />
+          ))}
+          {TENDENCIA.map((a) => (
+            <circle class="ponto" data-cor={corDoPartido(primeiro.partido)} data-dia={a.dia} cx={x(a.dia).toFixed(1)} cy={y(a.valor).toFixed(1)} r="2" />
+          ))}
+        </svg>
+        <figcaption class="nota">Tendência desde 05/10, recalculada dia a dia com a mesma regra, com a faixa de 95% de {primeiro.nomeUrna}.</figcaption>
+      </figure>
+      <p>
+        No 1º turno, entre os dois finalistas: {primeiroTurno.map((c) => `${c.candidato.nomeUrna} ${pct(c.pct)}`).join(", ")}.{" "}
+        {ganhou ? `Desde então: ${ganhou.candidato.nomeUrna} +${formatarPontos(ganhou.pontos)}.` : "Sem mudança desde então."}
+      </p>
+      <p class="nota">{regra}</p>
+      <p class="aviso">Média calculada pelo Apurador sobre pesquisas registradas no TSE. Não é uma pesquisa própria.</p>
+    </>
+  )}
 </section>
 
 <style>

@@ -80,7 +80,7 @@ describe("conferirResultadosHistoricos", () => {
 
   it("aponta o partido ou o nome trocado no repositório", () => {
     const [lula, alckmin] = repositorio[0]!.finalistas;
-    const trocado = [{ ...repositorio[0]!, finalistas: [{ ...lula, partido: "PSDB" }, alckmin] as typeof repositorio[0]["finalistas"] }];
+    const trocado = [{ ...repositorio[0]!, finalistas: [{ ...lula, partido: "PSDB" }, alckmin] as (typeof repositorio)[0]["finalistas"] }];
     expect(conferirResultadosHistoricos(trocado, new Map([[2006, CANDIDATOS]]))).toEqual([
       "2006, 2º turno: o 1º finalista (13) é LULA (PSDB) no repositório e LULA (PT) no TSE",
     ]);

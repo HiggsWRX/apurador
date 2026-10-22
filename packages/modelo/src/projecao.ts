@@ -313,7 +313,10 @@ export function pesoDasPesquisas(secoes: number, constantes: Pick<Constantes, "s
  * Se as duas bases coincidem num lugar: diferem em menos de 0,1 p.p. na projeção e de 1 ponto na chance de vitória
  * (Combinação de pesquisas e apuração, decisão 5). No Brasil, é o evento "as pesquisas deixaram de pesar".
  */
-export function basesCoincidem(soApuracao: Pick<ResultadoDoLugar, "projecao" | "chance">, comPesquisas: Pick<ResultadoDoLugar, "projecao" | "chance">): boolean {
+export function basesCoincidem(
+  soApuracao: Pick<ResultadoDoLugar, "projecao" | "chance">,
+  comPesquisas: Pick<ResultadoDoLugar, "projecao" | "chance">,
+): boolean {
   return Math.abs(soApuracao.projecao - comPesquisas.projecao) < 0.001 && Math.abs(soApuracao.chance - comPesquisas.chance) < 0.01;
 }
 
@@ -455,7 +458,11 @@ export function projetar(modelo: Modelo, apuracao: Apuracao, constantes: Constan
   const secoesDoBrasil = secoesTotais > 0 ? (100 * apuracao.reduce((s, a) => s + a.secoes, 0)) / secoesTotais : 0;
   const peso = agregado ? pesoDasPesquisas(secoesDoBrasil, constantes) : 0;
   const indicacao = (m: number, valor: number) =>
-    indicacaoDasPesquisas({ placarEntreFinalistasDoLugar: 100 * modelo.placarEntreFinalistas[m]!, placarEntreFinalistasDoBrasil: 100 * modelo.placarEntreFinalistasDoBrasil, agregado: valor }) / 100;
+    indicacaoDasPesquisas({
+      placarEntreFinalistasDoLugar: 100 * modelo.placarEntreFinalistas[m]!,
+      placarEntreFinalistasDoBrasil: 100 * modelo.placarEntreFinalistasDoBrasil,
+      agregado: valor,
+    }) / 100;
   const nacionalDasPesquisas = agregado ? agregado.incerteza / 100 : 0;
   const { uf: localDaUf, municipio: localDoMunicipio } = constantes.incertezaLocalDasPesquisas;
   /** A incerteza local da UF na indicação das pesquisas, comum a todo o voto que falta dela. */
@@ -568,7 +575,12 @@ export interface ProjecaoNasDuasBases {
 }
 
 /** A projeção de cada lugar nas duas bases, para a apuração de agora e o agregado de pesquisas, e onde elas já coincidem. */
-export function projetarNasDuasBases(modelo: Modelo, apuracao: Apuracao, constantes: Constantes, agregado: Pick<Agregado, "valor" | "incerteza">): ProjecaoNasDuasBases {
+export function projetarNasDuasBases(
+  modelo: Modelo,
+  apuracao: Apuracao,
+  constantes: Constantes,
+  agregado: Pick<Agregado, "valor" | "incerteza">,
+): ProjecaoNasDuasBases {
   const soApuracao = projetar(modelo, apuracao, constantes);
   const comPesquisas = projetar(modelo, apuracao, constantes, agregado);
   return {

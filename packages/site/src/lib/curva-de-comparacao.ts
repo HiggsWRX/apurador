@@ -37,7 +37,11 @@ export interface EscolhaDaComparacao {
 }
 
 /** A escolha de um lugar, que baixa as curvas do `endereco` no primeiro turno ligado e dá cada estado a `aoMudar`. */
-export function criarEscolhaDaComparacao(opcoes: { endereco: string; buscar: (url: string) => Promise<Response>; aoMudar: (estado: EstadoDaComparacao) => void }): EscolhaDaComparacao {
+export function criarEscolhaDaComparacao(opcoes: {
+  endereco: string;
+  buscar: (url: string) => Promise<Response>;
+  aoMudar: (estado: EstadoDaComparacao) => void;
+}): EscolhaDaComparacao {
   let estado = COMPARACAO_DESLIGADA;
   let curvas: Promise<CurvasDoLugar> | null = null;
   const mudar = (novo: EstadoDaComparacao) => {

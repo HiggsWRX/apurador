@@ -45,7 +45,12 @@ export function PlacarOficial({ antesDas17h, candidatos, tse, fotos, indicador, 
                 <span class="placar-nome">
                   {c.nome} <small>{c.partido}</small>
                 </span>
-                <NumeroAoVivo forte classe="placar-pct" valor={formatarPctComCasas(tse.percentuais[i] ?? 0, 2)} mudou={mudou(NUMEROS_DO_PLACAR.percentual(i))} />
+                <NumeroAoVivo
+                  forte
+                  classe="placar-pct"
+                  valor={formatarPctComCasas(tse.percentuais[i] ?? 0, 2)}
+                  mudou={mudou(NUMEROS_DO_PLACAR.percentual(i))}
+                />
                 <span class="placar-votos">
                   <NumeroAoVivo valor={formatarVotos(tse.votos[i] ?? 0)} mudou={mudou(NUMEROS_DO_PLACAR.votos(i))} /> votos
                 </span>

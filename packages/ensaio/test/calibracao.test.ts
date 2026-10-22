@@ -1,6 +1,22 @@
 import { CONSTANTES_PROVISORIAS, executarNoite, type LinhaDaNoite, type ResultadoDaNoite } from "@apurador/modelo";
 import { describe, expect, it } from "vitest";
-import { casosDoK, erroDaCurva, escolherConstantesDoModelo, escolherK, escolherLimite, escolherOrdem, escolherZona, execucoesDoSinal, lerNoitesDaCalibracao, medirNoite, medirSinal, noiteMomentoAMomento, placarReal, semSinalSeguidoDeVirada, type MedidaDaNoite } from "../src/index.ts";
+import {
+  casosDoK,
+  erroDaCurva,
+  escolherConstantesDoModelo,
+  escolherK,
+  escolherLimite,
+  escolherOrdem,
+  escolherZona,
+  execucoesDoSinal,
+  lerNoitesDaCalibracao,
+  medirNoite,
+  medirSinal,
+  noiteMomentoAMomento,
+  placarReal,
+  semSinalSeguidoDeVirada,
+  type MedidaDaNoite,
+} from "../src/index.ts";
 
 // A calibração (docs/calibracao.md): as regras de escolha de cada passo, sobre medidas feitas à mão a partir do texto
 // da regra, e as medidas, sobre resultados feitos à mão e sobre as três noites reais, com as referências dos tickets.
@@ -28,21 +44,46 @@ describe("as três noites da calibração", () => {
 
 /** Um resultado do executor com os momentos dados, cada um na fotografia do seu % de seções. O 1º finalista termina com 52%. */
 function resultado(momentos: Partial<LinhaDaNoite>[], coberturaDepoisDe1 = 1): ResultadoDaNoite {
-  const linhas = momentos.map((m): LinhaDaNoite => ({ instante: 0, secoes: 0, placar: null, pesoDasPesquisas: 0, projecao: 0.52, desvio: 0.01, chance: 0.5, erro: 0, ...m, ponto: m.ponto ?? m.secoes ?? 0 }));
-  return { final: 0.52, momentos: linhas, erroCom5: null, erroCom25: null, erroCom50: null, cobertura: 1, coberturaDepoisDe1, acertaDesde: null, chance95Desde: null, brier: 0 };
+  const linhas = momentos.map((m): LinhaDaNoite => ({
+    instante: 0,
+    secoes: 0,
+    placar: null,
+    pesoDasPesquisas: 0,
+    projecao: 0.52,
+    desvio: 0.01,
+    chance: 0.5,
+    erro: 0,
+    ...m,
+    ponto: m.ponto ?? m.secoes ?? 0,
+  }));
+  return {
+    final: 0.52,
+    momentos: linhas,
+    erroCom5: null,
+    erroCom25: null,
+    erroCom50: null,
+    cobertura: 1,
+    coberturaDepoisDe1,
+    acertaDesde: null,
+    chance95Desde: null,
+    brier: 0,
+  };
 }
 
 describe("a medida de uma noite", () => {
   const noite = medirNoite(
-    resultado([
-      { secoes: 1, erro: 9, projecao: 0.6, chance: 0.01 },
-      { secoes: 4.9, erro: 9, chance: 0.01 },
-      { secoes: 5, erro: 1, desvio: 0.005, chance: 0.03 },
-      { secoes: 20, erro: 2, desvio: 0.01, chance: 0.6 },
-      { secoes: 50, erro: 3, desvio: 0.015, chance: 0.8 },
-      { secoes: 50.1, erro: 9, desvio: 0.1, chance: 0.04 },
-      { secoes: 80, erro: 9, projecao: 0.6, desvio: 0.01, chance: 0.99 },
-    ], 0.96),
+    resultado(
+      [
+        { secoes: 1, erro: 9, projecao: 0.6, chance: 0.01 },
+        { secoes: 4.9, erro: 9, chance: 0.01 },
+        { secoes: 5, erro: 1, desvio: 0.005, chance: 0.03 },
+        { secoes: 20, erro: 2, desvio: 0.01, chance: 0.6 },
+        { secoes: 50, erro: 3, desvio: 0.015, chance: 0.8 },
+        { secoes: 50.1, erro: 9, desvio: 0.1, chance: 0.04 },
+        { secoes: 80, erro: 9, projecao: 0.6, desvio: 0.01, chance: 0.99 },
+      ],
+      0.96,
+    ),
   );
 
   it("traz a cobertura do executor, depois da fotografia de 1% das seções", () => {
@@ -56,7 +97,16 @@ describe("a medida de uma noite", () => {
 
   it("dá o maior erro nos momentos de 0,1% a 5% das seções", () => {
     expect(noite.maiorErroNoComeco).toBe(9);
-    expect(medirNoite(resultado([{ secoes: 0.05, erro: 7 }, { secoes: 0.1, erro: 3 }, { secoes: 5, erro: 2 }, { secoes: 5.1, erro: 8 }])).maiorErroNoComeco).toBe(3);
+    expect(
+      medirNoite(
+        resultado([
+          { secoes: 0.05, erro: 7 },
+          { secoes: 0.1, erro: 3 },
+          { secoes: 5, erro: 2 },
+          { secoes: 5.1, erro: 8 },
+        ]),
+      ).maiorErroNoComeco,
+    ).toBe(3);
   });
 
   it("dá o erro médio e a margem de 95% média nos momentos de 5% a 50% das seções", () => {
@@ -69,7 +119,14 @@ describe("a medida de uma noite", () => {
 describe("a escolha das incertezas e do peso do próprio município (passo 1)", () => {
   /** As medidas de um candidato nas três noites, com a cobertura e a chance de quem perdeu que passam. */
   const nasTresNoites = (erros: number[], margem: number, mudar: Partial<MedidaDaNoite> = {}, emQualNoite = 0): MedidaDaNoite[] =>
-    erros.map((erroMedio, i) => ({ cobertura: 0.97, maiorChanceDeQuemPerdeu: 0.9, maiorErroNoComeco: 1, erroMedio, margemMedia: margem, ...(i === emQualNoite ? mudar : {}) }));
+    erros.map((erroMedio, i) => ({
+      cobertura: 0.97,
+      maiorChanceDeQuemPerdeu: 0.9,
+      maiorErroNoComeco: 1,
+      erroMedio,
+      margemMedia: margem,
+      ...(i === emQualNoite ? mudar : {}),
+    }));
 
   it("tira quem cobre menos de 95% em alguma noite e quem dá mais de 95% a quem perdeu, e fica com o menor erro médio", () => {
     const passo = escolherConstantesDoModelo([
@@ -89,7 +146,9 @@ describe("a escolha das incertezas e do peso do próprio município (passo 1)", 
   });
 
   it("aceita a cobertura de 95% e a chance de 95% exatas", () => {
-    const passo = escolherConstantesDoModelo([{ candidato: "no limite", porNoite: nasTresNoites([0.3, 0.3, 0.3], 2, { cobertura: 0.95, maiorChanceDeQuemPerdeu: 0.95 }) }]);
+    const passo = escolherConstantesDoModelo([
+      { candidato: "no limite", porNoite: nasTresNoites([0.3, 0.3, 0.3], 2, { cobertura: 0.95, maiorChanceDeQuemPerdeu: 0.95 }) },
+    ]);
     expect(passo.escolhido).toBe("no limite");
   });
 
@@ -157,7 +216,13 @@ describe("a escolha da ordem de chegada (passo 2)", () => {
 });
 
 describe("a escolha de K (passo 3)", () => {
-  const caso = (maiorErroNoComeco: number, cobertura = 0.97): MedidaDaNoite => ({ cobertura, maiorChanceDeQuemPerdeu: 0.9, maiorErroNoComeco, erroMedio: 0.3, margemMedia: 2 });
+  const caso = (maiorErroNoComeco: number, cobertura = 0.97): MedidaDaNoite => ({
+    cobertura,
+    maiorChanceDeQuemPerdeu: 0.9,
+    maiorErroNoComeco,
+    erroMedio: 0.3,
+    margemMedia: 2,
+  });
 
   it("fica o K de menor erro no pior caso, entre os que cobrem 95% em todos os casos", () => {
     const passo = escolherK([
@@ -195,7 +260,8 @@ describe("os casos de K", () => {
   // querer: com ela, o +2 para Bolsonaro erra 1,60, e não 1,03 (decisão do dono, 19/10). O 1,12 de lá é 1,1146.
   it("em 2022, com K = 0,5%, erram no máximo 1,11, 1,74 e 1,60 de 0,1% a 5% das seções, e a 'Só apuração', 1,74 (ticket 08)", () => {
     const [real, comLula, comBolsonaro] = casosDoK(noites);
-    const maiorErro = (agregado?: { valor: number; incerteza: number }) => medirNoite(executarNoite(noites[0]!.modelo, noites[0]!.noite, CONSTANTES_PROVISORIAS, { agregado })).maiorErroNoComeco;
+    const maiorErro = (agregado?: { valor: number; incerteza: number }) =>
+      medirNoite(executarNoite(noites[0]!.modelo, noites[0]!.noite, CONSTANTES_PROVISORIAS, { agregado })).maiorErroNoComeco;
     expect(maiorErro()).toBeCloseTo(1.74, 2);
     expect(maiorErro(real!.agregado)).toBeCloseTo(1.11, 2);
     expect(maiorErro(comLula!.agregado)).toBeCloseTo(1.74, 2);
@@ -217,7 +283,10 @@ describe("os momentos 'sem sinal de virada' de um lugar e os seguidos de virada"
 
   it("não conta como virada a troca de liderança antes de 3% das seções do lugar, como a narração", () => {
     // o 1º finalista perde a liderança com 2% e a retoma com 2,9%: só o momento de 2% é seguido de virada
-    expect(semSinalSeguidoDeVirada([momento(0.5, 0.6), momento(2, 0.4), momento(2.9, 0.6), momento(10, 0.6)], 0.05)).toEqual({ semSinal: 4, seguidosDeVirada: 1 });
+    expect(semSinalSeguidoDeVirada([momento(0.5, 0.6), momento(2, 0.4), momento(2.9, 0.6), momento(10, 0.6)], 0.05)).toEqual({
+      semSinal: 4,
+      seguidosDeVirada: 1,
+    });
   });
 
   it("deixa de fora o lugar sem seções, o que terminou, o empate e quem ainda não tem chance de virada", () => {
@@ -228,7 +297,10 @@ describe("os momentos 'sem sinal de virada' de um lugar e os seguidos de virada"
 });
 
 describe("a escolha do limite de 'sem sinal de virada' (passo 4)", () => {
-  const execucao = (seguidosDeCima: number, semSinal: number, seguidos: number) => ({ deCima: { semSinal: 100, seguidosDeVirada: seguidosDeCima, lugares: [] }, municipios: { semSinal, seguidosDeVirada: seguidos } });
+  const execucao = (seguidosDeCima: number, semSinal: number, seguidos: number) => ({
+    deCima: { semSinal: 100, seguidosDeVirada: seguidosDeCima, lugares: [] },
+    municipios: { semSinal, seguidosDeVirada: seguidos },
+  });
 
   it("fica o primeiro limite, na ordem, sem virada depois de 'sem sinal' no Brasil, nas UFs e no Exterior e com até 5% nos municípios, em todas as execuções", () => {
     const passo = escolherLimite([
@@ -296,7 +368,13 @@ describe("a noite momento a momento", () => {
 });
 
 describe("a escolha da zona (passo 5)", () => {
-  const medida = (erroMedio: number, cobertura: number): MedidaDaNoite => ({ cobertura, maiorChanceDeQuemPerdeu: 0.9, maiorErroNoComeco: 1, erroMedio, margemMedia: 2 });
+  const medida = (erroMedio: number, cobertura: number): MedidaDaNoite => ({
+    cobertura,
+    maiorChanceDeQuemPerdeu: 0.9,
+    maiorErroNoComeco: 1,
+    erroMedio,
+    margemMedia: 2,
+  });
 
   it("entra só se reduzir o erro médio em pelo menos 0,05 p.p. em todas as noites, sem baixar a cobertura", () => {
     const passa = (municipio: MedidaDaNoite, zona: MedidaDaNoite) => ({ municipio, zona });

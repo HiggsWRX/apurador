@@ -114,7 +114,7 @@ describe("indiceDeLugares", () => {
 describe("nomeCompleto", () => {
   const l = (lugar: Partial<Lugar> & Pick<Lugar, "tipo" | "nome">): Lugar => ({ id: "X", aptos: 0, ...lugar });
 
-  it("diz o nome sem ambiguidade: o estado com \"estado\" e o município com a UF entre parênteses", () => {
+  it('diz o nome sem ambiguidade: o estado com "estado" e o município com a UF entre parênteses', () => {
     expect(nomeCompleto(l({ tipo: "brasil", nome: "Brasil" }))).toBe("Brasil");
     expect(nomeCompleto(l({ tipo: "uf", nome: "São Paulo", uf: "SP", artigo: "" }))).toBe("Estado de São Paulo");
     expect(nomeCompleto(l({ tipo: "uf", nome: "Bahia", uf: "BA", artigo: "a" }))).toBe("Estado da Bahia");

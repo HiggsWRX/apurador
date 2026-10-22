@@ -53,7 +53,10 @@ function r2DeMentira(status = 200) {
   const pedidos: { url: string; metodo: string; cabecalhos: Headers; corpo: Uint8Array }[] = [];
   const buscar: Buscar = async (url, init) => {
     pedidos.push({ url, metodo: init?.method ?? "GET", cabecalhos: new Headers(init?.headers), corpo: new Uint8Array(init?.body as Uint8Array) });
-    return new Response(status === 200 ? null : "<Error><Code>AccessDenied</Code></Error>", { status, headers: { etag: '"9b2cf535f27731c974343645a3985328"' } });
+    return new Response(status === 200 ? null : "<Error><Code>AccessDenied</Code></Error>", {
+      status,
+      headers: { etag: '"9b2cf535f27731c974343645a3985328"' },
+    });
   };
   return { buscar, pedidos };
 }
@@ -115,7 +118,9 @@ describe("o destino R2", () => {
     expect(certo.contador.doMes()).toEqual({ mes: "2026-10", buckets: { "apurador-ao-vivo": 2 } });
 
     const recusado = montar({ status: 403 });
-    await expect(recusado.destino.gravar("rodada.json", JSON_DO_BRASIL)).rejects.toThrow("R2 respondeu 403 em rodada.json: <Error><Code>AccessDenied</Code></Error>");
+    await expect(recusado.destino.gravar("rodada.json", JSON_DO_BRASIL)).rejects.toThrow(
+      "R2 respondeu 403 em rodada.json: <Error><Code>AccessDenied</Code></Error>",
+    );
     expect(recusado.contador.doMes()).toEqual({ mes: "2026-10", buckets: {} });
   });
 });

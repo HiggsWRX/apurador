@@ -73,7 +73,16 @@ describe("resultadoDoTurno", () => {
     const { lugares } = resultadoDoTurno({ ano: 2026, turno: 1, candidatos, detalhes });
 
     expect(Object.keys(lugares).sort()).toEqual(["01023", "29539", "AC", "BR", "ZZ"]);
-    expect(lugares["01023"]).toEqual({ aptos: 2200, votantes: 1620, abstencoes: 580, validos: 1500, brancos: 50, nulos: 70, secoes: 7, votos: [800, 600, 100] });
+    expect(lugares["01023"]).toEqual({
+      aptos: 2200,
+      votantes: 1620,
+      abstencoes: 580,
+      validos: 1500,
+      brancos: 50,
+      nulos: 70,
+      secoes: 7,
+      votos: [800, 600, 100],
+    });
     expect(lugares.AC).toEqual(lugares["01023"]);
     expect(lugares["29539"]).toEqual({ aptos: 300, votantes: 105, abstencoes: 195, validos: 100, brancos: 2, nulos: 3, secoes: 1, votos: [40, 60, 0] });
     expect(lugares.ZZ).toEqual(lugares["29539"]);

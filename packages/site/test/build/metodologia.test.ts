@@ -211,7 +211,15 @@ describe("seção 8, as limitações", () => {
   it("traz as sete limitações da decisão 7", () => {
     const itens = elementos(elemento(secao("limites"), /<ol/), /<li\b/).map(texto);
     expect(itens).toHaveLength(7);
-    const esperadas = [/^Poucas eleições\./, /^O 1º turno de 2026\./, /^O começo da noite engana\./, /^Seções tardias\./, /^A ordem de chegada\./, /^Estados e municípios antes da apuração\./, /^Dependemos do TSE\./];
+    const esperadas = [
+      /^Poucas eleições\./,
+      /^O 1º turno de 2026\./,
+      /^O começo da noite engana\./,
+      /^Seções tardias\./,
+      /^A ordem de chegada\./,
+      /^Estados e municípios antes da apuração\./,
+      /^Dependemos do TSE\./,
+    ];
     itens.forEach((item, i) => expect(item).toMatch(esperadas[i]!));
     expect(itens[1]).toContain("subestimaram Flávio em 2,1 pontos");
   });
@@ -224,7 +232,9 @@ describe("seção 9, fontes, dados e avisos", () => {
   it("traz as fontes e os avisos exigidos", () => {
     expect(t).toContain("TSE, arquivos de divulgação e dados abertos, sem alteração (CC-BY). Os números do TSE aparecem com duas casas");
     expect(t).toContain('marcada como "Cálculo do Apurador com dados do TSE"');
-    expect(t).toContain("art. 10 da Res. 23.600: período de coleta, número de entrevistas, margem de erro, nível de confiança, contratante e número de registro");
+    expect(t).toContain(
+      "art. 10 da Res. 23.600: período de coleta, número de entrevistas, margem de erro, nível de confiança, contratante e número de registro",
+    );
     expect(t).toContain("IBGE, Malha Municipal Digital 2024, CC BY 4.0, simplificada pelo Apurador");
     expect(t).toContain("a partir de 26/10");
     expect(t).toContain("feito por uma pessoa, sem ligação com o TSE, com candidatos ou com partidos. Responsável:");
@@ -240,7 +250,11 @@ describe("seção 9, fontes, dados e avisos", () => {
       expect(s, arquivo).toContain(`href="/dados/${arquivo}"`);
       expect(readFileSync(new URL(`./dados/${arquivo}`, DIST), "utf8"), arquivo).toBe(ler(arquivo));
     }
-    expect(readdirSync(new URL("./dados/", DIST)).filter((f) => f.endsWith(".csv")).sort()).toEqual(["pesquisas-historicas.csv", "pesquisas.csv"]);
+    expect(
+      readdirSync(new URL("./dados/", DIST))
+        .filter((f) => f.endsWith(".csv"))
+        .sort(),
+    ).toEqual(["pesquisas-historicas.csv", "pesquisas.csv"]);
     expect(t).toMatch(/pesquisas\.csv · .* CSV · \d+ KB/);
   });
 });

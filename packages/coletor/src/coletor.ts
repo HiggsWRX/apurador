@@ -281,15 +281,23 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     const configuracao = await primeiraLeitura(urls.municipios, lerConfiguracaoDeMunicipios);
     if (!configuracao) return undefined;
 
-    const acompanhado = (a: Omit<Acompanhado, "url" | "zonas">, zonas: Acompanhado[] = []): Acompanhado => ({ ...a, url: urls.resultado(a.abrangencia), zonas });
+    const acompanhado = (a: Omit<Acompanhado, "url" | "zonas">, zonas: Acompanhado[] = []): Acompanhado => ({
+      ...a,
+      url: urls.resultado(a.abrangencia),
+      zonas,
+    });
     const acompanhados = [acompanhado({ id: "BR", tipo: "brasil", abrangencia: {}, chaveNoIndice: chaveDoIndice("br", "br") })];
     for (const uf of configuracao.ufs) {
       acompanhados.push(acompanhado({ id: uf.sigla, tipo: "uf", abrangencia: { uf: uf.sigla }, chaveNoIndice: chaveDoIndice("uf", uf.sigla.toLowerCase()) }));
       for (const m of uf.municipios) {
         const codigo = String(m.codigo).padStart(5, "0");
         const zonas =
-          m.zonas.length > 1 ? m.zonas.map((zona) => acompanhado({ id: null, tipo: "zona", abrangencia: { uf: uf.sigla, municipio: m.codigo, zona }, chaveNoIndice: null })) : [];
-        acompanhados.push(acompanhado({ id: codigo, tipo: "municipio", abrangencia: { uf: uf.sigla, municipio: m.codigo }, chaveNoIndice: chaveDoIndice("mu", codigo) }, zonas));
+          m.zonas.length > 1
+            ? m.zonas.map((zona) => acompanhado({ id: null, tipo: "zona", abrangencia: { uf: uf.sigla, municipio: m.codigo, zona }, chaveNoIndice: null }))
+            : [];
+        acompanhados.push(
+          acompanhado({ id: codigo, tipo: "municipio", abrangencia: { uf: uf.sigla, municipio: m.codigo }, chaveNoIndice: chaveDoIndice("mu", codigo) }, zonas),
+        );
       }
     }
     return { eleicao, urls, ufs: configuracao.ufs.map((uf) => uf.sigla), acompanhados };
@@ -324,7 +332,9 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   function lerResultadoDaEleicao(d: Divulgacao) {
     return (bytes: Uint8Array) => {
       const resultado = lerResultado(bytes);
-      const doBrasil = brasil(d)?.candidatos.map((c) => c.numero).sort((x, y) => x - y);
+      const doBrasil = brasil(d)
+        ?.candidatos.map((c) => c.numero)
+        .sort((x, y) => x - y);
       const aqui = resultado.candidatos.map((c) => c.numero).sort((x, y) => x - y);
       if (doBrasil && doBrasil.join() !== aqui.join())
         throw new ArquivoDoTseInvalido(`Arquivo do TSE: os candidatos (${aqui.join(", ")}) não são os do Brasil (${doBrasil.join(", ")})`);

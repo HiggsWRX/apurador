@@ -23,11 +23,7 @@ const ELEICAO6 = ELEICAO.padStart(6, "0");
 const CARGO4 = "0001";
 
 /** Um arquivo que o TSE falso serve. */
-export type Documento =
-  | { tipo: "eleicoes" }
-  | { tipo: "municipios" }
-  | { tipo: "acompanhamento"; uf: string | null }
-  | { tipo: "resultado"; recorte: Recorte };
+export type Documento = { tipo: "eleicoes" } | { tipo: "municipios" } | { tipo: "acompanhamento"; uf: string | null } | { tipo: "resultado"; recorte: Recorte };
 
 /** Os caminhos que o TSE serve, a partir de `/oficial`. */
 export const CAMINHOS = {
@@ -201,7 +197,33 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
     const [pesna, pesnan] = percentuais(esna, esi);
     const [pc, pcn] = percentuais(c, esi);
     const [pa, pan] = percentuais(ab, esi);
-    return { te, est, pest, pestn, esnt, pesnt, pesntn, esi, pesi, pesin, esni, pesni, pesnin, esa, pesa, pesan, esna, pesna, pesnan, c, pc, pcn, a: ab, pa, pan };
+    return {
+      te,
+      est,
+      pest,
+      pestn,
+      esnt,
+      pesnt,
+      pesntn,
+      esi,
+      pesi,
+      pesin,
+      esni,
+      pesni,
+      pesnin,
+      esa,
+      pesa,
+      pesan,
+      esna,
+      pesna,
+      pesnan,
+      c,
+      pc,
+      pcn,
+      a: ab,
+      pa,
+      pan,
+    };
   }
 
   function votos(a: Totais) {
@@ -219,7 +241,38 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
     const [ptvn, ptvnn] = p(tvn, tv);
     const [pvn, pvnn] = p(vn, tvn);
     const [pvnt, pvntn] = p(vnt, tvn);
-    return { tv, vvc, pvvc, pvvcn, vv, pvv, pvvn, vnom, pvnom, pvnomn, van, pvan, pvann, vansj, pvansj, pvansjn, vb, pvb, pvbn, tvn, ptvn, ptvnn, vn, pvn, pvnn, vnt, pvnt, pvntn, vsan: 0, vscv: 0 };
+    return {
+      tv,
+      vvc,
+      pvvc,
+      pvvcn,
+      vv,
+      pvv,
+      pvvn,
+      vnom,
+      pvnom,
+      pvnomn,
+      van,
+      pvan,
+      pvann,
+      vansj,
+      pvansj,
+      pvansjn,
+      vb,
+      pvb,
+      pvbn,
+      tvn,
+      ptvn,
+      ptvnn,
+      vn,
+      pvn,
+      pvnn,
+      vnt,
+      pvnt,
+      pvntn,
+      vsan: 0,
+      vscv: 0,
+    };
   }
 
   function cargo(r: Recorte, a: Totais, ordem: Ordem, final: boolean) {
@@ -328,7 +381,16 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
     const t = estado.total(r);
     const ultima = quando(a.ultimaTotalizacao);
     const { tpabr, cdabr } = abrangencia(r);
-    const item = { and: andamento(r, a, t, estado), tpabr: tpabr === "mu" ? "mun" : tpabr, cdabr, dt: ultima.data, ht: ultima.hora, ...contar(), s: secoes(a, t), e: eleitorado(a, t) };
+    const item = {
+      and: andamento(r, a, t, estado),
+      tpabr: tpabr === "mu" ? "mun" : tpabr,
+      cdabr,
+      dt: ultima.data,
+      ht: ultima.hora,
+      ...contar(),
+      s: secoes(a, t),
+      e: eleitorado(a, t),
+    };
     const escrito = jaEscrito(textos(item) as object);
     itensEscritos.set(chave, { ultima: a.ultimaTotalizacao, item: escrito });
     return escrito;
@@ -337,11 +399,12 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
   /** Quantos lugares não começaram, estão em andamento e terminaram, com os percentuais. */
   function contagem(prefixo: "mun" | "ufs", recortes: Recorte[], estado: Reproducao) {
     // O andamento de cada lugar: 0 não iniciado, 1 em andamento, 2 terminado.
-    const [nr, pt, f] = [0, 1, 2].map((andamentoDoLugar) =>
-      recortes.filter((r) => {
-        const a = estado.apurado(r).secoes;
-        return (a === 0 ? 0 : a === estado.total(r).secoes ? 2 : 1) === andamentoDoLugar;
-      }).length,
+    const [nr, pt, f] = [0, 1, 2].map(
+      (andamentoDoLugar) =>
+        recortes.filter((r) => {
+          const a = estado.apurado(r).secoes;
+          return (a === 0 ? 0 : a === estado.total(r).secoes ? 2 : 1) === andamentoDoLugar;
+        }).length,
     ) as [number, number, number];
     const n = recortes.length;
     return {
@@ -369,7 +432,13 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
     }
     const porSigla = [...ufs].sort((a, b) => a.localeCompare(b));
     const itens = porSigla.map((uf) => itemDoAcompanhamento({ uf }, estado, () => contagem("mun", municipios(uf), estado)));
-    const brasil = itemDoAcompanhamento({}, estado, () => contagem("ufs", ufs.map((uf) => ({ uf })), estado));
+    const brasil = itemDoAcompanhamento({}, estado, () =>
+      contagem(
+        "ufs",
+        ufs.map((uf) => ({ uf })),
+        estado,
+      ),
+    );
     return { ...cabecalho, abr: [...itens, brasil] };
   }
 
@@ -447,7 +516,14 @@ export function criarDivulgacao(noite: Noite, cadastro: Cadastro): Divulgacao {
       return `${geracao(d, estado)}${d.tipo === "resultado" && finalizada(estado) ? "f" : ""}`;
     },
     escrever(d, estado) {
-      const escrito = d.tipo === "eleicoes" ? eleicoes() : d.tipo === "municipios" ? municipiosEZonas() : d.tipo === "acompanhamento" ? acompanhamento(d, estado) : resultado(d, estado);
+      const escrito =
+        d.tipo === "eleicoes"
+          ? eleicoes()
+          : d.tipo === "municipios"
+            ? municipiosEZonas()
+            : d.tipo === "acompanhamento"
+              ? acompanhamento(d, estado)
+              : resultado(d, estado);
       return textos(escrito) as object;
     },
   };

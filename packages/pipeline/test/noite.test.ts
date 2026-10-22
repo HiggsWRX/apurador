@@ -32,7 +32,13 @@ function secao(uf: string, municipio: number, zona: number, numero: number, hora
 }
 
 /** Os votos do boletim de uma seção: Lula, Bolsonaro, brancos, nulos e outros números nominais. */
-function boletim(uf: string, municipio: number, zona: number, numero: number, v: { lula?: number; bolsonaro?: number; brancos?: number; nulos?: number; outros?: Record<number, number> }): VotoSecao[] {
+function boletim(
+  uf: string,
+  municipio: number,
+  zona: number,
+  numero: number,
+  v: { lula?: number; bolsonaro?: number; brancos?: number; nulos?: number; outros?: Record<number, number> },
+): VotoSecao[] {
   const daSecao = { ...doTurno, uf, municipio, zona, secao: numero };
   return [
     { ...daSecao, tipo: "nominal" as const, numero: 13, votos: v.lula ?? 0 },
@@ -52,7 +58,10 @@ describe("reconstruirNoite", () => {
       turno: 2,
       candidatos: CANDIDATOS,
       // a seção 2 vem antes no arquivo, mas é totalizada depois
-      secoes: [secao("SP", 71072, 1, 2, "18:44:50", { aptos: 300, votantes: 200, nominais: 190, brancos: 4, nulos: 6 }), secao("SP", 71072, 1, 1, "17:00:51", { aptos: 250, votantes: 100, nominais: 100 })],
+      secoes: [
+        secao("SP", 71072, 1, 2, "18:44:50", { aptos: 300, votantes: 200, nominais: 190, brancos: 4, nulos: 6 }),
+        secao("SP", 71072, 1, 1, "17:00:51", { aptos: 250, votantes: 100, nominais: 100 }),
+      ],
       votos: [...boletim("SP", 71072, 1, 2, { lula: 120, bolsonaro: 70, brancos: 4, nulos: 6 }), ...boletim("SP", 71072, 1, 1, { lula: 40, bolsonaro: 60 })],
     });
     const r = reproduzir(noite);
@@ -159,7 +168,10 @@ describe("reconstruirNoite", () => {
       turno: 2,
       candidatos: CANDIDATOS,
       secoes: [secao("BA", 38490, 18, 328, "17:40:00", { aptos: 420, votantes: 400, nominais: 15, brancos: 1, nulos: 1 })],
-      votos: [...boletim("BA", 38490, 18, 328, { lula: 10, bolsonaro: 5, brancos: 1, nulos: 1 }), { ...doTurno, uf: "BA", municipio: 38490, zona: 18, secao: 328, tipo: "anulado", numero: 97, votos: 383 }],
+      votos: [
+        ...boletim("BA", 38490, 18, 328, { lula: 10, bolsonaro: 5, brancos: 1, nulos: 1 }),
+        { ...doTurno, uf: "BA", municipio: 38490, zona: 18, secao: 328, tipo: "anulado", numero: 97, votos: 383 },
+      ],
     });
     const r = reproduzir(noite);
 
@@ -184,7 +196,9 @@ describe("reconstruirNoite", () => {
     const base = { ano: 2022, turno: 2, candidatos: CANDIDATOS };
     const comVotantes = secao("AC", 1392, 1, 3, "17:34:43", { aptos: 185, votantes: 10 });
 
-    expect(() => reconstruirNoite({ ...base, secoes: [comVotantes], votos: [...boletim("AC", 1392, 1, 3, { lula: 10 }), ...boletim("AC", 1392, 1, 4, { lula: 1 })] })).toThrow(/AC\/1392\/1\/4/);
+    expect(() =>
+      reconstruirNoite({ ...base, secoes: [comVotantes], votos: [...boletim("AC", 1392, 1, 3, { lula: 10 }), ...boletim("AC", 1392, 1, 4, { lula: 1 })] }),
+    ).toThrow(/AC\/1392\/1\/4/);
     expect(() => reconstruirNoite({ ...base, secoes: [comVotantes], votos: [] })).toThrow(/AC\/1392\/1\/3/);
   });
 });
@@ -225,8 +239,17 @@ describe("conferências da noite contra o TSE", () => {
 
   it("acha os candidatos no histórico pelo nome de urna sem acento nem pontuação, como o do 1º turno de 2022 os escreve", () => {
     // O munzona traz "FELIPE D AVILA" e "LÉO PÉRICLES"; o histórico, as colunas FELIPE DAVILA_… e LEO PERICLES_….
-    const comoNoMunzona = reconstruirNoite({ ...entrada, candidatos: [{ ...CANDIDATOS[0]!, nomeUrna: "LÉO PÉRICLES" }, { ...CANDIDATOS[1]!, nomeUrna: "FELIPE D AVILA" }] });
-    const comoNoHistorico = historico.map((l) => ({ ...l, candidatos: { "LEO PERICLES": l.candidatos.LULA, "FELIPE DAVILA": l.candidatos["JAIR BOLSONARO"] } }));
+    const comoNoMunzona = reconstruirNoite({
+      ...entrada,
+      candidatos: [
+        { ...CANDIDATOS[0]!, nomeUrna: "LÉO PÉRICLES" },
+        { ...CANDIDATOS[1]!, nomeUrna: "FELIPE D AVILA" },
+      ],
+    });
+    const comoNoHistorico = historico.map((l) => ({
+      ...l,
+      candidatos: { "LEO PERICLES": l.candidatos.LULA, "FELIPE DAVILA": l.candidatos["JAIR BOLSONARO"] },
+    }));
 
     expect(divergenciasDoHistorico(comoNoMunzona, comoNoHistorico)).toEqual([]);
   });
@@ -249,11 +272,23 @@ describe("conferências da noite contra o TSE", () => {
       { ...doTurno, zona, numero: 13, nome: "", nomeUrna: "LULA", partido: "PT", votos: lula, dia: "2022-10-30" },
       { ...doTurno, zona, numero: 22, nome: "", nomeUrna: "JAIR BOLSONARO", partido: "PL", votos: bolsonaro, dia: "2022-10-30" },
     ];
-    const detalhe = (zona: number, aptos: number, votantes: number, validos: number, brancos: number, nulos: number) => ({ ...doTurno, zona, aptos, votantes, abstencoes: aptos - votantes, validos, brancos, nulos, secoes: 0 });
+    const detalhe = (zona: number, aptos: number, votantes: number, validos: number, brancos: number, nulos: number) => ({
+      ...doTurno,
+      zona,
+      aptos,
+      votantes,
+      abstencoes: aptos - votantes,
+      validos,
+      brancos,
+      nulos,
+      secoes: 0,
+    });
     const oficial = { candidatos: [...votos(1, 48, 92), ...votos(2, 21, 9)], detalhes: [detalhe(1, 185, 147, 140, 3, 4), detalhe(2, 150, 30, 30, 0, 0)] };
 
     expect(divergenciasDoResultado(noite, oficial)).toEqual([]);
-    expect(divergenciasDoResultado(noite, { ...oficial, detalhes: [detalhe(1, 185, 147, 140, 3, 4), detalhe(2, 150, 31, 30, 0, 1), detalhe(3, 10, 0, 0, 0, 0)] })).toEqual([
+    expect(
+      divergenciasDoResultado(noite, { ...oficial, detalhes: [detalhe(1, 185, 147, 140, 3, 4), detalhe(2, 150, 31, 30, 0, 1), detalhe(3, 10, 0, 0, 0, 0)] }),
+    ).toEqual([
       "AC/1392/2: votantes 30 na noite e 31 no resultado oficial",
       "AC/1392/2: nulos 0 na noite e 1 no resultado oficial",
       "AC/1392/3: está no resultado oficial e não na noite",

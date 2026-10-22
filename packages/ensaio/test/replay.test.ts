@@ -134,7 +134,9 @@ const lugares: { caminho: string; abrangencia: AbrangenciaDaDivulgacao }[] = [
 const zonas: Required<AbrangenciaDaDivulgacao>[] = (() => {
   const doMunicipio = new Map<string, number[]>();
   for (const z of noite.zonas) doMunicipio.set(`${z.uf}/${z.municipio}`, [...(doMunicipio.get(`${z.uf}/${z.municipio}`) ?? []), z.zona]);
-  return [...doMunicipio].filter(([, zs]) => zs.length > 1).flatMap(([k, zs]) => zs.map((zona) => ({ uf: k.split("/")[0]!, municipio: Number(k.split("/")[1]), zona })));
+  return [...doMunicipio]
+    .filter(([, zs]) => zs.length > 1)
+    .flatMap(([k, zs]) => zs.map((zona) => ({ uf: k.split("/")[0]!, municipio: Number(k.split("/")[1]), zona })));
 })();
 
 describe("antes das 17h", () => {
@@ -243,8 +245,14 @@ describe("um arquivo que o coletor não aceita", () => {
   const [de, ate] = [ms("2022-10-30 17:03:00"), ms("2022-10-30 17:06:00")];
 
   async function comBrasilTrocado(corpo: string) {
-    const r = await replay("2022-10-30 16:50:00", "2022-10-30 17:09:00", { trocar: (url, quando) => (url.endsWith(BRASIL) && quando >= de && quando < ate ? corpo : undefined) });
-    return { r, falhas: r.rodadas.flatMap((x) => x.falhas).filter((f) => f.includes(BRASIL)), brasil: r.gravacoes.filter((g) => g.caminho === "lugares/BR.json") };
+    const r = await replay("2022-10-30 16:50:00", "2022-10-30 17:09:00", {
+      trocar: (url, quando) => (url.endsWith(BRASIL) && quando >= de && quando < ate ? corpo : undefined),
+    });
+    return {
+      r,
+      falhas: r.rodadas.flatMap((x) => x.falhas).filter((f) => f.includes(BRASIL)),
+      brasil: r.gravacoes.filter((g) => g.caminho === "lugares/BR.json"),
+    };
   }
 
   it("fica de fora quando o leitor não o entende: o Brasil mantém o último placar bom, e o coletor pede de novo", async () => {
@@ -322,7 +330,10 @@ describe("a noite inteira", () => {
 
     expect(ultimos.filter((l) => !l.tse.final || l.tse.totalizacao !== final || l.tse.secoes.totalizadas !== l.tse.secoes.total)).toEqual([]);
     // O resultado oficial do 2º turno de 2022: Bolsonaro 58.206.354 e Lula 60.345.999.
-    expect(r.publicado("lugares/BR.json").tse).toMatchObject({ secoes: { totalizadas: 472_075, total: 472_075, percentual: 100 }, votos: [58_206_354, 60_345_999] });
+    expect(r.publicado("lugares/BR.json").tse).toMatchObject({
+      secoes: { totalizadas: 472_075, total: 472_075, percentual: 100 },
+      votos: [58_206_354, 60_345_999],
+    });
     expect(r.rodada().fase).toBe("encerrada");
   });
 
@@ -374,23 +385,27 @@ describe("a noite inteira", () => {
     const UFS_E_EXTERIOR = cadastro.ufs.map((uf) => uf.sigla);
 
     it("no Brasil, tem ~50 eventos: o começo, os 7 marcos, uma virada, a indicação do TSE, a totalização final e os das UFs", () => {
-      expect(doBrasil().map((e) => (e.tipo === "marco" ? `${e.marco}%` : e.tipo)).reverse()).toEqual([
-        "comeco",
-        "10%",
-        "25%",
-        "50%",
-        "virada",
-        "75%",
-        "90%",
-        "95%",
-        "indicacao",
-        "99%",
-        "totalizacao-final",
-      ]);
+      expect(
+        doBrasil()
+          .map((e) => (e.tipo === "marco" ? `${e.marco}%` : e.tipo))
+          .reverse(),
+      ).toEqual(["comeco", "10%", "25%", "50%", "virada", "75%", "90%", "95%", "indicacao", "99%", "totalizacao-final"]);
       // As 4 viradas em UF depois de 3% das seções da UF, na ordem da noite, cada UF que termina e os 50% dos 8 maiores eleitorados.
-      expect(dasUfs("virada").map((e) => e.lugar).reverse()).toEqual(["MG", "AP", "AM", "MG"]);
-      expect(dasUfs("fim").map((e) => e.lugar).sort()).toEqual([...UFS_E_EXTERIOR].sort());
-      expect(dasUfs("marco").map((e) => `${e.lugar} ${e.marco}%`).sort()).toEqual(["BA 50%", "CE 50%", "MG 50%", "PE 50%", "PR 50%", "RJ 50%", "RS 50%", "SP 50%"]);
+      expect(
+        dasUfs("virada")
+          .map((e) => e.lugar)
+          .reverse(),
+      ).toEqual(["MG", "AP", "AM", "MG"]);
+      expect(
+        dasUfs("fim")
+          .map((e) => e.lugar)
+          .sort(),
+      ).toEqual([...UFS_E_EXTERIOR].sort());
+      expect(
+        dasUfs("marco")
+          .map((e) => `${e.lugar} ${e.marco}%`)
+          .sort(),
+      ).toEqual(["BA 50%", "CE 50%", "MG 50%", "PE 50%", "PR 50%", "RJ 50%", "RS 50%", "SP 50%"]);
       expect(narracao("BR")).toHaveLength(11 + 4 + 28 + 8);
       // Nenhum evento de município entra.
       expect(narracao("BR").filter((e) => e.lugar.length > 2)).toEqual([]);
@@ -411,7 +426,11 @@ describe("a noite inteira", () => {
       // O campo aparece às 19:56:20, com 98,78% das seções (ticket 11); o coletor o vê na leitura seguinte do Brasil.
       expect(indicacao.quando >= "2022-10-30 19:56:20" && indicacao.quando < "2022-10-30 19:58:00").toBe(true);
       expect(indicacao.texto).toMatch(/^O TSE indica Lula eleito: eleição matematicamente definida, com 98,(7[89]|8\d)% das seções totalizadas\.$/);
-      expect(doBrasil()[0]).toMatchObject({ tipo: "totalizacao-final", quando: "2022-10-31 00:18:04", texto: "Totalização final: Lula eleito com 50,90% dos votos válidos." });
+      expect(doBrasil()[0]).toMatchObject({
+        tipo: "totalizacao-final",
+        quando: "2022-10-31 00:18:04",
+        texto: "Totalização final: Lula eleito com 50,90% dos votos válidos.",
+      });
     });
 
     it("cada marco do Brasil diz o % observado e que o que falta está mais no Sudeste e no Nordeste", () => {
@@ -419,14 +438,20 @@ describe("a noite inteira", () => {
       expect(marcos).toHaveLength(7);
       for (const m of marcos) {
         expect(m.ponto![0]).toBeGreaterThanOrEqual(m.marco!);
-        expect(m.texto).toMatch(/^Passa de \d\d% das seções totalizadas no Brasil: \d\d,\d\d%\. Bolsonaro \d\d,\d\d%, Lula \d\d,\d\d%\. Das seções que faltam, \d\d% são do Sudeste e \d\d% do Nordeste\.$/);
+        expect(m.texto).toMatch(
+          /^Passa de \d\d% das seções totalizadas no Brasil: \d\d,\d\d%\. Bolsonaro \d\d,\d\d%, Lula \d\d,\d\d%\. Das seções que faltam, \d\d% são do Sudeste e \d\d% do Nordeste\.$/,
+        );
       }
       // Com 50%, faltam 51% no Sudeste e 30% no Nordeste (seção 6).
       expect(marcos.find((m) => m.marco === 50)!.texto).toMatch(/Das seções que faltam, 51% são do Sudeste e 30% do Nordeste\.$/);
     });
 
     it("numera na curva só os eventos do próprio lugar, na ordem da noite", () => {
-      expect(doBrasil().map((e) => e.numero).reverse()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+      expect(
+        doBrasil()
+          .map((e) => e.numero)
+          .reverse(),
+      ).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
       expect(narracao("BR").filter((e) => e.lugar !== "BR" && (e.numero !== undefined || e.ponto !== undefined))).toEqual([]);
       // Minas Gerais na ordem da medição: a virada para Bolsonaro com 15,8% (seção 3), entre os 10% e os 25% (18:14:54,
       // seção 7); a volta de Lula com 93,1%, depois dos 90% (19:26:44) e antes dos 95%; os 99% às 20:36:42.
@@ -450,12 +475,17 @@ describe("a noite inteira", () => {
       const eventos = r.rodada().eventosDoBrasil;
       expect(eventos.map((e) => e.tipo)).toEqual(["totalizacao-final", "indicacao", "virada"]);
       expect(eventos.filter((e) => e.lugar !== "BR" || "numero" in e || "ponto" in e)).toEqual([]);
-      expect(eventos[0]).toEqual({ lugar: "BR", tipo: "totalizacao-final", quando: "2022-10-31 00:18:04", texto: "Totalização final: Lula eleito com 50,90% dos votos válidos." });
+      expect(eventos[0]).toEqual({
+        lugar: "BR",
+        tipo: "totalizacao-final",
+        quando: "2022-10-31 00:18:04",
+        texto: "Totalização final: Lula eleito com 50,90% dos votos válidos.",
+      });
       expect(eventos[1]!.texto).toMatch(/^O TSE indica Lula eleito: /);
       expect(eventos[2]!.texto).toMatch(/^Virada no Brasil: Lula passa à frente /);
     });
 
-    it("nomeia o estado e o município sem ambiguidade, e cada município termina com \"terminou\" e só tem o marco de 50%", () => {
+    it('nomeia o estado e o município sem ambiguidade, e cada município termina com "terminou" e só tem o marco de 50%', () => {
       expect(narracao("SP")[0]!.texto).toMatch(/^O estado de São Paulo terminou a totalização\./);
       expect(narracao("71072")[0]!.texto).toMatch(/^São Paulo \(SP\) terminou a totalização\./);
       const municipios = lugares.filter((l) => l.caminho.length > "lugares/XX.json".length).map((l) => narracao(l.caminho.slice(8, -5)));
@@ -481,19 +511,27 @@ describe("as fases do relógio do coletor", () => {
   // mais que 2 trocas. A janela de 10 minutos fica no teste da narração, com a série ao segundo (spec, "Decisões de
   // teste"); aqui, duas fases conferem só que o Brasil tem uma virada: a de +8 s, uma das que viam 4 trocas a 20 s, e
   // uma de outro terço do minuto. O coletor parte a frio às 18:30 mais a fase.
-  it.each([8, 35])("com o relógio %i s depois da meia hora, dá uma virada só no Brasil", async (fase) => {
-    const r = await replay(`2022-10-30 18:30:${String(fase).padStart(2, "0")}`, "2022-10-30 18:58:00");
-    const viradas = r.publicado("lugares/BR.json").narracao.filter((e) => e.lugar === "BR" && e.tipo === "virada");
+  it.each([8, 35])(
+    "com o relógio %i s depois da meia hora, dá uma virada só no Brasil",
+    async (fase) => {
+      const r = await replay(`2022-10-30 18:30:${String(fase).padStart(2, "0")}`, "2022-10-30 18:58:00");
+      const viradas = r.publicado("lugares/BR.json").narracao.filter((e) => e.lugar === "BR" && e.tipo === "virada");
 
-    expect(viradas).toHaveLength(1);
-    expect(r.rodada().eventosDoBrasil.filter((e) => e.tipo === "virada")).toHaveLength(1);
-  }, 120_000);
+      expect(viradas).toHaveLength(1);
+      expect(r.rodada().eventosDoBrasil.filter((e) => e.tipo === "virada")).toHaveLength(1);
+    },
+    120_000,
+  );
 });
 
 describe("as chaves de publicação e os avisos prontos, pelo arquivo de controle", () => {
   // O dono age em rodadas escolhidas: desliga a projeção às 17:05, publica o aviso 1 às 17:10, liga o plano zero às
   // 17:15 e, às 17:20, religa o núcleo mínimo e retira o aviso. A projeção fica desligada até o fim.
-  const comChaves = (parte: Partial<Controle["chaves"]>, resto: Partial<Controle> = {}): Controle => ({ ...CONTROLE_INICIAL, chaves: { ...CONTROLE_INICIAL.chaves, ...parte }, ...resto });
+  const comChaves = (parte: Partial<Controle["chaves"]>, resto: Partial<Controle> = {}): Controle => ({
+    ...CONTROLE_INICIAL,
+    chaves: { ...CONTROLE_INICIAL.chaves, ...parte },
+    ...resto,
+  });
   const comandos = [
     { desde: ms("2022-10-30 17:05:00"), controle: comChaves({ projecao: false }) },
     { desde: ms("2022-10-30 17:10:00"), controle: comChaves({ projecao: false }, { aviso: 1 }) },
@@ -504,7 +542,9 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
   const DUAS_RODADAS = 2 * 20_000;
   let r: Awaited<ReturnType<typeof replay>>;
   beforeAll(async () => {
-    r = await replay("2022-10-30 16:50:00", "2022-10-30 17:26:00", { controle: (quando) => comandos.filter((c) => c.desde <= quando).at(-1)?.controle ?? CONTROLE_INICIAL });
+    r = await replay("2022-10-30 16:50:00", "2022-10-30 17:26:00", {
+      controle: (quando) => comandos.filter((c) => c.desde <= quando).at(-1)?.controle ?? CONTROLE_INICIAL,
+    });
   }, 120_000);
   const rodadas = () => r.gravacoes.filter((g) => g.caminho === "rodada.json").map((g) => ({ ...(g.conteudo as ArquivoDeRodada), quando: g.quando }));
   const entre = (de: string, ate: string) => rodadas().filter((x) => x.quando >= ms(de) && x.quando < ms(ate));
@@ -522,7 +562,11 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
     expect(primeira.quando).toBeGreaterThanOrEqual(ms("2022-10-30 17:05:00"));
     expect(primeira.quando).toBeLessThan(ms("2022-10-30 17:05:00") + DUAS_RODADAS);
     expect(primeira.chaves).toMatchObject({ projecao: false, simulador: false, nucleoMinimo: true, baseComPesquisas: true, mapa: true });
-    expect(rodadas().filter((x) => x.quando >= primeira.quando).every((x) => !x.chaves.projecao && !x.chaves.simulador)).toBe(true);
+    expect(
+      rodadas()
+        .filter((x) => x.quando >= primeira.quando)
+        .every((x) => !x.chaves.projecao && !x.chaves.simulador),
+    ).toBe(true);
   });
 
   it("o aviso pronto entra e sai do arquivo de rodada nas rodadas escolhidas", () => {
@@ -561,7 +605,9 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
     const curvaDepois = (depois.conteudo as ArquivoDoLugar).curva;
     expect(curvaDepois.slice(0, curvaAntes.length)).toEqual(curvaAntes);
     const primeiraRodadaNoPlanoZero = Date.parse(r.rodadas.find((x) => !x.controle.chaves.nucleoMinimo)!.inicio);
-    const baixadosDoBrasil = r.rodadas.filter((x) => Date.parse(x.inicio) >= primeiraRodadaNoPlanoZero && Date.parse(x.inicio) <= depois.quando).reduce((n, x) => n + x.baixados.brasil, 0);
+    const baixadosDoBrasil = r.rodadas
+      .filter((x) => Date.parse(x.inicio) >= primeiraRodadaNoPlanoZero && Date.parse(x.inicio) <= depois.quando)
+      .reduce((n, x) => n + x.baixados.brasil, 0);
     expect(baixadosDoBrasil).toBeGreaterThanOrEqual(3);
     expect(curvaDepois.slice(curvaAntes.length)).toHaveLength(baixadosDoBrasil);
     expect(curvaDepois.every((p, i) => i === 0 || p[0]! >= curvaDepois[i - 1]![0]!)).toBe(true);
@@ -571,10 +617,17 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
   it("no plano zero, nem os eventos do Brasil vão no arquivo de rodada: a narração é do núcleo mínimo", async () => {
     // Depois da virada de 2022 (~18:44), o dono liga o plano zero às 18:50.
     const planoZero = { ...CONTROLE_INICIAL, chaves: { ...CONTROLE_INICIAL.chaves, nucleoMinimo: false } };
-    const comPlanoZero = await replay("2022-10-30 18:30:00", "2022-10-30 18:53:00", { controle: (quando) => (quando >= ms("2022-10-30 18:50:00") ? planoZero : CONTROLE_INICIAL) });
+    const comPlanoZero = await replay("2022-10-30 18:30:00", "2022-10-30 18:53:00", {
+      controle: (quando) => (quando >= ms("2022-10-30 18:50:00") ? planoZero : CONTROLE_INICIAL),
+    });
     const rodadas = comPlanoZero.gravacoes.filter((g) => g.caminho === "rodada.json").map((g) => g.conteudo as ArquivoDeRodada);
 
-    expect(rodadas.filter((x) => x.chaves.nucleoMinimo).at(-1)!.eventosDoBrasil.map((e) => e.tipo)).toEqual(["virada"]);
+    expect(
+      rodadas
+        .filter((x) => x.chaves.nucleoMinimo)
+        .at(-1)!
+        .eventosDoBrasil.map((e) => e.tipo),
+    ).toEqual(["virada"]);
     const noPlanoZero = rodadas.filter((x) => !x.chaves.nucleoMinimo);
     expect(noPlanoZero.length).toBeGreaterThan(5);
     expect(noPlanoZero.filter((x) => x.eventosDoBrasil.length > 0)).toEqual([]);
@@ -596,7 +649,11 @@ describe("plano B", () => {
   const arquivosNaPasta = async () =>
     (await readdir(pasta, { recursive: true, withFileTypes: true }))
       .filter((a) => a.isFile())
-      .map((a) => join(a.parentPath, a.name).slice(pasta.length + 1).replaceAll("\\", "/"))
+      .map((a) =>
+        join(a.parentPath, a.name)
+          .slice(pasta.length + 1)
+          .replaceAll("\\", "/"),
+      )
       .sort();
   beforeAll(async () => {
     pasta = join(await mkdtemp(join(tmpdir(), "replay-plano-b-")), "arquivos");
@@ -616,7 +673,15 @@ describe("plano B", () => {
           republicacoes.push({ quando, arquivos: await arquivosNaPasta() });
         };
         return {
-          destino: destinoR2({ conta: "conta", bucket: "apurador-ao-vivo", credenciais: { chave: "c", segredo: "s" }, buscar: r2, contador, comprimir: true, agora: () => new Date(agora()) }),
+          destino: destinoR2({
+            conta: "conta",
+            bucket: "apurador-ao-vivo",
+            credenciais: { chave: "c", segredo: "s" },
+            buscar: r2,
+            contador,
+            comprimir: true,
+            agora: () => new Date(agora()),
+          }),
           planoB: republicacaoDoWorker({ pasta, publicar, agora }),
           contador,
         };
@@ -650,7 +715,9 @@ describe("plano B", () => {
 
   it("republica uma vez por minuto, e fica no plano B até o fim, mesmo com o arquivo de controle de volta ao principal", () => {
     // Do comando, às 17:00, ao fim do replay, às 17:08: uma republicação por minuto, a primeira na rodada do comando.
-    const horas = republicacoes.map((p) => new Date(p.quando).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }));
+    const horas = republicacoes.map((p) =>
+      new Date(p.quando).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
+    );
     expect(horas).toEqual(["17:00", "17:01", "17:02", "17:03", "17:04", "17:05", "17:06", "17:07"]);
     const depois = r.rodadas.filter((x) => Date.parse(x.inicio) >= Date.parse(troca().inicio));
     expect(depois.every((x) => x.destinoAtivo === "plano B")).toBe(true);

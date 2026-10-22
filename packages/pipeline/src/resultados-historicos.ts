@@ -44,7 +44,10 @@ export function resultadoHistorico(candidatos: readonly VotoCandidatoMunzona[], 
   return {
     ano,
     turno,
-    dia: unico(doTurnoPedido.map((v) => v.dia), `${ano}, ${turno}º turno: mais de um dia da eleição`),
+    dia: unico(
+      doTurnoPedido.map((v) => v.dia),
+      `${ano}, ${turno}º turno: mais de um dia da eleição`,
+    ),
     geracao: [...new Set(doTurnoPedido.map((v) => v.geracao))].sort(),
     finalistas: [finalista(primeiro!), finalista(segundo)],
     validos: doTurnoPedido.reduce((s, v) => s + v.votos, 0),
@@ -55,7 +58,10 @@ export function resultadoHistorico(candidatos: readonly VotoCandidatoMunzona[], 
  * O que o repositório guarda contra o arquivo do TSE de cada ano, lido agora: os finalistas (número, nome e partido)
  * e os votos deles, os válidos e o dia. A data de geração não conta, porque o TSE regera os arquivos sem mudar os votos.
  */
-export function conferirResultadosHistoricos(repositorio: readonly ResultadoHistorico[], candidatosPorAno: ReadonlyMap<number, readonly VotoCandidatoMunzona[]>): string[] {
+export function conferirResultadosHistoricos(
+  repositorio: readonly ResultadoHistorico[],
+  candidatosPorAno: ReadonlyMap<number, readonly VotoCandidatoMunzona[]>,
+): string[] {
   return repositorio.flatMap((r) => {
     const rotulo = `${r.ano}, ${r.turno}º turno`;
     const candidatos = candidatosPorAno.get(r.ano);
@@ -69,7 +75,8 @@ export function conferirResultadosHistoricos(repositorio: readonly ResultadoHist
       if (doTse.numero !== f.numero) divergencias.push(`${rotulo}: o ${i + 1}º finalista é o ${f.numero} no repositório e o ${doTse.numero} no TSE`);
       else if (doTse.nome !== f.nome || quem(doTse) !== quem(f)) {
         divergencias.push(`${rotulo}: o ${i + 1}º finalista (${f.numero}) é ${quem(f)} no repositório e ${quem(doTse)} no TSE`);
-      } else if (doTse.votos !== f.votos) divergencias.push(`${rotulo}: ${f.nomeUrna} (${f.numero}) tem ${f.votos} votos no repositório e ${doTse.votos} no TSE`);
+      } else if (doTse.votos !== f.votos)
+        divergencias.push(`${rotulo}: ${f.nomeUrna} (${f.numero}) tem ${f.votos} votos no repositório e ${doTse.votos} no TSE`);
     });
     if (tse.validos !== r.validos) divergencias.push(`${rotulo}: os válidos são ${r.validos} no repositório e ${tse.validos} no TSE`);
     return divergencias;

@@ -44,7 +44,8 @@ const REGIOES: [string, string][] = [
 
 /** Os dados do protótipo para uma noite: o 1º turno da base e os totais de seções e aptos de cada município na noite. */
 export function dadosDoPrototipo(base: BaseDoModelo, apuracao: Apuracao): DadosDoPrototipo {
-  if (base.finalistas[0]!.numero !== 13 || base.finalistas[1]!.numero !== 22) throw new Error("o protótipo dá a fatia de Lula: a base precisa ter Lula como 1º finalista");
+  if (base.finalistas[0]!.numero !== 13 || base.finalistas[1]!.numero !== 22)
+    throw new Error("o protótipo dá a fatia de Lula: a base precisa ter Lula como 1º finalista");
   const ufs = [...new Set(base.municipios.map((m) => m.uf))];
   const S = apuracao.map((a) => a.secoesTotais);
   return {

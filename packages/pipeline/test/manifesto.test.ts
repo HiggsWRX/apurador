@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { atualizarManifesto, type FonteDoManifesto } from "../src/manifesto.ts";
 
-const fonte = (url: string): FonteDoManifesto => ({ url, membro: `${url}.csv`, sha256: "0".repeat(64), bytes: 1, baixadoEm: "2026-10-19T00:00:00.000Z", geracao: ["19/10/2026 03:00:00"] });
+const fonte = (url: string): FonteDoManifesto => ({
+  url,
+  membro: `${url}.csv`,
+  sha256: "0".repeat(64),
+  bytes: 1,
+  baixadoEm: "2026-10-19T00:00:00.000Z",
+  geracao: ["19/10/2026 03:00:00"],
+});
 
 describe("atualizarManifesto", () => {
   const atual = {
@@ -36,12 +43,22 @@ describe("atualizarManifesto", () => {
   it("avisa quando uma fonte mudou e ainda serve a derivados de outro gerador", () => {
     const avisos: string[] = [];
 
-    atualizarManifesto(atual, { pastas: ["noites/"], fontes: [{ ...fonte("munzona"), sha256: "1".repeat(64) }, fonte("secao")], derivados: [{ arquivo: "noites/2022-2.json.gz", sha256: "d", fontes: ["secao", "munzona"] }] }, (a) => avisos.push(a));
+    atualizarManifesto(
+      atual,
+      {
+        pastas: ["noites/"],
+        fontes: [{ ...fonte("munzona"), sha256: "1".repeat(64) }, fonte("secao")],
+        derivados: [{ arquivo: "noites/2022-2.json.gz", sha256: "d", fontes: ["secao", "munzona"] }],
+      },
+      (a) => avisos.push(a),
+    );
 
     expect(avisos).toEqual([expect.stringMatching(/munzona.*turnos\/2026-1\.json/)]);
   });
 
   it("recusa um derivado sem a fonte de onde veio", () => {
-    expect(() => atualizarManifesto(atual, { pastas: ["bases/"], fontes: [], derivados: [{ arquivo: "bases/2022-2.json", sha256: "e", fontes: ["bweb"] }] })).toThrow(/bweb/);
+    expect(() =>
+      atualizarManifesto(atual, { pastas: ["bases/"], fontes: [], derivados: [{ arquivo: "bases/2022-2.json", sha256: "e", fontes: ["bweb"] }] }),
+    ).toThrow(/bweb/);
   });
 });

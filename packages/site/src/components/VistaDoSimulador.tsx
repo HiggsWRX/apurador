@@ -100,8 +100,8 @@ export function VistaDoSimulador(props: PropsDaVistaDoSimulador) {
               doSite={tela.curvaDoSite}
             />
             <p class="nota">
-              Resultado final estimado no Brasil, em votos válidos, com a margem de 95%, e <a href={`${METODOLOGIA}#chance`}>chance de vitória</a>.
-              Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.
+              Resultado final estimado no Brasil, em votos válidos, com a margem de 95%, e <a href={`${METODOLOGIA}#chance`}>chance de vitória</a>. Estimativa
+              do Apurador. Não é resultado oficial nem garantia do resultado.
             </p>
             <p class="fonte">Cálculo do Apurador com dados do TSE</p>
           </section>

@@ -69,7 +69,8 @@ describe("os números como o TSE escreve", () => {
         if (v) for (const regra of PERCENTUAIS.v) if (!(zonaZerada && regra[0] === "pvnom")) conferir(arquivo, v, regra, v["tv"] === "0" ? "0,00" : "0");
         // Os candidatos, sobre os votos válidos do lugar.
         const cargos = (lugar["carg"] ?? []) as { agr: { par: { cand: Bloco[] }[] }[] }[];
-        for (const c of cargos.flatMap((x) => x.agr.flatMap((a) => a.par.flatMap((p) => p.cand)))) conferir(arquivo, { ...c, vv: v!["vv"]! }, ["pvap", "vap", "vv"], "0");
+        for (const c of cargos.flatMap((x) => x.agr.flatMap((a) => a.par.flatMap((p) => p.cand))))
+          conferir(arquivo, { ...c, vv: v!["vv"]! }, ["pvap", "vap", "vv"], "0");
       }
     }
 
