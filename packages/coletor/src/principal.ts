@@ -1,15 +1,23 @@
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { readFile, rename, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import type { Lugar } from "@apurador/pipeline";
+import { despacharAlertas } from "./alertas.ts";
 import { AMBIENTES, destinosDoColetor, lerCredenciais, pastaDoPlanoBLocal, type NomeDoDestino } from "./ambientes.ts";
+import type { ArquivoDeRodada, ArquivoDoLugar } from "./arquivos.ts";
 import { CHAVES_DA_NOITE, NOMES_DAS_CHAVES } from "./chaves.ts";
 import { criarColetor, type RegistroDaRodada } from "./coletor.ts";
+import { medidorDoComputador, tocarNoComputador } from "./computador.ts";
 import { ARQUIVO_DO_CONTADOR, criarContadorDeGravacoes, gravarContadorDeGravacoes, lerContadorDeGravacoes, somaDoMes } from "./contador.ts";
 import { ARQUIVO_DE_CONTROLE, controleDoArquivoDeChaves, lerArquivoDeControle } from "./controle.ts";
 import { lerEntradaDaProjecao, NOITES_DA_PROJECAO, type NoiteDaProjecao } from "./entrada-da-projecao.ts";
+import { enviarAoNtfy } from "./ntfy.ts";
+import { criarPainelDoColetor, type LeituraDeFora } from "./painel-do-coletor.ts";
 import { implantarWorker } from "./plano-b.ts";
 import { relogioReal } from "./relogio.ts";
+import { lerPelosEnderecos } from "./visto-de-fora.ts";
 
 // O coletor no terminal.
 // Uso: npm run coletor -- [--destino pasta|ensaio|producao] [--sem-gzip] [--sem-dominio] [--tse <base>] [--eleicao 6258] [--pasta <pasta>]
@@ -26,7 +34,9 @@ import { relogioReal } from "./relogio.ts";
 //   --controle: o arquivo de controle que `npm run noite` grava (padrão: .cache/coletor/controle.json), lido a cada rodada.
 //   --gravacoes: o contador de gravações nos buckets (padrão: .cache/coletor/gravacoes.json), guardado a cada rodada.
 //   --noite: a noite que a projeção usa (entrada-da-projecao.ts): 2026-2, o padrão, ou 2022-2, a do TSE falso.
-// O registro de cada rodada vai para .cache/coletor/, uma linha JSON por rodada.
+// O registro de cada rodada vai para .cache/coletor/, uma linha JSON por rodada, e o painel do coletor, para
+// .cache/coletor/painel.html, que o dono abre no navegador. Os alertas críticos vão ao celular pelo ntfy, com o tópico
+// NTFY_TOPICO do packages/coletor/.env; sem ele, ficam no computador.
 
 const { values: opcoes } = parseArgs({
   options: {
@@ -59,8 +69,10 @@ const noite = opcoes.noite as NoiteDaProjecao;
 if (!NOITES_DA_PROJECAO.includes(noite)) throw new Error(`--noite deve ser ${NOITES_DA_PROJECAO.join(" ou ")}, e não ${opcoes.noite}`);
 const projecao = lerEntradaDaProjecao(noite);
 
-// As chaves de escrita ficam só no .env do coletor, fora do Git, e só são lidas fora da pasta local.
-const env = destino === "pasta" ? {} : lerCredenciais();
+// As chaves de escrita ficam só no .env do coletor, fora do Git, e só valem fora da pasta local; o tópico do ntfy vale
+// em todo destino.
+const credenciais = lerCredenciais();
+const env = destino === "pasta" ? {} : credenciais;
 const contador = criarContadorDeGravacoes(await lerContadorDeGravacoes(opcoes.gravacoes), relogioReal.agora);
 const destinos = destinosDoColetor({
   destino,
@@ -76,6 +88,7 @@ const destinos = destinosDoColetor({
 
 mkdirSync(CACHE, { recursive: true });
 const arquivoDoRegistro = new URL(`rodadas-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`, CACHE);
+const arquivoDoPainel = fileURLToPath(new URL("painel.html", CACHE));
 
 let parar = false;
 process.on("SIGINT", () => {
@@ -115,6 +128,48 @@ console.log(
   `Projeção da noite ${noite}: agregado de ${projecao.agregado.valor.toFixed(2)} ± ${projecao.agregado.incerteza} para o ${projecao.base.finalistas[0]!.numero}.`,
 );
 
+// O painel do coletor: lê o site visto de fora no endereço público do destino ativo (na pasta local, os arquivos dela),
+// mede o computador e grava a página a cada rodada e a cada 5 s. O desvio do relógio só vale contra o TSE de verdade.
+const topico = credenciais.NTFY_TOPICO;
+const enderecos =
+  destino === "pasta"
+    ? null
+    : { principal: opcoes["sem-dominio"] ? AMBIENTES[destino].planoB.endereco : AMBIENTES[destino].endereco, "plano B": AMBIENTES[destino].planoB.endereco };
+let erroDoPainel = "";
+const painel = criarPainelDoColetor({
+  agora: relogioReal.agora,
+  lerDeFora: enderecos ? lerPelosEnderecos({ enderecos, buscar: fetch, agora: relogioReal.agora }) : lerDaPasta,
+  medirComputador: medidorDoComputador({ pasta: fileURLToPath(RAIZ), agora: relogioReal.agora }),
+  notificar: despacharAlertas({ ntfy: topico ? enviarAoNtfy({ topico, buscar: fetch }) : undefined, tocar: tocarNoComputador, registrar: console.log }),
+  gravar: async (html) => {
+    // Inteiro de uma vez, como o arquivo de controle: o navegador nunca lê um painel pela metade. Se o Windows segurar o
+    // arquivo enquanto o navegador o lê, grava por cima.
+    try {
+      await writeFile(`${arquivoDoPainel}.tmp`, html);
+      await rename(`${arquivoDoPainel}.tmp`, arquivoDoPainel).catch(() => writeFile(arquivoDoPainel, html));
+      erroDoPainel = "";
+    } catch (erro) {
+      if ((erro as Error).message !== erroDoPainel) console.log(`O painel do coletor não foi gravado: ${(erroDoPainel = (erro as Error).message)}`);
+    }
+  },
+  conferirRelogio: new URL(opcoes.tse).hostname === "resultados.tse.jus.br",
+});
+console.log(`Painel do coletor: ${pathToFileURL(arquivoDoPainel).href} (abra no navegador; ele se recarrega a cada 5 s).`);
+console.log(topico ? "Alertas críticos no celular pelo ntfy." : "Sem NTFY_TOPICO no packages/coletor/.env: os alertas ficam só no computador.");
+
+/** O visto de fora da pasta local (`--destino pasta`): os arquivos que a página do `npm run dev` lê. */
+async function lerDaPasta(destinoAtivo: RegistroDaRodada["destinoAtivo"]): Promise<LeituraDeFora> {
+  const raiz = destinoAtivo === "principal" ? pasta : pastaDoPlanoBLocal(pasta);
+  const ler = async <T>(caminho: string) => {
+    try {
+      return JSON.parse(await readFile(join(raiz, caminho), "utf8")) as T;
+    } catch {
+      return null;
+    }
+  };
+  return { endereco: raiz, rodada: await ler<ArquivoDeRodada>("rodada.json"), brasil: await ler<ArquivoDoLugar>("lugares/BR.json"), data: Date.now() };
+}
+
 // Sem arquivo de controle, as chaves são as do arquivo de chaves do site, lidas de novo a cada rodada: um deploy que
 // mude o arquivo vale no coletor que já roda, até o primeiro comando.
 const coletor = criarColetor({
@@ -130,6 +185,7 @@ const coletor = criarColetor({
   controle: async () => (await lerArquivoDeControle(opcoes.controle)) ?? (await controleDoArquivoDeChaves()),
   projecao,
 });
+const temporizador = setInterval(() => void painel.atualizar(), 5_000);
 await coletor.rodar({
   ate: () => parar || Date.now() >= fim,
   aoRodar(registro) {
@@ -140,5 +196,8 @@ await coletor.rodar({
       );
     }
     console.log(resumo(registro));
+    painel.registrar(registro, { republicacaoDoPlanoB: destinos.planoB.ultimaRepublicacaoBoa() });
   },
 });
+clearInterval(temporizador);
+await painel.atualizar();

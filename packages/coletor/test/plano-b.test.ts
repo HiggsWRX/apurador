@@ -138,6 +138,28 @@ describe("a republicação do Worker do plano B", () => {
     expect(feitas).toHaveLength(2);
   });
 
+  it("dá ao painel do coletor a hora em que terminou a última republicação boa, e não a de uma que falhou", async () => {
+    const { destino, feitas, passar, assentar } = montar();
+    expect(destino.ultimaRepublicacaoBoa()).toBeNull();
+
+    await destino.gravar("rodada.json", BYTES);
+    await destino.fimDaRodada!(); // começa às 21:00:00
+    await assentar();
+    passar(35);
+    feitas[0]!.terminar(); // termina às 21:00:35, com o wrangler
+    await assentar();
+    expect(destino.ultimaRepublicacaoBoa()).toBe(Date.parse("2026-10-25T21:00:35-03:00"));
+
+    passar(25);
+    await destino.gravar("rodada.json", BYTES);
+    await destino.fimDaRodada!(); // começa às 21:01:00
+    await assentar();
+    passar(10);
+    feitas[1]!.terminar(new Error("wrangler saiu com 1: Authentication error [code: 10000]"));
+    await assentar();
+    expect(destino.ultimaRepublicacaoBoa()).toBe(Date.parse("2026-10-25T21:00:35-03:00"));
+  });
+
   it("um erro antes de a republicação começar (o wrangler que não se acha) também vira falha, e não trava as seguintes", async () => {
     let tentativas = 0;
     let agora = Date.parse("2026-10-25T21:00:00-03:00");

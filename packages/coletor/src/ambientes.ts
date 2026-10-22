@@ -4,7 +4,7 @@ import { parseEnv } from "node:util";
 import type { Buscar } from "./coletor.ts";
 import type { ContadorDeGravacoes } from "./contador.ts";
 import { pastaLocal, type Destino } from "./destino.ts";
-import { republicacaoDoWorker } from "./plano-b.ts";
+import { republicacaoDoWorker, type DestinoDoPlanoB } from "./plano-b.ts";
 import { destinoR2 } from "./r2.ts";
 
 // Os destinos do coletor, por configuração (Arquitetura e tecnologia, decisão 15; spec, "Uma interface de publicação"):
@@ -82,7 +82,7 @@ export const pastaDoPlanoBLocal = (pasta: string) => `${pasta.replace(/[\\/]+$/,
 /** O que `criarColetor` recebe como `destino` e `planoB`; sem domínio, os dois são o mesmo Worker. */
 export interface DestinosDoColetor {
   principal: Destino;
-  planoB: Destino;
+  planoB: DestinoDoPlanoB;
 }
 
 /** Os destinos do coletor para o `--destino`, com as chaves do `.env`. Falta de chave é erro antes da primeira rodada. */
