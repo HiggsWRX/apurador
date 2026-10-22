@@ -543,6 +543,36 @@ describe("projeção ao vivo", () => {
     expect(curva(semSinal)).not.toContain("faixa-virada");
   });
 
+  it("entre as 17h e a primeira seção, a curva já mostra a curva projetada de 0% a 100%, sem rótulo do sinal", () => {
+    // Antes da primeira seção, ninguém está atrás no placar parcial (Sinal de virada, decisão 3).
+    const antesDaPrimeira: ProjecaoDoLugar = {
+      ...PROJECAO,
+      comPesquisas: naBase({
+        projecao: 49.0,
+        chance: 25,
+        chanceDeVirada: null,
+        sinalDeVirada: null,
+        curva: [
+          [2, 49.0, 0.4],
+          [100, 49.0, 2.9],
+        ],
+      }),
+    };
+    const html = vista(
+      quadro({
+        fase: "ao-vivo",
+        indicador: { estado: "ao-vivo" },
+        rodada: rodada("ao-vivo"),
+        lugar: { ...dadosDoLugar({ secoes: { totalizadas: 0, total: 472027, percentual: 0 } }), projecao: antesDaPrimeira },
+      }),
+    );
+    expect(texto(curva(html))).toContain("A curva começa com as primeiras seções totalizadas.");
+    expect(curva(html).match(/<path class="linha-projetada"/g)).toHaveLength(2);
+    expect(curva(html)).not.toContain("data-linha-real");
+    expect(curva(html)).not.toContain("data-sinal-de-virada");
+    expect(html).toContain("data-projecao-ao-vivo");
+  });
+
   it("com a indicação do TSE, o rótulo do sinal de virada some, também nas outras páginas", () => {
     expect(curva(comProjecao(PROJECAO, {}, {}, TSE, [INDICACAO]))).not.toContain("data-sinal-de-virada");
     const bahia: ArquivoDoLugar = { ...dadosDoLugar(TSE, [[50.34, 50.43, 49.57]]), lugar: "BA", projecao: PROJECAO };

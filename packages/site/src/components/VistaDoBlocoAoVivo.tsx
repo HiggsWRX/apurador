@@ -1,4 +1,4 @@
-import type { IdDaBase } from "../lib/bases-da-projecao";
+import { BASE_DA_NOITE, type IdDaBase } from "../lib/bases-da-projecao";
 import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import type { QuadroAoVivo } from "../lib/leitor-ao-vivo";
 import { eventosDoLugar } from "../lib/narracao";
@@ -35,7 +35,7 @@ export interface PropsDaVista {
   placarNaTela?: boolean;
   /** A curva de comparação: os turnos passados do lugar, o que está ligado e o clique, que a ilha guarda. */
   comparacao?: PropsDaComparacao;
-  /** A base da projeção que o visitante escolheu. Padrão: "Apuração + pesquisas" (Combinação de pesquisas e apuração, decisão 5). */
+  /** A base da projeção que o visitante escolheu. Padrão: a da noite, "Apuração + pesquisas". */
   base?: IdDaBase;
   aoEscolherBase?: (base: IdDaBase) => void;
   /** Quantas pesquisas o agregado de pesquisas tem, para o link da caixa da projeção, ou `null` sem ele no ar. */
@@ -52,7 +52,7 @@ export function VistaDoBlocoAoVivo({
   lendo,
   placarNaTela = true,
   comparacao,
-  base = "com-pesquisas",
+  base = BASE_DA_NOITE,
   aoEscolherBase = () => {},
   pesquisasDoAgregado = null,
 }: PropsDaVista) {

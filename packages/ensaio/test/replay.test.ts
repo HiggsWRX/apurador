@@ -153,30 +153,20 @@ describe("antes das 17h", () => {
       ],
       eventosDoBrasil: [],
     });
-    expect(publicado("lugares/BR.json")).toMatchObject({
+    expect(publicado("lugares/BR.json")).toEqual({
       lugar: "BR",
       tse: { totalizacao: null, secoes: { totalizadas: 0, total: 472_075, percentual: 0 }, votos: [0, 0], percentuais: [0, 0], final: false },
       curva: [],
       narracao: [],
     });
-    expect(publicado("lugares/71072.json")).not.toHaveProperty("projecao");
   }, 60_000);
 
-  it("projeta como o painel de antes das 17h: as pesquisas pesam 100%, e a base com pesquisas é a indicação delas", async () => {
-    const { publicado, rodada } = await replay("2022-10-30 16:50:00", "2022-10-30 16:55:00");
-    const { projecao } = publicado("lugares/BR.json");
+  it("não publica a projeção nem o peso das pesquisas: antes das 17h, a projeção é a do painel, atrás das chaves de antes das 17h", async () => {
+    const { gravacoes } = await replay("2022-10-30 16:50:00", "2022-10-30 16:55:00");
 
-    expect(rodada().pesoDasPesquisas).toBe(100);
-    // As referências: o 1º turno de 2022 (Bolsonaro 51.072.345 e Lula 57.259.504 votos, 47,1% entre os dois) e o agregado
-    // da véspera, com Lula em 50,98 (ticket 08), Bolsonaro em 49,0. Antes da primeira seção, a "Só apuração" parte do 1º
-    // turno, e a base com pesquisas, da indicação delas.
-    expect(projecao!.comparacoes).toEqual({ primeiroTurno: 47.1, pesquisas: 49.0 });
-    expect(projecao!.soApuracao.projecao).toBe(47.1);
-    expect(projecao!.comPesquisas!.projecao).toBe(49.0);
-    // Ninguém está atrás num placar sem votos: não há chance de virada nem sinal.
-    expect(projecao!.comPesquisas).toMatchObject({ chanceDeVirada: null, sinalDeVirada: null });
-    expect(projecao!.comPesquisas!.curva[0]![0]).toBeGreaterThan(0);
-    expect(projecao!.comPesquisas!.curva.at(-1)).toEqual([100, 49.0, projecao!.comPesquisas!.margem]);
+    expect(gravacoes.filter((g) => g.caminho.startsWith("lugares/")).length).toBeGreaterThan(5_000);
+    expect(gravacoes.filter((g) => "projecao" in (g.conteudo as ArquivoDoLugar))).toEqual([]);
+    expect(gravacoes.filter((g) => g.caminho === "rodada.json" && (g.conteudo as ArquivoDeRodada).pesoDasPesquisas !== null)).toEqual([]);
   }, 60_000);
 
   it("na partida, publica uma vez cada lugar; depois, sem novidade, só os índices, com ETag e 304", async () => {
@@ -189,6 +179,33 @@ describe("antes das 17h", () => {
     const depois = rodadas.slice(rodadas.findIndex((x) => x.baixados.municipios + x.baixados.zonas === 0));
     expect(depois.length).toBeGreaterThan(3);
     expect(depois.map((x) => x.respostas)).toEqual(depois.map(() => ({ 304: 29 })));
+  }, 60_000);
+});
+
+describe("entre as 17h e a primeira seção", () => {
+  it("projeta como o painel de antes das 17h: as pesquisas pesam 100%, e a base com pesquisas é a indicação delas", async () => {
+    // O Brasil tem a primeira seção às 17:00:51; até lá, o coletor já está na fase ao vivo.
+    const { gravacoes } = await replay("2022-10-30 16:50:00", "2022-10-30 17:00:45");
+    const zerados = gravacoes.filter(
+      (g) => g.caminho === "lugares/BR.json" && g.quando >= ms("2022-10-30 17:00:00") && (g.conteudo as ArquivoDoLugar).tse.secoes.totalizadas === 0,
+    );
+    const rodadas = gravacoes.filter((g) => g.caminho === "rodada.json" && g.quando >= ms("2022-10-30 17:00:00"));
+    expect(zerados.length).toBeGreaterThan(0);
+    expect(rodadas.length).toBeGreaterThan(0);
+    const { projecao } = zerados.at(-1)!.conteudo as ArquivoDoLugar;
+
+    expect(rodadas.map((g) => (g.conteudo as ArquivoDeRodada).pesoDasPesquisas)).toEqual(rodadas.map(() => 100));
+    // As referências: o 1º turno de 2022 (Bolsonaro 51.072.345 e Lula 57.259.504 votos, 47,1% entre os dois) e o agregado
+    // da véspera, com Lula em 50,98 (ticket 08), Bolsonaro em 49,0. Antes da primeira seção, a "Só apuração" parte do 1º
+    // turno, e a base com pesquisas, da indicação delas.
+    expect(projecao!.comparacoes).toEqual({ primeiroTurno: 47.1, pesquisas: 49.0 });
+    expect(projecao!.soApuracao.projecao).toBe(47.1);
+    expect(projecao!.comPesquisas!.projecao).toBe(49.0);
+    // Ninguém está atrás num placar sem votos: não há chance de virada nem sinal.
+    expect(projecao!.comPesquisas).toMatchObject({ chanceDeVirada: null, sinalDeVirada: null });
+    // A curva vai até 100% das seções e termina na projeção, com a margem dela.
+    expect(projecao!.comPesquisas!.curva[0]![0]).toBeGreaterThan(0);
+    expect(projecao!.comPesquisas!.curva.at(-1)).toEqual([100, 49.0, projecao!.comPesquisas!.margem]);
   }, 60_000);
 });
 
@@ -538,7 +555,9 @@ describe("a noite inteira", () => {
     const FINAL_EM_CENTESIMOS = 4910;
     const erroEmCentesimos = (p: { projecao: number }) => Math.abs(10 * Math.round(10 * p.projecao) - FINAL_EM_CENTESIMOS);
     const BASES = ["soApuracao", "comPesquisas"] as const;
-    const publicadosEm = (caminho: string) => r.gravacoes.filter((g) => g.caminho === caminho).map((g) => g.conteudo as ArquivoDoLugar);
+    /** As gravações de um lugar com a projeção: a partir das 17h. */
+    const publicadosEm = (caminho: string) =>
+      r.gravacoes.filter((g) => g.caminho === caminho && "projecao" in (g.conteudo as ArquivoDoLugar)).map((g) => g.conteudo as ArquivoDoLugar);
     /** Cada projeção do Brasil publicada, em cada base, com o % de seções e a hora do TSE do arquivo. */
     const doBrasil = () =>
       publicadosEm("lugares/BR.json").flatMap((b) =>
@@ -561,8 +580,9 @@ describe("a noite inteira", () => {
     it("leva os números como a página os mostra: projeção, margem e curva com uma casa, chance, chance de virada e % da virada inteiros", () => {
       const comUmaCasa = (n: number) => Math.abs(10 * n - Math.round(10 * n)) < 1e-9;
       const inteiro = (n: number | null) => n === null || Number.isInteger(n);
-      const fora = ["lugares/BR.json", ...UFS_E_EXTERIOR]
-        .flatMap(publicadosEm)
+      const publicados = ["lugares/BR.json", ...UFS_E_EXTERIOR].flatMap(publicadosEm);
+      expect(publicados.length).toBeGreaterThan(1_000);
+      const fora = publicados
         .flatMap((l) => BASES.map((base) => ({ lugar: l.lugar, ...l.projecao![base]! })))
         .filter(
           (p) =>
@@ -574,9 +594,11 @@ describe("a noite inteira", () => {
             ![p.virada?.x ?? null, p.virada?.cedo ?? null, p.virada?.tarde ?? null].every(inteiro),
         );
       expect(fora).toEqual([]);
-      expect(r.gravacoes.filter((g) => g.caminho === "rodada.json").every((g) => Number.isInteger((g.conteudo as ArquivoDeRodada).pesoDasPesquisas))).toBe(
-        true,
-      );
+      const pesos = r.gravacoes
+        .flatMap((g) => (g.caminho === "rodada.json" ? [(g.conteudo as ArquivoDeRodada).pesoDasPesquisas] : []))
+        .filter((p) => p !== null);
+      expect(pesos.length).toBeGreaterThan(1_000);
+      expect(pesos.filter((p) => !Number.isInteger(p))).toEqual([]);
     });
 
     it("erra até 0,5 p.p. depois de 5% das seções, nas duas bases", () => {
@@ -603,7 +625,10 @@ describe("a noite inteira", () => {
       expect(pesquisas[0]!.texto).toMatch(
         /^As pesquisas deixaram de pesar na projeção: com \d+,\d\d% das seções totalizadas no Brasil, as duas bases coincidem\.$/,
       );
-      const pesos = r.gravacoes.filter((g) => g.caminho === "rodada.json").map((g) => (g.conteudo as ArquivoDeRodada).pesoDasPesquisas);
+      // Antes das 17h, o peso não vai no arquivo de rodada.
+      const pesos = r.gravacoes
+        .flatMap((g) => (g.caminho === "rodada.json" ? [(g.conteudo as ArquivoDeRodada).pesoDasPesquisas] : []))
+        .filter((p) => p !== null);
       expect([pesos[0], pesos.at(-1)]).toEqual([100, 0]);
     });
   });
@@ -692,22 +717,28 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
 
   it('desligada a base com pesquisas, o Brasil e as UFs saem só com a "Só apuração" em até 2 rodadas, e o arquivo de rodada sem o peso das pesquisas', () => {
     const brasil = r.gravacoes.filter((g) => g.caminho === "lugares/BR.json").map((g) => ({ ...(g.conteudo as ArquivoDoLugar), quando: g.quando }));
-    const antes = brasil.filter((b) => b.quando < ms("2022-10-30 17:02:00"));
+    // A projeção vai ao ar com a fase ao vivo, na primeira rodada depois das 17h, antes das 17:00:21.
+    const comAsDuas = brasil.filter((b) => b.quando >= ms("2022-10-30 17:00:21") && b.quando < ms("2022-10-30 17:02:00"));
     const semPesquisas = brasil.filter((b) => b.quando >= ms("2022-10-30 17:02:00") + DUAS_RODADAS && b.quando < ms("2022-10-30 17:05:00"));
-    expect(antes.every((b) => b.projecao?.comPesquisas !== undefined && b.projecao.coincidem !== undefined)).toBe(true);
+    expect(comAsDuas.length).toBeGreaterThan(0);
+    expect(comAsDuas.filter((b) => b.projecao?.comPesquisas === undefined || b.projecao.coincidem === undefined)).toEqual([]);
     expect(semPesquisas.length).toBeGreaterThan(0);
     expect(semPesquisas.map((b) => Object.keys(b.projecao!).sort())).toEqual(semPesquisas.map(() => ["comparacoes", "soApuracao"]));
-    expect(entre("2022-10-30 16:50:00", "2022-10-30 17:02:00").every((x) => x.pesoDasPesquisas !== null)).toBe(true);
-    expect(entre("2022-10-30 17:02:40", "2022-10-30 17:05:00").map((x) => x.pesoDasPesquisas)).toEqual(
-      entre("2022-10-30 17:02:40", "2022-10-30 17:05:00").map(() => null),
-    );
+    const pesosComAsDuas = entre("2022-10-30 17:00:21", "2022-10-30 17:02:00").map((x) => x.pesoDasPesquisas);
+    const pesosSemPesquisas = entre("2022-10-30 17:02:40", "2022-10-30 17:05:00").map((x) => x.pesoDasPesquisas);
+    expect(pesosComAsDuas.length).toBeGreaterThan(3);
+    expect(pesosComAsDuas.filter((p) => p === null)).toEqual([]);
+    expect(pesosSemPesquisas.length).toBeGreaterThan(3);
+    expect(pesosSemPesquisas.filter((p) => p !== null)).toEqual([]);
   });
 
   it("desligada a projeção, nenhum JSON a leva em até 2 rodadas, nem o arquivo de rodada o peso das pesquisas", () => {
     const depois = r.gravacoes.filter((g) => g.caminho.startsWith("lugares/") && g.quando >= ms("2022-10-30 17:05:00") + DUAS_RODADAS);
     expect(depois.length).toBeGreaterThan(100);
     expect(depois.filter((g) => "projecao" in (g.conteudo as ArquivoDoLugar))).toEqual([]);
-    expect(entre("2022-10-30 17:05:40", "2022-10-30 17:26:00").every((x) => x.pesoDasPesquisas === null)).toBe(true);
+    const pesos = entre("2022-10-30 17:05:40", "2022-10-30 17:26:00").map((x) => x.pesoDasPesquisas);
+    expect(pesos.length).toBeGreaterThan(50);
+    expect(pesos.filter((p) => p !== null)).toEqual([]);
   });
 
   it("o aviso pronto entra e sai do arquivo de rodada nas rodadas escolhidas", () => {

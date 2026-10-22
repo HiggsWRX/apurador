@@ -1,4 +1,5 @@
 import type { ArquivoDeRodada, ArquivoDoLugar } from "@apurador/coletor";
+import { placarEntreFinalistas } from "@apurador/modelo";
 import { NOME_DA_BASE, type IdDaBase } from "../lib/bases-da-projecao";
 import { formatarCalculo } from "../lib/formato";
 import { corDoPartido, nomeCurto } from "../lib/identidade";
@@ -37,12 +38,13 @@ export function ProjecaoAoVivo({ projecao, candidatos, tse, eleito, pesquisasDoA
     { candidato: { nomeUrna: primeiro.nome, partido: primeiro.partido }, pct: doPrimeiro },
     { candidato: { nomeUrna: segundo.nome, partido: segundo.partido }, pct: 100 - doPrimeiro },
   ];
-  const escritos = (doPrimeiro: number) => `${primeiro.nome} ${formatarCalculo(doPrimeiro)}%, ${segundo.nome} ${formatarCalculo(100 - doPrimeiro)}%`;
+  /** Os dois % no texto: "JAIR BOLSONARO 47,1%, LULA 52,9%". */
+  const osDoisNoTexto = (doPrimeiro: number) => `${primeiro.nome} ${formatarCalculo(doPrimeiro)}%, ${segundo.nome} ${formatarCalculo(100 - doPrimeiro)}%`;
   // Durante a apuração, compara a projeção, porque o placar parcial depende da ordem de chegada; terminado o lugar, o
-  // resultado, entre os dois, com uma casa.
+  // resultado, pelo placar entre finalistas, com uma casa.
   const terminou = tse.secoes.total > 0 && tse.secoes.totalizadas === tse.secoes.total;
-  const [votos1 = 0, votos2 = 0] = tse.votos;
-  const comparado = terminou && votos1 + votos2 > 0 ? Math.round((1000 * votos1) / (votos1 + votos2)) / 10 : naBase.projecao;
+  const resultado = terminou ? placarEntreFinalistas(tse.votos[0] ?? 0, tse.votos[1] ?? 0) : undefined;
+  const comparado = resultado === undefined ? naBase.projecao : Math.round(10 * resultado) / 10;
   const { primeiroTurno, pesquisas } = doLugar.comparacoes;
   const chanceDoPrimeiro = eleito === null ? naBase.chance : nomeCurto(primeiro.nome) === eleito ? 100 : 0;
   const chances = [
@@ -63,8 +65,8 @@ export function ProjecaoAoVivo({ projecao, candidatos, tse, eleito, pesquisasDoA
       <p class="nota">Resultado final estimado, em votos válidos, com a margem de 95%.</p>
       <ChanceDeVitoria chances={chances} href={`${METODOLOGIA}#chance`} definida={eleito !== null} />
       <p class="nota">
-        {terminou ? "O resultado, comparado" : "A projeção, comparada"}: com o 1º turno, pelo placar entre finalistas ({escritos(primeiroTurno)}),{" "}
-        {mudancaEntre(candidatos, primeiroTurno, comparado)}; com a indicação das pesquisas ({escritos(pesquisas)}),{" "}
+        {resultado === undefined ? "A projeção, comparada" : "O resultado, comparado"}: com o 1º turno, pelo placar entre finalistas (
+        {osDoisNoTexto(primeiroTurno)}), {mudancaEntre(candidatos, primeiroTurno, comparado)}; com a indicação das pesquisas ({osDoisNoTexto(pesquisas)}),{" "}
         {mudancaEntre(candidatos, pesquisas, comparado)}.
       </p>
       {bases.length > 1 && (

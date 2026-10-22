@@ -1,6 +1,6 @@
 import type { ArquivoDeRodada, ProjecaoDoLugar, ProjecaoNaBase } from "@apurador/coletor";
 import { Z_95, type PontoDaCurva, type ViradaProjetada } from "@apurador/modelo";
-import { NOME_DA_BASE, type IdDaBase } from "./bases-da-projecao";
+import { BASES_DA_PROJECAO, NOME_DA_BASE, type IdDaBase } from "./bases-da-projecao";
 import { formatarCalculo, formatarChance } from "./formato";
 import type { QuadroAoVivo } from "./leitor-ao-vivo";
 import { narracaoDaPagina } from "./narracao";
@@ -30,7 +30,7 @@ export function projecaoNaPagina(quadro: QuadroAoVivo, escolhida: IdDaBase): Pro
   const doLugar = quadro.lugar?.projecao;
   if (quadro.fase !== "ao-vivo" || !quadro.chaves.projecao || !doLugar) return null;
   const comPesquisas = quadro.chaves.baseComPesquisas ? doLugar.comPesquisas : undefined;
-  const bases: IdDaBase[] = comPesquisas ? ["so-apuracao", "com-pesquisas"] : ["so-apuracao"];
+  const bases: IdDaBase[] = comPesquisas ? BASES_DA_PROJECAO : ["so-apuracao"];
   const base = bases.includes(escolhida) ? escolhida : "so-apuracao";
   return {
     bases,

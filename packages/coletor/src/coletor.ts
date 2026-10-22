@@ -407,8 +407,11 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     for (const a of d.acompanhados) if ((a.tipo === "brasil" || a.tipo === "uf") && resultados.has(a.url)) sujos.add(a.id!);
   }
 
-  /** A projeção da rodada nas bases que estão no ar, ou `undefined` com a chave da projeção desligada. */
-  const projecaoNoAr = () => (controle.chaves.projecao ? projecao : undefined);
+  /**
+   * A projeção da rodada, ou `undefined` com a chave da projeção desligada ou antes das 17h: até lá, a projeção que vai
+   * ao ar é a do painel, atrás das chaves de antes das 17h, que o coletor não lê.
+   */
+  const projecaoNoAr = (d: Divulgacao) => (controle.chaves.projecao && fase(d) !== "antes-das-17h" ? projecao : undefined);
   /** A base com pesquisas no ar: as duas chaves dela ligadas. */
   const comPesquisasNoAr = () => controle.chaves.projecao && controle.chaves.baseComPesquisas;
 
@@ -453,7 +456,8 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     if (doBrasil.ultimaTotalizacao !== novidade.totalizacao) novidade = { totalizacao: doBrasil.ultimaTotalizacao, vista: relogio.agora() };
 
     // A hora da rodada é a da publicação: é ela que a página compara com o `Date` da CDN.
-    const peso = comPesquisasNoAr() ? (projecao?.pesoDasPesquisas ?? null) : null;
+    const noAr = projecaoNoAr(d);
+    const peso = comPesquisasNoAr() ? (noAr?.pesoDasPesquisas ?? null) : null;
     await gravarSeMudou("rodada.json", arquivoDeRodada(relogio.agora(), fase(d), novidade, candidatos, controle, peso, narracao.doBrasil()));
     const gravacoes: (() => Promise<void>)[] = [];
     for (const a of d.acompanhados) {
@@ -467,7 +471,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       // andando por dentro, para o bloco voltar inteiro quando a chave religar.
       if (!controle.chaves.nucleoMinimo) continue;
       const id = a.id;
-      const arquivo = arquivoDoLugar(a.id, resultado, ordem, curva, narracao.doLugar(a.id), projecaoNoAr()?.doLugar(a.id, controle.chaves.baseComPesquisas));
+      const arquivo = arquivoDoLugar(a.id, resultado, ordem, curva, narracao.doLugar(a.id), noAr?.doLugar(a.id, controle.chaves.baseComPesquisas));
       gravacoes.push(async () => {
         if (await gravarSeMudou(`lugares/${id}.json`, arquivo)) sujos.delete(id);
       });

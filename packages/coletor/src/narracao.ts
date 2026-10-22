@@ -169,19 +169,26 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
   let pesquisasNarradas = false;
 
   /** "As pesquisas deixaram de pesar", na hora e com o % de seções do arquivo do Brasil. */
-  function eventoDasPesquisas(r: ResultadoDoTse): EventoDaNarracao {
-    pesquisasNarradas = true;
-    return {
-      lugar: "BR",
-      tipo: "pesquisas",
-      quando: r.ultimaTotalizacao!,
-      texto: `As pesquisas deixaram de pesar na projeção: com ${pct(r.secoes.percentual)} das seções totalizadas no Brasil, as duas bases coincidem.`,
-    };
-  }
+  const eventoDasPesquisas = (r: ResultadoDoTse): EventoDaNarracao => ({
+    lugar: "BR",
+    tipo: "pesquisas",
+    quando: r.ultimaTotalizacao!,
+    texto: `As pesquisas deixaram de pesar na projeção: com ${pct(r.secoes.percentual)} das seções totalizadas no Brasil, as duas bases coincidem.`,
+  });
 
   /** Se um evento de UF ou do Exterior entra na narração do Brasil: virada, fim e os 50% dos grandes eleitorados. */
   const entraNoBrasil = (lugar: Lugar, e: EventoDaNarracao) =>
     daUf(lugar) && (e.tipo === "virada" || e.tipo === "fim" || (e.tipo === "marco" && e.marco === 50 && GRANDES_ELEITORADOS.includes(lugar.id)));
+
+  /**
+   * Guarda os eventos novos de um lugar, na ordem em que entraram, e os que entram na narração do Brasil. O número de
+   * cada um é a ordem dele no lugar, e o ponto é o da curva real em que foram vistos.
+   */
+  function guardar(lugar: Lugar, narrado: LugarNarrado, novos: EventoDaNarracao[], ponto: PontoDaCurvaReal) {
+    for (const evento of novos) Object.assign(evento, { numero: ++narrado.numero, ponto });
+    narrado.eventos.push(...novos);
+    for (const evento of novos) if (lugar.tipo === "brasil" || entraNoBrasil(lugar, evento)) noBrasil.push(evento);
+  }
 
   const lugarDe = (id: string): Lugar => porId.get(id) ?? { id, tipo: id === "BR" ? "brasil" : id.length === 2 ? "uf" : "municipio", nome: id, aptos: 0 };
 
@@ -250,7 +257,10 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
     const novos: EventoDaNarracao[] = [];
     if (lugar.tipo === "brasil") {
       ultimoDoBrasil = r;
-      if (coincidemNoBrasil && !pesquisasNarradas) novos.push(eventoDasPesquisas(r));
+      if (coincidemNoBrasil && !pesquisasNarradas) {
+        pesquisasNarradas = true;
+        novos.push(eventoDasPesquisas(r));
+      }
     }
     const nivel = nivelDe(lugar, r);
     if (nivel > narrado.nivel) {
@@ -269,11 +279,8 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
       narrado.lider = eleito.numero;
       if (trocou && r.secoes.totalizadas * 100 > COMECO_INSTAVEL * r.secoes.total) viradaReescrita = virar(lugar, narrado, r, quando, eleito, novos);
     }
-    // O número de cada evento é a ordem dele no lugar: o de maior prioridade, o último a entrar, fica com o maior.
-    const ponto = pontoNaCurva(r);
-    for (const evento of novos) Object.assign(evento, { numero: ++narrado.numero, ponto });
-    narrado.eventos.push(...novos);
-    for (const evento of novos) if (lugar.tipo === "brasil" || entraNoBrasil(lugar, evento)) noBrasil.push(evento);
+    // O de maior prioridade, o último a entrar, fica com o maior número.
+    guardar(lugar, narrado, novos, pontoNaCurva(r));
     return viradaReescrita ? [...novos, viradaReescrita] : novos;
   }
 
@@ -315,10 +322,8 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
       }
       // As bases podem passar a coincidir pelos municípios, numa rodada sem arquivo novo do Brasil.
       if (coincidemNoBrasil && !pesquisasNarradas && ultimoDoBrasil && totalizacaoFinal === null) {
-        const narrado = narrados.get("BR")!;
-        const evento = { ...eventoDasPesquisas(ultimoDoBrasil), numero: ++narrado.numero, ponto: pontoNaCurva(ultimoDoBrasil) };
-        narrado.eventos.push(evento);
-        noBrasil.push(evento);
+        pesquisasNarradas = true;
+        guardar(lugarDe("BR"), narrados.get("BR")!, [eventoDasPesquisas(ultimoDoBrasil)], pontoNaCurva(ultimoDoBrasil));
         mudaram.add("BR");
       }
       return mudaram;

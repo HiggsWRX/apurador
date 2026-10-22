@@ -1,7 +1,7 @@
 import type { ChavesDaNoite } from "@apurador/coletor";
 import type { TipoDeLugar } from "@apurador/pipeline";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import type { IdDaBase } from "../lib/bases-da-projecao";
+import { BASE_DA_NOITE, type IdDaBase } from "../lib/bases-da-projecao";
 import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import type { TurnoPassado } from "../lib/curva-de-comparacao";
 import type { EnderecoAoVivo } from "../lib/enderecos-ao-vivo";
@@ -38,7 +38,7 @@ interface Props {
 /** A ilha do bloco ao vivo de um lugar. */
 export default function BlocoAoVivo({ id, tipo, uf, em, fotos, enderecos, chaves, turnosPassados, pesquisasDoAgregado }: Props) {
   const comparacao = useComparacao(id, turnosPassados);
-  const [base, setBase] = useState<IdDaBase>("com-pesquisas");
+  const [base, setBase] = useState<IdDaBase>(BASE_DA_NOITE);
   const leitor = useMemo(
     () =>
       enderecos.length > 0

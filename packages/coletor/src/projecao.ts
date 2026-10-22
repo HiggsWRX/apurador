@@ -89,7 +89,7 @@ export function criarProjecaoDaNoite({ base, constantes, agregado }: EntradaDaPr
   function apuracao(resultado: (abrangencia: AbrangenciaDaDivulgacao) => ResultadoDoTse | undefined): Apuracao | undefined {
     if (!resultado({})?.secoes.totalizadas) return antes;
     let faltam = 0;
-    const a = base.municipios.map((m, i) => {
+    const porMunicipio = base.municipios.map((m, i) => {
       const r = resultado({ uf: m.uf, municipio: m.municipio });
       if (!r) {
         faltam++;
@@ -104,7 +104,7 @@ export function criarProjecaoDaNoite({ base, constantes, agregado }: EntradaDaPr
         votos: [doFinalista(primeiro), doFinalista(segundo)],
       };
     });
-    return faltam > PODEM_FALTAR * base.municipios.length ? undefined : a;
+    return faltam > PODEM_FALTAR * base.municipios.length ? undefined : porMunicipio;
   }
 
   return {
@@ -114,12 +114,12 @@ export function criarProjecaoDaNoite({ base, constantes, agregado }: EntradaDaPr
       }
       // Uma fatia do 1º finalista da base, de 0 a 1, como % do 1º candidato do arquivo de rodada.
       const doPrimeiro = (fatia: number) => 100 * (ordem[0] === primeiro ? fatia : 1 - fatia);
-      const a = apuracao(resultado);
-      if (!a) return undefined;
-      const duas = projetarNasDuasBases(modelo, a, constantes, agregado);
+      const daRodada = apuracao(resultado);
+      if (!daRodada) return undefined;
+      const nasDuasBases = projetarNasDuasBases(modelo, daRodada, constantes, agregado);
       const curvas = {
-        soApuracao: curvaProjetada(modelo, a, duas.soApuracao, constantes),
-        comPesquisas: curvaProjetada(modelo, a, duas.comPesquisas, constantes),
+        soApuracao: curvaProjetada(modelo, daRodada, nasDuasBases.soApuracao, constantes),
+        comPesquisas: curvaProjetada(modelo, daRodada, nasDuasBases.comPesquisas, constantes),
       };
 
       const naBase = (r: ResultadoDoLugar, curva: CurvaDoLugar): ProjecaoNaBase => ({
@@ -133,16 +133,18 @@ export function criarProjecaoDaNoite({ base, constantes, agregado }: EntradaDaPr
       });
 
       return {
-        pesoDasPesquisas: duas.comPesquisas.pesoDasPesquisas,
-        coincidemNoBrasil: duas.coincidem.brasil,
+        pesoDasPesquisas: nasDuasBases.comPesquisas.pesoDasPesquisas,
+        coincidemNoBrasil: nasDuasBases.coincidem.brasil,
         doLugar(id, comPesquisas) {
           const doBrasil = id === "BR";
-          if (!doBrasil && !(id in duas.soApuracao.ufs)) return undefined;
+          if (!doBrasil && !(id in nasDuasBases.soApuracao.ufs)) return undefined;
           const naBaseDoLugar = (qual: "soApuracao" | "comPesquisas") =>
-            doBrasil ? naBase(duas[qual].brasil, curvas[qual].brasil) : naBase(duas[qual].ufs[id]!, curvas[qual].ufs[id]!);
+            doBrasil ? naBase(nasDuasBases[qual].brasil, curvas[qual].brasil) : naBase(nasDuasBases[qual].ufs[id]!, curvas[qual].ufs[id]!);
+          // O placar entre finalistas como a página o escreve (retro do ticket 33): o do 1º candidato, o do partido de
+          // Bolsonaro em 2022 e em 2026, com uma casa, e o do outro com o que falta para 100.
           const comparacoes = { primeiroTurno: umaCasa(doPrimeiro(primeiroTurno(id) / 100)), pesquisas: umaCasa(doPrimeiro(indicacao(id) / 100)) };
           if (!comPesquisas) return { soApuracao: naBaseDoLugar("soApuracao"), comparacoes };
-          const coincidem = doBrasil ? duas.coincidem.brasil : duas.coincidem.ufs[id]!;
+          const coincidem = doBrasil ? nasDuasBases.coincidem.brasil : nasDuasBases.coincidem.ufs[id]!;
           return { soApuracao: naBaseDoLugar("soApuracao"), comPesquisas: naBaseDoLugar("comPesquisas"), coincidem, comparacoes };
         },
       };
