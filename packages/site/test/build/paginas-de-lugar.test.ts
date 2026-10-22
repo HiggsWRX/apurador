@@ -191,7 +191,7 @@ describe("rodapé", () => {
   const rodape = texto(elemento(pagina("/sp/campinas/"), /<footer/));
 
   it("traz o responsável, a independência, a atribuição do TSE e o aviso sobre a projeção", () => {
-    expect(rodape).toContain("Responsável: Hiago Oliveira · contato@apurador.org");
+    expect(rodape).toContain("Responsável: Hiago de Oliveira · contato@apurador.org");
     expect(rodape).toContain("independente do TSE, dos candidatos e dos partidos");
     expect(rodape).toMatch(/Fonte: TSE.*CC-BY/);
     expect(rodape).toContain("Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.");
