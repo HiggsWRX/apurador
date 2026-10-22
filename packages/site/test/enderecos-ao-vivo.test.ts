@@ -24,6 +24,7 @@ function rodada(hora: string): ArquivoDeRodada {
     candidatos: CANDIDATOS,
     chaves: LIGADAS,
     aviso: null,
+    pesoDasPesquisas: 3,
     eventosDoBrasil: [],
   };
 }

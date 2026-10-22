@@ -5,7 +5,7 @@ import { AGREGADO, entreOsFinalistas, PLACAR_ENTRE_FINALISTAS_DO_BRASIL, quemGan
 import { BASE_PADRAO, PROJECAO_ANTES_DAS_17H, type ProjecaoDeUmaBase } from "../lib/projecao-antes-das-17h";
 import { caminhoDoSimulador, SIMULADOR_ANTES_DAS_17H } from "../lib/simulador-antes-das-17h";
 import { ChanceDeVitoria } from "./ChanceDeVitoria";
-import ValoresDosFinalistas from "./ValoresDosFinalistas.astro";
+import { ValoresDosFinalistas } from "./ValoresDosFinalistas";
 
 // A projeção e a chance de vitória antes das 17h, na página do Brasil (Telas da página de lugar, decisões 3 e 11):
 // numa moldura tracejada com fundo próprio e o aviso, o resultado final estimado de cada candidato com uma casa e a
@@ -105,13 +105,3 @@ const chances = (base: ProjecaoDeUmaBase) =>
     });
   }
 </script>
-
-<style>
-  .links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem 1.25rem;
-    margin: 0.75rem 0 0;
-    font-size: 0.875rem;
-  }
-</style>

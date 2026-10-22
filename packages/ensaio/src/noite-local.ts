@@ -113,6 +113,8 @@ pronto.on("line", (linha) => {
     `http://127.0.0.1:${porta}/oficial`,
     "--minutos",
     opcoes.minutos,
+    "--noite",
+    "2022-2",
   ]);
   pids.coletor = coletor.pid;
   gravarPids();

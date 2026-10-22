@@ -61,6 +61,7 @@ function quadroEm({
     candidatos: CANDIDATOS,
     chaves: LIGADAS,
     aviso: null,
+    pesoDasPesquisas: 3,
     eventosDoBrasil,
   };
   const arquivo: ArquivoDoLugar = {

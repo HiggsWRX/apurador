@@ -2,9 +2,9 @@ import { antesNaNarracao, type EventoDaNarracao } from "@apurador/coletor/narrac
 import type { QuadroAoVivo } from "./leitor-ao-vivo";
 
 // A narração da noite como a página a mostra (Narração da noite, decisões 1 e 10): a do próprio lugar, que vem pronta
-// no JSON dele, com os eventos do Brasil do arquivo de rodada (a virada, a indicação do TSE e a totalização final)
-// intercalados pela hora nas páginas das UFs, do Exterior e dos municípios. A página não escreve texto nenhum: só
-// junta, ordena e escolhe.
+// no JSON dele, com os eventos do Brasil do arquivo de rodada (a virada, "as pesquisas deixaram de pesar", a indicação
+// do TSE e a totalização final) intercalados pela hora nas páginas das UFs, do Exterior e dos municípios. A página não
+// escreve texto nenhum: só junta, ordena e escolhe.
 
 /** A narração da página do lugar, do evento mais novo ao mais antigo, ou `null` antes das 17h, quando ela ainda não começou. */
 export function narracaoDaPagina(quadro: QuadroAoVivo): EventoDaNarracao[] | null {

@@ -8,8 +8,11 @@ import { emOrdem, type PontoDaCurvaReal } from "./arquivos.ts";
 // é o `ht` do arquivo do TSE em que ele foi visto, e os números são os do TSE, com as duas casas. A página importa
 // daqui os tipos, a ordem e os nomes curtos, por `@apurador/coletor/narracao`: nada aqui usa o Node.
 
-/** O tipo de um evento factual. A totalização final é o fim do Brasil; nos outros lugares, o fim é "terminou a totalização". */
-export type TipoDeEvento = "comeco" | "marco" | "fim" | "virada" | "indicacao" | "totalizacao-final";
+/**
+ * O tipo de um evento factual. A totalização final é o fim do Brasil; nos outros lugares, o fim é "terminou a totalização".
+ * "pesquisas" é "as pesquisas deixaram de pesar", só no Brasil.
+ */
+export type TipoDeEvento = "comeco" | "marco" | "fim" | "virada" | "indicacao" | "totalizacao-final" | "pesquisas";
 
 /** Um evento da narração, como vai nos arquivos ao vivo. */
 export interface EventoDaNarracao {
@@ -38,7 +41,7 @@ export interface EventoDaNarracao {
  * A ordem dos eventos vistos no mesmo arquivo (decisão 10): virada; indicação do TSE ou totalização final; preditivo;
  * marco; "as pesquisas deixaram de pesar". O começo e o fim de um lugar contam como marcos. Menor vem antes.
  */
-const PRIORIDADE: Record<TipoDeEvento, number> = { virada: 0, indicacao: 1, "totalizacao-final": 1, comeco: 3, marco: 3, fim: 3 };
+const PRIORIDADE: Record<TipoDeEvento, number> = { virada: 0, indicacao: 1, "totalizacao-final": 1, comeco: 3, marco: 3, fim: 3, pesquisas: 4 };
 
 /** A ordem da narração na página: o evento mais novo primeiro e, no mesmo instante, o de maior prioridade. */
 export const antesNaNarracao = (a: EventoDaNarracao, b: EventoDaNarracao) => b.quando.localeCompare(a.quando) || PRIORIDADE[a.tipo] - PRIORIDADE[b.tipo];
@@ -54,8 +57,11 @@ export const COMECO_INSTAVEL = 3;
 
 /** A narração de todos os lugares de uma noite. */
 export interface Narracao {
-  /** Uma rodada: os resultados que o coletor baixou nela, pelo id do lugar. Devolve os lugares cuja narração mudou. */
-  narrar(novos: ReadonlyMap<string, ResultadoDoTse>): Set<string>;
+  /**
+   * Uma rodada: os resultados que o coletor baixou nela, pelo id do lugar, e se as duas bases da projeção coincidem no
+   * Brasil, pela projeção da mesma rodada. Devolve os lugares cuja narração mudou.
+   */
+  narrar(novos: ReadonlyMap<string, ResultadoDoTse>, projecao?: { coincidemNoBrasil: boolean }): Set<string>;
   /** A narração de um lugar, do evento mais novo ao mais antigo. No Brasil, com os eventos das UFs que entram nela. */
   doLugar(id: string): EventoDaNarracao[];
   /** Os eventos do Brasil que entram, intercalados, nas narrações das UFs, do Exterior e dos municípios. */
@@ -73,8 +79,8 @@ const FIM = 100;
 const JANELA_DA_VIRADA = 10 * 60_000;
 /** Os 8 maiores eleitorados, cujos 50% entram na narração do Brasil (decisão 3). */
 const GRANDES_ELEITORADOS = ["SP", "MG", "RJ", "BA", "RS", "PR", "PE", "CE"];
-/** Os eventos do Brasil que entram nas outras páginas (decisão 1); "as pesquisas deixaram de pesar" chega com a projeção. */
-const DO_BRASIL_NAS_OUTRAS: TipoDeEvento[] = ["virada", "indicacao", "totalizacao-final"];
+/** Os quatro eventos do Brasil que entram nas outras páginas (decisão 1). */
+const DO_BRASIL_NAS_OUTRAS: TipoDeEvento[] = ["virada", "pesquisas", "indicacao", "totalizacao-final"];
 
 // O nome curto dos finalistas nos textos ("Flávio 50,43%, Lula 49,57%"), pelo nome de urna, que o TSE escreve em
 // maiúsculas e sem acento. O 2º turno de 2022 entra porque o TSE falso o serve no replay e no ensaio geral.
@@ -120,6 +126,9 @@ const deOutroLugar = ({ numero: _numero, ponto: _ponto, ...evento }: EventoDaNar
 /** Do mais novo ao mais antigo, a partir da ordem em que entraram: a ordenação é estável, e no mesmo instante e prioridade fica o que entrou depois. */
 const doMaisNovo = (eventos: EventoDaNarracao[]) => [...eventos].reverse().sort(antesNaNarracao);
 
+/** O ponto da curva real de um resultado, com os candidatos na ordem do site. */
+const pontoNaCurva = (r: ResultadoDoTse): PontoDaCurvaReal => [r.secoes.percentual, ...emOrdem(r.candidatos).map((c) => c.percentual)];
+
 /** Quem lidera o placar parcial, pelos votos, ou `undefined` num empate ou sem votos. */
 function lider(r: ResultadoDoTse): CandidatoDoResultado | undefined {
   const [primeiro, segundo] = [...r.candidatos].sort((a, b) => b.votos - a.votos);
@@ -154,6 +163,21 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
   const noBrasil: EventoDaNarracao[] = [];
   /** A hora da totalização final do Brasil, depois da qual a narração não cresce mais (decisão 11). */
   let totalizacaoFinal: string | null = null;
+  /** O último arquivo do Brasil que a narração viu: a hora e o ponto de "as pesquisas deixaram de pesar" numa rodada sem ele. */
+  let ultimoDoBrasil: ResultadoDoTse | null = null;
+  /** "As pesquisas deixaram de pesar" entra uma vez na noite (decisão 2), mesmo que as bases deixem de coincidir e voltem. */
+  let pesquisasNarradas = false;
+
+  /** "As pesquisas deixaram de pesar", na hora e com o % de seções do arquivo do Brasil. */
+  function eventoDasPesquisas(r: ResultadoDoTse): EventoDaNarracao {
+    pesquisasNarradas = true;
+    return {
+      lugar: "BR",
+      tipo: "pesquisas",
+      quando: r.ultimaTotalizacao!,
+      texto: `As pesquisas deixaram de pesar na projeção: com ${pct(r.secoes.percentual)} das seções totalizadas no Brasil, as duas bases coincidem.`,
+    };
+  }
 
   /** Se um evento de UF ou do Exterior entra na narração do Brasil: virada, fim e os 50% dos grandes eleitorados. */
   const entraNoBrasil = (lugar: Lugar, e: EventoDaNarracao) =>
@@ -210,7 +234,7 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
   }
 
   /** Narra o resultado novo de um lugar. Devolve os eventos que entraram ou mudaram de texto. */
-  function observar(id: string, r: ResultadoDoTse): EventoDaNarracao[] {
+  function observar(id: string, r: ResultadoDoTse, coincidemNoBrasil: boolean): EventoDaNarracao[] {
     const lugar = lugarDe(id);
     const narrado: LugarNarrado = narrados.get(id) ?? { nivel: SEM_SECOES, visto: null, indicacao: false, lider: null, virada: null, numero: 0, eventos: [] };
     narrados.set(id, narrado);
@@ -224,6 +248,10 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
 
     // Os eventos de um mesmo arquivo entram do de menor prioridade ao de maior.
     const novos: EventoDaNarracao[] = [];
+    if (lugar.tipo === "brasil") {
+      ultimoDoBrasil = r;
+      if (coincidemNoBrasil && !pesquisasNarradas) novos.push(eventoDasPesquisas(r));
+    }
     const nivel = nivelDe(lugar, r);
     if (nivel > narrado.nivel) {
       narrado.nivel = nivel;
@@ -242,7 +270,7 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
       if (trocou && r.secoes.totalizadas * 100 > COMECO_INSTAVEL * r.secoes.total) viradaReescrita = virar(lugar, narrado, r, quando, eleito, novos);
     }
     // O número de cada evento é a ordem dele no lugar: o de maior prioridade, o último a entrar, fica com o maior.
-    const ponto: PontoDaCurvaReal = [r.secoes.percentual, ...emOrdem(r.candidatos).map((c) => c.percentual)];
+    const ponto = pontoNaCurva(r);
     for (const evento of novos) Object.assign(evento, { numero: ++narrado.numero, ponto });
     narrado.eventos.push(...novos);
     for (const evento of novos) if (lugar.tipo === "brasil" || entraNoBrasil(lugar, evento)) noBrasil.push(evento);
@@ -275,14 +303,23 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
   }
 
   return {
-    narrar(novos) {
+    narrar(novos, projecao) {
+      const coincidemNoBrasil = projecao?.coincidemNoBrasil ?? false;
       // As UFs primeiro: os marcos do Brasil dizem onde faltam seções pelo que chegou na mesma rodada.
       const emOrdemDeNarrar = [...novos].sort(([a], [b]) => Number(!daUf(lugarDe(a))) - Number(!daUf(lugarDe(b))));
       const mudaram = new Set<string>();
       for (const [id, r] of emOrdemDeNarrar) {
-        const eventos = observar(id, r);
+        const eventos = observar(id, r, coincidemNoBrasil);
         if (eventos.length > 0) mudaram.add(id);
         if (eventos.some((e) => entraNoBrasil(lugarDe(id), e))) mudaram.add("BR");
+      }
+      // As bases podem passar a coincidir pelos municípios, numa rodada sem arquivo novo do Brasil.
+      if (coincidemNoBrasil && !pesquisasNarradas && ultimoDoBrasil && totalizacaoFinal === null) {
+        const narrado = narrados.get("BR")!;
+        const evento = { ...eventoDasPesquisas(ultimoDoBrasil), numero: ++narrado.numero, ponto: pontoNaCurva(ultimoDoBrasil) };
+        narrado.eventos.push(evento);
+        noBrasil.push(evento);
+        mudaram.add("BR");
       }
       return mudaram;
     },

@@ -18,11 +18,12 @@ import { chavesEfetivas, CONTROLE_INICIAL, type Controle } from "./chaves.ts";
 import type { ContadorDeGravacoes, GravacoesDoMes } from "./contador.ts";
 import type { Destino } from "./destino.ts";
 import { criarNarracao } from "./narracao.ts";
+import { criarProjecaoDaNoite, type EntradaDaProjecao, type ProjecaoDaRodada } from "./projecao.ts";
 import type { RelogioDoColetor } from "./relogio.ts";
 
 // O coletor da noite. A cada rodada ele lê os índices do TSE (`-ab.json` do Brasil e de cada UF), baixa o
-// resultado de cada lugar cuja última totalização no índice é mais nova que a que ele tem, narra o que chegou
-// (`narracao.ts`) e publica o que mudou.
+// resultado de cada lugar cuja última totalização no índice é mais nova que a que ele tem, roda o modelo nas duas
+// bases (`projecao.ts`), narra o que chegou (`narracao.ts`) e publica o que mudou.
 // As URLs saem da configuração de municípios e zonas, e nada da eleição (candidatos, municípios) fica no código.
 //
 // O TSE guarda cada arquivo ~60 s no CDN: um mesmo arquivo de resultado é pedido no máximo uma vez por minuto,
@@ -60,6 +61,8 @@ export interface OpcoesDoColetor {
    * leitura falhar, a rodada fica com o controle anterior e registra a falha. Sem ele, vale o controle inicial.
    */
   controle?: () => Promise<Controle>;
+  /** A base do modelo da noite, as constantes e o agregado congelado. Sem ela, o coletor publica só o núcleo mínimo. */
+  projecao?: EntradaDaProjecao;
 }
 
 /** O que uma rodada fez: uma linha do registro do coletor (`.cache/coletor/rodadas-*.jsonl`). */
@@ -198,6 +201,10 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   const narracao = criarNarracao(opcoes.lugares);
   /** Os lugares com resultado novo que a narração ainda não viu. */
   const porNarrar = new Set<string>();
+  const projecaoDaNoite = opcoes.projecao && criarProjecaoDaNoite(opcoes.projecao);
+  /** A projeção da última rodada com resultado novo; a seguinte só projeta de novo se chegar outro. */
+  let projecao: ProjecaoDaRodada | undefined;
+  let projetarDeNovo = true;
   let novidade: { totalizacao: string | null; vista: number | null } = { totalizacao: null, vista: null };
   let numero = 0;
   /** O que o dono mandou: lido no começo de cada rodada e aplicado nela inteira. */
@@ -371,6 +378,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       if (resposta !== null && pendenteDesde !== undefined && pedidoNo - pendenteDesde >= UM_MINUTO) zonasPendentes.delete(a.url);
       if (resposta?.status !== 200) return;
       resultados.set(a.url, resposta.lido);
+      projetarDeNovo = true;
       registro.baixados[TIPOS[a.tipo].contador]++;
       if (a.id === null) return;
       sujos.add(a.id);
@@ -379,14 +387,42 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   }
 
   /**
+   * Roda o modelo quando chegou resultado novo e marca para gravar o Brasil, as UFs e o Exterior, que levam a projeção:
+   * só os bytes que mudaram vão ao destino, e assim uma chave ligada ou desligada também chega a eles. Uma projeção que
+   * falha vira falha da rodada, e o núcleo mínimo sai sem ela.
+   */
+  function projetar(d: Divulgacao) {
+    const doBrasil = brasil(d);
+    if (!projecaoDaNoite || !doBrasil) return;
+    if (projetarDeNovo) {
+      projetarDeNovo = false;
+      try {
+        const ordem = emOrdem(doBrasil.candidatos).map((c) => c.numero);
+        projecao = projecaoDaNoite.projetar((abrangencia) => resultados.get(d.urls.resultado(abrangencia)), ordem);
+      } catch (erro) {
+        projecao = undefined;
+        registro.falhas.push(`projeção: ${(erro as Error).message}`);
+      }
+    }
+    for (const a of d.acompanhados) if ((a.tipo === "brasil" || a.tipo === "uf") && resultados.has(a.url)) sujos.add(a.id!);
+  }
+
+  /** A projeção da rodada nas bases que estão no ar, ou `undefined` com a chave da projeção desligada. */
+  const projecaoNoAr = () => (controle.chaves.projecao ? projecao : undefined);
+  /** A base com pesquisas no ar: as duas chaves dela ligadas. */
+  const comPesquisasNoAr = () => controle.chaves.projecao && controle.chaves.baseComPesquisas;
+
+  /**
    * Passa à narração os resultados novos da rodada, na ordem dos lugares, e marca para gravar os lugares cuja narração
-   * mudou: o Brasil muda também com os eventos das UFs que entram nele.
+   * mudou: o Brasil muda também com os eventos das UFs que entram nele. "As pesquisas deixaram de pesar" fala das duas
+   * bases, e só conta com elas no ar.
    */
   function narrar(d: Divulgacao) {
     const novos = new Map<string, ResultadoDoTse>();
     for (const a of d.acompanhados) if (a.id !== null && porNarrar.has(a.id)) novos.set(a.id, resultados.get(a.url)!);
     porNarrar.clear();
-    for (const id of narracao.narrar(novos)) sujos.add(id);
+    const coincidemNoBrasil = comPesquisasNoAr() && (projecao?.coincidemNoBrasil ?? false);
+    for (const id of narracao.narrar(novos, { coincidemNoBrasil })) sujos.add(id);
   }
 
   function fase(d: Divulgacao): Fase {
@@ -417,7 +453,8 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     if (doBrasil.ultimaTotalizacao !== novidade.totalizacao) novidade = { totalizacao: doBrasil.ultimaTotalizacao, vista: relogio.agora() };
 
     // A hora da rodada é a da publicação: é ela que a página compara com o `Date` da CDN.
-    await gravarSeMudou("rodada.json", arquivoDeRodada(relogio.agora(), fase(d), novidade, candidatos, controle, narracao.doBrasil()));
+    const peso = comPesquisasNoAr() ? (projecao?.pesoDasPesquisas ?? null) : null;
+    await gravarSeMudou("rodada.json", arquivoDeRodada(relogio.agora(), fase(d), novidade, candidatos, controle, peso, narracao.doBrasil()));
     const gravacoes: (() => Promise<void>)[] = [];
     for (const a of d.acompanhados) {
       if (a.id === null || !sujos.has(a.id)) continue;
@@ -430,7 +467,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       // andando por dentro, para o bloco voltar inteiro quando a chave religar.
       if (!controle.chaves.nucleoMinimo) continue;
       const id = a.id;
-      const arquivo = arquivoDoLugar(a.id, resultado, ordem, curva, narracao.doLugar(a.id));
+      const arquivo = arquivoDoLugar(a.id, resultado, ordem, curva, narracao.doLugar(a.id), projecaoNoAr()?.doLugar(a.id, controle.chaves.baseComPesquisas));
       gravacoes.push(async () => {
         if (await gravarSeMudou(`lugares/${id}.json`, arquivo)) sujos.delete(id);
       });
@@ -492,6 +529,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       if (divulgacao) {
         await lerIndices(divulgacao);
         await baixarResultados(divulgacao);
+        projetar(divulgacao);
         narrar(divulgacao);
         await publicar(divulgacao);
         if (brasil(divulgacao)) registro.fase = fase(divulgacao);

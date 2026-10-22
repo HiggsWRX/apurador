@@ -1,6 +1,8 @@
+import type { IdDaBase } from "../lib/bases-da-projecao";
 import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import type { QuadroAoVivo } from "../lib/leitor-ao-vivo";
 import { eventosDoLugar } from "../lib/narracao";
+import { curvaProjetadaAoVivo, projecaoNaPagina } from "../lib/projecao-ao-vivo";
 import { eleitoPelaIndicacao, manchete, type LugarDaManchete } from "../lib/textos-ao-vivo";
 import type { PropsDaComparacao } from "./CurvaDeComparacao";
 import { CurvaReal } from "./CurvaReal";
@@ -9,11 +11,13 @@ import { IndicadorAoVivo } from "./IndicadorAoVivo";
 import { LinhaFixa } from "./LinhaFixa";
 import { PlacarOficial } from "./PlacarOficial";
 import { PlanoZero } from "./PlanoZero";
+import { ProjecaoAoVivo } from "./ProjecaoAoVivo";
 import { UltimoEvento } from "./UltimoEvento";
 
-// O desenho do bloco ao vivo para um quadro do leitor (Telas da página de lugar, decisões 1, 2, 4 e 5): a manchete com
-// o último evento da narração, o placar oficial e a curva real. Não guarda estado nem lê nada: a ilha (`BlocoAoVivo`)
-// faz as leituras e passa o quadro, e os testes renderizam esta vista em HTML.
+// O desenho do bloco ao vivo para um quadro do leitor (Telas da página de lugar, decisões 1 a 6): a manchete com o
+// último evento da narração, o placar oficial, a curva real com a curva projetada por cima e a caixa da projeção. Não
+// guarda estado nem lê nada: a ilha (`BlocoAoVivo`) faz as leituras, guarda a base da projeção escolhida e passa os
+// dois, e os testes renderizam esta vista em HTML.
 
 /** O que a vista recebe da ilha: o quadro da última leitura e o que a ilha sabe da tela e do tempo. */
 export interface PropsDaVista {
@@ -31,10 +35,27 @@ export interface PropsDaVista {
   placarNaTela?: boolean;
   /** A curva de comparação: os turnos passados do lugar, o que está ligado e o clique, que a ilha guarda. */
   comparacao?: PropsDaComparacao;
+  /** A base da projeção que o visitante escolheu. Padrão: "Apuração + pesquisas" (Combinação de pesquisas e apuração, decisão 5). */
+  base?: IdDaBase;
+  aoEscolherBase?: (base: IdDaBase) => void;
+  /** Quantas pesquisas o agregado de pesquisas tem, para o link da caixa da projeção, ou `null` sem ele no ar. */
+  pesquisasDoAgregado?: number | null;
 }
 
-/** O bloco ao vivo para o quadro: a manchete, a linha fixa, o placar oficial e a curva real. */
-export function VistaDoBlocoAoVivo({ quadro, lugar, fotos, movimentoReduzido, proximaLeitura, lendo, placarNaTela = true, comparacao }: PropsDaVista) {
+/** O bloco ao vivo para o quadro: a manchete, a linha fixa, o placar oficial, a curva real e a projeção. */
+export function VistaDoBlocoAoVivo({
+  quadro,
+  lugar,
+  fotos,
+  movimentoReduzido,
+  proximaLeitura,
+  lendo,
+  placarNaTela = true,
+  comparacao,
+  base = "com-pesquisas",
+  aoEscolherBase = () => {},
+  pesquisasDoAgregado = null,
+}: PropsDaVista) {
   // No plano zero, o bloco inteiro dá lugar ao convite ao app oficial do TSE; a faixa do aviso pronto continua.
   if (emPlanoZero(quadro)) {
     return (
@@ -59,6 +80,8 @@ export function VistaDoBlocoAoVivo({ quadro, lugar, fotos, movimentoReduzido, pr
   // Com movimento reduzido, nada pisca.
   const mudou = (numero: string) => !movimentoReduzido && quadro.mudaram.includes(numero);
   const frase = manchete(quadro, lugar);
+  const eleito = eleitoPelaIndicacao(quadro);
+  const projecao = dados ? projecaoNaPagina(quadro, base) : null;
   return (
     <div class="bloco-ao-vivo">
       {dados && <LinhaFixa candidatos={dados.candidatos} tse={dados.tse} escondida={placarNaTela} indicador={indicador()} mudou={mudou} />}
@@ -76,9 +99,27 @@ export function VistaDoBlocoAoVivo({ quadro, lugar, fotos, movimentoReduzido, pr
         fotos={fotos}
         indicador={indicador()}
         mudou={mudou}
-        eleito={eleitoPelaIndicacao(quadro)}
+        eleito={eleito}
       />
-      {dados && <CurvaReal candidatos={dados.candidatos} curva={quadro.lugar!.curva} comparacao={comparacao} eventos={eventosDoLugar(quadro)} />}
+      {dados && (
+        <CurvaReal
+          candidatos={dados.candidatos}
+          curva={quadro.lugar!.curva}
+          comparacao={comparacao}
+          eventos={eventosDoLugar(quadro)}
+          projetada={projecao && curvaProjetadaAoVivo(projecao)}
+        />
+      )}
+      {dados && projecao && (
+        <ProjecaoAoVivo
+          projecao={projecao}
+          candidatos={dados.candidatos}
+          tse={dados.tse}
+          eleito={eleito}
+          pesquisasDoAgregado={pesquisasDoAgregado}
+          aoEscolherBase={aoEscolherBase}
+        />
+      )}
     </div>
   );
 }
