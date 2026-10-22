@@ -1,6 +1,6 @@
 # 13: Lançamento da etapa "Antes da noite"
 
-Status: ready-for-human
+Status: resolved
 Blocked by: 02, 03, 04, 09, 10, 12
 Spec: [Apurador 2026: especificação da construção](../spec.md)
 
@@ -25,17 +25,17 @@ Decisões: [Plano de lançamento em fases](../../apurador-2026/issues/19-plano-d
 
 O endereço só abre com os nove itens verdadeiros, registrados com o de acordo do dono.
 
-- [ ] **Build e testes**: as ~5.800 páginas de lugar se constroem, e o CI passa, com o replay automático.
-- [ ] **Histórico**: os totais de cada turno, no Brasil e em cada UF, batem com os arquivos oficiais por conferência automática, e as atribuições do TSE e do IBGE estão na página.
-- [ ] **Pesquisas**: cada pesquisa da lista tem os seis dados do art. 10, conferidos contra o registro do TSE, e o agregado na página é o que a regra calcula sobre o `pesquisas.csv`.
-- [ ] **Painel de antes das 17h**: os números são os do `modelo` sobre o mesmo `pesquisas.csv`, com os avisos de "não é pesquisa própria" e "não é resultado oficial nem garantia do resultado". Cada bloco desliga pela sua chave, sem código novo.
-- [ ] **Metodologia**: no ar com os critérios de seleção, os cálculos, as limitações, "sem IA generativa nem aprendizagem de máquina" e a atribuição da malha.
-- [ ] **Rodapé**: com o nome completo do dono e o e-mail do projeto.
-- [ ] **Celular**: placar e painel visíveis em até 3 s num Android barato no 4G.
-- [ ] **Revisão do dono no celular**: o Brasil, uma UF, um município grande e um pequeno.
-- [ ] **Depois de aberto**: um deploy que quebre um destes critérios volta à versão anterior na hora.
-- [ ] O site abre em `apurador.org`, sem `noindex`, com o Cloudflare Web Analytics, sem cookies nem outro rastreador. O `*.workers.dev` fica só como endereço do plano B, nunca divulgado.
-- [ ] O registro do lançamento traz a conferência dos nove itens e o de acordo do dono.
+- [x] **Build e testes**: as ~5.800 páginas de lugar se constroem, e o CI passa, com o replay automático.
+- [x] **Histórico**: os totais de cada turno, no Brasil e em cada UF, batem com os arquivos oficiais por conferência automática, e as atribuições do TSE e do IBGE estão na página.
+- [x] **Pesquisas**: cada pesquisa da lista tem os seis dados do art. 10, conferidos contra o registro do TSE, e o agregado na página é o que a regra calcula sobre o `pesquisas.csv`.
+- [x] **Painel de antes das 17h**: os números são os do `modelo` sobre o mesmo `pesquisas.csv`, com os avisos de "não é pesquisa própria" e "não é resultado oficial nem garantia do resultado". Cada bloco desliga pela sua chave, sem código novo.
+- [x] **Metodologia**: no ar com os critérios de seleção, os cálculos, as limitações, "sem IA generativa nem aprendizagem de máquina" e a atribuição da malha.
+- [x] **Rodapé**: com o nome completo do dono e o e-mail do projeto.
+- [x] **Celular**: placar e painel visíveis em até 3 s num Android barato no 4G.
+- [x] **Revisão do dono no celular**: o Brasil, uma UF, um município grande e um pequeno.
+- [x] **Depois de aberto**: um deploy que quebre um destes critérios volta à versão anterior na hora.
+- [x] O site abre em `apurador.org`, sem `noindex`, com o Cloudflare Web Analytics, sem cookies nem outro rastreador. O `*.workers.dev` fica só como endereço do plano B, nunca divulgado.
+- [x] O registro do lançamento traz a conferência dos nove itens e o de acordo do dono.
 
 ## Comments
 
@@ -77,3 +77,14 @@ O endereço só abre com os nove itens verdadeiros, registrados com o de acordo 
 - 22/10/2026, do [ticket 17](17-projecao-ao-vivo.md):
   - **Às 17h**: com o coletor no ar, a página do Brasil esconde sozinha a projeção de antes das 17h e "O que esperar da noite" quando a fase passa a ao vivo (`<html data-fase>`, posto pelo `BlocoAoVivo`, e `global.css`).
   - **O que fica**: o agregado e a lista das pesquisas. A caixa da projeção ao vivo leva para a lista: "as 8 pesquisas do agregado", em `/#pesquisas-registradas`.
+- 22/10/2026, registro do lançamento:
+  - **No ar às 11h31 de Brasília**, antes da meta das 12h: o deploy do CI do merge `d0c58cb` (run 39795054074), versão `4f6ea97c` do Worker `apurador`. A conferência dos nove itens e o de acordo do dono estão em [`docs/lancamento/antes-da-noite.md`](../../../docs/lancamento/antes-da-noite.md).
+  - **Conferido no ar**: o `apurador.org` sem `noindex` (nem `<meta>` nem `X-Robots-Tag`) e sem `Set-Cookie`; o script do Web Analytics carrega e manda a visita a `cloudflareinsights.com/cdn-cgi/rum`, sem cookie e sem outro pedido de fora; o rodapé e a seção 9 da metodologia com o responsável e o e-mail; as sete âncoras da metodologia; `/simulador/`, `/curvas/BR.json` e os dois CSVs em `/dados/` (como `text/csv`).
+  - **Responsável**: o `Monta …` pôs "Hiago Oliveira" em `RESPONSAVEL` (`packages/site/src/lib/projeto.ts`), e não o "Hiago de Oliveira" do dono em 20/10. `ac89511` corrigiu, a junção `e2fea48` o pôs na `main`, e ele está no ar desde as 11h53, na versão `a3462a86`: conferido às 12h32 no rodapé das quatro páginas da revisão (o Brasil, `/sp/`, `/sp/sao-paulo/` e `/mg/serra-da-saudade/`), da metodologia e do simulador. Um `wrangler rollback` sem `<id>` cai na `4f6ea97c`, que ainda tem o nome sem o "de".
+  - **O `*.workers.dev` do site**: o `public/_headers` põe `X-Robots-Tag: noindex` só no host `apurador.hicampos93.workers.dev` (conferido no ar). O endereço segue de pé, sem divulgação; o plano B é outro Worker, o `apurador-plano-b`.
+  - **O snippet** vai com `defer` no fim do `<body>`, como o da Cloudflare, e não com `type='module'` no `<head>`, como no comentário de 20/10: nenhum dos dois trava a pintura. O token fica em `TOKEN_DO_WEB_ANALYTICS` (`packages/site/src/lib/projeto.ts`).
+  - **Testes que mudaram**: `pagina-brasil` (indexação só fora do `workers.dev` e audiência só pelo Web Analytics), `paginas-de-lugar` (o rodapé com o nome e o e-mail) e `simulador` (o `javascriptDa` segue só os scripts do build: o do Web Analytics, ~10 KB com gzip, fica fora dos orçamentos de peso).
+  - **Pesquisas**: conferidas de novo no TSE em 22/10, no CSV de registros de 21/10, sem divergência. O `pesquisas.csv` segue com as 17 de 19/10: as divulgadas depois disso entram pelo deploy diário, até as 23h de 24/10.
+  - **Celular**: a medição foi emulada (Slow 4G e CPU 4× mais lenta), de 1,4 a 2,5 s; a do aparelho fica para o ensaio geral.
+  - **Voltar**: a versão anterior ao lançamento, ainda com `noindex` e os marcadores no rodapé, é a `8033d7e5`. O caminho está em "Voltar à versão anterior", no registro.
+  - **Fica de fora**: o site não tem `favicon.ico` (404 no console).
