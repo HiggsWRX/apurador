@@ -93,8 +93,8 @@ export interface ColunasDaBase {
 
 /**
  * As projeções dos municípios de uma UF ou das cidades do Exterior, nas bases que estão no ar, na ordem dos municípios da
- * tabela. As colunas cabem a tabela de Minas Gerais, a maior, em ~10 KB com gzip: com um objeto por município, os nomes
- * dos campos se repetiriam 853 vezes.
+ * tabela. As colunas cabem a tabela de Minas Gerais, a maior, em 10,6 KB com gzip no pico de 2022: com um objeto por
+ * município, os nomes dos campos se repetiriam 853 vezes.
  */
 export interface ProjecoesDosMunicipios {
   /** A assinatura dos municípios em cuja ordem as colunas vêm (`MunicipiosDaTabela`): a página só junta os dois com a mesma. */
@@ -230,9 +230,22 @@ export function arquivoDoMapa(
   const tse = resultados.map((r): ArquivoDoMapa["tse"][number] => {
     if (!r) return null;
     const [secoes, primeiro, segundo] = pontoDaCurvaReal(r, ordem) as [number, number, number];
-    return Math.round(100 * primeiro) + Math.round(100 * segundo) === 10_000 ? [secoes, primeiro] : [secoes, primeiro, segundo];
+    return segundo === oQueFaltaPara100(primeiro) ? [secoes, primeiro] : [secoes, primeiro, segundo];
   });
   return { assinatura, tse, ...(projecao ? { projecao } : {}) };
+}
+
+/** O que falta a um % do TSE para 100,00, contado em centésimos: o % do 2º candidato que o mapa.json não repete. */
+const oQueFaltaPara100 = (pct: number) => (10_000 - Math.round(100 * pct)) / 100;
+
+/**
+ * O % de seções e o placar de um lugar no mapa.json, como o TSE os publica, com o % do 2º candidato de volta quando o
+ * arquivo não o repete; `null` sem arquivo do TSE. Fica ao lado de quem o escreve: a página lê com a mesma regra.
+ */
+export function lugarNoMapa(ponto: ArquivoDoMapa["tse"][number]): { secoes: number; placar: [number, number] } | null {
+  if (!ponto) return null;
+  const [secoes, primeiro, segundo = oQueFaltaPara100(primeiro)] = ponto;
+  return { secoes, placar: [primeiro, segundo] };
 }
 
 /**

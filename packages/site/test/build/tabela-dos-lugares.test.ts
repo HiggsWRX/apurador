@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { assinaturaDosLugares } from "@apurador/pipeline";
 import { describe, expect, it } from "vitest";
-import type { ArquivoDaTabela } from "../../src/lib/tabela-dos-lugares";
+import type { ArquivoDaTabelaDeLugares } from "../../src/lib/tabela-dos-lugares";
 import { TURNO } from "../dados-do-build";
 import { DIST, elemento, existe, pagina, texto } from "../html";
 
@@ -11,7 +11,7 @@ import { DIST, elemento, existe, pagina, texto } from "../html";
 
 const lugares = JSON.parse(readFileSync(new URL("../../../../dados/lugares.json", import.meta.url), "utf8")) as { id: string; tipo: string; uf?: string }[];
 const doMapa = lugares.filter((l) => l.tipo !== "brasil");
-const tabela = (id: string) => JSON.parse(readFileSync(new URL(`tabela/${id}.json`, DIST), "utf8")) as ArquivoDaTabela;
+const tabela = (id: string) => JSON.parse(readFileSync(new URL(`tabela-de-lugares/${id}.json`, DIST), "utf8")) as ArquivoDaTabelaDeLugares;
 
 /** O placar entre finalistas do PL no 1º turno de 2026, com uma casa, pelos votos do TSE. */
 function doPl(id: string): number | null {
@@ -24,8 +24,8 @@ describe("tabela de lugares no build", () => {
   it("existe para o Brasil, cada UF e o Exterior, e não para os municípios", () => {
     const comTabela = lugares.filter((l) => l.tipo !== "municipio");
     expect(comTabela).toHaveLength(29);
-    for (const l of comTabela) expect(existe(`/tabela/${l.id}.json`), l.id).toBe(true);
-    expect(existe("/tabela/71072.json")).toBe(false);
+    for (const l of comTabela) expect(existe(`/tabela-de-lugares/${l.id}.json`), l.id).toBe(true);
+    expect(existe("/tabela-de-lugares/71072.json")).toBe(false);
   });
 
   it("traz os lugares logo abaixo, com o caminho, a posição no mapa.json e a assinatura que o coletor escreve nele", () => {
@@ -81,7 +81,7 @@ describe("cartão do mapa nas páginas de lugar", () => {
   it("é uma ilha que só acorda quando chega à tela, com a tabela da UF numa página de município", () => {
     const ilha = (caminho: string) => elemento(pagina(caminho), /<astro-island[^>]*CartaoDoMapa/);
     expect(ilha("/sp/campinas/")).toMatch(/client="visible"/);
-    expect(ilha("/sp/campinas/")).toMatch(/&quot;dono&quot;:\[0,&quot;SP&quot;\]/);
-    expect(ilha("/")).toMatch(/&quot;dono&quot;:\[0,&quot;BR&quot;\]/);
+    expect(ilha("/sp/campinas/")).toMatch(/&quot;lugarDaTabela&quot;:\[0,&quot;SP&quot;\]/);
+    expect(ilha("/")).toMatch(/&quot;lugarDaTabela&quot;:\[0,&quot;BR&quot;\]/);
   });
 });

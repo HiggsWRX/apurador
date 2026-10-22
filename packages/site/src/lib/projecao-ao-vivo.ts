@@ -45,15 +45,14 @@ export function projecaoNaPagina(quadro: QuadroAoVivo, escolhida: IdDaBase): Pro
 /**
  * A projeção do lugar no quadro: a do JSON do Brasil, da UF ou do Exterior, ou, num município, a da linha dele na tabela
  * de projeções da UF (Volume de gravações na noite, decisão 1), com a curva projetada que liga o placar parcial à
- * projeção. `undefined` sem ela, ou com a tabela e os municípios dela de bases diferentes.
+ * projeção. `undefined` sem ela.
  */
-export function projecaoDoLugar(quadro: Pick<QuadroAoVivo, "lugar" | "tabela" | "municipiosDaTabela">): ProjecaoDoLugar | undefined {
-  const { lugar, municipiosDaTabela } = quadro;
-  const projecoes = quadro.tabela?.projecao;
+export function projecaoDoLugar(quadro: Pick<QuadroAoVivo, "lugar" | "tabelaDeProjecoes">): ProjecaoDoLugar | undefined {
+  const { lugar, tabelaDeProjecoes } = quadro;
   if (!lugar || lugar.projecao) return lugar?.projecao;
-  if (!projecoes || !municipiosDaTabela || projecoes.assinatura !== municipiosDaTabela.assinatura) return undefined;
-  const i = municipiosDaTabela.municipios.indexOf(lugar.lugar);
-  if (i < 0) return undefined;
+  const projecoes = tabelaDeProjecoes?.projecao;
+  const i = tabelaDeProjecoes?.municipios.indexOf(lugar.lugar) ?? -1;
+  if (!tabelaDeProjecoes || !projecoes || i < 0) return undefined;
   const validos = projecoes.validos[i]!;
   const naBase = (c: ColunasDaBase): ProjecaoNaBase => {
     const [x, cedo, tarde] = c.virada[i]!;
@@ -67,7 +66,8 @@ export function projecaoDoLugar(quadro: Pick<QuadroAoVivo, "lugar" | "tabela" | 
       virada: { x, cedo, tarde },
     };
   };
-  const comparacoes = { primeiroTurno: municipiosDaTabela.comparacoes.primeiroTurno[i]!, pesquisas: municipiosDaTabela.comparacoes.pesquisas[i]! };
+  const { primeiroTurno, pesquisas } = tabelaDeProjecoes.comparacoes;
+  const comparacoes = { primeiroTurno: primeiroTurno[i]!, pesquisas: pesquisas[i]! };
   const soApuracao = naBase(projecoes.soApuracao);
   if (!projecoes.comPesquisas) return { soApuracao, comparacoes };
   return { soApuracao, comPesquisas: naBase(projecoes.comPesquisas), coincidem: projecoes.coincidem![i]!, comparacoes };
@@ -82,7 +82,7 @@ const TRECHOS_DO_MUNICIPIO = 20;
  * válidos projetados. A margem cresce com f, de 0 no placar parcial à da projeção, como na virada projetada do município
  * no `modelo`. Antes da primeira seção, a curva é a própria projeção; terminado o município, ela é um ponto só.
  */
-export function curvaDoMunicipio(tse: ArquivoDoLugar["tse"], projecao: number, margem: number, validos: number): PontoDaCurvaProjetada[] {
+function curvaDoMunicipio(tse: ArquivoDoLugar["tse"], projecao: number, margem: number, validos: number): PontoDaCurvaProjetada[] {
   const { totalizadas, total } = tse.secoes;
   if (totalizadas >= total) return [[100, projecao, margem]];
   const [primeiro = 0, segundo = 0] = tse.votos;

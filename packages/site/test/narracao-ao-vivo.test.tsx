@@ -86,8 +86,7 @@ function quadroEm({
     mudaram: [],
     chaves: LIGADAS,
     aviso: null,
-    tabela: null,
-    municipiosDaTabela: null,
+    tabelaDeProjecoes: null,
     mapa: null,
   };
 }

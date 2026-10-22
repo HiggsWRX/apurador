@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { assinaturaDosLugares, type Lugar } from "@apurador/pipeline";
+import { ordemDoMapa, type Lugar } from "@apurador/pipeline";
 import {
   ArquivoDoTseInvalido,
   eleicaoDaConfiguracao,
@@ -206,9 +206,8 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   let horaDoTse = -Infinity;
 
   // O que o coletor publicou.
-  /** Os lugares do site na ordem do `mapa.json`: a de `dados/lugares.json`, sem o Brasil, que a página também conhece. */
-  const lugaresDoMapa = opcoes.lugares.filter((l) => l.tipo !== "brasil");
-  const assinaturaDoMapa = assinaturaDosLugares(lugaresDoMapa.map((l) => l.id));
+  /** Os lugares do site na ordem do `mapa.json`, que a página também conhece, e a assinatura dela. */
+  const doMapa = ordemDoMapa(opcoes.lugares);
   const hashes = new Map<string, string>();
   const curvas = new Map<string, PontoDaCurvaReal[]>();
   /** Os lugares cujo resultado ou narração mudou e ainda não foram gravados. */
@@ -323,7 +322,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       }
     }
     const porId = new Map(acompanhados.map((a) => [a.id, a]));
-    return { eleicao, urls, ufs: configuracao.ufs.map((uf) => uf.sigla), acompanhados, doMapa: lugaresDoMapa.map((l) => porId.get(l.id)) };
+    return { eleicao, urls, ufs: configuracao.ufs.map((uf) => uf.sigla), acompanhados, doMapa: doMapa.lugares.map((l) => porId.get(l.id)) };
   }
 
   const brasil = (d: Divulgacao) => resultados.get(d.urls.resultado({}));
@@ -505,7 +504,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
         if (municipios) gravacoes.push(async () => void (await gravarSeMudou(`tabelas/${uf}-municipios.json`, municipios)));
       }
       const mapa = arquivoDoMapa(
-        assinaturaDoMapa,
+        doMapa.assinatura,
         d.doMapa.map((a) => a && resultados.get(a.url)),
         ordem,
         noAr && projecaoDasUfs(d, noAr, comPesquisas),

@@ -1,13 +1,13 @@
-import { formatarPctComCasas } from "../lib/formato";
+import { formatarPctComCasas, oQueFaltaPara100 } from "../lib/formato";
 import { corDoPartido, nomeCurto } from "../lib/identidade";
 import {
   ORDEM_INICIAL,
   ordenarLinhas,
   proximaOrdem,
   type ColunaDaTabela,
+  type ConteudoDaTabela,
   type LinhaDaTabela,
   type OrdemDaTabela,
-  type TabelaDosLugares as Tabela,
 } from "../lib/tabela-dos-lugares";
 
 // A tabela de lugares do cartão do mapa (Telas da página de lugar, decisão 8): cada lugar com o link para a página dele e,
@@ -16,7 +16,7 @@ import {
 // cabeçalho de novo inverte. Sem estado: a ilha do cartão guarda a ordem.
 
 interface Props {
-  tabela: Tabela;
+  tabela: ConteudoDaTabela;
   ordem: OrdemDaTabela;
   aoOrdenar: (ordem: OrdemDaTabela) => void;
   /** O id do lugar da página, que a tabela destaca: num município, ele entre os da UF. */
@@ -33,7 +33,7 @@ const TITULOS: Record<Exclude<ColunaDaTabela, "nome">, string> = {
 /** A tabela de lugares, na ordem pedida. */
 export function TabelaDosLugares({ tabela, ordem, aoOrdenar, atual }: Props) {
   const efetiva = tabela.colunas.includes(ordem.coluna) ? ordem : ORDEM_INICIAL;
-  const [primeiro, segundo] = tabela.candidatos as [Tabela["candidatos"][number], Tabela["candidatos"][number]];
+  const [primeiro, segundo] = tabela.candidatos as [ConteudoDaTabela["candidatos"][number], ConteudoDaTabela["candidatos"][number]];
 
   /** Quem está à frente, na cor dele, com o % dele; empatados, "Empate". */
   const aFrente = (pcts: [number, number], casas: 1 | 2) => {
@@ -44,8 +44,8 @@ export function TabelaDosLugares({ tabela, ordem, aoOrdenar, atual }: Props) {
       </>
     );
   };
-  /** Um % do 1º candidato com uma casa, repartido entre os dois em décimos, como a página escreve um cálculo do Apurador. */
-  const doPrimeiro = (pct: number | null) => (pct === null ? "—" : aFrente([pct, (1000 - Math.round(10 * pct)) / 10], 1));
+  /** Um % do 1º candidato com uma casa, repartido entre os dois como a página escreve um cálculo do Apurador. */
+  const doPrimeiro = (pct: number | null) => (pct === null ? "—" : aFrente([pct, oQueFaltaPara100(pct)], 1));
   const celula = (l: LinhaDaTabela, coluna: Exclude<ColunaDaTabela, "nome">) => {
     if (coluna === "secoes") return l.secoes === null ? "—" : formatarPctComCasas(l.secoes, 2);
     if (coluna === "placar") return l.placar ? aFrente(l.placar, 2) : "—";
@@ -85,9 +85,10 @@ export function TabelaDosLugares({ tabela, ordem, aoOrdenar, atual }: Props) {
       {tabela.colunas.includes("primeiroTurno") ? (
         <p class="fonte">Placar entre finalistas no 1º turno de 2026: Cálculo do Apurador com dados do TSE</p>
       ) : (
+        // A camada analítica leva a atribuição com ou sem a projeção (Segunda consulta jurídica, comentário nas Telas).
         <>
           <p class="fonte">Seções e placar: TSE, sem alteração (CC-BY)</p>
-          {tabela.colunas.includes("projecao") && <p class="fonte">Projeção: Cálculo do Apurador com dados do TSE</p>}
+          <p class="fonte">{tabela.colunas.includes("projecao") ? "Projeção: " : ""}Cálculo do Apurador com dados do TSE</p>
         </>
       )}
     </>

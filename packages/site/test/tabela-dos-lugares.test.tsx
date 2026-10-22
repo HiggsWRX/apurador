@@ -1,10 +1,10 @@
-import type { ArquivoDeRodada, ArquivoDoMapa, ChavesDaNoite, MunicipiosDaTabela, TabelaDeProjecoes } from "@apurador/coletor";
+import type { ArquivoDeRodada, ArquivoDoMapa, ChavesDaNoite } from "@apurador/coletor";
 import { render } from "preact-render-to-string";
 import { describe, expect, it } from "vitest";
 import { TabelaDosLugares } from "../src/components/TabelaDosLugares";
 import type { IdDaBase } from "../src/lib/bases-da-projecao";
-import { antesDaPrimeiraLeitura, type QuadroAoVivo } from "../src/lib/leitor-ao-vivo";
-import { tabelaDosLugares, type ArquivoDaTabela, type OrdemDaTabela } from "../src/lib/tabela-dos-lugares";
+import { antesDaPrimeiraLeitura, type QuadroAoVivo, type TabelaDeProjecoesLida } from "../src/lib/leitor-ao-vivo";
+import { tabelaDosLugares, type ArquivoDaTabelaDeLugares, type OrdemDaTabela } from "../src/lib/tabela-dos-lugares";
 import { elemento, elementos, texto } from "./html";
 
 // A tabela de lugares do cartão do mapa (Telas da página de lugar, decisão 8; ticket 18): no Brasil, os estados; na UF, os
@@ -19,7 +19,7 @@ const CANDIDATOS: ArquivoDeRodada["candidatos"] = [
 const LIGADAS: ChavesDaNoite = { nucleoMinimo: true, projecao: true, baseComPesquisas: true, simulador: true, mapa: true, textosPreditivos: false };
 
 /** Três municípios de Minas Gerais, nas posições deles no mapa.json; Águas Vermelhas não tem voto no 1º turno nem seção. */
-const DE_MINAS: ArquivoDaTabela = {
+const DE_MINAS: ArquivoDaTabelaDeLugares = {
   lugar: "MG",
   assinatura: "0badcafe",
   candidatos: [
@@ -34,12 +34,6 @@ const DE_MINAS: ArquivoDaTabela = {
 };
 /** Abadia terminou com Flávio 60,12%; Uberlândia tem 55,50% das seções, com Lula 51,69% (o 2º % no arquivo, que não fecha 100). */
 const MAPA: ArquivoDoMapa = { assinatura: "0badcafe", tse: [[100, 60.12], null, [55.5, 48.31, 51.69], null, [0, 0, 0]] };
-const MUNICIPIOS: MunicipiosDaTabela = {
-  uf: "MG",
-  assinatura: "cafe0001",
-  municipios: ["41000", "41238"],
-  comparacoes: { primeiroTurno: [62.3, 48.1], pesquisas: [62.3, 48.1] },
-};
 const colunas = (projecao: number[]) => ({
   projecao,
   margem: [0, 2.1],
@@ -48,8 +42,12 @@ const colunas = (projecao: number[]) => ({
   sinalDeVirada: [null, null],
   virada: projecao.map((): [null, null, null] => [null, null, null]),
 });
-const TABELA: TabelaDeProjecoes = {
+/** A tabela de projeções de Minas Gerais como o leitor a junta, com dois dos três municípios. */
+const TABELA: TabelaDeProjecoesLida = {
   uf: "MG",
+  assinatura: "cafe0001",
+  municipios: ["41000", "41238"],
+  comparacoes: { primeiroTurno: [62.3, 48.1], pesquisas: [62.3, 48.1] },
   projecao: {
     assinatura: "cafe0001",
     validos: [4000, 380000],
@@ -74,13 +72,12 @@ const aoVivo = (parte: Partial<QuadroAoVivo> = {}): QuadroAoVivo => ({
     eventosDoBrasil: [],
   },
   mapa: MAPA,
-  tabela: TABELA,
-  municipiosDaTabela: MUNICIPIOS,
+  tabelaDeProjecoes: TABELA,
   ...parte,
 });
 
 const NOME: OrdemDaTabela = { coluna: "nome", decrescente: false };
-const desenhar = (quadro: QuadroAoVivo, outras: { arquivo?: ArquivoDaTabela; base?: IdDaBase; ordem?: OrdemDaTabela; atual?: string } = {}) => {
+const desenhar = (quadro: QuadroAoVivo, outras: { arquivo?: ArquivoDaTabelaDeLugares; base?: IdDaBase; ordem?: OrdemDaTabela; atual?: string } = {}) => {
   const tabela = tabelaDosLugares({ arquivo: outras.arquivo ?? DE_MINAS, quadro, base: outras.base ?? "com-pesquisas" });
   return render(<TabelaDosLugares tabela={tabela} ordem={outras.ordem ?? NOME} aoOrdenar={() => {}} atual={outras.atual} />);
 };
@@ -128,7 +125,7 @@ describe("tabela de lugares na noite", () => {
   });
 
   it("no Brasil, a projeção de cada estado vem do mapa.json, e o Exterior entra como uma linha", () => {
-    const doBrasil: ArquivoDaTabela = {
+    const doBrasil: ArquivoDaTabelaDeLugares = {
       ...DE_MINAS,
       lugar: "BR",
       linhas: [
@@ -137,7 +134,7 @@ describe("tabela de lugares na noite", () => {
       ],
     };
     const mapa: ArquivoDoMapa = { ...MAPA, projecao: { soApuracao: { MG: 49.6, ZZ: 40.2 }, comPesquisas: { MG: 49.8, ZZ: 40.2 } } };
-    const html = desenhar(aoVivo({ mapa, tabela: null, municipiosDaTabela: null }), { arquivo: doBrasil });
+    const html = desenhar(aoVivo({ mapa, tabelaDeProjecoes: null }), { arquivo: doBrasil });
     expect(cabecalho(html)).toEqual(["Estado", "Seções", "Placar", "Projeção"]);
     expect(linhas(html)).toEqual([
       ["Exterior", "55,50%", "Lula 51,69%", "Lula 59,8%"],
@@ -145,14 +142,17 @@ describe("tabela de lugares na noite", () => {
     ]);
   });
 
-  it("sem a projeção no ar, a coluna sai: chave desligada, tabela vazia, tabela de outra base, ou a totalização final", () => {
+  it("sem a projeção no ar, a coluna sai, e a atribuição da camada analítica fica: chave desligada, tabela sem projeção, de outra UF, ou a totalização final", () => {
+    const semProjecao: TabelaDeProjecoesLida = { uf: "MG", assinatura: TABELA.assinatura, municipios: TABELA.municipios, comparacoes: TABELA.comparacoes };
     for (const parte of [
       { chaves: { ...LIGADAS, projecao: false, simulador: false } },
-      { tabela: { uf: "MG" } },
-      { municipiosDaTabela: { ...MUNICIPIOS, assinatura: "12345678" } },
+      { tabelaDeProjecoes: semProjecao },
+      { tabelaDeProjecoes: { ...TABELA, uf: "SP" } },
       { fase: "encerrada" as const, indicador: { estado: "encerrada" as const } },
     ]) {
-      expect(cabecalho(desenhar(aoVivo(parte)))).toEqual(["Município", "Seções", "Placar"]);
+      const html = desenhar(aoVivo(parte));
+      expect(cabecalho(html)).toEqual(["Município", "Seções", "Placar"]);
+      expect(notas(html)).toEqual(["Seções e placar: TSE, sem alteração (CC-BY)", "Cálculo do Apurador com dados do TSE"]);
     }
     // Desligada a base com pesquisas, a coluna mostra a "Só apuração", qualquer que seja a escolhida.
     const semPesquisas = desenhar(aoVivo({ chaves: { ...LIGADAS, baseComPesquisas: false } }));

@@ -1,13 +1,14 @@
 import { placarEntreFinalistas } from "@apurador/modelo";
 import { finalistas, type Lugar, type Turno } from "@apurador/pipeline";
-import { duasCasas, umaCasa } from "./formato";
+import { duasCasas, oQueFaltaPara100, umaCasa } from "./formato";
 import { corDoPartido, PARTIDO_DE_BOLSONARO, PT, type Cor } from "./identidade";
 import { lugaresAbaixo } from "./lugares";
 
-// A comparação de dois turnos no histórico (Telas da página de lugar, decisão 14): só entre o PT e o partido de
-// Bolsonaro (PSL em 2018, PL depois), rotulados pelo partido. Nos 2º turnos, o % de cada um é o dos votos válidos, o
-// número do TSE, com duas casas. Nos 1º turnos, é o placar entre finalistas, um cálculo do Apurador, com uma casa: o do
-// partido de Bolsonaro arredondado, e o do PT o que falta para 100,0, como na indicação das pesquisas.
+// O PT e o partido de Bolsonaro (PSL em 2018, PL depois) em cada turno, rotulados pelo partido: a comparação de dois
+// turnos no histórico (Telas da página de lugar, decisão 14) e, no build, o 1º turno de 2026 da tabela de lugares, antes
+// das 17h. Nos 2º turnos, o % de cada um é o dos votos válidos, o número do TSE, com duas casas. Nos 1º turnos, é o
+// placar entre finalistas, um cálculo do Apurador, com uma casa: o do partido de Bolsonaro arredondado, e o do PT o que
+// falta para 100,0, como na indicação das pesquisas.
 
 /** Um dos dois lados da comparação: o partido de Bolsonaro ou o PT. */
 export interface Lado {
@@ -71,7 +72,7 @@ function noTurno(t: Turno, id: string): { pct: [number, number]; votos: number }
   if (placar === undefined) return "sem-votos";
   // No 2º turno, cada % é o do TSE, arredondado à parte, como nas barras do turno.
   const pct: [number, number] =
-    casasDoTurno(t) === 2 ? [duasCasas(placar), duasCasas(placarEntreFinalistas(pt, bolsonaro)!)] : [umaCasa(placar), umaCasa(100 - umaCasa(placar))];
+    casasDoTurno(t) === 2 ? [duasCasas(placar), duasCasas(placarEntreFinalistas(pt, bolsonaro)!)] : [umaCasa(placar), oQueFaltaPara100(umaCasa(placar))];
   return { pct, votos: bolsonaro + pt };
 }
 

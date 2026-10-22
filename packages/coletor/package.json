@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./arquivos": "./src/arquivos.ts",
     "./chaves": "./src/chaves.ts",
     "./narracao": "./src/narracao.ts"
   },

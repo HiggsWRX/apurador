@@ -5,7 +5,7 @@ import { BASE_DA_NOITE, type IdDaBase } from "../lib/bases-da-projecao";
 import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import type { TurnoPassado } from "../lib/curva-de-comparacao";
 import type { EnderecoAoVivo } from "../lib/enderecos-ao-vivo";
-import { antesDaPrimeiraLeitura, criarLeitorAoVivo, INTERVALO_DAS_LEITURAS } from "../lib/leitor-ao-vivo";
+import { antesDaPrimeiraLeitura, criarLeitorAoVivo, INTERVALO_DAS_LEITURAS, type OpcaoDaTabelaDeProjecoes } from "../lib/leitor-ao-vivo";
 import { publicarBase, publicarQuadro, useCartaoNaTela } from "../lib/quadro-da-pagina";
 import { useComparacao } from "./CurvaDeComparacao";
 import { VistaDoBlocoAoVivo } from "./VistaDoBlocoAoVivo";
@@ -35,18 +35,21 @@ interface Props {
   turnosPassados: TurnoPassado[];
   /** Quantas pesquisas o agregado de pesquisas tem, para o link da caixa da projeção, ou `null` sem ele no ar. */
   pesquisasDoAgregado: number | null;
+  /** A tabela de projeções que a página lê, se alguma (no Brasil, nenhuma). */
+  tabelaDeProjecoes?: OpcaoDaTabelaDeProjecoes;
 }
 
 /** A ilha do bloco ao vivo de um lugar. */
-export default function BlocoAoVivo({ id, tipo, uf, em, fotos, enderecos, chaves, turnosPassados, pesquisasDoAgregado }: Props) {
+export default function BlocoAoVivo({ id, tipo, uf, em, fotos, enderecos, chaves, turnosPassados, pesquisasDoAgregado, tabelaDeProjecoes }: Props) {
   const comparacao = useComparacao(id, turnosPassados);
   const [base, setBase] = useState<IdDaBase>(BASE_DA_NOITE);
-  const leitor = useMemo(() => {
-    if (enderecos.length === 0) return null;
-    // A tabela de projeções da UF: a do município desde a primeira leitura; a da UF e a do Exterior só com o cartão.
-    const tabela = tipo === "municipio" ? { uf: uf!, desdeOInicio: true } : tipo === "brasil" ? undefined : { uf: id, desdeOInicio: false };
-    return criarLeitorAoVivo({ enderecos, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now(), chaves, tabela });
-  }, [enderecos, id, tipo, uf, chaves]);
+  const leitor = useMemo(
+    () =>
+      enderecos.length > 0
+        ? criarLeitorAoVivo({ enderecos, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now(), chaves, tabelaDeProjecoes })
+        : null,
+    [enderecos, id, chaves, tabelaDeProjecoes],
+  );
   const cartaoNaTela = useCartaoNaTela();
   /** Uma leitura fora do ritmo dos 30 s, como a do cartão do mapa que acabou de entrar na tela. */
   const lerAgora = useRef<(() => void) | null>(null);

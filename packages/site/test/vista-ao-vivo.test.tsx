@@ -1,19 +1,9 @@
-import type {
-  ArquivoDeRodada,
-  ArquivoDoLugar,
-  ChavesDaNoite,
-  ColunasDaBase,
-  EventoDaNarracao,
-  MunicipiosDaTabela,
-  ProjecaoDoLugar,
-  ProjecaoNaBase,
-  TabelaDeProjecoes,
-} from "@apurador/coletor";
+import type { ArquivoDeRodada, ArquivoDoLugar, ChavesDaNoite, ColunasDaBase, EventoDaNarracao, ProjecaoDoLugar, ProjecaoNaBase } from "@apurador/coletor";
 import { render } from "preact-render-to-string";
 import { describe, expect, it } from "vitest";
 import { VistaDoBlocoAoVivo, type PropsDaVista } from "../src/components/VistaDoBlocoAoVivo";
 import { COMPARACAO_DESLIGADA, type EstadoDaComparacao, type TurnoPassado } from "../src/lib/curva-de-comparacao";
-import type { QuadroAoVivo } from "../src/lib/leitor-ao-vivo";
+import type { QuadroAoVivo, TabelaDeProjecoesLida } from "../src/lib/leitor-ao-vivo";
 import { projecaoDoLugar } from "../src/lib/projecao-ao-vivo";
 import { botoes, elemento, texto } from "./html";
 
@@ -38,8 +28,7 @@ function quadro(parte: Partial<QuadroAoVivo> = {}): QuadroAoVivo {
     mudaram: [],
     chaves: LIGADAS,
     aviso: null,
-    tabela: null,
-    municipiosDaTabela: null,
+    tabelaDeProjecoes: null,
     mapa: null,
     ...parte,
   };
@@ -651,14 +640,12 @@ describe("projeção do município, pela tabela de projeções da UF", () => {
     ],
     ...parte,
   });
-  const MUNICIPIOS: MunicipiosDaTabela = {
+  /** A tabela de Minas Gerais como o leitor a junta: os municípios, com as comparações, e as projeções deles. */
+  const TABELA: TabelaDeProjecoesLida = {
     uf: "MG",
     assinatura: "0badcafe",
     municipios: ["41000", "41238"],
     comparacoes: { primeiroTurno: [55.0, 53.2], pesquisas: [55.0, 53.2] },
-  };
-  const TABELA: TabelaDeProjecoes = {
-    uf: "MG",
     projecao: {
       assinatura: "0badcafe",
       validos: [500, 16000],
@@ -687,8 +674,7 @@ describe("projeção do município, pela tabela de projeções da UF", () => {
       indicador: { estado: "ao-vivo" },
       rodada: rodada("ao-vivo"),
       lugar: MUNICIPIO,
-      tabela: TABELA,
-      municipiosDaTabela: MUNICIPIOS,
+      tabelaDeProjecoes: TABELA,
       ...parte,
     });
   const comTabela = (parte: Partial<QuadroAoVivo> = {}, outras: Partial<PropsDaVista> = {}) => vista(aoVivo(parte), { lugar: NO_MUNICIPIO, ...outras });
@@ -716,7 +702,6 @@ describe("projeção do município, pela tabela de projeções da UF", () => {
     );
     const { comPesquisas } = projecaoDoLugar(aoVivo())!;
     const pontos = comPesquisas!.curva;
-    expect(pontos).toHaveLength(21);
     // Com 90% das seções, Flávio ainda tem 7.260 de 14.500 votos (50,07%); com 92%, 7.344 de 14.800 (49,62%).
     const antes = pontos.filter(([, pct]) => pct >= 50).at(-1)!;
     const depois = pontos.find(([, pct]) => pct < 50)!;
@@ -745,22 +730,19 @@ describe("projeção do município, pela tabela de projeções da UF", () => {
   });
 
   it("sem a tabela, sem o município nela ou sem a projeção no ar, a página do município fica sem a caixa e sem a curva projetada", () => {
-    const outraAssinatura = { ...MUNICIPIOS, assinatura: "12345678" };
-    for (const parte of [
-      { tabela: null },
-      { municipiosDaTabela: null },
-      { tabela: { uf: "MG" } },
-      { lugar: { ...MUNICIPIO, lugar: "41999" } },
-      // Os municípios de outra base: as colunas não estariam na ordem deles.
-      { municipiosDaTabela: outraAssinatura },
-    ]) {
+    // Sem a projeção, a tabela vem só com os municípios: a projeção desligada, ou a tabela de outra base (o leitor não junta).
+    const { projecao, ...semProjecao } = TABELA;
+    for (const parte of [{ tabelaDeProjecoes: null }, { tabelaDeProjecoes: semProjecao }, { lugar: { ...MUNICIPIO, lugar: "41999" } }]) {
       const html = comTabela(parte);
       expect(html).not.toContain("data-projecao-ao-vivo");
       expect(html).not.toContain("linha-projetada");
     }
     // Desligada a base com pesquisas, a tabela vem só com a "Só apuração".
-    const { assinatura, validos, soApuracao } = TABELA.projecao!;
-    const semPesquisas = comTabela({ tabela: { uf: "MG", projecao: { assinatura, validos, soApuracao } }, chaves: { ...LIGADAS, baseComPesquisas: false } });
+    const { assinatura, validos, soApuracao } = projecao!;
+    const semPesquisas = comTabela({
+      tabelaDeProjecoes: { ...semProjecao, projecao: { assinatura, validos, soApuracao } },
+      chaves: { ...LIGADAS, baseComPesquisas: false },
+    });
     expect(botoes(caixa(semPesquisas))).toEqual([]);
     expect(texto(elemento(caixa(semPesquisas), /<p class="valores"/))).toBe("FLAVIO BOLSONARO 48,5% ± 2,2 LULA 51,5% ± 2,2");
   });

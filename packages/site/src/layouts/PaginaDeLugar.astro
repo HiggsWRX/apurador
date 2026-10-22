@@ -9,7 +9,7 @@ import { CHAVES } from "../lib/chaves";
 import { turnosDoLugar } from "../lib/curvas-passadas";
 import { enderecosDoBuild } from "../lib/enderecos-ao-vivo";
 import { FOTOS } from "../lib/fotos";
-import { daUf, emLugar, lugarAcima } from "../lib/lugares";
+import { daUf, emLugar, lugarDaTabela } from "../lib/lugares";
 import { AGREGADO } from "../lib/pesquisas";
 import Base from "./Base.astro";
 
@@ -24,10 +24,18 @@ interface Props {
 }
 const { lugar } = Astro.props;
 const nome = nomeCompleto(lugar);
-// O cartão do mapa traz os lugares logo abaixo deste; num município, os da UF dele, com ele destacado.
-const dono = lugar.tipo === "municipio" ? lugarAcima(lugar)! : lugar;
+// O cartão do mapa traz os lugares logo abaixo deste; num município, os da UF dele, com ele destacado. A tabela de
+// projeções do mesmo lugar dá a coluna da projeção e, num município, a projeção dele, desde a primeira leitura.
+const daTabela = lugarDaTabela(lugar);
 const tituloDoCartao =
-  dono.tipo === "brasil" ? "Estados e Exterior" : dono.tipo === "exterior" ? "Cidades do exterior" : lugar === dono ? "Municípios" : `Municípios ${daUf(dono)}`;
+  daTabela.tipo === "brasil"
+    ? "Estados e Exterior"
+    : daTabela.tipo === "exterior"
+      ? "Cidades do exterior"
+      : lugar === daTabela
+        ? "Municípios"
+        : `Municípios ${daUf(daTabela)}`;
+const tabelaDeProjecoes = daTabela.tipo === "brasil" ? undefined : { uf: daTabela.id, desdeOInicio: lugar.tipo === "municipio" };
 // Os endereços dos arquivos ao vivo: no build, PUBLIC_AO_VIVO (o R2) e PUBLIC_AO_VIVO_PLANO_B (o Worker do plano B); no
 // `astro dev`, as pastas que o coletor publica, servidas pela integração `ao-vivo-local`. Sem nenhum, a ilha não lê
 // nada e fica no estado de antes das 17h.
@@ -56,13 +64,14 @@ const enderecos = enderecosDoBuild(
         chaves={CHAVES.noite}
         turnosPassados={turnosDoLugar(lugar.id)}
         pesquisasDoAgregado={CHAVES.antesDas17h.agregado && AGREGADO ? AGREGADO.pesquisas.length : null}
+        tabelaDeProjecoes={tabelaDeProjecoes}
       />
       <slot />
     </div>
     <NarracaoDaNoite client:load id={lugar.id} chaves={CHAVES.noite} />
   </div>
   <div class="abaixo">
-    <CartaoDoMapa client:visible id={lugar.id} dono={dono.id} titulo={tituloDoCartao} chaves={CHAVES.noite} />
+    <CartaoDoMapa client:visible id={lugar.id} lugarDaTabela={daTabela.id} titulo={tituloDoCartao} chaves={CHAVES.noite} />
     <Historico lugar={lugar} />
   </div>
 </Base>

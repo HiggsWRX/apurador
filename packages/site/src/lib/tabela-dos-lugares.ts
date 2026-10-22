@@ -1,4 +1,5 @@
 import type { ArquivoDoMapa } from "@apurador/coletor";
+import { lugarNoMapa } from "@apurador/coletor/arquivos";
 import type { IdDaBase } from "./bases-da-projecao";
 import { emPlanoZero } from "./chaves-ao-vivo";
 import type { QuadroAoVivo } from "./leitor-ao-vivo";
@@ -6,9 +7,10 @@ import type { QuadroAoVivo } from "./leitor-ao-vivo";
 // A tabela de lugares do cartão do mapa (Telas da página de lugar, decisão 8; ticket 18): os lugares logo abaixo da
 // página (os estados e o Exterior no Brasil, os municípios numa UF, as cidades no Exterior; num município, os da UF
 // dele), ordenável por qualquer coluna. Os nomes, os caminhos e o placar entre finalistas do 1º turno de 2026 vêm do
-// build (`/tabela/<id>.json`), e é só isso que ela mostra antes das 17h. Na noite, o % de seções e o placar vêm do
-// mapa.json, com as duas casas do TSE, e a projeção da base escolhida, com uma casa, da tabela de projeções da UF ou, no
-// Brasil, do mapa.json. O mapa.json segue a ordem dos lugares do site sem os ids: a página só o lê com a assinatura dela.
+// build (`/tabela-de-lugares/<id>.json`), e é só isso que ela mostra antes das 17h. Na noite, o % de seções e o placar
+// vêm do mapa.json, com as duas casas do TSE, e a projeção da base escolhida, com uma casa, da tabela de projeções da UF
+// ou, no Brasil, do mapa.json. O mapa.json segue a ordem dos lugares do site sem os ids: a página só o lê com a
+// assinatura dela.
 
 /** Um lugar da tabela, como o build o escreve. */
 export interface LinhaDoBuild {
@@ -21,8 +23,8 @@ export interface LinhaDoBuild {
   primeiroTurno: number | null;
 }
 
-/** A tabela de um lugar, como o build a escreve (`/tabela/<id>.json`): só o Brasil, as UFs e o Exterior têm. */
-export interface ArquivoDaTabela {
+/** A tabela de lugares de um lugar, como o build a escreve (`/tabela-de-lugares/<id>.json`): só o Brasil, as UFs e o Exterior têm. */
+export interface ArquivoDaTabelaDeLugares {
   /** O lugar cujos lugares abaixo a tabela traz: `BR`, uma UF ou `ZZ`. */
   lugar: string;
   /** A assinatura dos lugares do site com que o build foi feito: o mapa.json tem de ter a mesma. */
@@ -32,8 +34,8 @@ export interface ArquivoDaTabela {
   linhas: LinhaDoBuild[];
 }
 
-/** O caminho da tabela do lugar no site. */
-export const caminhoDaTabela = (lugar: string) => `/tabela/${lugar}.json`;
+/** O caminho da tabela de lugares do lugar no site. */
+export const caminhoDaTabelaDeLugares = (lugar: string) => `/tabela-de-lugares/${lugar}.json`;
 
 /** As colunas da tabela: o lugar, o 1º turno (antes das 17h) e, na noite, o % de seções, o placar e a projeção. */
 export type ColunaDaTabela = "nome" | "primeiroTurno" | "secoes" | "placar" | "projecao";
@@ -62,7 +64,7 @@ export interface LinhaDaTabela {
 }
 
 /** O que a tabela mostra num quadro. */
-export interface TabelaDosLugares {
+export interface ConteudoDaTabela {
   /** O que são os lugares, para o cabeçalho da 1ª coluna. */
   deQue: "Estado" | "Município" | "Cidade";
   colunas: ColunaDaTabela[];
@@ -75,7 +77,7 @@ export interface TabelaDosLugares {
  * A tabela de lugares para o quadro, na base escolhida. Antes das 17h, no plano zero e enquanto não houver um mapa.json
  * da mesma lista de lugares, só o 1º turno; a projeção, só na fase ao vivo, com a chave dela e a do lugar no ar.
  */
-export function tabelaDosLugares({ arquivo, quadro, base }: { arquivo: ArquivoDaTabela; quadro: QuadroAoVivo; base: IdDaBase }): TabelaDosLugares {
+export function tabelaDosLugares({ arquivo, quadro, base }: { arquivo: ArquivoDaTabelaDeLugares; quadro: QuadroAoVivo; base: IdDaBase }): ConteudoDaTabela {
   const deQue = arquivo.lugar === "BR" ? "Estado" : arquivo.lugar === "ZZ" ? "Cidade" : "Município";
   const mapa = quadro.mapa?.assinatura === arquivo.assinatura ? quadro.mapa : null;
   const doLugar = (l: LinhaDoBuild): LinhaDaTabela => ({ ...l, secoes: null, placar: null, projecao: null });
@@ -88,38 +90,36 @@ export function tabelaDosLugares({ arquivo, quadro, base }: { arquivo: ArquivoDa
     colunas: ["nome", "secoes", "placar", ...(projecoes ? (["projecao"] as const) : [])],
     candidatos: quadro.rodada.candidatos,
     linhas: arquivo.linhas.map((l) => {
-      const ponto = mapa.tse[l.indice];
-      if (!ponto) return doLugar(l);
-      const [secoes, primeiro, segundo = (10_000 - Math.round(100 * primeiro)) / 100] = ponto;
-      return { ...doLugar(l), secoes, placar: primeiro + segundo > 0 ? [primeiro, segundo] : null, projecao: projecoes?.get(l.id) ?? null };
+      const doMapa = lugarNoMapa(mapa.tse[l.indice] ?? null);
+      if (!doMapa) return doLugar(l);
+      const { secoes, placar } = doMapa;
+      return { ...doLugar(l), secoes, placar: placar[0] + placar[1] > 0 ? placar : null, projecao: projecoes?.get(l.id) ?? null };
     }),
   };
 }
 
 /**
  * A projeção de cada lugar da tabela na base escolhida (a "Só apuração" se a com pesquisas não estiver no ar), em % do 1º
- * candidato, ou `null` sem ela: no Brasil, a das UFs no mapa.json; numa UF, a da tabela de projeções dela, se os
- * municípios dela forem os da mesma base.
+ * candidato, ou `null` sem ela: no Brasil, a das UFs no mapa.json; numa UF, a da tabela de projeções dela.
  */
-function projecaoDosLugares(arquivo: ArquivoDaTabela, quadro: QuadroAoVivo, mapa: ArquivoDoMapa, base: IdDaBase): Map<string, number> | null {
+function projecaoDosLugares(arquivo: ArquivoDaTabelaDeLugares, quadro: QuadroAoVivo, mapa: ArquivoDoMapa, base: IdDaBase): Map<string, number> | null {
   if (quadro.fase !== "ao-vivo" || !quadro.chaves.projecao) return null;
   const comPesquisas = quadro.chaves.baseComPesquisas && base === "com-pesquisas";
   if (arquivo.lugar === "BR") {
     if (!mapa.projecao) return null;
     return new Map(Object.entries((comPesquisas && mapa.projecao.comPesquisas) || mapa.projecao.soApuracao));
   }
-  const projecoes = quadro.tabela?.uf === arquivo.lugar ? quadro.tabela.projecao : undefined;
-  const municipios = quadro.municipiosDaTabela;
-  if (!projecoes || municipios?.assinatura !== projecoes.assinatura) return null;
-  const colunas = (comPesquisas && projecoes.comPesquisas) || projecoes.soApuracao;
-  return new Map(municipios.municipios.map((id, i) => [id, colunas.projecao[i]!]));
+  const tabela = quadro.tabelaDeProjecoes?.uf === arquivo.lugar ? quadro.tabelaDeProjecoes : null;
+  if (!tabela?.projecao) return null;
+  const colunas = (comPesquisas && tabela.projecao.comPesquisas) || tabela.projecao.soApuracao;
+  return new Map(tabela.municipios.map((id, i) => [id, colunas.projecao[i]!]));
 }
 
 /** O valor de uma linha pelo qual a coluna ordena: o placar e a projeção, pelo % do 1º candidato, a ordem fixa do site. */
 const valor = (l: LinhaDaTabela, coluna: Exclude<ColunaDaTabela, "nome">) => (coluna === "placar" ? (l.placar?.[0] ?? null) : l[coluna]);
 
 /** As linhas na ordem pedida, com os lugares sem número por último. Uma coluna que a tabela não tem ordena pelos nomes. */
-export function ordenarLinhas(tabela: TabelaDosLugares, ordem: OrdemDaTabela): LinhaDaTabela[] {
+export function ordenarLinhas(tabela: ConteudoDaTabela, ordem: OrdemDaTabela): LinhaDaTabela[] {
   const { coluna, decrescente } = tabela.colunas.includes(ordem.coluna) ? ordem : ORDEM_INICIAL;
   const sentido = decrescente ? -1 : 1;
   return [...tabela.linhas].sort((a, b) => {

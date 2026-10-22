@@ -43,6 +43,15 @@ export function assinaturaDosLugares(ids: string[]): string {
   return hash.toString(16).padStart(8, "0");
 }
 
+/**
+ * Os lugares na ordem do `mapa.json`, com a assinatura dela: os do site (`dados/lugares.json`) sem o Brasil. O coletor
+ * escreve o arquivo nessa ordem, e o build da página dá a cada lugar a posição dele nela.
+ */
+export function ordemDoMapa(lugares: Lugar[]): { lugares: Lugar[]; assinatura: string } {
+  const doMapa = lugares.filter((l) => l.tipo !== "brasil");
+  return { lugares: doMapa, assinatura: assinaturaDosLugares(doMapa.map((l) => l.id)) };
+}
+
 const UFS: Record<string, { nome: string; artigo: Artigo }> = {
   AC: { nome: "Acre", artigo: "o" },
   AL: { nome: "Alagoas", artigo: "" },

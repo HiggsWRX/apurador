@@ -300,7 +300,9 @@ describe("a primeira meia hora da apuração", () => {
     const comProjecao = () => r.gravacoes.filter((g) => TABELAS.includes(g.caminho) && (g.conteudo as TabelaDeProjecoes).projecao);
 
     it("há 28, uma para cada UF e uma para o Exterior, cada uma com os municípios dela nas duas bases", () => {
-      expect(TABELAS).toHaveLength(28);
+      const gravadas = new Set(r.gravacoes.filter((g) => /^tabelas\/[A-Z]{2}\.json$/.test(g.caminho)).map((g) => g.caminho));
+      expect([...gravadas].sort()).toEqual([...TABELAS].sort());
+      expect(gravadas.size).toBe(28);
       for (const [i, uf] of cadastro.ufs.entries()) {
         const { uf: sigla, projecao } = tabela(TABELAS[i]!);
         const daTabela = municipios(i);
@@ -543,7 +545,7 @@ describe("a noite inteira", () => {
     for (const g of r.gravacoes.filter((g) => TABELAS.includes(g.caminho)).filter((_, i) => i % 20 === 0)) {
       maiores.set(g.caminho, Math.max(maiores.get(g.caminho) ?? 0, gz(g)));
     }
-    expect([...maiores.values()].reduce((s, t) => s + t, 0)).toBeLessThan(80);
+    expect([...maiores.values()].reduce((s, t) => s + t, 0)).toBeLessThan(70);
   }, 60_000);
 
   it("no fim, a projeção de cada município é o resultado dele, sem margem, e os válidos projetados são os votos dos dois", () => {

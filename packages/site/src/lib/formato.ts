@@ -27,6 +27,11 @@ const UMA_CASA = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maxi
 export const formatarCalculo = (n: number) => UMA_CASA.format(n);
 /** O valor como a página o mostra, com uma casa: o que se soma ou se subtrai na página parte dele. */
 export const umaCasa = (n: number) => Number(n.toFixed(1));
+/**
+ * O % do outro finalista quando a página mostra o de um com uma casa: o que falta para 100,0, contado em décimos. É a
+ * regra do placar entre finalistas (`GLOSSARY.md`), para o mesmo lugar dar o mesmo placar em todo bloco.
+ */
+export const oQueFaltaPara100 = (pct: number) => (1000 - Math.round(10 * pct)) / 10;
 /** Um % já calculado, com as casas que ele tem na página: duas num número do TSE, uma num cálculo do Apurador. */
 export const formatarPctComCasas = (pct: number, casas: 1 | 2) => `${(casas === 2 ? PCT : UMA_CASA).format(pct)}%`;
 /** Uma mudança com sinal e uma casa: "+1,9", "−1,9", "0,0". */
