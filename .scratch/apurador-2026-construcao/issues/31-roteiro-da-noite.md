@@ -82,3 +82,4 @@ Decisões: [Operação na noite](../../apurador-2026/issues/18-operacao-na-noite
   - **O agregado da noite**: o coletor lê o `pesquisas.csv` quando parte (`lerEntradaDaProjecao`, em `packages/coletor/src/entrada-da-projecao.ts`) e imprime o agregado que usa. Uma retirada de pesquisa até as 16h só entra na projeção com o coletor reiniciado depois do deploy.
   - **Reinício no meio da noite**: sem estado, ele segura a projeção por ~10 rodadas, até ter os municípios.
   - **A noite**: `--noite 2026-2` é o padrão; o ensaio usa `2022-2`.
+- 22/10/2026, do [ticket 13](13-lancamento-antes-da-noite.md): o cartão "um deploy do site quebrou a página" tem o comando em "Voltar à versão anterior", em `docs/lancamento/antes-da-noite.md`: `npx wrangler deployments list` e `npx wrangler rollback <id> -m "…" -y`, dentro de `packages/site`. O deploy seguinte da `main` (um push ou o agendado das 0h05) substitui a versão voltada: a correção precisa estar na `main` antes dele.

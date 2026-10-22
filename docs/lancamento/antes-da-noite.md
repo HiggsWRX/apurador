@@ -13,12 +13,12 @@ O endereço `apurador.org` só abre com os nove itens abaixo verdadeiros, confer
 | 3 | Pesquisas | `npm run pesquisas` em 22/10/2026, às 9h32: as 17 pesquisas do `pesquisas.csv` batem com o CSV de registros do TSE gerado em 21/10/2026 às 5h46, sem divergência (registro em `dados/pesquisas-verificacoes.csv`). O teste `lista-das-pesquisas` confere os seis dados do art. 10 e o link da fonte em cada uma, e o `agregado-de-pesquisas`, que o agregado na página é o da regra sobre o `pesquisas.csv`. | ok |
 | 4 | Painel de antes das 17h | O teste `painel-antes-das-17h`: os números são os do `modelo` sobre o mesmo `pesquisas.csv`, com os avisos "não é pesquisa própria" e "não é resultado oficial nem garantia do resultado"; no build com as chaves desligadas, o agregado, a projeção e o simulador saem, cada um pela sua chave em `dados/chaves.json`, sem código novo. O simulador entra no lançamento: ficou pronto no [ticket 24](../../.scratch/apurador-2026-construcao/issues/24-simulador-antes-das-17h.md). | ok |
 | 5 | Metodologia | O teste `metodologia`: as seções 1 a 5, 8 e 9, com os critérios de seleção, os cálculos, as limitações, "sem IA generativa nem aprendizagem de máquina" e a atribuição da malha. As seções 6 e 7 chegam no build do ensaio 2 ([ticket 29](../../.scratch/apurador-2026-construcao/issues/29-metodologia-acerto-e-calibracao.md)). | ok |
-| 6 | Rodapé | "Responsável: Hiago Oliveira · contato@apurador.org" em toda página, e o mesmo na metodologia, por teste (`paginas-de-lugar`). O e-mail encaminha à caixa do dono pelo Email Routing. | ok |
+| 6 | Rodapé | "Responsável: Hiago de Oliveira · contato@apurador.org" em toda página, e o mesmo na metodologia, por teste (`paginas-de-lugar`). O e-mail encaminha à caixa do dono pelo Email Routing. | ok |
 | 7 | Celular | Medido abaixo, em [Celular](#celular): placar e painel visíveis entre 1,4 e 2,5 s. | ok |
 | 8 | Revisão do dono no celular | O Brasil, uma UF, um município grande e um pequeno. Em 22/10, o dono: "I have reviewed it on the phone, looks good." A revisão foi no `apurador.org` de antes deste build, que muda só o rodapé, o `noindex` e o script do Web Analytics. | ok |
 | 9 | Depois de aberto | Um deploy que quebre um destes itens volta à versão anterior na hora: ver [Voltar à versão anterior](#voltar-à-versão-anterior). | ok |
 
-E mais, depois do deploy: o site abre em `apurador.org` sem `noindex` (nem no `<meta>` nem no `X-Robots-Tag`), com o Cloudflare Web Analytics e sem cookies nem outro rastreador. O `apurador.hicampos93.workers.dev` do site segue com `X-Robots-Tag: noindex` e nunca é divulgado; o plano B é outro Worker, o `apurador-plano-b`. A conferir no ar, depois do deploy.
+E mais, depois do deploy: o site abre em `apurador.org` sem `noindex` (nem no `<meta>` nem no `X-Robots-Tag`), com o Cloudflare Web Analytics e sem cookies nem outro rastreador. O `apurador.hicampos93.workers.dev` do site segue com `X-Robots-Tag: noindex` e nunca é divulgado; o plano B é outro Worker, o `apurador-plano-b`. Conferido no ar em 22/10/2026, depois do deploy das 11h31 de Brasília (versão `4f6ea97c`), e de novo às 12h32, depois do das 11h53 (versão `a3462a86`, a do nome corrigido no item 6): sem `noindex` nem `Set-Cookie` no `apurador.org` (o Brasil, `/sp/`, `/sp/sao-paulo/`, `/mg/serra-da-saudade/`, a metodologia e o simulador), o script do Web Analytics mandando a visita a `cloudflareinsights.com/cdn-cgi/rum` sem cookie nem outro pedido de fora, e o `X-Robots-Tag: noindex` no `apurador.hicampos93.workers.dev`.
 
 ## Celular
 
@@ -48,4 +48,4 @@ Sem o `<id>`, o `wrangler rollback` volta à versão anterior à atual. O rollba
 
 ## De acordo do dono
 
-22/10/2026, o dono, depois da revisão no celular: "Yes i've signed it off". O merge na `main`, que faz o deploy, sai com o ok dele sobre este registro.
+22/10/2026, o dono, depois da revisão no celular: "Yes i've signed it off". O merge na `main`, que faz o deploy, saiu com o ok dele sobre este registro, no mesmo dia: "Yes: merge ticket 13 into main and push, then check the live site and resolve the ticket."
