@@ -25,10 +25,13 @@ function modulos(raiz: string, vistos = new Set<string>()): Set<string> {
   for (const m of codigo.matchAll(/(?:from|import)\s*["']\.\/([^"']+\.js)["']/g)) modulos(`/_astro/${m[1]}`, vistos);
   return vistos;
 }
-/** Todo JavaScript que uma página carrega: os módulos dos `<script>` e os das ilhas, com o renderizador. */
+/**
+ * Todo JavaScript do build que uma página carrega: os módulos dos `<script>` e os das ilhas, com o renderizador. O script
+ * do Web Analytics vem de fora, com `defer`, e fica de fora (~10 KB com gzip, dentro da folga dos orçamentos).
+ */
 function javascriptDa(paginaHtml: string): Set<string> {
   const raizes = [
-    ...[...paginaHtml.matchAll(/<script[^>]*\bsrc="([^"]+)"/g)].map((m) => m[1]!),
+    ...[...paginaHtml.matchAll(/<script[^>]*\bsrc="(\/[^"]+)"/g)].map((m) => m[1]!),
     ...[...paginaHtml.matchAll(/(?:component|renderer)-url="([^"]+)"/g)].map((m) => m[1]!),
   ];
   const todos = new Set<string>();
