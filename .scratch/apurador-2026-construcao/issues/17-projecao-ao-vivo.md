@@ -1,6 +1,6 @@
 # 17: Projeção ao vivo no Brasil, nas UFs e no Exterior
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 08, 15, 16
 Spec: [Apurador 2026: especificação da construção](../spec.md)
 
@@ -21,27 +21,27 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
 
 ## Critérios de aceite
 
-- [ ] **Conteúdo dos JSONs**: os do Brasil, de cada UF e do Exterior trazem, nas duas bases, a projeção, a margem, a chance de vitória, a curva projetada, a virada projetada, a chance de virada, o estado do sinal de virada, as comparações e "as duas bases coincidem".
-- [ ] **Precisão dos números**: projeção e margem com uma casa, chance e % da virada inteiros.
-- [ ] **Bloco da projeção**:
+- [x] **Conteúdo dos JSONs**: os do Brasil, de cada UF e do Exterior trazem, nas duas bases, a projeção, a margem, a chance de vitória, a curva projetada, a virada projetada, a chance de virada, o estado do sinal de virada, as comparações e "as duas bases coincidem".
+- [x] **Precisão dos números**: projeção e margem com uma casa, chance e % da virada inteiros.
+- [x] **Bloco da projeção**:
   - moldura tracejada, fundo próprio e o aviso "Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.";
   - resultado ± margem de 95%;
   - chance numa barra dividida (inteiros, "<1%" e ">99%"; 100% só com a indicação do TSE).
-- [ ] **Controle Base da projeção**: o padrão é "Apuração + pesquisas", e ele fica disponível a noite toda. Ao lado, aparece "As pesquisas pesam X% na projeção agora" ou "As duas bases já coincidem aqui".
-- [ ] **"A projeção, comparada"**: com o 1º turno, pelo placar entre finalistas, e com a indicação das pesquisas, no formato "Lula +1,8". Durante a apuração, compara a projeção; depois do fim, o resultado.
-- [ ] **Links**:
+- [x] **Controle Base da projeção**: o padrão é "Apuração + pesquisas", e ele fica disponível a noite toda. Ao lado, aparece "As pesquisas pesam X% na projeção agora" ou "As duas bases já coincidem aqui".
+- [x] **"A projeção, comparada"**: com o 1º turno, pelo placar entre finalistas, e com a indicação das pesquisas, no formato "Lula +1,8". Durante a apuração, compara a projeção; depois do fim, o resultado.
+- [x] **Links**:
   - "Como calculamos →" leva à metodologia, a chance a `#chance`, o peso e as bases a `#juntas` e o rótulo do sinal de virada a `#virada`;
   - a partir das 17h, há um link para "as N pesquisas do agregado".
-- [ ] **Curva**:
+- [x] **Curva**:
   - curva projetada tracejada, com faixa de 95% e legenda;
   - a virada projetada é um losango sobre a faixa cinza;
   - o rótulo do sinal de virada aparece em três estados, com a chance de virada ("Virada projetada · ~88% das seções (80–95%) · chance de virada 62%"), da primeira seção até a indicação do TSE.
-- [ ] Curva e projeção levam "Cálculo do Apurador com dados do TSE".
-- [ ] **"As pesquisas deixaram de pesar"**: entra uma vez na narração do Brasil, quando as duas bases coincidem no Brasil. Ganha número na curva do Brasil e aparece intercalado nas outras páginas.
-- [ ] **Indicação do TSE**: a chance vai a 100%, e o rótulo do sinal de virada some. Na totalização final, a caixa da projeção sai. UFs e municípios mostram só "totalização final".
-- [ ] **Chaves**: desligar a projeção tira o bloco, a curva projetada e o rótulo. Desligar a base com pesquisas tira o controle, e só "Só apuração" aparece.
-- [ ] Nenhum texto preditivo: a manchete continua só com o placar oficial.
-- [ ] **Replay de 2022**, com as constantes provisórias:
+- [x] Curva e projeção levam "Cálculo do Apurador com dados do TSE".
+- [x] **"As pesquisas deixaram de pesar"**: entra uma vez na narração do Brasil, quando as duas bases coincidem no Brasil. Ganha número na curva do Brasil e aparece intercalado nas outras páginas.
+- [x] **Indicação do TSE**: a chance vai a 100%, e o rótulo do sinal de virada some. Na totalização final, a caixa da projeção sai. UFs e municípios mostram só "totalização final".
+- [x] **Chaves**: desligar a projeção tira o bloco, a curva projetada e o rótulo. Desligar a base com pesquisas tira o controle, e só "Só apuração" aparece.
+- [x] Nenhum texto preditivo: a manchete continua só com o placar oficial.
+- [x] **Replay de 2022**, com as constantes provisórias:
   - erro de até 0,5 p.p. depois de 5% das seções;
   - resultado dentro da margem de 95% depois de 1%;
   - "sem sinal de virada" nunca aparece no Brasil antes das 18:44;
@@ -89,3 +89,68 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
   - **A página** não escreve texto: `lib/narracao.ts` (`narracaoDaPagina`) junta e ordena, `components/ColunaDaNarracao.tsx` desenha a coluna e `components/MarcadoresDaNarracao.tsx` põe os números e a virada real dentro do SVG da `CurvaReal`, com os mesmos `eixos` e `escala`: se a faixa da projeção mudar a escala, os marcadores acompanham.
   - **A indicação do TSE**: `eleitoPelaIndicacao(quadro)`, em `lib/textos-ao-vivo.ts`, diz quem foi indicado (pelo evento da narração do Brasil), e o placar já mostra "Indicação do TSE · matematicamente definida: X eleito". É por ela que a chance vai a 100% e o rótulo do sinal de virada some. A manchete de virada, indicação e fim está em `manchete()`, no mesmo arquivo, e continua sem frase de projeção.
 - 21/10/2026, da retro do [ticket 33](33-curva-de-comparacao.md): o placar entre finalistas que a página mostra (em "A projeção, comparada", ou onde a projeção encontrar o 1º turno) tem uma regra só: uma casa, o partido de Bolsonaro arredondado e o PT com o que falta para 100,0. Hoje ela está em `noTurno` (`packages/site/src/lib/comparacao.ts`, do [ticket 34](34-comparacao-de-dois-turnos.md)). O ticket 33 fez outra cópia, na curva de comparação (`packages/pipeline/src/curvas.ts`), e a revisão dele achou 15 lugares com 0,1 de diferença antes de acertá-la. A regra cabe numa função do `modelo`, ao lado de `placarEntreFinalistas` (`packages/modelo/src/indicacao.ts`), para todo bloco usar a mesma.
+
+**22/10/2026, resolvido:**
+
+- **No coletor** (`packages/coletor/src/projecao.ts`):
+  - **A projeção**: `criarProjecaoDaNoite(entrada)` prepara o modelo uma vez. A cada rodada com resultado novo, `projetar(resultado, ordem)` roda `projetarNasDuasBases` e `curvaProjetada` sobre a apuração de cada município que o coletor guarda (~20 ms na noite de 2022).
+  - **A entrada** (`EntradaDaProjecao`: a base do modelo, as constantes congeladas e o agregado) sai de `lerEntradaDaProjecao(noite)`, em `entrada-da-projecao.ts`:
+    - `2026-2`: a base `dados/bases/2026-2.json` e o agregado do `pesquisas.csv` em 25/10, com incerteza de 1,5 (Flávio 51,12 em 22/10);
+    - `2022-2`: a do TSE falso, com o agregado da véspera (Lula 50,98).
+
+    O `principal.ts` ganhou `--noite` (padrão `2026-2`), e o `noite-local` passa `--noite 2022-2`.
+  - **Antes das 17h**, nenhum JSON leva a projeção, e o peso das pesquisas vai `null`: a projeção no ar é a do painel, atrás das chaves de antes das 17h, que o coletor não lê.
+  - **Da fase ao vivo até a primeira seção do Brasil**, a apuração é a do 1º turno, nada totalizado (`antesDaPrimeiraSecao`), como no painel: a curva projetada vai de 0% a 100%.
+  - **Partida a frio**: depois da primeira seção, ela espera ter os municípios. Com mais de 1% deles sem resultado, a projeção não sai (`PODEM_FALTAR`), porque os que faltam entrariam sem seção nenhuma. Na noite local partindo às 18:35, antes disso, a primeira rodada publicava "As pesquisas pesam 100%" com 58% das seções; agora a projeção sai ~10 rodadas depois. O replay confere a partir das 18:30.
+  - **Uma projeção que falha** (os candidatos da noite não são os finalistas da base) vai para as falhas da rodada, e o núcleo mínimo sai sem ela.
+- **Nos arquivos** (`ArquivoDoLugar.projecao`, `ProjecaoDoLugar` e `ProjecaoNaBase`, em `arquivos.ts`):
+  - **Conteúdo**: o Brasil, cada UF e o Exterior levam `soApuracao`, `comPesquisas`, `coincidem` e `comparacoes` (o placar entre finalistas do 1º turno e a indicação das pesquisas do lugar). Cada base traz `projecao`, `margem`, `chance`, `chanceDeVirada`, `sinalDeVirada`, `curva` (`[% de seções, %, margem]`) e `virada` (`x`, `cedo`, `tarde`). Os municípios não levam nada.
+  - **Ordem e precisão**: os % são do 1º candidato do arquivo de rodada, o do partido de Bolsonaro em 2022 e em 2026; o do 2º é o que falta para 100. Projeção, margem e curva vão com uma casa; chance, chance de virada e % da virada, inteiros.
+  - **Peso das pesquisas**: o `rodada.json` ganhou `pesoDasPesquisas`, em % inteiro.
+  - **Chaves**: com a projeção desligada, nenhum JSON a leva; com a base com pesquisas desligada, só vão `soApuracao` e `comparacoes`. Nos dois casos, o peso vai `null`. O Brasil e as UFs são marcados para gravar a cada rodada, e só os bytes que mudam vão ao destino: a chave chega em até 2 rodadas.
+- **"As pesquisas deixaram de pesar"** (`narracao.ts`): `narrar(novos, { coincidemNoBrasil })` dá o evento uma vez, com o texto da decisão 8, e a hora e o % de seções do último arquivo do Brasil que a narração viu.
+  - Ele tem número e ponto na curva do Brasil, entra também numa rodada sem arquivo novo do Brasil e vai para as outras páginas pelo `eventosDoBrasil`.
+  - O coletor só passa `coincidemNoBrasil` com as chaves da projeção e da base com pesquisas ligadas, porque o texto fala das duas bases. Ligadas depois, o evento sai quando elas já coincidem, com o % daquela hora.
+  - No replay de 2022, ele sai entre o começo e os 10%.
+- **Na página**:
+  - **A lógica** está em `lib/projecao-ao-vivo.ts`: `projecaoNaPagina(quadro, base)` (só na fase ao vivo, com a chave e o JSON com projeção), `rotuloDoSinal`, `curvaProjetadaAoVivo` e `mudancaEntre`.
+  - **A caixa** é `components/ProjecaoAoVivo.tsx`, depois da curva. Ela traz:
+    - o aviso;
+    - `ValoresDosFinalistas`, que passou de Astro a TSX, com o CSS no `global.css`;
+    - a `ChanceDeVitoria`, com `definida`: o 100% da indicação, só no Brasil;
+    - "A projeção, comparada", ou "O resultado, comparado", com os votos do TSE, num lugar que terminou;
+    - o controle Base da projeção, com o peso ou "As duas bases já coincidem aqui";
+    - "Como calculamos →" e "as N pesquisas do agregado" (`/#pesquisas-registradas`).
+  - **A `CurvaReal`** desenha a curva projetada da base escolhida por cima, também antes da primeira seção. Ela usa as camadas que saíram da `CurvaProjetada` (`LinhasProjetadas`, `FaixaDaVirada`, `LosangoDaVirada`, `LegendaDaCurvaProjetada`), e a escala conta a faixa depois de 3%.
+    - O losango aparece só na virada projetada, e a faixa cinza também na possível; sem sinal, nenhum dos dois.
+    - Embaixo vem o rótulo do sinal, com `data-chance-de-vitoria` e link para `#virada`. Ele e as marcas da virada somem com a indicação do TSE, em qualquer página.
+  - **A ilha**: o `BlocoAoVivo` guarda a base escolhida (`BASE_DA_NOITE`, "Apuração + pesquisas") e põe a fase em `<html data-fase>`. Com a fase ao vivo ou encerrada, o `global.css` esconde a projeção de antes das 17h e "O que esperar da noite".
+  - **Vista na noite local** (`npm run noite-local -- --partida 18:35`, no `astro dev`): a curva projetada sobre a real, a faixa e o losango, "Virada projetada · ~79% das seções · chance de virada 81%", a caixa com "As duas bases já coincidem aqui" e o painel de antes das 17h escondido.
+- **Replay de 2022** (`packages/ensaio/test/replay.test.ts`):
+  - os critérios do ticket, nas duas bases: erro de até 0,5 p.p. depois de 5% das seções, resultado dentro da margem depois de 1%, nunca "sem sinal de virada" no Brasil antes das 18:44 e "as pesquisas deixaram de pesar" uma vez, antes dos 12%;
+  - o peso das pesquisas, de 100% às 17h a 0% no fim;
+  - nada antes das 17h, as duas chaves e a partida a frio às 18:30.
+- **Diferente do ticket**:
+  - **Constantes**: o replay usa as constantes congeladas, as da noite, e não as provisórias que este ticket cita. O [ticket 28](28-calibracao.md) as congelou depois, e o Ensaio geral (decisão 21) mede com as congeladas.
+  - **Precisão do erro e da margem**: o replay os mede na precisão da página. A conta compara a projeção e a margem com uma casa com o resultado como o TSE o publica, Bolsonaro com 49,10%, em centésimos.
+    - Contra o resultado com todas as casas (49,0967), o 49,6 publicado com 28% a 36% das seções erra 0,503, e o teste reprovava.
+    - Sem arredondar, o erro ali é de ~0,48 (`docs/calibracao/noite-2022-2.csv`).
+    - Medida assim, a tolerância deixa passar um erro de até ~0,55 antes do arredondamento.
+    - **Decisão do dono em 22/10**: o critério vale nos dois lugares, cada um com a sua pergunta. O replay mede o número publicado contra o resultado publicado, que é o que o visitante vê e o ensaio geral confere nos arquivos. O `modelo` mede o erro e a cobertura sem arredondar, com as constantes congeladas, nas duas bases (`packages/modelo/test/noites.test.ts`, "o executor de noites com as constantes congeladas"). Juntos, os dois não deixam passar os ~0,55.
+    - **Também do dono**: as constantes congeladas no replay, no lugar das provisórias.
+- **Revisão** (`/code-review`, Standards e Spec).
+  - **Corrigidos**:
+    - a projeção saía nos JSONs antes das 17h, fora das chaves de antes das 17h;
+    - a curva projetada não aparecia entre as 17h e a primeira seção;
+    - o rótulo do sinal não tinha `data-chance-de-vitoria`;
+    - testes das chaves passavam com a janela vazia;
+    - o resultado do lugar não usava `placarEntreFinalistas`;
+    - a numeração do evento numa rodada sem arquivo do Brasil repetia a de `observar` (agora em `guardar`);
+    - nomes (`duas`, `a`, `escritos`);
+    - a base padrão escrita duas vezes e as bases sem `BASES_DA_PROJECAO`.
+  - **Ficaram, por julgamento**:
+    - `mudancaEntre` e os dois % da caixa não usam `quemGanhouEntre` nem `entreOsFinalistas`, presos aos finalistas do build (2026), quando o ensaio é de 2022;
+    - a regra do placar entre finalistas segue o 1º candidato do arquivo de rodada, e não uma função do `modelo` para todo bloco, como pede a retro do [ticket 33](33-curva-de-comparacao.md);
+    - `pesoDasPesquisas` e `chanceDeVirada` vão em % no JSON e em fração no `modelo`, como os tipos dizem;
+    - sem `tarde`, o rótulo da virada projetada sai sem a faixa: "(80–95%)" só com as duas pontas;
+    - o link do simulador fica para o [ticket 25](25-simulador-ao-vivo.md).

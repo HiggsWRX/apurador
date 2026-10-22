@@ -2,8 +2,8 @@ import { formatarChance } from "../lib/formato";
 import type { Cor } from "../lib/identidade";
 
 // A chance de vitória numa barra dividida (Telas da página de lugar, decisão 3): a parte de cada finalista na cor
-// dele, com os dois números inteiros, "<1%" e ">99%" nas pontas. Sem estado e sem leitura: o painel de antes das 17h
-// a desenha no build, e o bloco da projeção ao vivo pode desenhá-la com a projeção de cada leitura.
+// dele, com os dois números inteiros, "<1%" e ">99%" nas pontas, e 100% só com a indicação do TSE (decisão 6). Sem
+// estado e sem leitura: o painel de antes das 17h a desenha no build, e a caixa da projeção ao vivo, a cada leitura.
 
 /** Um finalista como a página o nomeia nos cálculos: o nome de urna, como o TSE o escreve, e a cor dele. */
 export interface FinalistaDaPagina {
@@ -16,14 +16,17 @@ interface Props {
   chances: { finalista: FinalistaDaPagina; chance: number }[];
   /** Para onde "Chance de vitória" leva: a seção da metodologia que explica de onde ela vem. */
   href: string;
+  /** A eleição matematicamente definida pela indicação do TSE: as chances vão a 100% e 0%, sem as pontas. */
+  definida?: boolean;
 }
 
 /** A barra dividida da chance de vitória dos dois finalistas, com os números. */
-export function ChanceDeVitoria({ chances, href }: Props) {
+export function ChanceDeVitoria({ chances, href, definida = false }: Props) {
   // Arredonda uma vez, a do primeiro; a do segundo é o complemento, para os dois inteiros somarem 100.
   const [doPrimeiro, doSegundo] = chances;
   const inteiroDoPrimeiro = Math.round(100 * (doPrimeiro?.chance ?? 0.5));
-  const rotulos = [formatarChance(inteiroDoPrimeiro / 100), formatarChance((100 - inteiroDoPrimeiro) / 100)];
+  const comoMostra = (inteiro: number) => (definida ? `${inteiro}%` : formatarChance(inteiro / 100));
+  const rotulos = [comoMostra(inteiroDoPrimeiro), comoMostra(100 - inteiroDoPrimeiro)];
   return (
     <div class="chance" data-chance-de-vitoria>
       <h3 class="chance-titulo">

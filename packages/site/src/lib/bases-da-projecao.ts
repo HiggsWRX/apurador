@@ -9,3 +9,6 @@ export const BASES_DA_PROJECAO: IdDaBase[] = ["so-apuracao", "com-pesquisas"];
 
 /** O nome de cada base como a página o escreve. */
 export const NOME_DA_BASE: Record<IdDaBase, string> = { "so-apuracao": "Só apuração", "com-pesquisas": "Apuração + pesquisas" };
+
+/** A base que a caixa da projeção abre na noite, quando ela está no ar (Combinação de pesquisas e apuração, decisão 5). */
+export const BASE_DA_NOITE: IdDaBase = "com-pesquisas";

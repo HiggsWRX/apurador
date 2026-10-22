@@ -32,6 +32,7 @@ function rodada(
     candidatos: CANDIDATOS,
     chaves: LIGADAS,
     aviso: null,
+    pesoDasPesquisas: 3,
     eventosDoBrasil: [],
     ...controle,
   };

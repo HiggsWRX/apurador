@@ -385,3 +385,87 @@ describe("a indicação do TSE", () => {
     expect(narracao.doLugar("BR").filter((e) => e.tipo === "indicacao")).toHaveLength(1);
   });
 });
+
+describe('"as pesquisas deixaram de pesar"', () => {
+  // O modelo de texto é o da decisão 8, com a hora e o % do último arquivo do Brasil que a narração viu.
+  const BRASIL_AS_17_26: [string, Parte] = [
+    "BR",
+    { quando: "2022-10-30 17:26:00", secoes: [24168, 472027, 5.12], flavio: [2_900_000, 51.03], lula: [2_783_000, 48.97] },
+  ];
+  const doBrasil = (narracao: ReturnType<typeof criarNarracao>) => narracao.doLugar("BR").filter((e) => e.tipo === "pesquisas");
+
+  it("entra uma vez, na primeira rodada em que as duas bases coincidem no Brasil, com número e ponto na curva do Brasil", () => {
+    const narracao = criarNarracao(LUGARES);
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 17:20:00", secoes: [9441, 472027, 2.0], flavio: [1_100_000, 51.4], lula: [1_040_000, 48.6] }]), {
+      coincidemNoBrasil: false,
+    });
+    expect(doBrasil(narracao)).toEqual([]);
+
+    const mudaram = narracao.narrar(rodada(BRASIL_AS_17_26), { coincidemNoBrasil: true });
+    // Elas podem deixar de coincidir e voltar: o evento não se repete.
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 17:27:00", secoes: [25000, 472027, 5.3], flavio: [3_000_000, 51.0], lula: [2_880_000, 49.0] }]), {
+      coincidemNoBrasil: false,
+    });
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 17:28:00", secoes: [26000, 472027, 5.51], flavio: [3_100_000, 51.0], lula: [2_980_000, 49.0] }]), {
+      coincidemNoBrasil: true,
+    });
+
+    expect(textos(doBrasil(narracao))).toEqual([
+      "17:26 · As pesquisas deixaram de pesar na projeção: com 5,12% das seções totalizadas no Brasil, as duas bases coincidem.",
+    ]);
+    expect(doBrasil(narracao)[0]).toMatchObject({ lugar: "BR", numero: 2, ponto: [5.12, 51.03, 48.97] });
+    expect(mudaram.has("BR")).toBe(true);
+  });
+
+  it("entra também numa rodada sem arquivo novo do Brasil, na hora e no ponto do último que a narração viu", () => {
+    const narracao = criarNarracao(LUGARES);
+    narracao.narrar(rodada(BRASIL_AS_17_26), { coincidemNoBrasil: false });
+    const mudaram = narracao.narrar(
+      rodada(["SP", { quando: "2022-10-30 17:26:30", secoes: [6000, 101073, 5.94], flavio: [900_000, 56.0], lula: [707_000, 44.0] }]),
+      {
+        coincidemNoBrasil: true,
+      },
+    );
+
+    expect(doBrasil(narracao)).toMatchObject([{ quando: "2022-10-30 17:26:00", numero: 2, ponto: [5.12, 51.03, 48.97] }]);
+    expect(mudaram.has("BR")).toBe(true);
+  });
+
+  it("no mesmo arquivo de um marco, entra antes dele, com o número menor, e vem depois dele na lista", () => {
+    const narracao = criarNarracao(LUGARES);
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 17:20:00", secoes: [9441, 472027, 2.0], flavio: [1_100_000, 51.4], lula: [1_040_000, 48.6] }]));
+    narracao.narrar(rodada(["BR", { quando: "2022-10-30 17:40:00", secoes: [48000, 472027, 10.17], flavio: [5_700_000, 51.2], lula: [5_430_000, 48.8] }]), {
+      coincidemNoBrasil: true,
+    });
+
+    expect(
+      narracao
+        .doLugar("BR")
+        .slice(0, 2)
+        .map((e) => [e.tipo, e.numero]),
+    ).toEqual([
+      ["marco", 3],
+      ["pesquisas", 2],
+    ]);
+  });
+
+  it("vai também para as outras páginas, sem número na curva, e não entra antes do primeiro arquivo do Brasil nem depois da totalização final", () => {
+    const antes = criarNarracao(LUGARES);
+    antes.narrar(new Map(), { coincidemNoBrasil: true });
+    expect(antes.doLugar("BR")).toEqual([]);
+
+    const narracao = criarNarracao(LUGARES);
+    narracao.narrar(rodada(BRASIL_AS_17_26), { coincidemNoBrasil: true });
+    expect(textos(narracao.doBrasil())).toEqual([
+      "17:26 · As pesquisas deixaram de pesar na projeção: com 5,12% das seções totalizadas no Brasil, as duas bases coincidem.",
+    ]);
+    expect(narracao.doBrasil().filter((e) => e.numero !== undefined || e.ponto !== undefined)).toEqual([]);
+
+    const depois = criarNarracao(LUGARES);
+    depois.narrar(
+      rodada(["BR", { quando: "2026-10-26 00:18:04", secoes: [472027, 472027, 100], flavio: [58_206_354, 49.1], lula: [60_345_999, 50.9], final: true }]),
+    );
+    depois.narrar(new Map(), { coincidemNoBrasil: true });
+    expect(doBrasil(depois)).toEqual([]);
+  });
+});

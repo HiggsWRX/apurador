@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { executarNoite, prepararModelo, type ResultadoDaNoite } from "../src/index.ts";
-import { agregado2022, base2022, base2022PorZona, constantes, noite2022 } from "./dados.ts";
+import { agregado2022, base2022, base2022PorZona, constantes, constantesCongeladas, noite2022 } from "./dados.ts";
 
 // O executor de noites no 2º turno de 2022, com base no 1º turno de 2022 e as constantes provisórias. A
 // referência é a tabela do Método de projeção só com a apuração (.scratch/apurador-2026/issues/09), que o
@@ -87,6 +87,29 @@ describe("o executor de noites na base 'Apuração + pesquisas', no 2º turno de
   it("com o agregado deslocado, fica a menos de 0,1 ponto da 'Só apuração' a partir de ~7% das seções, como no protótipo", () => {
     expect(juntaDesde(real)).toBeLessThan(juntaDesde(comLula)!);
     expect(Math.abs(Math.max(juntaDesde(comLula)!, juntaDesde(comBolsonaro)!) - 7)).toBeLessThan(1);
+  });
+});
+
+describe("o executor de noites com as constantes congeladas, no 2º turno de 2022", () => {
+  // Os critérios da projeção do Ensaio geral (decisão 21) sem arredondar, nas duas bases e com as constantes que o
+  // coletor roda na noite. O replay os confere nos números publicados, com uma casa (ticket 17, decisão do dono em
+  // 22/10); aqui, o modelo. No pior momento, com 28% a 36% das seções, o erro é de ~0,48 (docs/calibracao/noite-2022-2.csv).
+  const modelo = prepararModelo(base2022);
+  const nasDuasBases = [
+    executarNoite(modelo, noite2022, constantesCongeladas),
+    executarNoite(modelo, noite2022, constantesCongeladas, { agregado: agregado2022 }),
+  ];
+
+  it("erra até 0,5 ponto em todo momento depois de 5% das seções, nas duas bases", () => {
+    for (const noite of nasDuasBases) {
+      const depois = noite.momentos.filter((m) => m.ponto > 5);
+      expect(depois.length).toBeGreaterThan(90);
+      expect(depois.filter((m) => m.erro > 0.5)).toEqual([]);
+    }
+  });
+
+  it("tem o resultado final dentro da margem de 95% em todo momento depois de 1% das seções, nas duas bases", () => {
+    for (const noite of nasDuasBases) expect(noite.coberturaDepoisDe1).toBe(1);
   });
 });
 

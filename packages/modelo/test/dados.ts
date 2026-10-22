@@ -1,16 +1,18 @@
 import { readFileSync } from "node:fs";
 import { agregadoDaNoite, indicadoresDaBase, lerNoite, lerPesquisasHistoricas, type ResultadoHistorico } from "@apurador/pipeline";
-import { CONSTANTES_PROVISORIAS, type Apuracao, type BaseDoModelo } from "../src/index.ts";
+import { CONSTANTES_PROVISORIAS, lerConstantes, type Apuracao, type BaseDoModelo } from "../src/index.ts";
 import type { DadosDoPrototipo, FotoDoPrototipo } from "./prototipo/projecao.js";
 
 // Os dados que os testes do modelo usam, do repositório e sem rede: a noite do 2º turno de 2022 reconstruída,
 // as bases do 1º turno (de 2022, para ela, também por zona, e de 2026, para 25/10), o agregado de 2022 e as
 // constantes provisórias. Os números de referência do porte fiel e do executor são das provisórias, e não das
-// constantes congeladas pela calibração.
+// constantes congeladas pela calibração; as congeladas, as da noite, servem aos critérios do Ensaio geral.
 
 const lerJson = (caminho: string) => JSON.parse(readFileSync(new URL(caminho, import.meta.url), "utf8")) as unknown;
 
 export const constantes = CONSTANTES_PROVISORIAS;
+/** As constantes congeladas pela calibração em 21/10 (`constantes.json`), as que o coletor roda na noite. */
+export const constantesCongeladas = lerConstantes(lerJson("../constantes.json"));
 export const base2022 = lerJson("../../../dados/bases/2022-2.json") as BaseDoModelo;
 /** A base de 2022 com os municípios de mais de uma zona divididos nas zonas da noite, para o teste da zona. */
 export const base2022PorZona = lerJson("../../../dados/bases/2022-2-zonas.json") as BaseDoModelo;

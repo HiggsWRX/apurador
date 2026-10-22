@@ -9,6 +9,7 @@ import { turnosDoLugar } from "../lib/curvas-passadas";
 import { enderecosDoBuild } from "../lib/enderecos-ao-vivo";
 import { FOTOS } from "../lib/fotos";
 import { emLugar } from "../lib/lugares";
+import { AGREGADO } from "../lib/pesquisas";
 import Base from "./Base.astro";
 
 // A casca de toda página de lugar (Telas da página de lugar, decisão 1). No celular, uma coluna:
@@ -49,6 +50,7 @@ const enderecos = enderecosDoBuild(
         enderecos={enderecos}
         chaves={CHAVES.noite}
         turnosPassados={turnosDoLugar(lugar.id)}
+        pesquisasDoAgregado={CHAVES.antesDas17h.agregado && AGREGADO ? AGREGADO.pesquisas.length : null}
       />
       <slot />
     </div>

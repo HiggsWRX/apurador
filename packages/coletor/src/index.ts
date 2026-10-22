@@ -1,5 +1,15 @@
 export { criarColetor, type Buscar, type Coletor, type OpcoesDoColetor, type RegistroDaRodada } from "./coletor.ts";
-export { type ArquivoDeRodada, type ArquivoDoLugar, type Fase, type PontoDaCurvaReal } from "./arquivos.ts";
+export {
+  type ArquivoDeRodada,
+  type ArquivoDoLugar,
+  type Fase,
+  type PontoDaCurvaProjetada,
+  type PontoDaCurvaReal,
+  type ProjecaoDoLugar,
+  type ProjecaoNaBase,
+} from "./arquivos.ts";
+export { type EntradaDaProjecao } from "./projecao.ts";
+export { lerEntradaDaProjecao, NOITES_DA_PROJECAO, type NoiteDaProjecao } from "./entrada-da-projecao.ts";
 export { type EventoDaNarracao, type TipoDeEvento } from "./narracao.ts";
 export { pastaLocal, type Destino } from "./destino.ts";
 export { destinoR2, type CredenciaisDoR2 } from "./r2.ts";

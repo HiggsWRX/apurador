@@ -7,12 +7,13 @@ import { CHAVES_DA_NOITE, NOMES_DAS_CHAVES } from "./chaves.ts";
 import { criarColetor, type RegistroDaRodada } from "./coletor.ts";
 import { ARQUIVO_DO_CONTADOR, criarContadorDeGravacoes, gravarContadorDeGravacoes, lerContadorDeGravacoes, somaDoMes } from "./contador.ts";
 import { ARQUIVO_DE_CONTROLE, controleDoArquivoDeChaves, lerArquivoDeControle } from "./controle.ts";
+import { lerEntradaDaProjecao, NOITES_DA_PROJECAO, type NoiteDaProjecao } from "./entrada-da-projecao.ts";
 import { implantarWorker } from "./plano-b.ts";
 import { relogioReal } from "./relogio.ts";
 
 // O coletor no terminal.
 // Uso: npm run coletor -- [--destino pasta|ensaio|producao] [--sem-gzip] [--sem-dominio] [--tse <base>] [--eleicao 6258] [--pasta <pasta>]
-//                         [--pedidos-por-segundo 45] [--minutos 15] [--controle <arquivo>] [--gravacoes <arquivo>]
+//                         [--pedidos-por-segundo 45] [--minutos 15] [--controle <arquivo>] [--gravacoes <arquivo>] [--noite 2026-2]
 //   --destino: onde publicar (ambientes.ts). `pasta`, o padrão, grava em --pasta, com o plano B numa pasta ao lado;
 //              `ensaio` e `producao` gravam no R2 do ensaio e no de produção, com as chaves de packages/coletor/.env, e
 //              o plano B republica o Worker do ambiente pelo login do wrangler (ou pelo CLOUDFLARE_API_TOKEN do .env).
@@ -24,6 +25,7 @@ import { relogioReal } from "./relogio.ts";
 //   --minutos: para sozinho depois desse tempo; sem ele, roda até Ctrl+C.
 //   --controle: o arquivo de controle que `npm run noite` grava (padrão: .cache/coletor/controle.json), lido a cada rodada.
 //   --gravacoes: o contador de gravações nos buckets (padrão: .cache/coletor/gravacoes.json), guardado a cada rodada.
+//   --noite: a noite que a projeção usa (entrada-da-projecao.ts): 2026-2, o padrão, ou 2022-2, a do TSE falso.
 // O registro de cada rodada vai para .cache/coletor/, uma linha JSON por rodada.
 
 const { values: opcoes } = parseArgs({
@@ -38,6 +40,7 @@ const { values: opcoes } = parseArgs({
     "sem-gzip": { type: "boolean", default: false },
     "sem-dominio": { type: "boolean", default: false },
     gravacoes: { type: "string", default: ARQUIVO_DO_CONTADOR },
+    noite: { type: "string", default: "2026-2" },
   },
 });
 
@@ -52,6 +55,9 @@ const fim = opcoes.minutos === undefined ? Infinity : Date.now() + Number(opcoes
 if (Number.isNaN(fim)) throw new Error(`--minutos deve ser um número, e não ${opcoes.minutos}`);
 const destino = opcoes.destino as NomeDoDestino;
 if (destino !== "pasta" && !(destino in AMBIENTES)) throw new Error(`--destino deve ser pasta, ensaio ou producao, e não ${opcoes.destino}`);
+const noite = opcoes.noite as NoiteDaProjecao;
+if (!NOITES_DA_PROJECAO.includes(noite)) throw new Error(`--noite deve ser ${NOITES_DA_PROJECAO.join(" ou ")}, e não ${opcoes.noite}`);
+const projecao = lerEntradaDaProjecao(noite);
 
 // As chaves de escrita ficam só no .env do coletor, fora do Git, e só são lidas fora da pasta local.
 const env = destino === "pasta" ? {} : lerCredenciais();
@@ -105,6 +111,9 @@ const ondePublica =
 console.log(`Coletor da eleição ${opcoes.eleicao} em ${opcoes.tse}, a ${pedidosPorSegundo} pedidos por segundo.`);
 console.log(`${destino === "producao" ? "PRODUÇÃO. " : ""}Publica em ${ondePublica}. Registro: ${fileURLToPath(arquivoDoRegistro)}`);
 console.log(`Controle: ${opcoes.controle}, lido a cada rodada (npm run noite -- <comando>). Sem o arquivo, valem as chaves de dados/chaves.json.`);
+console.log(
+  `Projeção da noite ${noite}: agregado de ${projecao.agregado.valor.toFixed(2)} ± ${projecao.agregado.incerteza} para o ${projecao.base.finalistas[0]!.numero}.`,
+);
 
 // Sem arquivo de controle, as chaves são as do arquivo de chaves do site, lidas de novo a cada rodada: um deploy que
 // mude o arquivo vale no coletor que já roda, até o primeiro comando.
@@ -119,6 +128,7 @@ const coletor = criarColetor({
   contador,
   pedidosPorSegundo,
   controle: async () => (await lerArquivoDeControle(opcoes.controle)) ?? (await controleDoArquivoDeChaves()),
+  projecao,
 });
 await coletor.rodar({
   ate: () => parar || Date.now() >= fim,

@@ -1,4 +1,4 @@
-import type { ArquivoDeRodada, ArquivoDoLugar, ChavesDaNoite } from "@apurador/coletor";
+import type { ArquivoDeRodada, ArquivoDoLugar, ChavesDaNoite, EventoDaNarracao, ProjecaoDoLugar, ProjecaoNaBase } from "@apurador/coletor";
 import { render } from "preact-render-to-string";
 import { describe, expect, it } from "vitest";
 import { VistaDoBlocoAoVivo, type PropsDaVista } from "../src/components/VistaDoBlocoAoVivo";
@@ -41,6 +41,7 @@ function rodada(fase: ArquivoDeRodada["fase"]): ArquivoDeRodada {
     candidatos: CANDIDATOS,
     chaves: LIGADAS,
     aviso: null,
+    pesoDasPesquisas: 3,
     eventosDoBrasil: [],
   };
 }
@@ -380,6 +381,242 @@ describe("plano zero", () => {
     expect(html).not.toContain("data-plano-zero");
     expect(texto(elemento(html, /<section[^>]*data-placar-oficial/))).toContain("50,43%");
     expect(html).toContain("data-curva-real");
+  });
+});
+
+describe("projeção ao vivo", () => {
+  // Os exemplos das decisões: o 1º turno do Brasil, 51,0 × 49,0 entre os finalistas, e "Lula +1,8" (Telas da página de
+  // lugar, decisão 3); os três rótulos do sinal de virada (Sinal de virada, decisão 2). Flávio lidera o placar parcial
+  // com 50,43%, e a projeção dá Lula à frente no fim. Os % são de Flávio, o 1º candidato do arquivo de rodada.
+  const naBase = (parte: Partial<ProjecaoNaBase> = {}): ProjecaoNaBase => ({
+    projecao: 49.2,
+    margem: 1.6,
+    chance: 38,
+    chanceDeVirada: 62,
+    sinalDeVirada: "virada projetada",
+    curva: [
+      [50.3, 50.4, 0],
+      [75, 49.8, 1],
+      [100, 49.2, 1.6],
+    ],
+    virada: { x: 88, cedo: 80, tarde: 95 },
+    ...parte,
+  });
+  const PROJECAO: ProjecaoDoLugar = {
+    soApuracao: naBase({ projecao: 49.4, margem: 2.1, chance: 41, chanceDeVirada: 59 }),
+    comPesquisas: naBase(),
+    coincidem: false,
+    comparacoes: { primeiroTurno: 51.0, pesquisas: 51.0 },
+  };
+  const TSE: Partial<ArquivoDoLugar["tse"]> = {
+    secoes: { totalizadas: 237618, total: 472027, percentual: 50.34 },
+    votos: [57873281, 56885102],
+    percentuais: [50.43, 49.57],
+  };
+  const comProjecao = (
+    projecao: ProjecaoDoLugar | undefined = PROJECAO,
+    parte: Partial<QuadroAoVivo> = {},
+    outras: Partial<PropsDaVista> = {},
+    tse: Partial<ArquivoDoLugar["tse"]> = TSE,
+    narracao: EventoDaNarracao[] = [],
+  ) =>
+    vista(
+      quadro({
+        fase: "ao-vivo",
+        indicador: { estado: "ao-vivo" },
+        rodada: rodada("ao-vivo"),
+        lugar: { ...dadosDoLugar(tse, [[50.34, 50.43, 49.57]]), narracao, ...(projecao ? { projecao } : {}) },
+        ...parte,
+      }),
+      { pesquisasDoAgregado: 8, ...outras },
+    );
+  const caixa = (html: string) => elemento(html, /<section[^>]*data-projecao-ao-vivo/);
+  const curva = (html: string) => elemento(html, /<section[^>]*data-curva-real/);
+  const rotulo = (html: string) => texto(elemento(curva(html), /<p[^>]*data-sinal-de-virada/));
+  const INDICACAO: EventoDaNarracao = { lugar: "BR", tipo: "indicacao", quando: "2022-10-30 19:56:23", texto: "O TSE indica Lula eleito." };
+
+  it("vem depois da curva, numa moldura tracejada, com o aviso, cada resultado ± a margem de 95% e a atribuição", () => {
+    const html = comProjecao();
+    expect(html.indexOf("data-curva-real")).toBeLessThan(html.indexOf("data-projecao-ao-vivo"));
+    expect(caixa(html)).toMatch(/^<section class="cartao projecao"/);
+    expect(texto(caixa(html))).toContain("Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.");
+    expect(texto(elemento(caixa(html), /<p class="valores"/))).toBe("FLAVIO BOLSONARO 49,2% ± 1,6 LULA 50,8% ± 1,6");
+    expect(texto(caixa(html))).toContain("Cálculo do Apurador com dados do TSE");
+  });
+
+  it("dá a chance numa barra dividida, com inteiros, e 100% só com a indicação do TSE", () => {
+    const chances = (html: string) => texto(elemento(caixa(html), /<p class="chance-rotulos"/));
+    expect(chances(comProjecao())).toBe("FLAVIO BOLSONARO 38% LULA 62%");
+    expect(chances(comProjecao({ ...PROJECAO, comPesquisas: naBase({ chance: 0 }) }))).toBe("FLAVIO BOLSONARO <1% LULA >99%");
+    // Com a indicação, Lula à frente no placar do Brasil.
+    const indicado = comProjecao(PROJECAO, {}, {}, { ...TSE, votos: [57000000, 58920000], percentuais: [49.17, 50.83] }, [INDICACAO]);
+    expect(chances(indicado)).toBe("FLAVIO BOLSONARO 0% LULA 100%");
+  });
+
+  it('abre na base "Apuração + pesquisas", com o controle e o peso das pesquisas ao lado, ou "As duas bases já coincidem aqui"', () => {
+    const html = comProjecao();
+    expect(botoes(caixa(html))).toEqual([
+      ["Só apuração", "false"],
+      ["Apuração + pesquisas", "true"],
+    ]);
+    expect(caixa(html)).toMatch(/<a href="\/metodologia\/#juntas">As pesquisas pesam 3% na projeção agora\.<\/a>/);
+    expect(caixa(comProjecao({ ...PROJECAO, coincidem: true }))).toMatch(/<a href="\/metodologia\/#juntas">As duas bases já coincidem aqui\.<\/a>/);
+    // Escolhida a "Só apuração", a caixa e a curva mostram a dela.
+    const soApuracao = comProjecao(PROJECAO, {}, { base: "so-apuracao" });
+    expect(botoes(caixa(soApuracao))).toEqual([
+      ["Só apuração", "true"],
+      ["Apuração + pesquisas", "false"],
+    ]);
+    expect(texto(elemento(caixa(soApuracao), /<p class="valores"/))).toBe("FLAVIO BOLSONARO 49,4% ± 2,1 LULA 50,6% ± 2,1");
+    expect(rotulo(soApuracao)).toBe("Virada projetada · ~88% das seções (80–95%) · chance de virada 59%");
+  });
+
+  it('compara a projeção com o 1º turno e com a indicação das pesquisas, no formato "LULA +1,8"; depois do fim, o resultado', () => {
+    expect(texto(caixa(comProjecao()))).toContain(
+      "A projeção, comparada: com o 1º turno, pelo placar entre finalistas (FLAVIO BOLSONARO 51,0%, LULA 49,0%), LULA +1,8; " +
+        "com a indicação das pesquisas (FLAVIO BOLSONARO 51,0%, LULA 49,0%), LULA +1,8.",
+    );
+    // A Bahia terminou: Flávio 27,88%, Lula 72,12%, contra 30,1% × 69,9% no 1º turno.
+    const terminou = comProjecao(
+      { ...PROJECAO, comparacoes: { primeiroTurno: 30.1, pesquisas: 30.1 } },
+      {},
+      { lugar: { tipo: "uf", uf: "BA", em: "na Bahia" } },
+      { secoes: { totalizadas: 41123, total: 41123, percentual: 100 }, votos: [2300000, 5949000], percentuais: [27.88, 72.12] },
+    );
+    expect(texto(caixa(terminou))).toContain(
+      "O resultado, comparado: com o 1º turno, pelo placar entre finalistas (FLAVIO BOLSONARO 30,1%, LULA 69,9%), LULA +2,2;",
+    );
+  });
+
+  it("leva à metodologia: o topo, a chance a #chance; e, da fase ao vivo em diante, às pesquisas do agregado", () => {
+    const html = caixa(comProjecao());
+    expect(html).toMatch(/<a href="\/metodologia\/">Como calculamos →<\/a>/);
+    expect(html).toMatch(/<a href="\/metodologia\/#chance">Chance de vitória<\/a>/);
+    expect(html).toMatch(/<a href="\/#pesquisas-registradas">as 8 pesquisas do agregado<\/a>/);
+    expect(caixa(comProjecao(PROJECAO, {}, { pesquisasDoAgregado: null }))).not.toContain("pesquisas do agregado");
+  });
+
+  it("desenha por cima da curva real a curva projetada tracejada, com a faixa de 95% e a legenda, e a escala conta a faixa", () => {
+    const html = curva(comProjecao());
+    expect(html.match(/<path class="linha-projetada"/g)).toHaveLength(2);
+    expect(html.match(/<path class="faixa-projetada"/g)).toHaveLength(2);
+    // A curva projetada vem por baixo das linhas da curva real.
+    expect(html.indexOf("linha-projetada")).toBeLessThan(html.indexOf("data-linha-real"));
+    expect(texto(elemento(html, /<figcaption class="legenda"/))).toContain("Curva projetada Faixa de 95%");
+    // Sem a faixa, a escala iria de 46% a 54%; com os 49,2 ± 1,6 do fim, ela chega a 47,6: ainda de 46% a 54%. Com uma
+    // margem de 9 pontos, a faixa chega a 40,2, e a escala vai de 40% a 60%.
+    const larga = curva(
+      comProjecao({
+        ...PROJECAO,
+        comPesquisas: naBase({
+          curva: [
+            [50.3, 50.4, 0],
+            [100, 49.2, 9],
+          ],
+        }),
+      }),
+    );
+    expect([...larga.matchAll(/<text[^>]*data-eixo-y[^>]*>([^<]+)</g)].map((m) => m[1])).toEqual(["40%", "45%", "50%", "55%", "60%"]);
+  });
+
+  it("dá o rótulo do sinal de virada nos três estados, com o losango só na virada projetada e a faixa cinza também na possível", () => {
+    const projetada = comProjecao();
+    expect(rotulo(projetada)).toBe("Virada projetada · ~88% das seções (80–95%) · chance de virada 62%");
+    expect(curva(projetada)).toMatch(/<p[^>]*data-sinal-de-virada[^>]*><a href="\/metodologia\/#virada">/);
+    expect(curva(projetada)).toContain("losango-virada");
+    expect(curva(projetada)).toContain("faixa-virada");
+
+    const possivel = comProjecao({
+      ...PROJECAO,
+      comPesquisas: naBase({ chance: 75, chanceDeVirada: 25, sinalDeVirada: "virada possível", virada: { x: null, cedo: 69, tarde: null } }),
+    });
+    expect(rotulo(possivel)).toBe("Virada possível · a partir de ~69% das seções · chance de virada 25%");
+    expect(curva(possivel)).not.toContain("losango-virada");
+    expect(curva(possivel)).toContain("faixa-virada");
+
+    const semSinal = comProjecao({
+      ...PROJECAO,
+      comPesquisas: naBase({ chance: 97, chanceDeVirada: 3, sinalDeVirada: "sem sinal de virada", virada: { x: null, cedo: 96, tarde: null } }),
+    });
+    expect(rotulo(semSinal)).toBe("Sem sinal de virada · chance de virada 3%");
+    expect(curva(semSinal)).not.toContain("losango-virada");
+    expect(curva(semSinal)).not.toContain("faixa-virada");
+  });
+
+  it("entre as 17h e a primeira seção, a curva já mostra a curva projetada de 0% a 100%, sem rótulo do sinal", () => {
+    // Antes da primeira seção, ninguém está atrás no placar parcial (Sinal de virada, decisão 3).
+    const antesDaPrimeira: ProjecaoDoLugar = {
+      ...PROJECAO,
+      comPesquisas: naBase({
+        projecao: 49.0,
+        chance: 25,
+        chanceDeVirada: null,
+        sinalDeVirada: null,
+        curva: [
+          [2, 49.0, 0.4],
+          [100, 49.0, 2.9],
+        ],
+      }),
+    };
+    const html = vista(
+      quadro({
+        fase: "ao-vivo",
+        indicador: { estado: "ao-vivo" },
+        rodada: rodada("ao-vivo"),
+        lugar: { ...dadosDoLugar({ secoes: { totalizadas: 0, total: 472027, percentual: 0 } }), projecao: antesDaPrimeira },
+      }),
+    );
+    expect(texto(curva(html))).toContain("A curva começa com as primeiras seções totalizadas.");
+    expect(curva(html).match(/<path class="linha-projetada"/g)).toHaveLength(2);
+    expect(curva(html)).not.toContain("data-linha-real");
+    expect(curva(html)).not.toContain("data-sinal-de-virada");
+    expect(html).toContain("data-projecao-ao-vivo");
+  });
+
+  it("com a indicação do TSE, o rótulo do sinal de virada some, também nas outras páginas", () => {
+    expect(curva(comProjecao(PROJECAO, {}, {}, TSE, [INDICACAO]))).not.toContain("data-sinal-de-virada");
+    const bahia: ArquivoDoLugar = { ...dadosDoLugar(TSE, [[50.34, 50.43, 49.57]]), lugar: "BA", projecao: PROJECAO };
+    const comUmaSo = vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: rodada("ao-vivo"), lugar: bahia }), {
+      lugar: { tipo: "uf", uf: "BA", em: "na Bahia" },
+    });
+    expect(curva(comUmaSo)).toContain("data-sinal-de-virada");
+    const daBahia = vista(
+      quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: { ...rodada("ao-vivo"), eventosDoBrasil: [INDICACAO] }, lugar: bahia }),
+      { lugar: { tipo: "uf", uf: "BA", em: "na Bahia" } },
+    );
+    expect(curva(daBahia)).not.toContain("data-sinal-de-virada");
+    expect(curva(daBahia)).not.toContain("losango-virada");
+  });
+
+  it("na totalização final, a caixa sai, e com ela a curva projetada", () => {
+    const html = comProjecao(PROJECAO, { fase: "encerrada", indicador: { estado: "encerrada" }, rodada: rodada("encerrada") });
+    expect(html).not.toContain("data-projecao-ao-vivo");
+    expect(html).not.toContain("linha-projetada");
+    expect(html).toContain("data-curva-real");
+  });
+
+  it("antes das 17h, não aparece: a projeção é a do painel de antes das 17h", () => {
+    const html = comProjecao(PROJECAO, { fase: "antes-das-17h", indicador: { estado: "antes-das-17h", faltam: null }, rodada: rodada("antes-das-17h") });
+    expect(html).not.toContain("data-projecao-ao-vivo");
+  });
+
+  it('desligada a projeção, saem a caixa, a curva projetada e o rótulo; desligada a base com pesquisas, só fica a "Só apuração", sem o controle', () => {
+    const semProjecao = comProjecao(PROJECAO, { chaves: { ...LIGADAS, projecao: false, simulador: false } });
+    for (const parte of ["data-projecao-ao-vivo", "linha-projetada", "data-sinal-de-virada"]) expect(semProjecao).not.toContain(parte);
+    expect(semProjecao).toContain("data-curva-real");
+
+    const semPesquisas = comProjecao(
+      { soApuracao: PROJECAO.soApuracao, comparacoes: PROJECAO.comparacoes },
+      { chaves: { ...LIGADAS, baseComPesquisas: false } },
+    );
+    expect(botoes(caixa(semPesquisas))).toEqual([]);
+    expect(texto(caixa(semPesquisas))).toContain("Base da projeção: Só apuração");
+    expect(texto(caixa(semPesquisas))).not.toContain("As pesquisas pesam");
+    expect(texto(elemento(caixa(semPesquisas), /<p class="valores"/))).toBe("FLAVIO BOLSONARO 49,4% ± 2,1 LULA 50,6% ± 2,1");
+  });
+
+  it("a manchete continua só com o placar oficial", () => {
+    expect(texto(elemento(comProjecao(), /<p[^>]*data-manchete/))).toBe("Flávio lidera com 50,43% dos votos válidos e 50,34% das seções totalizadas");
   });
 });
 

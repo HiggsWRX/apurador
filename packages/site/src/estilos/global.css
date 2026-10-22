@@ -591,6 +591,48 @@ a {
   margin: 0.75rem 0 0;
 }
 
+/* O par de números de um cálculo do Apurador (`ValoresDosFinalistas`): o agregado, a indicação das pesquisas e a projeção. */
+.valores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0.5rem 0;
+}
+.valores strong {
+  font-size: 1.5rem;
+}
+.valores [data-cor="flavio"] strong {
+  color: var(--cor-flavio);
+}
+.valores [data-cor="lula"] strong {
+  color: var(--cor-lula);
+}
+.valores .margem {
+  margin-left: 0.25rem;
+  color: var(--texto-suave);
+  font-size: 0.875rem;
+}
+
+/* O painel de antes das 17h sai quando a página passa ao vivo: dali em diante, a projeção é a da caixa do bloco ao vivo. */
+:root[data-fase="ao-vivo"] [data-bloco="projecao-antes-das-17h"],
+:root[data-fase="ao-vivo"] [data-bloco="o-que-esperar-da-noite"],
+:root[data-fase="encerrada"] [data-bloco="projecao-antes-das-17h"],
+:root[data-fase="encerrada"] [data-bloco="o-que-esperar-da-noite"] {
+  display: none;
+}
+
+/* O rótulo do sinal de virada, sob a curva. */
+.sinal-de-virada {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.sinal-de-virada a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--borda-forte);
+}
+
 /* A projeção numa moldura tracejada, com fundo próprio: o segundo nível visual, depois do placar oficial. */
 .projecao {
   border: 2px dashed var(--borda-forte);
@@ -608,6 +650,14 @@ a {
   margin: 0;
   font-size: 0.8125rem;
   font-weight: 600;
+}
+
+.projecao .links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
 }
 
 .chance-titulo {
