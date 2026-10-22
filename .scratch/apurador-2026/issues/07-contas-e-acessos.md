@@ -76,4 +76,4 @@ Depois disso, o Claude:
 
 - **O que o login do wrangler pode**: escrever em `workers`, `workers_routes` e `workers_kv`; a zona `apurador.org`, só ler (o `npx wrangler whoami` da sessão do ticket 20, em 20/10).
 - **O que só o painel faz**: a Cache Rule, o Tiered Cache, o TTL do navegador e a Transform Rule da zona.
-- **Falta**: o Zone ID de `apurador.org`, que o `wrangler r2 bucket domain add` pede. Ele não é segredo e fica aqui quando o dono o passar.
+- **Zone ID de `apurador.org`**: `b45731cba62e619a2cffa60f586e432c`, o que o `wrangler r2 bucket domain add` pede. Não é segredo; o dono o confirmou em 21/10.
