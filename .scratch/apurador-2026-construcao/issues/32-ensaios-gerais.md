@@ -56,3 +56,7 @@ Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decis�
   - **Publicado**: com uma casa, chega a 0,50 (49,6 contra os 49,10 do TSE).
   - **No replay**: a conta é na precisão da página, contra o resultado como o TSE o publica, e passa. Se o ensaio medir contra o resultado com mais casas, o arredondamento a reprova.
   - **Decisão do dono em 22/10**: no ensaio, o critério se mede como no replay, no número publicado contra o resultado publicado. O erro do modelo sem arredondar fica com o teste do `modelo` (`packages/modelo/test/noites.test.ts`), com as constantes congeladas.
+- 22/10/2026, do [ticket 21](21-painel-alertas-e-sentinela.md):
+  - **Os limites dos alertas**, a conferir no ensaio 1, estão em `LIMITES_DOS_ALERTAS` (`packages/coletor/src/alertas.ts`). No replay, sem nada errado, o pico de pedidos fica em 50 por segundo, no limite de atenção, sem passar. A partida a frio chega a rodadas de 14,3 s, perto dos 15 s.
+  - **Com o TSE falso**, o desvio do relógio não é conferido, porque o `Date` dele é a hora da noite de 2022. O alerta do relógio só vale no 24/10 e na noite.
+  - **Sentinela do ensaio**: `apurador-sentinela-ensaio`, com `--env ensaio`, lê `ao-vivo-ensaio.apurador.org` e o plano B do ensaio. Para o ensaio conferir "os alertas no computador, no celular e da sentinela", o dono faz antes os passos de "Os alertas e a sentinela" no `packages/coletor/cloudflare/README.md`.
