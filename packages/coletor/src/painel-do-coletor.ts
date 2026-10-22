@@ -1,19 +1,22 @@
 import {
   avaliarAlertas,
-  duracao,
+  falhaDeGravacao,
   LIMITES_DOS_ALERTAS,
-  numero,
+  picoDoUltimoMinuto,
   PLANO_GRATUITO_DO_R2,
+  respostasNaJanela,
+  rodadaCompleta,
   type Alerta,
   type IdDoAlerta,
   type LimitesDosAlertas,
   type MudancasDosAlertas,
-  type RodadaNoPainel,
+  type RodadaNoPainelDoColetor,
 } from "./alertas.ts";
 import type { ArquivoDeRodada, ArquivoDoLugar, Fase } from "./arquivos.ts";
 import { CHAVES_DA_NOITE, NOMES_DAS_CHAVES, type Controle } from "./chaves.ts";
 import type { RegistroDaRodada } from "./coletor.ts";
 import { somaDoMes } from "./contador.ts";
+import { comCasas, duracao, horaDeBrasilia, ROTULO_DAS_BASES, ROTULO_DO_NIVEL } from "./formatos.ts";
 import { divergenciasDoPlacar, type PlacarDoTse } from "./placar-conferido.ts";
 
 // O painel do coletor (Operação na noite, decisões 5 e 6; Volume de gravações na noite, decisões 5 e 8): uma página que
@@ -23,8 +26,8 @@ import { divergenciasDoPlacar, type PlacarDoTse } from "./placar-conferido.ts";
 //
 // O painel recebe cada rodada (`registrar`, no `aoRodar` do coletor) e é atualizado por um temporizador de 5 s
 // (`atualizar`): é ele que lê o site visto de fora, mede o computador e percebe que as rodadas pararam, o que nenhuma
-// rodada diz. Os alertas saem da mesma situação que o painel mostra (`alertas.ts`), e o painel avisa quando um começa ou
-// termina. A hora é a do relógio do coletor, a mesma das rodadas.
+// rodada diz. Os alertas saem da mesma situação que o painel mostra (`alertas.ts`), e o painel os despacha quando um
+// começa ou termina. A hora é a do relógio do coletor, a mesma das rodadas.
 
 /** O site visto de fora: o arquivo de rodada e o JSON do Brasil lidos pelo endereço público, como a página lê. */
 export interface LeituraDeFora {
@@ -53,8 +56,8 @@ export interface MedidaDoComputador {
   peloCelular: number | null;
 }
 
-/** O que o painel do coletor recebe: o relógio, de onde lê, para onde avisa e onde grava. */
-export interface OpcoesDoPainel {
+/** O que o painel do coletor recebe: o relógio, de onde lê, para onde vão os alertas e onde grava. */
+export interface OpcoesDoPainelDoColetor {
   /** A hora em ms, pelo relógio do coletor. */
   agora: () => number;
   /** Lê o site visto de fora no endereço do destino ativo. Sem ela, o painel não tem visto de fora. */
@@ -85,12 +88,13 @@ const PLACARES_GUARDADOS = 30;
 const ALERTAS_NA_LISTA = 15;
 
 /** O painel do coletor, com a hora, a leitura de fora e a medida do computador injetadas. */
-export function criarPainelDoColetor(opcoes: OpcoesDoPainel): PainelDoColetor {
+export function criarPainelDoColetor(opcoes: OpcoesDoPainelDoColetor): PainelDoColetor {
   const { agora } = opcoes;
   const limites = opcoes.limites ?? LIMITES_DOS_ALERTAS;
   const inicio = agora();
-  let rodadas: RodadaNoPainel[] = [];
-  let comProjecao: RodadaNoPainel[] = [];
+  let ultimaRodadaCompleta = inicio;
+  let rodadas: RodadaNoPainelDoColetor[] = [];
+  let comProjecao: RodadaNoPainelDoColetor[] = [];
   let aoVivoDesde: number | null = null;
   const placares = new Map<string, PlacarDoTse>();
   const ultimaGravacaoBoa: { principal: number | null; planoB: number | null } = { principal: null, planoB: null };
@@ -123,14 +127,17 @@ export function criarPainelDoColetor(opcoes: OpcoesDoPainel): PainelDoColetor {
 
   function avaliar() {
     const conferido = placarConferido();
+    const idade = idadeDaRodadaPublica();
     const alertas = avaliarAlertas(
       {
         agora: agora(),
-        inicio,
+        ultimaRodadaCompleta,
         rodadas,
         comProjecao,
         aoVivoDesde,
-        idadeDaRodadaPublica: idadeDaRodadaPublica(),
+        // Um arquivo público de antes deste coletor (o do 24/10, ou o de antes de um reinício) não conta contra ele: a
+        // pergunta é se as rodadas dele chegam ao endereço público em 2 min.
+        idadeDaRodadaPublica: idade === null ? null : Math.min(idade, agora() - inicio),
         divergenciasDoPlacar: "divergencias" in conferido ? conferido.divergencias : null,
         conferirRelogio: opcoes.conferirRelogio,
       },
@@ -147,13 +154,13 @@ export function criarPainelDoColetor(opcoes: OpcoesDoPainel): PainelDoColetor {
     for (const a of novos) lista.unshift({ alerta: a, comecou: agora(), terminou: null });
     lista.splice(ALERTAS_NA_LISTA);
     if (novos.length + resolvidos.length > 0) opcoes.notificar({ novos, resolvidos });
-    const html = pagina();
-    gravacao = gravacao.then(() => opcoes.gravar(html)).catch(() => {});
+    const conteudo = montarPagina();
+    gravacao = gravacao.then(() => opcoes.gravar(conteudo)).catch(() => {});
   }
 
-  function pagina(): string {
+  function montarPagina(): string {
     const ultima = rodadas.at(-1)?.registro;
-    return paginaDoPainel({
+    return paginaDoPainelDoColetor({
       agora: agora(),
       ultima,
       rodadas,
@@ -174,8 +181,9 @@ export function criarPainelDoColetor(opcoes: OpcoesDoPainel): PainelDoColetor {
   return {
     registrar(registro, { republicacaoDoPlanoB }) {
       const fim = Date.parse(registro.inicio) + registro.duracao;
-      const rodada = { registro, fim };
+      const rodada = { registro, fim, republicacaoDoPlanoB };
       rodadas.push(rodada);
+      if (rodadaCompleta(registro)) ultimaRodadaCompleta = fim;
       rodadas = rodadas.filter((r, i) => i >= rodadas.length - 2 || fim - r.fim <= limites.janela);
       if (registro.projecaoDoBrasil) comProjecao = [...comProjecao, rodada].slice(-2);
       if (registro.fase === "ao-vivo") aoVivoDesde ??= fim;
@@ -185,8 +193,7 @@ export function criarPainelDoColetor(opcoes: OpcoesDoPainel): PainelDoColetor {
         for (const chave of [...placares.keys()].slice(0, -PLACARES_GUARDADOS)) placares.delete(chave);
       }
       // No R2 e na pasta, a gravação boa é a rodada que gravou sem falha de gravação; no plano B, a republicação do Worker.
-      if (registro.destinoAtivo === "principal" && registro.gravacoes > 0 && !registro.falhas.some((f) => f.startsWith("gravar ")))
-        ultimaGravacaoBoa.principal = fim;
+      if (registro.destinoAtivo === "principal" && registro.gravacoes > 0 && !registro.falhas.some(falhaDeGravacao)) ultimaGravacaoBoa.principal = fim;
       ultimaGravacaoBoa.planoB = republicacaoDoPlanoB;
       avaliar();
     },
@@ -225,21 +232,19 @@ export function criarPainelDoColetor(opcoes: OpcoesDoPainel): PainelDoColetor {
 const ROTULO_DA_FASE: Record<Fase, string> = { "antes-das-17h": "antes das 17h", "ao-vivo": "ao vivo", encerrada: "encerrada" };
 
 /** Escapa o texto para o HTML: as falhas trazem URLs e o corpo de respostas do R2. */
-const html = (texto: string) => texto.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-/** A hora de Brasília, `HH:MM:SS`. */
-const hora = (ms: number) => new Date(ms).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" });
-const quandoFoi = (ms: number | null, agora: number) => (ms === null ? "nenhuma" : `${hora(ms)} (há ${duracao(agora - ms)})`);
-const megabytes = (bytes: number) => `${numero(bytes / 1_000_000, 1)} MB`;
-const linha = (rotulo: string, valor: string) => `<tr><th>${html(rotulo)}</th><td>${valor}</td></tr>`;
+const escapar = (texto: string) => texto.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+const quandoFoi = (ms: number | null, agora: number) => (ms === null ? "nenhuma" : `${horaDeBrasilia(ms)} (há ${duracao(agora - ms)})`);
+const megabytes = (bytes: number) => `${comCasas(bytes / 1_000_000, 1)} MB`;
+const linha = (rotulo: string, valor: string) => `<tr><th>${escapar(rotulo)}</th><td>${valor}</td></tr>`;
 const secao = (id: string, titulo: string, linhas: string[]) => `<section id="${id}"><h2>${titulo}</h2><table>${linhas.join("")}</table></section>`;
-const marca = (classe: "critico" | "atencao" | "ok", texto: string) => `<span class="${classe}">${html(texto)}</span>`;
+const marca = (classe: "critico" | "atencao" | "ok", texto: string) => `<span class="${classe}">${escapar(texto)}</span>`;
 
 /** Tudo o que a página mostra, já calculado pelo painel. */
 interface DadosDaPagina {
   agora: number;
   ultima: RegistroDaRodada | undefined;
-  rodadas: RodadaNoPainel[];
-  comProjecao: RodadaNoPainel[];
+  rodadas: RodadaNoPainelDoColetor[];
+  comProjecao: RodadaNoPainelDoColetor[];
   ativos: Alerta[];
   lista: { alerta: Alerta; comecou: number; terminou: number | null }[];
   deFora: { leitura: LeituraDeFora; lidaEm: number; idade: number } | null;
@@ -252,7 +257,7 @@ interface DadosDaPagina {
   limites: LimitesDosAlertas;
 }
 
-function paginaDoPainel(d: DadosDaPagina): string {
+function paginaDoPainelDoColetor(d: DadosDaPagina): string {
   const { agora, ultima } = d;
   const criticos = d.ativos.filter((a) => a.nivel === "critico").length;
   const titulo = `${d.ativos.length > 0 ? `(${criticos > 0 ? `${criticos} crítico${criticos > 1 ? "s" : ""}` : d.ativos.length}) ` : ""}Painel do coletor`;
@@ -261,7 +266,7 @@ function paginaDoPainel(d: DadosDaPagina): string {
 <head>
 <meta charset="utf-8">
 <meta http-equiv="refresh" content="5">
-<title>${html(titulo)}</title>
+<title>${escapar(titulo)}</title>
 <style>
 body { font: 15px/1.4 system-ui, sans-serif; margin: 16px; background: #fff; color: #111; max-width: 1100px; }
 h1 { font-size: 18px; margin: 0 0 8px; } h2 { font-size: 16px; margin: 18px 0 6px; border-bottom: 1px solid #ccc; }
@@ -271,29 +276,29 @@ ul { margin: 0; padding-left: 18px; }
 </style>
 </head>
 <body>
-<h1>Painel do coletor <small>· ${hora(agora)} no relógio do coletor · rodada ${ultima ? `#${ultima.numero}` : "nenhuma"}</small></h1>
-${[estado(d), vistoDeFora(d), tse(d), placarConferido(d), projecao(d), gravacao(d), computador(d)].join("\n")}
+<h1>Painel do coletor <small>· ${horaDeBrasilia(agora)} no relógio do coletor · rodada ${ultima ? `#${ultima.numero}` : "nenhuma"}</small></h1>
+${[secaoDoEstado(d), secaoDoVistoDeFora(d), secaoDoTse(d), secaoDoPlacarConferido(d), secaoDaProjecao(d), secaoDaGravacao(d), secaoDoComputador(d)].join("\n")}
 </body>
 </html>
 `;
 }
 
-function estado(d: DadosDaPagina): string {
+function secaoDoEstado(d: DadosDaPagina): string {
   const r = d.ultima;
   const controle: Controle | undefined = r?.controle;
   const chaves = controle
     ? NOMES_DAS_CHAVES.map(
-        (nome) => `${html(CHAVES_DA_NOITE[nome].rotulo)}: ${controle.chaves[nome] ? marca("ok", "ligada") : marca("atencao", "desligada")}`,
+        (nome) => `${escapar(CHAVES_DA_NOITE[nome].rotulo)}: ${controle.chaves[nome] ? marca("ok", "ligada") : marca("atencao", "desligada")}`,
       ).join("<br>")
     : "sem rodada";
   const alertas =
     d.ativos.length === 0
       ? marca("ok", "nenhum")
-      : `<ul>${d.ativos.map((a) => `<li>${marca(a.nivel, a.nivel === "critico" ? "crítico" : "atenção")} ${html(a.mensagem)}</li>`).join("")}</ul>`;
+      : `<ul>${d.ativos.map((a) => `<li>${marca(a.nivel, ROTULO_DO_NIVEL[a.nivel])} ${escapar(a.mensagem)}</li>`).join("")}</ul>`;
   const lista =
     d.lista.length === 0
       ? "nenhum"
-      : `<ul>${d.lista.map((x) => `<li>${hora(x.comecou)}${x.terminou === null ? "" : ` a ${hora(x.terminou)}`} · ${html(x.alerta.mensagem)}</li>`).join("")}</ul>`;
+      : `<ul>${d.lista.map((x) => `<li>${horaDeBrasilia(x.comecou)}${x.terminou === null ? "" : ` a ${horaDeBrasilia(x.terminou)}`} · ${escapar(x.alerta.mensagem)}</li>`).join("")}</ul>`;
   return secao("estado", "1. Estado", [
     linha("Fase", r?.fase ? ROTULO_DA_FASE[r.fase] : "sem fase (sem o Brasil do TSE)"),
     linha("Chaves", chaves),
@@ -305,32 +310,34 @@ function estado(d: DadosDaPagina): string {
   ]);
 }
 
-function vistoDeFora(d: DadosDaPagina): string {
+function secaoDoVistoDeFora(d: DadosDaPagina): string {
   if (!d.temDeFora) return secao("visto-de-fora", "2. Visto de fora", [linha("Endereço", "sem endereço público")]);
   const f = d.deFora;
   const rodada = f?.leitura.rodada;
   const brasil = f?.leitura.brasil;
   const placar =
     rodada && brasil
-      ? rodada.candidatos.map((c, i) => `${html(c.nome)} ${numero(brasil.tse.percentuais[i] ?? NaN, 2)}%`).join(" · ") +
-        ` · ${numero(brasil.tse.secoes.percentual, 2)}% das seções · totalização ${brasil.tse.totalizacao ?? "zerada"}`
+      ? rodada.candidatos.map((c, i) => `${escapar(c.nome)} ${comCasas(brasil.tse.percentuais[i] ?? NaN, 2)}%`).join(" · ") +
+        ` · ${comCasas(brasil.tse.secoes.percentual, 2)}% das seções · totalização ${brasil.tse.totalizacao ?? "zerada"}`
       : "sem o JSON do Brasil";
   const idade = f ? (f.idade > d.limites.rodadaPublica ? marca("critico", duracao(f.idade)) : duracao(f.idade)) : "—";
   return secao("visto-de-fora", "2. Visto de fora", [
-    linha("Endereço", html(f?.leitura.endereco ?? "—")),
-    linha("Arquivo de rodada", rodada ? `${hora(Date.parse(rodada.rodada))} · ${ROTULO_DA_FASE[rodada.fase]} · atraso do visitante ${idade}` : "nenhum lido"),
+    linha("Endereço", escapar(f?.leitura.endereco ?? "—")),
+    linha(
+      "Arquivo de rodada",
+      rodada ? `${horaDeBrasilia(Date.parse(rodada.rodada))} · ${ROTULO_DA_FASE[rodada.fase]} · atraso do visitante ${idade}` : "nenhum lido",
+    ),
     linha("JSON do Brasil", placar),
     ...(d.erroDeFora ? [linha("Última leitura", marca("atencao", `falhou: ${d.erroDeFora}`))] : []),
   ]);
 }
 
-function tse(d: DadosDaPagina): string {
+function secaoDoTse(d: DadosDaPagina): string {
   const { agora, ultima } = d;
   const naJanela = d.rodadas.filter((r) => agora - r.fim <= d.limites.janela);
-  const respostas = (aceita: (status: number) => boolean) =>
-    naJanela.reduce((soma, r) => soma + Object.entries(r.registro.respostas).reduce((s, [status, n]) => s + (aceita(Number(status)) ? n : 0), 0), 0);
+  const respostas = (aceita: (status: number) => boolean) => respostasNaJanela(d.rodadas, agora, d.limites.janela, aceita);
   const lida = [...d.rodadas].reverse().find((r) => (r.registro.respostas[200] ?? 0) + (r.registro.respostas[304] ?? 0) > 0);
-  const pico = Math.max(0, ...d.rodadas.filter((r) => agora - r.fim <= 60_000).map((r) => r.registro.picoDePedidos));
+  const pico = picoDoUltimoMinuto(d.rodadas, agora);
   const novidade = ultima?.novidade;
   const secoes = ultima?.placarDoTse?.secoes.percentual;
   const contagem = (rotulo: string, n: number, alerta: boolean) => `${rotulo}: ${n > 0 && alerta ? marca("critico", String(n)) : n}`;
@@ -339,7 +346,7 @@ function tse(d: DadosDaPagina): string {
     linha(
       "Última novidade",
       novidade?.totalizacao
-        ? `totalização ${novidade.totalizacao} · ${secoes === undefined ? "—" : `${numero(secoes, 2)}% das seções`} · vista ${quandoFoi(novidade.vista === null ? null : Date.parse(novidade.vista), agora)}`
+        ? `totalização ${novidade.totalizacao} · ${secoes === undefined ? "—" : `${comCasas(secoes, 2)}% das seções`} · vista ${quandoFoi(novidade.vista === null ? null : Date.parse(novidade.vista), agora)}`
         : "nenhuma totalização ainda",
     ),
     linha("Pico no último minuto", `${pico} pedidos/s, de 100`),
@@ -370,23 +377,25 @@ function tse(d: DadosDaPagina): string {
     ),
     linha(
       "Tempo da rodada",
-      ultima ? `${numero(ultima.duracao / 1000, 1)} s (máximo na janela: ${numero(Math.max(...naJanela.map((r) => r.registro.duracao)) / 1000, 1)} s)` : "—",
+      ultima
+        ? `${comCasas(ultima.duracao / 1000, 1)} s (máximo na janela: ${comCasas(Math.max(ultima.duracao, ...naJanela.map((r) => r.registro.duracao)) / 1000, 1)} s)`
+        : "—",
     ),
   ]);
 }
 
-function placarConferido(d: DadosDaPagina): string {
+function secaoDoPlacarConferido(d: DadosDaPagina): string {
   const c = d.conferido;
   const valor =
     "semConferencia" in c
-      ? html(`sem conferência: ${c.semConferencia}`)
+      ? escapar(`sem conferência: ${c.semConferencia}`)
       : c.divergencias.length === 0
         ? marca("ok", "igual ao arquivo do TSE")
-        : `${marca("critico", "divergente")}<ul>${c.divergencias.map((x) => `<li>${html(x)}</li>`).join("")}</ul>`;
+        : `${marca("critico", "divergente")}<ul>${c.divergencias.map((x) => `<li>${escapar(x)}</li>`).join("")}</ul>`;
   return secao("placar-conferido", "4. Placar conferido", [linha("Brasil publicado contra o arquivo do TSE", valor)]);
 }
 
-function projecao(d: DadosDaPagina): string {
+function secaoDaProjecao(d: DadosDaPagina): string {
   const [antes, depois] = d.comProjecao.length === 2 ? d.comProjecao : [undefined, d.comProjecao[0]];
   const p = depois?.registro.projecaoDoBrasil;
   if (!p) return secao("projecao", "5. Projeção do Brasil", [linha("Projeção", "sem projeção")]);
@@ -396,33 +405,33 @@ function projecao(d: DadosDaPagina): string {
     const n = p[qual];
     const a = antes?.registro.projecaoDoBrasil?.[qual];
     const mudanca = a ? ` · desde a rodada anterior: ${sinal(n.projecao - a.projecao, 1)} p.p., chance ${sinal(n.chance - a.chance, 0)}` : "";
-    return `${numero(n.projecao, 1)}% ± ${numero(n.margem, 1)} · chance ${numero(n.chance)}%${mudanca}${noAr ? "" : " · fora do ar"}`;
+    return `${comCasas(n.projecao, 1)}% ± ${comCasas(n.margem, 1)} · chance ${comCasas(n.chance)}%${mudanca}${noAr ? "" : " · fora do ar"}`;
   };
   return secao("projecao", "5. Projeção do Brasil", [
-    linha("De", html(nome)),
-    linha("Só apuração", base("soApuracao", chaves.projecao)),
-    linha("Apuração + pesquisas", base("comPesquisas", chaves.projecao && chaves.baseComPesquisas)),
+    linha("De", escapar(nome)),
+    linha(ROTULO_DAS_BASES.soApuracao, base("soApuracao", chaves.projecao)),
+    linha(ROTULO_DAS_BASES.comPesquisas, base("comPesquisas", chaves.projecao && chaves.baseComPesquisas)),
     linha("Peso das pesquisas", `${p.pesoDasPesquisas}%`),
   ]);
 }
 
 /** Uma diferença com o sinal na frente. */
-const sinal = (n: number, casas: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${numero(Math.abs(n), casas)}`;
+const sinal = (n: number, casas: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${comCasas(Math.abs(n), casas)}`;
 
-function gravacao(d: DadosDaPagina): string {
+function secaoDaGravacao(d: DadosDaPagina): string {
   const r = d.ultima;
   const doMes = r?.gravacoesDoMes;
   const mes = doMes
     ? [
-        ...Object.entries(doMes.buckets).map(([bucket, n]) => `${html(bucket)}: ${numero(n)}`),
-        `total ${numero(somaDoMes(doMes))} (${numero((100 * somaDoMes(doMes)) / PLANO_GRATUITO_DO_R2, 1)}% do plano gratuito, ${doMes.mes})`,
+        ...Object.entries(doMes.buckets).map(([bucket, n]) => `${escapar(bucket)}: ${comCasas(n)}`),
+        `total ${comCasas(somaDoMes(doMes))} (${comCasas((100 * somaDoMes(doMes)) / PLANO_GRATUITO_DO_R2, 1)}% do plano gratuito, ${doMes.mes})`,
       ].join(" · ")
     : "sem contador";
   const falhas =
     r && r.falhas.length > 0
       ? `<ul>${r.falhas
           .slice(0, 10)
-          .map((f) => `<li>${html(f)}</li>`)
+          .map((f) => `<li>${escapar(f)}</li>`)
           .join("")}${r.falhas.length > 10 ? `<li>e mais ${r.falhas.length - 10}</li>` : ""}</ul>`
       : "nenhuma";
   const c = d.computador;
@@ -436,19 +445,22 @@ function gravacao(d: DadosDaPagina): string {
   ]);
 }
 
-function computador(d: DadosDaPagina): string {
+function secaoDoComputador(d: DadosDaPagina): string {
   const c = d.computador;
   const desvio = d.ultima?.desvioDoRelogio ?? null;
   const relogio = !d.conferirRelogio
     ? "não conferido: o TSE falso dá a hora da noite que serve"
     : desvio === null
       ? "sem resposta do TSE"
-      : `${numero(desvio / 1000, 1)} s (o relógio do computador menos o Date do TSE)`;
+      : `${comCasas(desvio / 1000, 1)} s (o relógio do computador menos o Date do TSE)`;
   return secao("computador", "7. Computador", [
-    linha("CPU", c?.cpu === null || c?.cpu === undefined ? "sem medida" : `${numero(c.cpu)}%`),
-    linha("Memória", c?.memoria ? `${numero(c.memoria.usada / 1e9, 1)} GB de ${numero(c.memoria.total / 1e9, 1)} GB` : "sem medida"),
-    linha("Disco livre", c?.disco ? `${numero(c.disco.livre / 1e9, 1)} GB de ${numero(c.disco.total / 1e9, 1)} GB` : "sem medida"),
-    linha("Rede", c?.rede ? `${html(c.rede.adaptador)} · ↓ ${numero(c.rede.recebidos / 1000)} kB/s · ↑ ${numero(c.rede.enviados / 1000)} kB/s` : "sem medida"),
+    linha("CPU", c?.cpu === null || c?.cpu === undefined ? "sem medida" : `${comCasas(c.cpu)}%`),
+    linha("Memória", c?.memoria ? `${comCasas(c.memoria.usada / 1e9, 1)} GB de ${comCasas(c.memoria.total / 1e9, 1)} GB` : "sem medida"),
+    linha("Disco livre", c?.disco ? `${comCasas(c.disco.livre / 1e9, 1)} GB de ${comCasas(c.disco.total / 1e9, 1)} GB` : "sem medida"),
+    linha(
+      "Rede",
+      c?.rede ? `${escapar(c.rede.adaptador)} · ↓ ${comCasas(c.rede.recebidos / 1000)} kB/s · ↑ ${comCasas(c.rede.enviados / 1000)} kB/s` : "sem medida",
+    ),
     linha("Desvio do relógio", relogio),
   ]);
 }

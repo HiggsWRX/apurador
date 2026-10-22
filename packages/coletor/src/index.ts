@@ -7,7 +7,7 @@ export {
   type RegistroDaRodada,
   type TipoDoArquivoDoTse,
 } from "./coletor.ts";
-export { criarPainelDoColetor, type LeituraDeFora, type MedidaDoComputador, type OpcoesDoPainel, type PainelDoColetor } from "./painel-do-coletor.ts";
+export { criarPainelDoColetor, type LeituraDeFora, type MedidaDoComputador, type OpcoesDoPainelDoColetor, type PainelDoColetor } from "./painel-do-coletor.ts";
 export { despacharAlertas, LIMITES_DOS_ALERTAS, type Alerta, type IdDoAlerta, type LimitesDosAlertas, type NivelDoAlerta } from "./alertas.ts";
 export { placarDoArquivoDoTse, type PlacarDoTse } from "./placar-conferido.ts";
 export { enviarAoNtfy, type MensagemDoNtfy } from "./ntfy.ts";

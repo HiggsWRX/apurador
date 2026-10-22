@@ -6,7 +6,7 @@ O caminho principal dos arquivos ao vivo é o bucket `apurador-ao-vivo` do R2, s
 
 - `cors-ao-vivo.json`: o CORS do bucket. A página em `https://apurador.org` lê com `GET` e o `If-None-Match` posto à mão, então o pedido tem preflight. O R2 responde ao `OPTIONS` pelas regras do bucket, sem `OPTIONS` na lista de métodos. `Date` e `ETag` ficam expostos, porque a página lê os dois. O preflight vale 24 h, e o Chrome corta em 2 h.
 - `plano-b.jsonc` e `plano-b-ensaio.jsonc`: os Workers do plano B, só com os static assets da pasta que o coletor grava (`.cache/coletor/plano-b/` e `.cache/coletor/plano-b-ensaio/`). O coletor os republica com `wrangler deploy --config`, pelo login do wrangler.
-- `sentinela.jsonc` e `sentinela.ts`: a sentinela, um Worker com Cron Trigger a cada minuto e sem endereço público. Lê o `rodada.json` do principal e do plano B, fica com o mais novo e manda um alerta pelo ntfy se ele passar 3 min parado. Com a fase "encerrada", ou com uma rodada de mais de 6 h (de outra noite), ela fica quieta. O ensaio tem a dele, `apurador-sentinela-ensaio`, com os endereços do ensaio (`--env ensaio`).
+- `sentinela.jsonc` e `sentinela.ts`: a sentinela, um Worker com Cron Trigger a cada minuto e sem endereço público. Lê o `rodada.json` do principal e do plano B, fica com o mais novo e manda um alerta pelo ntfy se ele passar 3 min parado, ou se os dois endereços derem erro por mais de 3 min. Com a fase "encerrada", ou com uma rodada de mais de 6 h (de outra noite), ela fica quieta. O ensaio tem a dele, `apurador-sentinela-ensaio`, com os endereços do ensaio (`--env ensaio`).
 
 ## O que configurar, na ordem
 

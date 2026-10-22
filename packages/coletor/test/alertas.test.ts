@@ -75,6 +75,14 @@ describe("o despacho dos alertas", () => {
     expect(tocados).toEqual([]);
   });
 
+  it("o 403 que sai da janela de 10 min termina sem ir ao celular: o fim da janela não diz que o bloqueio acabou", () => {
+    const { despachar, enviadas } = montar();
+
+    despachar({ novos: [], resolvidos: [{ id: "tse-bloqueou", nivel: "critico", mensagem: "TSE respondeu 403 nos últimos 10 min" }] });
+
+    expect(enviadas).toEqual([]);
+  });
+
   it("uma falha do ntfy fica no registro do coletor e não segura o som", async () => {
     const { despachar, tocados, registro } = montar(async () => {
       throw new Error("fetch failed");

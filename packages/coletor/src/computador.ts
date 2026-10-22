@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { statfs } from "node:fs/promises";
 import { cpus, freemem, totalmem } from "node:os";
 import type { NivelDoAlerta } from "./alertas.ts";
+import { TITULO_DO_ALERTA_CRITICO } from "./formatos.ts";
 import type { MedidaDoComputador } from "./painel-do-coletor.ts";
 
 // O computador do coletor no painel (Operação na noite, decisões 2, 6 e 8; Volume de gravações na noite, decisão 8): o
@@ -61,7 +62,10 @@ export function medidorDoComputador(opcoes: {
   let rotaAnterior: (RotaPadrao & { em: number }) | null = null;
   let rede: MedidaDoComputador["rede"] = null;
   let conexao: MedidaDoComputador["conexao"] = null;
-  /** Os bytes que passaram pelo celular na noite, somados a cada leitura; `null` enquanto ele não levou a rota. */
+  /**
+   * Os bytes que passaram pelo celular na noite, somados a cada leitura; `null` enquanto ele não levou a rota. A primeira
+   * leitura depois da troca só marca o ponto de partida: o que passou antes dela, no máximo 20 s, fica de fora.
+   */
   let peloCelular: number | null = null;
   let lendoARede: Promise<void> | null = null;
   let redeLidaEm = -Infinity;
@@ -128,7 +132,7 @@ export function tocarNoComputador(nivel: NivelDoAlerta, mensagem: string): void 
     return;
   }
   const comando = nivel === "critico" ? `${NOTIFICACAO}; ${TRES_BIPES}` : SOM_CURTO;
-  powershell(comando, { TITULO_DO_ALERTA: "Apurador: alerta crítico", MENSAGEM_DO_ALERTA: mensagem }).catch((erro: Error) =>
+  powershell(comando, { TITULO_DO_ALERTA: TITULO_DO_ALERTA_CRITICO, MENSAGEM_DO_ALERTA: mensagem }).catch((erro: Error) =>
     console.log(`O alerta não tocou no computador: ${erro.message.split("\n")[0]}`),
   );
 }

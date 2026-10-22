@@ -5,6 +5,7 @@ import { AMBIENTES, destinosDoColetor, lerCredenciais } from "./ambientes.ts";
 import { ARQUIVO_DO_CONTADOR, criarContadorDeGravacoes, gravarContadorDeGravacoes, lerContadorDeGravacoes } from "./contador.ts";
 import { conferirEntrega, type ItemDaConferencia } from "./entrega.ts";
 import { implantarWorker } from "./plano-b.ts";
+import { ORIGEM_DO_SITE } from "./visto-de-fora.ts";
 
 // A conferência da entrega na conta (entrega.ts): grava um objeto novo no R2 pelo mesmo destino do coletor, com gzip
 // (ou sem, com --sem-gzip), e o lê pelo endereço público como a noite o lê. Com --plano-b, também republica o Worker
@@ -20,7 +21,7 @@ const { values: opcoes } = parseArgs({
     destino: { type: "string", default: "producao" },
     "sem-gzip": { type: "boolean", default: false },
     "plano-b": { type: "boolean", default: false },
-    origem: { type: "string", default: "https://apurador.org" },
+    origem: { type: "string", default: ORIGEM_DO_SITE },
   },
 });
 if (opcoes.destino !== "producao" && opcoes.destino !== "ensaio") throw new Error(`--destino deve ser producao ou ensaio, e não ${opcoes.destino}`);

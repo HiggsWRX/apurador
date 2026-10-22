@@ -10,33 +10,37 @@ const PRINCIPAL = "https://ao-vivo.apurador.org/";
 const PLANO_B = "https://apurador-plano-b.hicampos93.workers.dev/";
 const ms = (hora: string) => Date.parse(`2026-10-25T${hora}-03:00`);
 
-/** Os dois endereços, cada um com o arquivo de rodada da hora dada (ou nenhum), servido com o `Date` de agora. */
+/**
+ * Os dois endereços, cada um com o arquivo de rodada da hora dada, servido com o `Date` de agora; sem ele, 404; ou um
+ * status de erro da borda.
+ */
 function montar() {
   let agora = ms("21:00:00");
-  const rodadas: Record<string, { rodada: string; fase: string } | null> = { [PRINCIPAL]: null, [PLANO_B]: null };
+  const rodadas: Record<string, { rodada: string; fase: string } | number | null> = { [PRINCIPAL]: null, [PLANO_B]: null };
   const pedidos: { url: string; origem: string | null }[] = [];
   const enviadas: MensagemDoNtfy[] = [];
   const guardado = new Map<string, string>();
   const estado: EstadoDaSentinela = {
     get: async (chave) => guardado.get(chave) ?? null,
     put: async (chave, valor) => void guardado.set(chave, valor),
-    delete: async (chave) => void guardado.delete(chave),
   };
   const conferir = () =>
     conferirARodadaPublica({
       enderecos: [PRINCIPAL, PLANO_B],
       agora: () => agora,
       estado,
-      avisar: async (m) => void enviadas.push(m),
+      alertar: async (m) => void enviadas.push(m),
       buscar: async (url, init) => {
         pedidos.push({ url, origem: new Headers(init?.headers).get("origin") });
         const r = rodadas[url.replace("rodada.json", "")];
+        if (typeof r === "number") return new Response("error code: 522", { status: r });
         return r ? Response.json(r, { headers: { date: new Date(agora).toUTCString() } }) : new Response("Not Found", { status: 404 });
       },
     });
   const publicar = (endereco: string, hora: string | null, fase = "ao-vivo") =>
     (rodadas[endereco] = hora === null ? null : { rodada: new Date(ms(hora)).toISOString(), fase });
-  return { conferir, publicar, enviadas, pedidos, passar: (s: number) => (agora += s * 1000) };
+  const falhar = (endereco: string, status: number) => (rodadas[endereco] = status);
+  return { conferir, publicar, falhar, enviadas, pedidos, passar: (s: number) => (agora += s * 1000) };
 }
 
 describe("a sentinela", () => {
@@ -107,5 +111,28 @@ describe("a sentinela", () => {
     await s.conferir();
 
     expect(s.enviadas).toEqual([]);
+  });
+
+  it("com os dois endereços dando erro por mais de 3 min, alerta uma vez: o visitante também não lê nada", async () => {
+    const s = montar();
+    s.falhar(PRINCIPAL, 522);
+    s.falhar(PLANO_B, 404);
+
+    for (let minuto = 0; minuto < 5; minuto++) {
+      await s.conferir(); // 21:00 a 21:04
+      s.passar(60);
+    }
+    expect(s.enviadas).toEqual([
+      {
+        titulo: "Apurador: alerta crítico",
+        texto: "Sentinela: arquivo de rodada público sem leitura há 4 min (https://ao-vivo.apurador.org/rodada.json respondeu 522)",
+        prioridade: "urgente",
+      },
+    ]);
+
+    s.publicar(PRINCIPAL, "21:04:50");
+    await s.conferir(); // 21:05
+    expect(s.enviadas.at(-1)).toEqual({ titulo: "Apurador: terminou", texto: "Sentinela: arquivo de rodada público lido de novo", prioridade: "baixa" });
+    expect(s.enviadas).toHaveLength(2);
   });
 });

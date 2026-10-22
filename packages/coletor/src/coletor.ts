@@ -621,7 +621,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
    * O que o painel do coletor lê da rodada além do que ela fez: o placar do Brasil como o TSE o escreveu, a novidade, o
    * pico de pedidos, o desvio do relógio e a projeção do Brasil, com as chaves ou sem elas (o painel mostra a de dentro).
    */
-  function paraOPainel(d: Divulgacao | undefined) {
+  function paraOPainelDoColetor(d: Divulgacao | undefined) {
     if (brasilEmBytes) {
       try {
         registro.placarDoTse = placarDoArquivoDoTse(brasilEmBytes);
@@ -694,7 +694,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     }
     registro.destinoAtivo = destino === opcoes.planoB ? "plano B" : "principal";
     registro.gravacoesDoMes = opcoes.contador?.doMes() ?? null;
-    paraOPainel(divulgacao);
+    paraOPainelDoColetor(divulgacao);
     registro.duracao = Math.round(relogio.agora() - inicio);
     registro.processamento = Math.round(performance.now() - inicioReal);
     return registro;
