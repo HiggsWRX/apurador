@@ -27,6 +27,8 @@ jobs:
       - run: npx vitest run --project '!@apurador/ensaio'
       # Os totais de cada turno, no Brasil e em cada UF, contra os arquivos do TSE baixados agora.
       - run: npm run conferir
+      # O código formatado pelo prettier (`npm run format`): só código; os dados, a calibração gerada e o markdown ficam de fora.
+      - run: npx prettier --check "**/*.{ts,tsx,js,mjs,astro,css}"
 
   # O TSE falso e o replay automático: o coletor sobre a noite inteira do 2º turno de 2022, com e sem o cache da
   # borda do TSE (~2 min). Num job à parte, para o CI não somar o tempo dele ao dos outros testes.
