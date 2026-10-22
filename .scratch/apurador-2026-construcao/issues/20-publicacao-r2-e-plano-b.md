@@ -21,8 +21,8 @@ Decisões: [Arquitetura e tecnologia](../../apurador-2026/issues/08-arquitetura-
 
 - [x] **Interface**: o coletor publica por uma só interface, com os quatro destinos trocáveis por configuração. O destino do ensaio nunca é o de produção.
 - [x] **Gravação no R2**: os JSONs vão com `Content-Encoding: gzip`, ETag e `Cache-Control`, para a CDN guardar por 15 s.
-- [ ] **Configuração de `ao-vivo.apurador.org`**: Cache Rule que respeita o `Cache-Control` da origem, Tiered Cache e TTL do navegador em "Respect Existing Headers". O que não der para configurar por API vira um passo descrito ao dono.
-- [ ] **Conferência do gzip**: um objeto gravado com gzip chega certo ao navegador pela borda, com ETag e 304. Se não chegar, uma opção de configuração faz o coletor gravar sem compressão.
+- [x] **Configuração de `ao-vivo.apurador.org`**: Cache Rule que respeita o `Cache-Control` da origem, Tiered Cache e TTL do navegador em "Respect Existing Headers". O que não der para configurar por API vira um passo descrito ao dono.
+- [x] **Conferência do gzip**: um objeto gravado com gzip chega certo ao navegador pela borda, com ETag e 304. Se não chegar, uma opção de configuração faz o coletor gravar sem compressão.
 - [x] **Plano B**: o Worker é republicado a cada minuto com os ~5.820 arquivos ao vivo, dentro dos 20.000 por versão. O coletor só publica nele por comando do dono e fica nele até o fim da noite.
 - [x] **Leitura da página**: ela lê o endereço principal. Se ele der erro, ou se o arquivo de rodada dele tiver mais de 2 min, tenta o outro e fica com a rodada mais nova.
 - [x] **Sem domínio**: só existe o caminho do Worker, e a página funciona com ele.
@@ -96,3 +96,24 @@ Decisões: [Arquitetura e tecnologia](../../apurador-2026/issues/08-arquitetura-
   - `npm run conferir-entrega -- --plano-b`, que também faz o primeiro deploy do Worker do plano B.
 
   Os critérios da configuração de `ao-vivo.apurador.org` e da conferência do gzip ficam abertos até esses passos.
+
+**22/10/2026, os passos do dono feitos (Claude, com o ok do dono para os passos 1 a 4 e o 6):**
+
+- **Domínio e CORS do bucket** (passos 1 e 2, pelo wrangler): `ao-vivo.apurador.org` está ligado ao `apurador-ao-vivo`, com TLS 1.2 ou mais, posse e SSL em "active". O CORS do bucket é o de `cors-ao-vivo.json`.
+- **Zona `apurador.org`** (passos 3 e 4, pelo painel):
+  - a Cache Rule "ao-vivo: respeitar a origem", com `http.host eq "ao-vivo.apurador.org"`: "Eligible for cache"; o Edge TTL pelo `Cache-Control` e, sem ele, o padrão da Cloudflare para o status; o Browser TTL em "Respect origin TTL";
+  - o Smart Tiered Cache ligado. O painel o tirou de Caching → Tiered Cache: ele vem com o Smart Shield (Speed → Smart Shield), no pacote gratuito;
+  - o Browser Cache TTL da zona, de "4 hours" para "Respect Existing Headers";
+  - a Transform Rule de resposta "ao-vivo: CORS", no mesmo host, com `Access-Control-Allow-Origin: https://apurador.org` e `Access-Control-Expose-Headers: Date, ETag`. Até um 404 sai com os dois.
+
+  O README ganhou os nomes novos do painel: a opção do Edge TTL e o caminho do Smart Tiered Cache.
+- **Chave de escrita** (passo 5, dono): `R2_PRODUCAO_*` no `.env` do coletor, no checkout principal. A do ensaio fica para o [ticket 30](30-ambiente-de-ensaio-e-conferencias.md).
+- **Conferência** (passo 6): `npm run conferir-entrega -- --plano-b` passou inteira, com gzip.
+  - No R2: o corpo, a ETag, o `max-age=15`, o CORS, a cópia da borda (`HIT`), o 304 e o preflight de 24 h.
+  - No Worker do plano B, que teve aí o primeiro deploy: o corpo (a borda o entrega em brotli), a ETag fraca, o CORS e o 304.
+  - O coletor grava com gzip, sem `--sem-gzip`.
+- **Medido: a borda guarda uma cópia para cada `Origin`**. O R2 responde com `Vary: Origin` aos pedidos que trazem `Origin`, e a borda não serve ao navegador a cópia feita por um leitor sem `Origin`, nem o contrário.
+  - Na primeira rodada da conferência, o pedido do navegador logo depois do pedido sem `Origin` veio `MISS`. Com `curl`, cada lado vem `HIT` do segundo pedido em diante.
+  - Na noite, todo navegador manda o mesmo `Origin: https://apurador.org` e divide uma cópia; a sentinela e o painel ficam com outra. Um arquivo lido pelos dois lados custa ao R2 duas leituras a cada 15 s, não uma.
+  - A conferência passou a olhar o `HIT` no segundo pedido do navegador (`entrega.ts`), e a borda de mentira do teste ganhou a cópia por `Origin`.
+- **Decisões confirmadas pelo dono**, como já estavam no código: a página que passou ao plano B fica nele; uma gravação que o R2 recusou não entra no contador.

@@ -77,3 +77,10 @@ Depois disso, o Claude:
 - **O que o login do wrangler pode**: escrever em `workers`, `workers_routes` e `workers_kv`; a zona `apurador.org`, só ler (o `npx wrangler whoami` da sessão do ticket 20, em 20/10).
 - **O que só o painel faz**: a Cache Rule, o Tiered Cache, o TTL do navegador e a Transform Rule da zona.
 - **Zone ID de `apurador.org`**: `b45731cba62e619a2cffa60f586e432c`, o que o `wrangler r2 bucket domain add` pede. Não é segredo; o dono o confirmou em 21/10.
+
+**22/10/2026, os passos do dono do [ticket 20](../../apurador-2026-construcao/issues/20-publicacao-r2-e-plano-b.md) da construção (Claude, com o ok do dono):**
+
+- **R2**: `ao-vivo.apurador.org` é o domínio próprio do bucket `apurador-ao-vivo`, com TLS 1.2 ou mais e o CORS de `packages/coletor/cloudflare/cors-ao-vivo.json`.
+- **Zona `apurador.org`**: a Cache Rule "ao-vivo: respeitar a origem", a Transform Rule de resposta "ao-vivo: CORS", o Smart Shield no pacote gratuito, com o Smart Tiered Cache ligado, e o Browser Cache TTL em "Respect Existing Headers".
+- **Chave de escrita do R2**: o dono criou o token só no `apurador-ao-vivo` e o colou no `.env` do coletor. Isso fecha esse item da lista "Falta"; a chave do ensaio segue.
+- **Worker `apurador-plano-b`**: existe desde a conferência da entrega, em `apurador-plano-b.hicampos93.workers.dev`, só com o objeto da conferência até o coletor republicá-lo.
