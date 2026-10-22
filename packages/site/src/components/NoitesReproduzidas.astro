@@ -1,6 +1,6 @@
 ---
 import { NOME_DA_BASE } from "../lib/bases-da-projecao";
-import { formatarCalculo, formatarPctComCasas } from "../lib/formato";
+import { formatarPctComCasas } from "../lib/formato";
 import { graficoDaNoite } from "../lib/graficos-da-metodologia";
 import type { NoiteReproduzida } from "../lib/metodologia";
 
@@ -15,9 +15,9 @@ interface Props {
 const { noites } = Astro.props;
 const LARGURA = 340;
 const ALTURA = 220;
-const pct = (n: number) => `${formatarCalculo(n)}%`;
+const pct = (n: number) => formatarPctComCasas(n, 1);
 const graficos = noites.map((noite) => {
-  const g = graficoDaNoite(noite, (m) => m.comPesquisas, { largura: LARGURA, altura: ALTURA });
+  const g = graficoDaNoite(noite, { largura: LARGURA, altura: ALTURA });
   const [primeiro, segundo] = noite.finalistas;
   const placares = noite.momentos.filter((m) => m.placar !== null);
   const resultado = `${primeiro.nome} ${formatarPctComCasas(noite.resultado, 2)}`;
@@ -62,7 +62,7 @@ const graficos = noites.map((noite) => {
         <line class="resultado" x1={g.area.esquerda} x2={g.area.direita} y1={g.yResultado} y2={g.yResultado} />
         <path class="linha-da-projecao" d={g.projecao} />
         <path class="placar" d={g.placar} />
-        <text class="rotulo-do-resultado" x={g.area.direita} y={g.yResultado - 5} text-anchor="end">
+        <text class="rotulo-do-resultado" x={g.area.direita} y={g.rotuloAbaixo ? g.yResultado + 13 : g.yResultado - 5} text-anchor="end">
           resultado: {resultado}
         </text>
       </svg>

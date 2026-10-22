@@ -1,5 +1,5 @@
 ---
-import { formatarCalculo } from "../lib/formato";
+import { formatarPctComCasas } from "../lib/formato";
 import { corDoPartido, nomeCurto, type Cor } from "../lib/identidade";
 import { FINALISTAS } from "../lib/pesquisas";
 
@@ -47,7 +47,7 @@ const linhas = [
     }),
   };
 });
-const pct = (n: number) => `${formatarCalculo(n)}%`;
+const pct = (n: number) => formatarPctComCasas(n, 1);
 const descricao =
   `Exemplo de transferência de votos, com números redondos: num município, o 1º turno deu ${pct(cada)} a ${primeiro.nome}, ${pct(cada)} a ${segundo.nome} ` +
   `e ${pct(ELIMINADOS)} aos eliminados. No estado, até agora, ${100 * PARA_O_PRIMEIRO}% dos eliminados foram para ${primeiro.nome} e ` +

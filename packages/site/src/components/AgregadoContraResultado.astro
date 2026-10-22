@@ -1,5 +1,5 @@
 ---
-import { formatarCalculo, formatarMudanca, formatarPctComCasas } from "../lib/formato";
+import { formatarMudanca, formatarPctComCasas } from "../lib/formato";
 import { graficoDoAgregado } from "../lib/graficos-da-metodologia";
 import type { AnoDoAgregado } from "../lib/metodologia";
 
@@ -18,7 +18,7 @@ const descricao =
   anos
     .map((a) => {
       const naFaixa = a.resultado > a.faixa[0] && a.resultado < a.faixa[1];
-      return `${a.ano}, ${a.finalistas[0]}: agregado ${formatarCalculo(a.agregado)}%, resultado ${formatarPctComCasas(a.resultado, 2)}, ${naFaixa ? "dentro" : "fora"} da faixa de 95%`;
+      return `${a.ano}, ${a.finalistas[0]}: agregado ${formatarPctComCasas(a.agregado, 1)}, resultado ${formatarPctComCasas(a.resultado, 2)}, ${naFaixa ? "dentro" : "fora"} da faixa de 95%`;
     })
     .join("; ") +
   ".";
@@ -37,16 +37,16 @@ const descricao =
   {g.linhas.map((l) => (
     <>
       <text class="ano" x="0" y={l.y - 2}>
-        {l.ano.ano}
+        {l.doAno.ano}
       </text>
       <text class="eixo" x="0" y={l.y + 11}>
-        {l.ano.finalistas[0]} × {l.ano.finalistas[1]}
+        {l.doAno.finalistas[0]} × {l.doAno.finalistas[1]}
       </text>
-      <line class="faixa" x1={l.faixa[0]} x2={l.faixa[1]} y1={l.y} y2={l.y} />
-      <circle class="agregado" cx={l.agregado} cy={l.y} r="4.5" />
-      <circle class="resultado" cx={l.resultado} cy={l.y} r="3.5" />
-      <text class="eixo" x={l.faixa[1] + 6} y={l.y + 3.5}>
-        {formatarMudanca(l.ano.erro)}
+      <line class="faixa" x1={l.xFaixa[0]} x2={l.xFaixa[1]} y1={l.y} y2={l.y} />
+      <circle class="agregado" cx={l.xAgregado} cy={l.y} r="4.5" />
+      <circle class="resultado" cx={l.xResultado} cy={l.y} r="3.5" />
+      <text class="eixo" x={l.xFaixa[1] + 6} y={l.y + 3.5}>
+        {formatarMudanca(l.doAno.erro)}
       </text>
     </>
   ))}

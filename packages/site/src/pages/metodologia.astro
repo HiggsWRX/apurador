@@ -91,9 +91,10 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
 
 // O histórico de acerto (seção 6): as noites de 2022 e de 2018 reproduzidas pela calibração, com as constantes
 // congeladas, e o agregado contra o resultado nos 2º turnos passados. Os erros vão em módulo e com uma casa, como todo
-// cálculo do Apurador; o que fica abaixo de 0,05 aparece como "menos de 0,1".
+// cálculo do Apurador; o que fica abaixo de 0,05 aparece como "menos de 0,1" no texto e "<0,1" na tabela.
 const [noite2022, noite2018] = NOITES_REPRODUZIDAS as [(typeof NOITES_REPRODUZIDAS)[number], (typeof NOITES_REPRODUZIDAS)[number]];
 const erroEmPontos = (n: number) => (umaCasa(n) < 0.1 ? "menos de 0,1 ponto" : formatarPontos(n));
+const erroNaTabela = (n: number) => (umaCasa(n) < 0.1 ? "<0,1" : formatarCalculo(n));
 // A sexta frase de "Em um minuto" (decisão do dono, 22/10): o teste de 2022 com 5% das seções, na base da noite.
 const erro2022Em5 = errosDaNoite(noite2022)[0]!;
 const cobertura = Math.min(...NOITES_REPRODUZIDAS.flatMap((n) => Object.values(coberturaDaNoite(n))));
@@ -105,7 +106,13 @@ const resultadoDe = (n: typeof noite2022) => `${n.finalistas[0].nome} ${formatar
 const erroDasPesquisas2018 = formatarPontos(noite2018.agregado - noite2018.resultado);
 const anoDoAgregado = (ano: number) => AGREGADO_CONTRA_RESULTADO.find((a) => a.ano === ano)!;
 const [agregado2018, agregado2022] = [anoDoAgregado(2018), anoDoAgregado(2022)];
-const comoNoite = (secoes: number) => `${formatarNumero(Number(secoes.toFixed(2)))}%`;
+/** Um % de seções de uma fotografia da noite, como o ponto que ela representa: 5,0001 é "5%". */
+const pctDeSecoes = (secoes: number) => `${formatarNumero(Number(secoes.toFixed(2)))}%`;
+
+// A tabela da calibração mostra a chance de vitória de quem perdeu as noites passadas: como toda chance na página, ela
+// leva a marca e segue a chave da projeção de antes das 17h.
+const medidasDaCalibracao = CALIBRACAO.medidas.filter((m) => !m.chanceDeVitoria || CHAVES.antesDas17h.projecao);
+const p1 = CALIBRACAO.passo1;
 ---
 
 <Base titulo="Como calculamos a projeção">
@@ -153,7 +160,7 @@ const comoNoite = (secoes: number) => `${formatarNumero(Number(secoes.toFixed(2)
           <li>
             <span>
               Na noite de 2022, com 5% das seções, a projeção errou <strong>{erroEmPontos(erro2022Em5.comPesquisas)}</strong>. O placar parcial errava{" "}
-              {formatarCalculo(erro2022Em5.placar)}.
+              {formatarPontos(erro2022Em5.placar)}.
             </span>
           </li>
         </ol>
@@ -447,10 +454,10 @@ const comoNoite = (secoes: number) => `${formatarNumero(Number(secoes.toFixed(2)
               </tr>
               {errosDaNoite(n).map((e) => (
                 <tr>
-                  <th scope="row">{e.ponto}% das seções</th>
-                  <td>{formatarCalculo(e.placar)}</td>
-                  <td>{formatarCalculo(e.soApuracao)}</td>
-                  <td>{formatarCalculo(e.comPesquisas)}</td>
+                  <th scope="row">{e.secoes}% das seções</th>
+                  <td>{erroNaTabela(e.placar)}</td>
+                  <td>{erroNaTabela(e.soApuracao)}</td>
+                  <td>{erroNaTabela(e.comPesquisas)}</td>
                 </tr>
               ))}
             </tbody>
@@ -470,7 +477,7 @@ const comoNoite = (secoes: number) => `${formatarNumero(Number(secoes.toFixed(2)
       <p>
         Repetimos a noite de 2022 com o agregado 2 pontos para cada lado, um erro do tamanho do de 2018. Antes da primeira seção, a projeção erraria{" "}
         {antesDaApuracao[0]} com as pesquisas puxando para {nome1} e {antesDaApuracao[1]} puxando para {nome2}. Com 5% das seções, o erro já tinha caído para{" "}
-        {erroEmPontos(deslocadas.erroEm5[0])} e {erroEmPontos(deslocadas.erroEm5[1])}. A partir de {comoNoite(deslocadas.juntasDesde)} das seções, as versões
+        {erroEmPontos(deslocadas.erroEm5[0])} e {erroEmPontos(deslocadas.erroEm5[1])}. A partir de {pctDeSecoes(deslocadas.juntasDesde)} das seções, as versões
         ficam a menos de 0,1 ponto da base {NOME_DA_BASE["so-apuracao"]}.
       </p>
       <figure data-bloco="pesquisas-deslocadas">
@@ -558,14 +565,16 @@ const comoNoite = (secoes: number) => `${formatarNumero(Number(secoes.toFixed(2)
           dela.
         </li>
         <li>
-          <strong>K.</strong> Fica o de menor erro até 5% das seções no pior caso, com o agregado real e com o deslocado 2 pontos para cada lado.
+          <strong>K.</strong> Entre os que deixam o resultado dentro da faixa de 95% em pelo menos 95% dos momentos, fica o de menor erro até 5% das seções no
+          pior caso, com o agregado real e com o deslocado 2 pontos para cada lado.
         </li>
         <li>
           <strong>Sinal de virada.</strong> O limite de "sem sinal de virada" é posto à prova em 5%, 2% e 1%, e fica o primeiro em que nenhum momento sem sinal
           de virada no Brasil, nos estados e no Exterior é seguido de virada, e no máximo 5% dos momentos dos municípios.
         </li>
         <li>
-          <strong>Zona.</strong> Cada zona eleitoral só entra como uma parte do município se reduzir o erro médio em pelo menos 0,05 ponto em cada noite.
+          <strong>Zona.</strong> Cada zona eleitoral só entra como uma parte do município se reduzir o erro médio em pelo menos 0,05 ponto em cada noite, sem
+          baixar a cobertura.
         </li>
       </ol>
       <h3>Por noite, com as constantes escolhidas</h3>
@@ -580,8 +589,8 @@ const comoNoite = (secoes: number) => `${formatarNumero(Number(secoes.toFixed(2)
             </tr>
           </thead>
           <tbody>
-            {CALIBRACAO.medidas.map((m) => (
-              <tr>
+            {medidasDaCalibracao.map((m) => (
+              <tr data-chance-de-vitoria={m.chanceDeVitoria}>
                 <th scope="row">{m.nome}</th>
                 {m.porNoite.map((v) => (
                   <td>{v}</td>
@@ -591,9 +600,44 @@ const comoNoite = (secoes: number) => `${formatarNumero(Number(secoes.toFixed(2)
           </tbody>
         </table>
       </div>
-      <p class="nota">
-        Erros e margens em pontos. Os números de todos os candidatos estão nos CSVs da calibração, em <a href="#fontes">Para baixar</a>.
-      </p>
+      <p class="nota">Erros e margens em pontos.</p>
+      <details data-bloco="passos-da-calibracao">
+        <summary>Os números de cada candidato</summary>
+        <div>
+          <p>
+            <strong>Desvios e peso do município.</strong> Dos {p1.candidatos} candidatos, passaram {p1.passaram}. Os desvios mudam a margem, e não a projeção:{" "}
+            {p1.empataram} empataram no erro médio, e ficou o de margem mais larga. Com os valores de antes, o resultado ficava dentro da faixa de 95% em{" "}
+            {p1.coberturaDeAntes.slice(0, -1).join(", ")} e {p1.coberturaDeAntes[p1.coberturaDeAntes.length - 1]} dos momentos.
+          </p>
+          {CALIBRACAO.passos.map((passo) => (
+            <div class="tabela">
+              <table>
+                <caption>{passo.titulo}</caption>
+                <thead>
+                  <tr>
+                    {passo.colunas.map((c) => (
+                      <th scope="col">{c}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {passo.linhas.map((l) => (
+                    <tr class={l.escolhido ? "escolhido" : undefined}>
+                      <th scope="row">{l.valores[0]}</th>
+                      {l.valores.slice(1).map((v) => (
+                        <td>{v}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+          <p class="nota">
+            Em negrito, o escolhido. Os números de todos os candidatos estão nos CSVs da calibração, em <a href="#fontes">Para baixar</a>.
+          </p>
+        </div>
+      </details>
       <details class="contas">
         <summary>As contas</summary>
         <div>
@@ -883,6 +927,14 @@ const comoNoite = (secoes: number) => `${formatarNumero(Number(secoes.toFixed(2)
   }
   [data-bloco="constantes-da-calibracao"] td + td {
     white-space: nowrap;
+  }
+  [data-bloco="passos-da-calibracao"] td {
+    text-align: right;
+    white-space: nowrap;
+  }
+  tr.escolhido th,
+  tr.escolhido td {
+    font-weight: 700;
   }
   [data-bloco="erros-das-noites"] td,
   [data-bloco="erros-das-noites"] thead th + th,

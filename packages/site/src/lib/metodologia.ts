@@ -28,7 +28,7 @@ import historicasCsv from "../../../../dados/pesquisas-historicas.csv?raw";
 import institutosCsv from "../../../../dados/pesquisas-institutos.csv?raw";
 import pesquisasCsv from "../../../../dados/pesquisas.csv?raw";
 import resultadosHistoricos from "../../../../dados/resultados-historicos.json";
-import { formatarNumero, formatarPontos, formatarVotos } from "./formato";
+import { formatarNumero, formatarPctComCasas, formatarPontos, formatarVotos } from "./formato";
 import { nomeCurto } from "./identidade";
 import { PLACAR_ENTRE_FINALISTAS_DO_BRASIL, TURNO } from "./pesquisas";
 
@@ -159,13 +159,9 @@ const resultadoDo2oTurno = (ano: number) => {
 
 /** A projeção de uma base num momento de uma noite reproduzida, em % do 1º finalista da noite. */
 export interface ProjecaoReproduzida {
-  /** O peso das pesquisas, de 0 a 100. */
-  pesoDasPesquisas: number;
   projecao: number;
   /** A margem de 95%, em pontos: a faixa vai da projeção menos a margem à projeção mais a margem. */
   margem: number;
-  /** A chance de vitória do 1º finalista, de 0 a 100. */
-  chance: number;
 }
 
 /** Um momento de uma noite reproduzida: uma fotografia do executor de noites. */
@@ -201,10 +197,8 @@ function lerNoiteReproduzida(ano: number, csv: string): NoiteReproduzida {
   const placar = `placar_${primeiro.numero}`;
   if (!(placar in linhas[0]!)) throw new Error(`noite-${ano}-2.csv: o placar não é do 1º finalista (${primeiro.numero})`);
   const base = (l: Record<string, string>, b: string): ProjecaoReproduzida => ({
-    pesoDasPesquisas: Number(l[`${b}_peso_das_pesquisas`]),
     projecao: Number(l[`${b}_projecao_${primeiro.numero}`]),
     margem: Number(l[`${b}_margem`]),
-    chance: Number(l[`${b}_chance_${primeiro.numero}`]),
   });
   const comDeslocadas = `com_pesquisas_mais_2_${primeiro.numero}_projecao_${primeiro.numero}` in linhas[0]!;
   const momentos = linhas.map((l): MomentoReproduzido => ({
@@ -226,15 +220,16 @@ function lerNoiteReproduzida(ano: number, csv: string): NoiteReproduzida {
 export const NOITES_REPRODUZIDAS: NoiteReproduzida[] = [lerNoiteReproduzida(2022, noite2022Csv), lerNoiteReproduzida(2018, noite2018Csv)];
 
 /** O momento mais perto de um % de seções: a fotografia daquele ponto, que pode ficar até meia seção abaixo dele. */
-const momentoEm = (noite: NoiteReproduzida, ponto: number) =>
-  noite.momentos.reduce((melhor, m) => (Math.abs(m.secoes - ponto) < Math.abs(melhor.secoes - ponto) ? m : melhor));
+const momentoEm = (noite: NoiteReproduzida, secoes: number) =>
+  noite.momentos.reduce((melhor, m) => (Math.abs(m.secoes - secoes) < Math.abs(melhor.secoes - secoes) ? m : melhor));
 
 /** Os % de seções da tabela de erros da seção 6. */
-const PONTOS_DO_ERRO = [5, 25, 50] as const;
+const SECOES_DO_ERRO = [5, 25, 50] as const;
 
-/** O erro de uma noite num ponto da apuração, em pontos, contra o resultado final: no placar parcial e nas duas bases. */
+/** O erro de uma noite com um % de seções, em pontos, contra o resultado final: no placar parcial e nas duas bases. */
 export interface ErroDaNoite {
-  ponto: number;
+  /** O % de seções totalizadas: 5, 25 ou 50. */
+  secoes: number;
   placar: number;
   soApuracao: number;
   comPesquisas: number;
@@ -243,9 +238,9 @@ export interface ErroDaNoite {
 /** O erro, em módulo, do placar parcial e da projeção nas duas bases, com 5%, 25% e 50% das seções. */
 export function errosDaNoite(noite: NoiteReproduzida): ErroDaNoite[] {
   const erro = (v: number) => Math.abs(v - noite.resultado);
-  return PONTOS_DO_ERRO.map((ponto) => {
-    const m = momentoEm(noite, ponto);
-    return { ponto, placar: erro(m.placar!), soApuracao: erro(m.soApuracao.projecao), comPesquisas: erro(m.comPesquisas.projecao) };
+  return SECOES_DO_ERRO.map((secoes) => {
+    const m = momentoEm(noite, secoes);
+    return { secoes, placar: erro(m.placar!), soApuracao: erro(m.soApuracao.projecao), comPesquisas: erro(m.comPesquisas.projecao) };
   });
 }
 
@@ -261,8 +256,8 @@ export function coberturaDaNoite(noite: NoiteReproduzida): { soApuracao: number;
   return { soApuracao: dentro((m) => m.soApuracao), comPesquisas: dentro((m) => m.comPesquisas) };
 }
 
-/** O quanto as versões com o agregado deslocado ficam perto da base "Só apuração" (Combinação de pesquisas e apuração, decisão 4). */
-export interface Deslocadas {
+/** A noite com o agregado deslocado 2 pontos para cada lado, perto da base "Só apuração" (Combinação de pesquisas e apuração, decisão 4). */
+export interface PesquisasDeslocadas {
   /** O erro com 5% das seções, em pontos, com +2 para o 1º e para o 2º finalista. */
   erroEm5: readonly [number, number];
   /** O % de seções a partir do qual as duas versões ficam a menos de 0,1 ponto da "Só apuração" até o fim da noite. */
@@ -273,7 +268,7 @@ export interface Deslocadas {
 const JUNTAS = 0.1;
 
 /** Como a noite se sai com o agregado deslocado 2 pontos para cada lado: só a de 2022 tem essas versões. */
-export function deslocadasDaNoite(noite: NoiteReproduzida): Deslocadas | undefined {
+export function deslocadasDaNoite(noite: NoiteReproduzida): PesquisasDeslocadas | undefined {
   const com5 = momentoEm(noite, 5).deslocadas;
   if (!com5) return undefined;
   const longe = noite.momentos.filter((m) => m.secoes > 0 && m.deslocadas!.some((d) => Math.abs(d.projecao - m.soApuracao.projecao) >= JUNTAS));
@@ -297,8 +292,6 @@ export interface AnoDoAgregado {
   resultado: number;
   /** O agregado menos o resultado, em pontos. */
   erro: number;
-  /** A chance de vitória do 1º finalista, de 0 a 1. */
-  chance: number;
 }
 
 /** O agregado contra o resultado nos 2º turnos de 2002 a 2022 (Página de metodologia, decisão 2), com a incerteza de cada ano sem ele. */
@@ -310,7 +303,6 @@ export const AGREGADO_CONTRA_RESULTADO: AnoDoAgregado[] = historico.map((a) => (
   faixa: a.agregado.faixa,
   resultado: a.resultado,
   erro: a.erro,
-  chance: a.agregado.chance,
 }));
 
 /** Uma constante na tabela da calibração da seção 7, como a página a escreve. */
@@ -328,18 +320,33 @@ export interface MedidaDaCalibracao {
   nome: string;
   /** Na ordem das noites da calibração. */
   porNoite: string[];
+  /** Uma chance de vitória, que a página mostra atrás da chave da projeção, como toda chance. */
+  chanceDeVitoria?: true;
 }
 
-/** A tabela da calibração (Ensaio geral, decisão 26): as constantes e os números por noite. */
+/** Os números de cada candidato num passo da calibração, como a página os escreve. */
+export interface PassoDaCalibracao {
+  titulo: string;
+  colunas: string[];
+  /** Uma linha por candidato, na ordem da lista, com o escolhido marcado. */
+  linhas: { valores: string[]; escolhido: boolean }[];
+}
+
+/** A tabela da calibração (Ensaio geral, decisão 26): as constantes, os números por noite e os de cada passo. */
 export interface TabelaDaCalibracao {
   /** Os nomes das noites: o 2º turno de 2022, o de 2018 e o 1º turno de 2026. */
   noites: string[];
   constantes: ConstanteDaCalibracao[];
   medidas: MedidaDaCalibracao[];
+  /** O passo 1 em números: os candidatos, os que passaram, os que empataram e a cobertura com os valores de antes, por noite. */
+  passo1: { candidatos: number; passaram: number; empataram: number; coberturaDeAntes: string[] };
+  /** Os passos da ordem de chegada, do K e do sinal de virada, com os números de cada candidato. */
+  passos: PassoDaCalibracao[];
 }
 
-const comCasas = (casas: number) => new Intl.NumberFormat("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
-const [UMA, DUAS] = [comCasas(1), comCasas(2)];
+// As medidas da calibração vão com duas casas, porque os candidatos diferem em centésimos, e arredondadas como o
+// registro as arredonda (`toFixed`, em `registro-da-calibracao.ts`): o 1,8250 do K de 1% é 1,82 nos dois, e não 1,83.
+const duas = (v: string | number) => Number(v).toFixed(2).replace(".", ",");
 const NOMES_DAS_ORDENS: Record<OrdemDeChegada, string> = { mistura: '"mistura"', "primeiro-turno": '"1º turno"', "ritmo-da-noite": '"ritmo da noite"' };
 const unidade = (zona: boolean) => (zona ? "zona" : "município");
 
@@ -354,82 +361,148 @@ function tabelaDaCalibracao(csvs: Record<"constantes" | "ordem" | "k" | "sinal" 
   const ordem = ordens!.find((l) => l.escolhida === "sim")!;
   const k = ks!.find((l) => l.escolhido === "sim")!;
   const limite = sinais!.find((l) => l.escolhido === "sim")!.limite!;
-  const c = CONSTANTES;
+  const escolhidas = CONSTANTES;
   const congeladas = [
-    [Number(escolhida.incerteza_regional), c.incertezaRegional],
-    [Number(escolhida.incerteza_nacional), c.incertezaNacional],
-    [Number(escolhida.peso_do_municipio), c.pesoDoMunicipio],
-    [ordem.ordem, c.ordemDeChegada],
-    [Number(k.k), c.secoesDasPesquisas],
-    [Number(limite), 100 * c.sinalDeVirada.possivel],
+    [Number(escolhida.incerteza_regional), escolhidas.incertezaRegional],
+    [Number(escolhida.incerteza_nacional), escolhidas.incertezaNacional],
+    [Number(escolhida.peso_do_municipio), escolhidas.pesoDoMunicipio],
+    [ordem.ordem, escolhidas.ordemDeChegada],
+    [Number(k.k), escolhidas.secoesDasPesquisas],
+    [Number(limite), 100 * escolhidas.sinalDeVirada.possivel],
   ];
   if (congeladas.some(([csv, json]) => csv !== json)) throw new Error("docs/calibracao/: as linhas escolhidas não são as constantes do constantes.json");
 
-  const p = CONSTANTES_PROVISORIAS;
+  const provisorias = CONSTANTES_PROVISORIAS;
   const incerteza = (coluna: string) => `${unicos(constantes!, coluna).map(formatarNumero).join(" · ")} pontos`;
   const pct = (n: number) => `${formatarNumero(n)}%`;
   const NOITES = ["2022-2", "2018-2", "2026-1"];
   const porNoite = (f: (noite: string) => string) => NOITES.map(f);
-  const sinalNaNoite = (noite: string) => {
-    const nome = NOMES_DAS_NOITES[noite]!;
-    const execucoes = sinais!.filter((l) => l.limite === limite && l.execucao!.startsWith(nome));
-    return Math.max(...execucoes.map((l) => (100 * Number(l.municipios_seguidos_de_virada)) / Number(l.municipios_sem_sinal)));
-  };
+  /** A maior fração dos momentos "sem sinal de virada" de municípios seguidos de virada, em %, entre as execuções dadas. */
+  const municipiosQueViraram = (execucoes: Record<string, string>[]) =>
+    Math.max(...execucoes.map((l) => (100 * Number(l.municipios_seguidos_de_virada)) / Number(l.municipios_sem_sinal)));
+  const sinalNaNoite = (noite: string) => municipiosQueViraram(sinais!.filter((l) => l.limite === limite && l.execucao!.startsWith(NOMES_DAS_NOITES[noite]!)));
+  const provisoria = constantes!.find(
+    (l) =>
+      Number(l.incerteza_regional) === provisorias.incertezaRegional &&
+      Number(l.incerteza_nacional) === provisorias.incertezaNacional &&
+      Number(l.peso_do_municipio) === provisorias.pesoDoMunicipio,
+  )!;
+  // As colunas do K com o agregado deslocado levam o número do finalista que ganha os 2 pontos (`_mais_2_13`).
+  const deslocadas = Object.keys(k)
+    .map((coluna) => /^maior_erro_ate_5_2022-2_mais_2_(\d+)$/.exec(coluna))
+    .filter((m) => m !== null)
+    .map((m) => ({ coluna: m[0], para: finalistaPassado(resultadoDo2oTurno(2022).finalistas.find((f) => f.numero === Number(m[1]))!).nome }));
   return {
     noites: NOITES.map((n) => NOMES_DAS_NOITES[n]!),
     constantes: [
       {
         nome: "Desvio de cada estado",
         candidatos: incerteza("incerteza_regional"),
-        provisoria: formatarPontos(p.incertezaRegional, true),
-        escolhida: formatarPontos(c.incertezaRegional, true),
+        provisoria: formatarPontos(provisorias.incertezaRegional, true),
+        escolhida: formatarPontos(escolhidas.incertezaRegional, true),
       },
       {
         nome: "Desvio comum do país",
         candidatos: incerteza("incerteza_nacional"),
-        provisoria: formatarPontos(p.incertezaNacional, true),
-        escolhida: formatarPontos(c.incertezaNacional, true),
+        provisoria: formatarPontos(provisorias.incertezaNacional, true),
+        escolhida: formatarPontos(escolhidas.incertezaNacional, true),
       },
       {
         nome: "Peso do próprio município",
         candidatos: `${unicos(constantes!, "peso_do_municipio").map(formatarVotos).join(" · ")} votos`,
-        provisoria: `${formatarVotos(p.pesoDoMunicipio)} votos`,
-        escolhida: `${formatarVotos(c.pesoDoMunicipio)} votos`,
+        provisoria: `${formatarVotos(provisorias.pesoDoMunicipio)} votos`,
+        escolhida: `${formatarVotos(escolhidas.pesoDoMunicipio)} votos`,
       },
       {
         nome: "Ordem de chegada",
         candidatos: ordens!.map((l) => NOMES_DAS_ORDENS[l.ordem as OrdemDeChegada]).join(" · "),
-        provisoria: NOMES_DAS_ORDENS[p.ordemDeChegada],
-        escolhida: NOMES_DAS_ORDENS[c.ordemDeChegada],
+        provisoria: NOMES_DAS_ORDENS[provisorias.ordemDeChegada],
+        escolhida: NOMES_DAS_ORDENS[escolhidas.ordemDeChegada],
       },
       {
         nome: "K, as seções que as pesquisas valem",
         candidatos: unicos(ks!, "k").map(pct).join(" · "),
-        provisoria: pct(p.secoesDasPesquisas),
-        escolhida: pct(c.secoesDasPesquisas),
+        provisoria: pct(provisorias.secoesDasPesquisas),
+        escolhida: pct(escolhidas.secoesDasPesquisas),
       },
       {
         nome: 'Limite de "sem sinal de virada"',
         candidatos: unicos(sinais!, "limite").map(pct).join(" · "),
-        provisoria: pct(100 * p.sinalDeVirada.possivel),
-        escolhida: pct(100 * c.sinalDeVirada.possivel),
+        provisoria: pct(100 * provisorias.sinalDeVirada.possivel),
+        escolhida: pct(100 * escolhidas.sinalDeVirada.possivel),
       },
-      { nome: "Unidade do modelo", candidatos: [false, true].map(unidade).join(" · "), provisoria: unidade(p.zona), escolhida: unidade(c.zona) },
+      {
+        nome: "Unidade do modelo",
+        candidatos: [false, true].map(unidade).join(" · "),
+        provisoria: unidade(provisorias.zona),
+        escolhida: unidade(escolhidas.zona),
+      },
     ],
     medidas: [
-      { nome: "Resultado dentro da faixa de 95%, depois de 1% das seções", porNoite: porNoite((n) => `${UMA.format(Number(escolhida[`cobertura_${n}`]))}%`) },
+      {
+        nome: "Resultado dentro da faixa de 95%, depois de 1% das seções",
+        porNoite: porNoite((n) => formatarPctComCasas(Number(escolhida[`cobertura_${n}`]), 1)),
+      },
       {
         nome: "Maior chance de vitória de quem perdeu, depois de 5% das seções",
-        porNoite: porNoite((n) => `${UMA.format(Number(escolhida[`maior_chance_de_quem_perdeu_${n}`]))}%`),
+        porNoite: porNoite((n) => formatarPctComCasas(Number(escolhida[`maior_chance_de_quem_perdeu_${n}`]), 1)),
+        chanceDeVitoria: true,
       },
-      { nome: "Erro médio da projeção, de 5% a 50% das seções", porNoite: porNoite((n) => DUAS.format(Number(escolhida[`erro_medio_${n}`]))) },
-      { nome: "Margem de 95% média, de 5% a 50% das seções", porNoite: porNoite((n) => DUAS.format(Number(escolhida[`margem_media_${n}`]))) },
-      { nome: "Erro da curva projetada, de 5% a 50% das seções", porNoite: porNoite((n) => DUAS.format(Number(ordem[`erro_da_curva_${n}`]))) },
-      { nome: "Maior erro até 5% das seções, com pesquisas", porNoite: porNoite((n) => DUAS.format(Number(k[`maior_erro_ate_5_${n}`]))) },
-      { nome: 'Municípios "sem sinal de virada" que viraram depois', porNoite: porNoite((n) => `${DUAS.format(sinalNaNoite(n))}%`) },
+      { nome: "Erro médio da projeção, de 5% a 50% das seções", porNoite: porNoite((n) => duas(escolhida[`erro_medio_${n}`]!)) },
+      { nome: "Margem de 95% média, de 5% a 50% das seções", porNoite: porNoite((n) => duas(escolhida[`margem_media_${n}`]!)) },
+      { nome: "Erro da curva projetada, de 5% a 50% das seções", porNoite: porNoite((n) => duas(ordem[`erro_da_curva_${n}`]!)) },
+      { nome: "Maior erro até 5% das seções, com pesquisas", porNoite: porNoite((n) => duas(k[`maior_erro_ate_5_${n}`]!)) },
+      { nome: 'Municípios "sem sinal de virada" que viraram depois', porNoite: porNoite((n) => `${duas(sinalNaNoite(n))}%`) },
+      { nome: "Erro médio com as zonas no lugar do município", porNoite: porNoite((n) => duas(zonas!.find((l) => l.noite === n)!.erro_medio_zonas!)) },
+    ],
+    passo1: {
+      candidatos: constantes!.length,
+      passaram: constantes!.filter((l) => l.passa === "sim").length,
+      empataram: constantes!.filter((l) => l.empata === "sim").length,
+      coberturaDeAntes: porNoite((n) => formatarPctComCasas(Number(provisoria[`cobertura_${n}`]), 1)),
+    },
+    passos: [
       {
-        nome: "Erro médio com as zonas no lugar do município",
-        porNoite: porNoite((n) => DUAS.format(Number(zonas!.find((l) => l.noite === n)!.erro_medio_zonas))),
+        titulo: "Ordem de chegada: o erro da curva projetada, em pontos, de 5% a 50% das seções",
+        colunas: ["Ordem", ...porNoite((n) => NOMES_DAS_NOITES[n]!), "Média"],
+        linhas: ordens!.map((l) => ({
+          valores: [NOMES_DAS_ORDENS[l.ordem as OrdemDeChegada], ...porNoite((n) => duas(l[`erro_da_curva_${n}`]!)), duas(l.erro_da_curva!)],
+          escolhido: l.escolhida === "sim",
+        })),
+      },
+      {
+        titulo: "K: o maior erro, em pontos, de 0,1% a 5% das seções, na base Apuração + pesquisas",
+        colunas: [
+          "K",
+          NOMES_DAS_NOITES["2022-2"]!,
+          ...deslocadas.map((d) => `2022, +2 para ${d.para}`),
+          NOMES_DAS_NOITES["2018-2"]!,
+          NOMES_DAS_NOITES["2026-1"]!,
+          "Pior caso",
+        ],
+        linhas: ks!.map((l) => ({
+          valores: [
+            pct(Number(l.k)),
+            duas(l["maior_erro_ate_5_2022-2"]!),
+            ...deslocadas.map((d) => duas(l[d.coluna]!)),
+            duas(l["maior_erro_ate_5_2018-2"]!),
+            duas(l["maior_erro_ate_5_2026-1"]!),
+            duas(l.pior_caso!),
+          ],
+          escolhido: l.escolhido === "sim",
+        })),
+      },
+      {
+        titulo: 'Sinal de virada: os momentos "sem sinal de virada" seguidos de virada, nas oito execuções',
+        colunas: ["Limite", "Brasil, estados e Exterior", "Municípios, no pior caso"],
+        linhas: unicos(sinais!, "limite").map((valor) => {
+          const execucoes = sinais!.filter((l) => Number(l.limite) === valor);
+          const lugares = [...new Set(execucoes.flatMap((l) => l.lugares_de_cima_com_virada!.split(" ").filter((x) => x !== "")))];
+          return {
+            valores: [pct(valor), lugares.length > 0 ? lugares.join(", ") : "nenhum", `${duas(municipiosQueViraram(execucoes))}%`],
+            escolhido: execucoes.some((l) => l.escolhido === "sim"),
+          };
+        }),
       },
     ],
   };

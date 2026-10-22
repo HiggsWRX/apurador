@@ -64,7 +64,7 @@ describe("noites reproduzidas", () => {
   it("dá o erro com 5%, 25% e 50% das seções, no placar parcial e nas duas bases", () => {
     // noite-2022-2.csv: com 5,0001% das seções, placar 46,7124, Só apuração 50,9456 e Apuração + pesquisas 50,9422.
     const erros = errosDaNoite(de2022!);
-    expect(erros.map((e) => e.ponto)).toEqual([5, 25, 50]);
+    expect(erros.map((e) => e.secoes)).toEqual([5, 25, 50]);
     expect(erros[0]!.placar).toBeCloseTo(50.9024 - 46.7124, 4);
     expect(erros[0]!.soApuracao).toBeCloseTo(50.9456 - 50.9024, 4);
     expect(erros[0]!.comPesquisas).toBeCloseTo(50.9422 - 50.9024, 4);
@@ -81,7 +81,8 @@ describe("noites reproduzidas", () => {
 
   it("em 2022, mede a noite também com o agregado deslocado 2 pontos para cada lado", () => {
     // noite-2022-2.csv: com 5,0001%, 51,0169 com +2 para Lula e 50,8674 com +2 para Bolsonaro; com 4,0004%, a de
-    // +2 para Lula ainda fica 0,0753 acima da Só apuração, e daí em diante as duas ficam a menos de 0,1 ponto dela.
+    // +2 para Bolsonaro ainda fica 0,1186 abaixo da Só apuração (51,1407 contra 51,2593), e daí em diante as duas
+    // ficam a menos de 0,1 ponto dela.
     const deslocadas = deslocadasDaNoite(de2022!)!;
     expect(deslocadas.erroEm5.map((e) => e.toFixed(4))).toEqual(["0.1145", "0.0350"]);
     expect(deslocadas.juntasDesde).toBeCloseTo(5.0001, 4);
@@ -142,6 +143,33 @@ describe("calibração", () => {
       ["Maior erro até 5% das seções, com pesquisas", "1,32", "1,35", "2,00"],
       ['Municípios "sem sinal de virada" que viraram depois', "0,22%", "0,17%", "0,33%"],
       ["Erro médio com as zonas no lugar do município", "0,44", "0,72", "0,15"],
+    ]);
+    expect(CALIBRACAO.medidas.filter((m) => m.chanceDeVitoria).map((m) => m.nome)).toEqual(["Maior chance de vitória de quem perdeu, depois de 5% das seções"]);
+  });
+
+  it("dá os números de cada candidato nos passos, com o escolhido marcado", () => {
+    // docs/calibracao.md: passaram 39 dos 48, empatam 27, e o provisório tinha cobertura de 98,0%, 98,0% e 96,0%.
+    expect(CALIBRACAO.passo1).toEqual({ candidatos: 48, passaram: 39, empataram: 27, coberturaDeAntes: ["98,0%", "98,0%", "96,0%"] });
+    const [ordem, k, sinal] = CALIBRACAO.passos;
+    const linhas = (passo: typeof ordem) => passo!.linhas.map((l) => [...l.valores, l.escolhido ? "escolhido" : ""]);
+    // As tabelas dos passos 2, 3 e 4 do docs/calibracao.md, com duas casas.
+    expect(ordem!.colunas).toEqual(["Ordem", "2º turno de 2022", "2º turno de 2018", "1º turno de 2026", "Média"]);
+    expect(linhas(ordem)).toEqual([
+      ['"mistura"', "0,54", "0,75", "0,72", "0,67", "escolhido"],
+      ['"1º turno"', "1,20", "1,58", "0,23", "1,00", ""],
+      ['"ritmo da noite"', "0,30", "0,64", "1,15", "0,70", ""],
+    ]);
+    expect(k!.colunas).toEqual(["K", "2º turno de 2022", "2022, +2 para Lula", "2022, +2 para Bolsonaro", "2º turno de 2018", "1º turno de 2026", "Pior caso"]);
+    expect(linhas(k)).toEqual([
+      ["0,25%", "1,32", "1,76", "1,24", "1,35", "2,00", "2,00", "escolhido"],
+      ["0,5%", "1,09", "1,76", "1,60", "1,91", "2,02", "2,02", ""],
+      ["1%", "0,80", "1,81", "1,82", "2,27", "2,03", "2,27", ""],
+      ["2%", "0,52", "1,85", "1,96", "2,47", "2,05", "2,47", ""],
+    ]);
+    expect(linhas(sinal)).toEqual([
+      ["5%", "Brasil", "0,45%", ""],
+      ["2%", "nenhum", "0,33%", "escolhido"],
+      ["1%", "nenhum", "0,22%", ""],
     ]);
   });
 });

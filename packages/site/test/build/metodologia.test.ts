@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { agregadoDePesquisas, diaDoAgregado } from "@apurador/modelo";
 import { listaDasPesquisas, pesquisasDoAgregado, type ExtratoDoTse, type Turno } from "@apurador/pipeline";
 import { describe, expect, it } from "vitest";
-import { AGORA, botoes, DIST, DIST_CHAVES_DESLIGADAS, elemento, elementos, pagina, texto } from "../html";
+import { AGORA, botoes, DIST, DIST_CHAVES_DESLIGADAS, DIST_PROJECAO_DESLIGADA, elemento, elementos, pagina, texto } from "../html";
 
 // Confere o que o build gera (a fronteira do site): a página de metodologia com as nove seções do build do ensaio 2
 // (Página de metodologia, decisões 1 a 9; Segunda consulta jurídica, decisão 3). O build dos testes roda com o relógio
@@ -70,7 +70,7 @@ describe("página de metodologia: topo e estrutura", () => {
     expect(frases).toHaveLength(6);
     expect(frases[4]).toMatch(/^A curva projetada mostra/);
     // O texto() põe um espaço no lugar de cada tag: o "menos de 0,1 ponto" em negrito deixa um espaço antes do ponto.
-    expect(frases[5]).toMatch(/^Na noite de 2022, com 5% das seções, a projeção errou menos de 0,1 ponto\s*\. O placar parcial errava 4,2\.$/);
+    expect(frases[5]).toMatch(/^Na noite de 2022, com 5% das seções, a projeção errou menos de 0,1 ponto\s*\. O placar parcial errava 4,2 pontos\.$/);
     expect(texto(minuto)).toContain(`${DECLARACAO}.`);
   });
 
@@ -243,7 +243,7 @@ describe("seção 6, como o modelo teria se saído", () => {
     const tabela = elemento(s, /<table[^>]*data-bloco="erros-das-noites"/);
     expect(texto(elemento(tabela, /<thead/))).toBe("Com Placar parcial Só apuração Apuração + pesquisas");
     const linhas = (ano: number) => elementos(elemento(tabela, new RegExp(`<tbody[^>]*data-noite="${ano}"`)), /<tr\b/).map(texto);
-    expect(linhas(2022)).toEqual(["2º turno de 2022: Lula 50,90%", "5% das seções 4,2 0,0 0,0", "25% das seções 2,2 0,3 0,3", "50% das seções 1,2 0,4 0,4"]);
+    expect(linhas(2022)).toEqual(["2º turno de 2022: Lula 50,90%", "5% das seções 4,2 <0,1 <0,1", "25% das seções 2,2 0,3 0,3", "50% das seções 1,2 0,4 0,4"]);
     expect(linhas(2018)).toEqual([
       "2º turno de 2018: Bolsonaro 55,13%",
       "5% das seções 4,8 0,3 0,4",
@@ -319,6 +319,30 @@ describe("seção 7, como escolhemos as constantes", () => {
     expect(linhas[0]).toBe("Resultado dentro da faixa de 95%, depois de 1% das seções 100,0% 100,0% 100,0%");
     expect(linhas[2]).toBe("Erro médio da projeção, de 5% a 50% das seções 0,35 0,74 0,11");
     expect(texto(s)).toContain("Nada é treinado");
+  });
+
+  it("marca a chance de vitória de quem perdeu como toda chance, e com a projeção desligada ela sai", () => {
+    const comChance = elementos(elemento(s, /<table[^>]*data-bloco="calibracao-por-noite"/), /<tr[^>]*\sdata-chance-de-vitoria[\s=>]/).map(texto);
+    // docs/calibracao.md: a maior chance de quem perdeu, com as constantes escolhidas, é de 38,9%, 0,3% e 40,4%.
+    expect(comChance).toEqual(["Maior chance de vitória de quem perdeu, depois de 5% das seções 38,9% 0,3% 40,4%"]);
+    const desligada = readFileSync(new URL("./metodologia/index.html", DIST_PROJECAO_DESLIGADA), "utf8");
+    const tabela = elemento(elemento(desligada, /<section[^>]*\bid="constantes"/), /<table[^>]*data-bloco="calibracao-por-noite"/);
+    expect(elementos(elemento(tabela, /<tbody/), /<tr\b/)).toHaveLength(7);
+    expect(texto(tabela)).not.toContain("chance de vitória");
+  });
+
+  it("dá os números de cada candidato na ordem de chegada, no K e no sinal de virada, com o escolhido em negrito", () => {
+    const passos = elemento(s, /<details[^>]*data-bloco="passos-da-calibracao"/);
+    // docs/calibracao.md: passaram 39 dos 48 candidatos, e o provisório tinha cobertura de 98,0%, 98,0% e 96,0%.
+    expect(texto(passos)).toContain("Dos 48 candidatos, passaram 39.");
+    expect(texto(passos)).toContain("em 98,0%, 98,0% e 96,0% dos momentos");
+    const tabelas = elementos(passos, /<table\b/);
+    expect(tabelas.map((t) => texto(elemento(t, /<caption/)).split(":")[0])).toEqual(["Ordem de chegada", "K", "Sinal de virada"]);
+    expect(tabelas.map((t) => texto(elemento(t, /<tr[^>]*class="escolhido/)))).toEqual([
+      '"mistura" 0,54 0,75 0,72 0,67',
+      "0,25% 1,32 1,76 1,24 1,35 2,00 2,00",
+      "2% nenhum 0,33%",
+    ]);
   });
 });
 

@@ -38,7 +38,7 @@ const escala =
 const limitar = (v: number, [min, max]: readonly [number, number]) => Math.min(max, Math.max(min, v));
 const pct = (n: number) => `${n.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 
-/** O eixo do % de seções totalizadas: as marcas de 25 em 25, ou nos valores dados. */
+/** O eixo do % de seções totalizadas, de 0% até `ate`, com as marcas nos valores dados. */
 function eixoDasSecoes(area: Area, ate: number, valores: readonly number[]) {
   const x = escala([0, ate], [area.esquerda, area.direita]);
   return { x, marcas: valores.map((v) => ({ valor: v, posicao: x(v), rotulo: pct(v) })) };
@@ -58,12 +58,15 @@ export interface GraficoDaNoite {
   /** A faixa de 95% da projeção, recortada no eixo. */
   faixa: string;
   yResultado: number;
+  /** O rótulo do resultado vai abaixo da linha quando o placar parcial chega a ela por cima, para não ficar sobre ele. */
+  rotuloAbaixo: boolean;
 }
 
 const MARGEM_DA_NOITE = { esquerda: 78, direita: 10, topo: 12, base: 30 };
 
-/** A noite reproduzida, com a projeção da base escolhida (a da noite é a Apuração + pesquisas). */
-export function graficoDaNoite(noite: NoiteReproduzida, base: (m: MomentoReproduzido) => ProjecaoReproduzida, { largura, altura }: Tamanho): GraficoDaNoite {
+/** A noite reproduzida, com a projeção da base que a caixa da projeção abre na noite, a Apuração + pesquisas. */
+export function graficoDaNoite(noite: NoiteReproduzida, { largura, altura }: Tamanho): GraficoDaNoite {
+  const base = (m: MomentoReproduzido) => m.comPesquisas;
   const area = {
     esquerda: MARGEM_DA_NOITE.esquerda,
     direita: largura - MARGEM_DA_NOITE.direita,
@@ -94,6 +97,8 @@ export function graficoDaNoite(noite: NoiteReproduzida, base: (m: MomentoReprodu
     projecao: linha(noite.momentos.map((m) => ponto(m, base(m).projecao))),
     faixa: `${linha([...superior, ...inferior])}Z`,
     yResultado: y(noite.resultado),
+    // De onde o placar parcial vem na segunda metade da noite, perto do rótulo, que fica na ponta direita.
+    rotuloAbaixo: comPlacar.find((m) => m.secoes >= 50)!.placar! > noite.resultado,
   };
 }
 
@@ -113,17 +118,16 @@ export interface GraficoDoErro {
 /** O erro vai até 2,5 pontos para cada lado: o resto é recortado. */
 const ERRO_MAXIMO = 2.5;
 
-/** O erro da projeção nos primeiros % de seções da noite, em pontos, nas bases e com o agregado deslocado 2 pontos. */
-export function graficoDoErro(noite: NoiteReproduzida, { largura, altura }: Tamanho, ate = 30): GraficoDoErro {
+/** O gráfico do erro vai até 30% das seções: depois, as versões já coincidem. */
+const ATE = 30;
+
+/** O erro da projeção até 30% das seções da noite, em pontos, nas bases e com o agregado deslocado 2 pontos. */
+export function graficoDoErro(noite: NoiteReproduzida, { largura, altura }: Tamanho): GraficoDoErro {
   const area = { esquerda: 34, direita: largura - 10, topo: 10, base: altura - 30 };
-  const { x, marcas: marcasX } = eixoDasSecoes(
-    area,
-    ate,
-    [0, 5, 10, 20, 30].filter((v) => v <= ate),
-  );
+  const { x, marcas: marcasX } = eixoDasSecoes(area, ATE, [0, 5, 10, 20, 30]);
   const y = (v: number) => escala([-ERRO_MAXIMO, ERRO_MAXIMO], [area.base, area.topo])(limitar(v, [-ERRO_MAXIMO, ERRO_MAXIMO]));
   // A fotografia de um ponto pode passar um pouco dele (a de 30% de 2022 tem 30,0003%): ela entra.
-  const momentos = noite.momentos.filter((m) => m.secoes < ate + 0.5);
+  const momentos = noite.momentos.filter((m) => m.secoes < ATE + 0.5);
   const caminho = (p: (m: MomentoReproduzido) => ProjecaoReproduzida) => linha(momentos.map((m) => [x(m.secoes), y(p(m).projecao - noite.resultado)]));
   if (!momentos.every((m) => m.deslocadas)) throw new Error(`A noite de ${noite.ano} não tem o agregado deslocado`);
   return {
@@ -137,14 +141,14 @@ export function graficoDoErro(noite: NoiteReproduzida, { largura, altura }: Tama
   };
 }
 
-/** Um ano no gráfico do agregado contra o resultado, em px. */
+/** Um ano no gráfico do agregado contra o resultado: os números do ano e as posições, em px. */
 export interface LinhaDoAgregado {
-  ano: AnoDoAgregado;
+  doAno: AnoDoAgregado;
   y: number;
   /** O começo e o fim da faixa de 95%. */
-  faixa: readonly [number, number];
-  agregado: number;
-  resultado: number;
+  xFaixa: readonly [number, number];
+  xAgregado: number;
+  xResultado: number;
 }
 
 /** A geometria do agregado contra o resultado: uma linha por ano, com a faixa de 95%, o agregado e o resultado. */
@@ -172,12 +176,12 @@ export function graficoDoAgregado(anos: readonly AnoDoAgregado[], largura: numbe
     altura,
     marcasX: marcas,
     x50: x(50),
-    linhas: anos.map((ano, i) => ({
-      ano,
+    linhas: anos.map((doAno, i) => ({
+      doAno,
       y: area.topo + (i + 0.5) * ALTURA_DA_LINHA,
-      faixa: [x(ano.faixa[0]), x(ano.faixa[1])],
-      agregado: x(ano.agregado),
-      resultado: x(ano.resultado),
+      xFaixa: [x(doAno.faixa[0]), x(doAno.faixa[1])],
+      xAgregado: x(doAno.agregado),
+      xResultado: x(doAno.resultado),
     })),
   };
 }
