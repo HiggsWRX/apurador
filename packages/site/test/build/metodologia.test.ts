@@ -2,14 +2,15 @@ import { readdirSync, readFileSync } from "node:fs";
 import { agregadoDePesquisas, diaDoAgregado } from "@apurador/modelo";
 import { listaDasPesquisas, pesquisasDoAgregado, type ExtratoDoTse, type Turno } from "@apurador/pipeline";
 import { describe, expect, it } from "vitest";
-import { AGORA, DIST, DIST_CHAVES_DESLIGADAS, elemento, elementos, pagina, texto } from "../html";
+import { AGORA, botoes, DIST, DIST_CHAVES_DESLIGADAS, DIST_PROJECAO_DESLIGADA, elemento, elementos, pagina, texto } from "../html";
 
-// Confere o que o build gera (a fronteira do site): a página de metodologia da etapa "Antes da noite" (Página de
-// metodologia, decisões 1, 2, 4 a 9; Segunda consulta jurídica, decisão 3). O build dos testes roda com o relógio
+// Confere o que o build gera (a fronteira do site): a página de metodologia com as nove seções do build do ensaio 2
+// (Página de metodologia, decisões 1 a 9; Segunda consulta jurídica, decisão 3). O build dos testes roda com o relógio
 // fixo em AGORA, então o agregado do dia é o desse instante. Os números do agregado que a página deve mostrar são os do
 // modelo sobre o mesmo pesquisas.csv, no mesmo instante, como no teste do bloco do agregado; os outros números têm
-// referência nos registros dos tickets 04, 05 e 28 e no docs/calibracao.md.
+// referência nos registros dos tickets 04, 05 e 28, no docs/calibracao.md e nas linhas dos CSVs do docs/calibracao/.
 const DADOS = new URL("../../../../dados/", import.meta.url);
+const CALIBRACAO = new URL("../../../../docs/calibracao/", import.meta.url);
 const ler = (arquivo: string) => readFileSync(new URL(arquivo, DADOS), "utf8");
 const turno = JSON.parse(ler("turnos/2026-1.json")) as Turno;
 const lista = listaDasPesquisas({
@@ -30,24 +31,22 @@ const principal = elemento(html, /<main[^>]*id="conteudo"/);
 const corpo = texto(principal);
 const secao = (id: string) => elemento(principal, new RegExp(`<section[^>]*\\bid="${id}"`));
 
-const ANCORAS = ["pesquisas", "chance", "apuracao", "juntas", "virada", "limites", "fontes"];
-const RESERVADAS = ["acerto", "constantes"];
+const ANCORAS = ["pesquisas", "chance", "apuracao", "juntas", "virada", "acerto", "constantes", "limites", "fontes"];
 const DECLARACAO = "Sem IA generativa nem aprendizagem de máquina";
 const PALAVRAS_PROIBIDAS = /aprend|\bIA\b|intelig[eê]ncia artificial|previs/i;
 
 describe("página de metodologia: topo e estrutura", () => {
-  it("tem as sete âncoras fixas, no índice e nas seções, nesta ordem", () => {
+  it("tem as nove âncoras fixas, no índice e nas seções, nesta ordem", () => {
     const indice = elemento(principal, /<nav[^>]*class="indice/);
     const posicoes = ANCORAS.map((id) => {
       expect(indice, id).toContain(`href="#${id}"`);
       return principal.indexOf(secao(id));
     });
     expect(posicoes).toEqual([...posicoes].sort((a, b) => a - b));
-    expect(elementos(principal, /<span[^>]*class="numero[^"]*"/).map(texto)).toEqual(["01", "02", "03", "04", "05", "06", "07"]);
+    expect(elementos(principal, /<span[^>]*class="numero[^"]*"/).map(texto)).toEqual(["01", "02", "03", "04", "05", "06", "07", "08", "09"]);
   });
 
-  it("deixa as âncoras #acerto e #constantes para o ticket 29, sem nenhum 'em breve'", () => {
-    for (const id of RESERVADAS) expect(principal, id).not.toMatch(new RegExp(`\\bid="${id}"`));
+  it("não traz nenhum 'em breve'", () => {
     expect(corpo).not.toMatch(/em breve/i);
   });
 
@@ -57,15 +56,22 @@ describe("página de metodologia: topo e estrutura", () => {
     expect(texto(aviso)).toContain("Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.");
     const minuto = elemento(principal, /<section[^>]*data-bloco="em-um-minuto"/);
     const indice = elemento(principal, /<nav[^>]*class="indice/);
-    const ordem = [elemento(principal, /<p[^>]*class="lead/), aviso, minuto, indice].map((e) => principal.indexOf(e));
+    const lead = elemento(principal, /<p[^>]*class="lead/);
+    expect(texto(lead)).toContain("Aqui estão as contas, os testes e os limites.");
+    const ordem = [lead, aviso, minuto, indice].map((e) => principal.indexOf(e));
     expect(ordem).toEqual([...ordem].sort((a, b) => a - b));
   });
 
-  it("'Em um minuto' tem cinco frases e a declaração, sem a frase do teste de 2022", () => {
+  it("'Em um minuto' tem seis frases, a sexta com o teste de 2022, e a declaração", () => {
+    // A sexta frase é decisão do dono (22/10). noite-2022-2.csv, com 5,0001% das seções: a projeção erra 0,0398 na
+    // Apuração + pesquisas, e o placar parcial, 46,7124 contra 50,9024, 4,19.
     const minuto = elemento(principal, /<section[^>]*data-bloco="em-um-minuto"/);
-    expect(elementos(minuto, /<li\b/)).toHaveLength(5);
+    const frases = elementos(minuto, /<li\b/).map(texto);
+    expect(frases).toHaveLength(6);
+    expect(frases[4]).toMatch(/^A curva projetada mostra/);
+    // O texto() põe um espaço no lugar de cada tag: o "menos de 0,1 ponto" em negrito deixa um espaço antes do ponto.
+    expect(frases[5]).toMatch(/^Na noite de 2022, com 5% das seções, a projeção errou menos de 0,1 ponto\s*\. O placar parcial errava 4,2 pontos\.$/);
     expect(texto(minuto)).toContain(`${DECLARACAO}.`);
-    expect(texto(minuto)).not.toContain("2022");
   });
 
   it("não diz que o modelo aprende, que é IA ou que faz previsão, fora a declaração", () => {
@@ -79,7 +85,7 @@ describe("página de metodologia: topo e estrutura", () => {
 
   it("recolhe toda fórmula em 'As contas'", () => {
     const contas = elementos(principal, /<details[^>]*class="contas/);
-    expect(contas).toHaveLength(5);
+    expect(contas).toHaveLength(7);
     for (const c of contas) expect(texto(elemento(c, /<summary/))).toBe("As contas");
     expect(principal.match(/class="formula/g)?.length).toBeGreaterThanOrEqual(7);
     const fora = contas.reduce((resto, c) => resto.replace(c, ""), principal);
@@ -207,6 +213,156 @@ describe("seções 3 a 5, a apuração, a junção e a virada", () => {
   });
 });
 
+describe("seção 6, como o modelo teria se saído", () => {
+  const s = secao("acerto");
+  const t = texto(s);
+  const figura = elemento(s, /<figure[^>]*data-bloco="noite-reproduzida"/);
+  const noite = (ano: number) => elemento(figura, new RegExp(`<div[^>]*data-noite="${ano}"`));
+
+  it("mostra a noite reproduzida com os botões 2022 | 2018, cada uma com o placar parcial, a projeção, a faixa de 95% e o resultado", () => {
+    expect(botoes(figura).map(([rotulo, apertado]) => [rotulo!.trim(), apertado])).toEqual([
+      ["2022", "true"],
+      ["2018", "false"],
+    ]);
+    for (const ano of [2022, 2018]) {
+      const svg = elemento(noite(ano), /<svg/);
+      expect(svg, String(ano)).toMatch(/role="img"/);
+      for (const classe of ["placar", "linha-da-projecao", "faixa"]) expect(svg, `${ano} ${classe}`).toMatch(new RegExp(`<path[^>]*class="${classe}"`));
+      expect(svg, String(ano)).toMatch(/<line[^>]*class="resultado"/);
+    }
+    // O resultado oficial do TSE: Lula 50,90% em 2022 e Bolsonaro 55,13% em 2018.
+    expect(texto(noite(2022))).toContain("resultado: Lula 50,90%");
+    expect(texto(noite(2018))).toContain("resultado: Bolsonaro 55,13%");
+    expect(texto(figura)).toContain("Placar parcial");
+    expect(texto(figura)).toContain("Projeção, Apuração + pesquisas");
+    expect(texto(figura)).toContain("Cálculo do Apurador com dados do TSE.");
+  });
+
+  it("traz o erro com 5%, 25% e 50% das seções, no placar parcial e nas duas bases, para as duas noites", () => {
+    // As linhas dos CSVs com 5%, 25% e 50% das seções, contra o placar do fim (50,9024 e 55,1302), com uma casa.
+    const tabela = elemento(s, /<table[^>]*data-bloco="erros-das-noites"/);
+    expect(texto(elemento(tabela, /<thead/))).toBe("Com Placar parcial Só apuração Apuração + pesquisas");
+    const linhas = (ano: number) => elementos(elemento(tabela, new RegExp(`<tbody[^>]*data-noite="${ano}"`)), /<tr\b/).map(texto);
+    expect(linhas(2022)).toEqual(["2º turno de 2022: Lula 50,90%", "5% das seções 4,2 <0,1 <0,1", "25% das seções 2,2 0,3 0,3", "50% das seções 1,2 0,4 0,4"]);
+    expect(linhas(2018)).toEqual([
+      "2º turno de 2018: Bolsonaro 55,13%",
+      "5% das seções 4,8 0,3 0,4",
+      "25% das seções 2,4 0,9 0,9",
+      "50% das seções 1,0 0,6 0,6",
+    ]);
+    // docs/calibracao.md: cobertura de 100,0% nas duas noites, com as constantes escolhidas.
+    expect(t).toContain("o resultado ficou dentro da faixa de 95% em todos os momentos depois de 1% das seções");
+  });
+
+  it("diz que o teste é otimista, porque os ajustes provisórios saíram de 2022", () => {
+    const aviso = texto(elemento(s, /<p[^>]*data-bloco="teste-otimista"/));
+    expect(aviso).toContain("Este teste é otimista.");
+    expect(aviso).toContain("Os ajustes provisórios do modelo saíram da noite de 2022");
+    expect(elemento(s, /<p[^>]*data-bloco="teste-otimista"/)).toContain('href="#constantes"');
+  });
+
+  it("repete 2022 com as pesquisas deslocadas 2 pontos para cada lado", () => {
+    // noite-2022-2.csv: antes da primeira seção, 52,9838 e 48,9838 contra 50,9024; com 5,0001% das seções, 51,0169 e
+    // 50,8674; de 5,0001% em diante, as duas ficam a menos de 0,1 ponto da Só apuração.
+    expect(t).toContain(
+      "Antes da primeira seção, a projeção erraria 2,1 pontos com as pesquisas puxando para Lula e 1,9 ponto puxando para Bolsonaro. " +
+        "Com 5% das seções, o erro já tinha caído para 0,1 ponto e menos de 0,1 ponto. " +
+        "A partir de 5% das seções, as versões ficam a menos de 0,1 ponto da base Só apuração.",
+    );
+    const grafico = elemento(s, /<figure[^>]*data-bloco="pesquisas-deslocadas"/);
+    expect(elementos(grafico, /<path\b/)).toHaveLength(4);
+    expect(texto(grafico)).toContain("pesquisas +2 para Lula");
+    expect(texto(grafico)).toContain("pesquisas +2 para Bolsonaro");
+    expect(texto(grafico)).toContain("Cálculo do Apurador com dados do TSE.");
+  });
+
+  it("mostra o agregado contra o resultado nos seis 2º turnos de 2002 a 2022, com a incerteza de cada ano sem ele", () => {
+    const grafico = elemento(s, /<figure[^>]*data-bloco="agregado-contra-resultado"/);
+    const svg = elemento(grafico, /<svg/);
+    for (const ano of ["2002", "2006", "2010", "2014", "2018", "2022"]) expect(texto(svg), ano).toContain(ano);
+    expect(elementos(svg, /<circle[^>]*class="resultado"/)).toHaveLength(6);
+    expect(texto(grafico)).toContain("Cálculo do Apurador com dados do TSE");
+    expect(t).toContain("Em cada ano, a incerteza foi calculada sem aquele ano");
+    // Ticket 05: 57,01 contra 55,13 em 2018 e 50,98 contra 50,90 em 2022; os seis resultados caem na faixa de 95%.
+    expect(t).toContain("Em 2018, o agregado dava Bolsonaro 57,0%; ele teve 55,13%, 1,9 ponto a menos.");
+    expect(t).toContain("Em 2022, o agregado dava Lula 51,0%; ele teve 50,90%, 0,1 ponto a menos.");
+    expect(t).toContain("Nos seis anos, o resultado ficou dentro da faixa de 95%.");
+  });
+
+  it("deixa o 1º turno de 2026 para a tabela da calibração", () => {
+    expect(t).not.toContain("2026");
+  });
+});
+
+describe("seção 7, como escolhemos as constantes", () => {
+  const s = secao("constantes");
+
+  it("traz a tabela da calibração, com os candidatos, o valor de antes e o escolhido de docs/calibracao.md", () => {
+    const linhas = elementos(elemento(elemento(s, /<table[^>]*data-bloco="constantes-da-calibracao"/), /<tbody/), /<tr\b/).map(texto);
+    expect(linhas).toEqual([
+      "Desvio de cada estado 0,5 · 1 · 1,5 · 2 pontos 1 ponto 2 pontos",
+      "Desvio comum do país 0,5 · 1 · 1,5 · 2 pontos 1 ponto 2 pontos",
+      "Peso do próprio município 1.000 · 3.000 · 10.000 votos 3.000 votos 10.000 votos",
+      'Ordem de chegada "mistura" · "1º turno" · "ritmo da noite" "mistura" "mistura"',
+      "K, as seções que as pesquisas valem 0,25% · 0,5% · 1% · 2% 0,5% 0,25%",
+      'Limite de "sem sinal de virada" 5% · 2% · 1% 5% 2%',
+      "Unidade do modelo município · zona município município",
+    ]);
+    expect(elementos(elemento(s, /<ol[^>]*class="regra/), /<li\b/)).toHaveLength(5);
+  });
+
+  it("dá os números por noite, e o 1º turno de 2026 aparece só aqui", () => {
+    const tabela = elemento(s, /<table[^>]*data-bloco="calibracao-por-noite"/);
+    expect(texto(elemento(tabela, /<thead/))).toBe("Medida 2º turno de 2022 2º turno de 2018 1º turno de 2026");
+    const linhas = elementos(elemento(tabela, /<tbody/), /<tr\b/).map(texto);
+    expect(linhas).toHaveLength(8);
+    expect(linhas[0]).toBe("Resultado dentro da faixa de 95%, depois de 1% das seções 100,0% 100,0% 100,0%");
+    expect(linhas[2]).toBe("Erro médio da projeção, de 5% a 50% das seções 0,35 0,74 0,11");
+    expect(texto(s)).toContain("Nada é treinado");
+  });
+
+  it("marca a chance de vitória de quem perdeu como toda chance, e com a projeção desligada ela sai", () => {
+    const comChance = elementos(elemento(s, /<table[^>]*data-bloco="calibracao-por-noite"/), /<tr[^>]*\sdata-chance-de-vitoria[\s=>]/).map(texto);
+    // docs/calibracao.md: a maior chance de quem perdeu, com as constantes escolhidas, é de 38,9%, 0,3% e 40,4%.
+    expect(comChance).toEqual(["Maior chance de vitória de quem perdeu, depois de 5% das seções 38,9% 0,3% 40,4%"]);
+    const desligada = readFileSync(new URL("./metodologia/index.html", DIST_PROJECAO_DESLIGADA), "utf8");
+    const tabela = elemento(elemento(desligada, /<section[^>]*\bid="constantes"/), /<table[^>]*data-bloco="calibracao-por-noite"/);
+    expect(elementos(elemento(tabela, /<tbody/), /<tr\b/)).toHaveLength(7);
+    expect(texto(tabela)).not.toContain("chance de vitória");
+  });
+
+  it("dá os números de cada candidato na ordem de chegada, no K e no sinal de virada, com o escolhido em negrito", () => {
+    const passos = elemento(s, /<details[^>]*data-bloco="passos-da-calibracao"/);
+    // docs/calibracao.md: passaram 39 dos 48 candidatos, e o provisório tinha cobertura de 98,0%, 98,0% e 96,0%.
+    expect(texto(passos)).toContain("Dos 48 candidatos, passaram 39.");
+    expect(texto(passos)).toContain("em 98,0%, 98,0% e 96,0% dos momentos");
+    const tabelas = elementos(passos, /<table\b/);
+    expect(tabelas.map((t) => texto(elemento(t, /<caption/)).split(":")[0])).toEqual(["Ordem de chegada", "K", "Sinal de virada"]);
+    expect(tabelas.map((t) => texto(elemento(t, /<tr[^>]*class="escolhido/)))).toEqual([
+      '"mistura" 0,54 0,75 0,72 0,67',
+      "0,25% 1,32 1,76 1,24 1,35 2,00 2,00",
+      "2% nenhum 0,33%",
+    ]);
+  });
+});
+
+describe("os gráficos extras das seções 3 e 4", () => {
+  it("desenha a transferência de votos com um exemplo de números redondos", () => {
+    const figura = elemento(secao("apuracao"), /<figure[^>]*data-bloco="transferencia-de-votos"/);
+    expect(elemento(figura, /<svg/)).toMatch(/role="img"/);
+    // 46% para cada finalista e 8% nos eliminados; 60% dos eliminados para Flávio: 46 + 0,6 × 8 = 50,8.
+    for (const parte of ["Flávio 46,0%", "Lula 46,0%", "Flávio 50,8%", "Lula 49,2%"]) expect(texto(figura), parte).toContain(parte);
+    expect(texto(figura)).toContain("Exemplo, com números redondos.");
+  });
+
+  it("desenha o peso das pesquisas ao longo da apuração, com o K congelado", () => {
+    const svg = elemento(elemento(secao("juntas"), /<figure[^>]*data-bloco="peso-das-pesquisas"/), /<svg/);
+    // K = 0,25%: metade com 0,25% das seções e 0,25 ÷ 5,25 = 4,8% com 5%.
+    expect(texto(svg)).toContain("metade com 0,25%");
+    expect(texto(svg)).toContain("4,8% com 5%");
+  });
+});
+
 describe("seção 8, as limitações", () => {
   it("traz as sete limitações da decisão 7", () => {
     const itens = elementos(elemento(secao("limites"), /<ol/), /<li\b/).map(texto);
@@ -245,17 +401,29 @@ describe("seção 9, fontes, dados e avisos", () => {
     expect(pagina("/")).toMatch(/<section[^>]*\bid="pesquisas-registradas"[^>]*data-bloco="lista-das-pesquisas"/);
   });
 
-  it("oferece pesquisas.csv e pesquisas-historicas.csv para baixar, iguais aos do repositório", () => {
-    for (const arquivo of ["pesquisas.csv", "pesquisas-historicas.csv"]) {
+  it("oferece as pesquisas, a calibração e as noites reproduzidas de 2022 e 2018 para baixar, iguais às do repositório", () => {
+    const doRepositorio: Record<string, URL> = {
+      "pesquisas.csv": new URL("pesquisas.csv", DADOS),
+      "pesquisas-historicas.csv": new URL("pesquisas-historicas.csv", DADOS),
+      "noite-2022-2.csv": new URL("noite-2022-2.csv", CALIBRACAO),
+      "noite-2018-2.csv": new URL("noite-2018-2.csv", CALIBRACAO),
+      "calibracao-constantes.csv": new URL("constantes.csv", CALIBRACAO),
+      "calibracao-ordem-de-chegada.csv": new URL("ordem-de-chegada.csv", CALIBRACAO),
+      "calibracao-k.csv": new URL("k.csv", CALIBRACAO),
+      "calibracao-sinal-de-virada.csv": new URL("sinal-de-virada.csv", CALIBRACAO),
+      "calibracao-zona.csv": new URL("zona.csv", CALIBRACAO),
+    };
+    for (const [arquivo, origem] of Object.entries(doRepositorio)) {
       expect(s, arquivo).toContain(`href="/dados/${arquivo}"`);
-      expect(readFileSync(new URL(`./dados/${arquivo}`, DIST), "utf8"), arquivo).toBe(ler(arquivo));
+      expect(readFileSync(new URL(`./dados/${arquivo}`, DIST), "utf8"), arquivo).toBe(readFileSync(origem, "utf8"));
     }
     expect(
       readdirSync(new URL("./dados/", DIST))
         .filter((f) => f.endsWith(".csv"))
         .sort(),
-    ).toEqual(["pesquisas-historicas.csv", "pesquisas.csv"]);
+    ).toEqual(Object.keys(doRepositorio).sort());
     expect(t).toMatch(/pesquisas\.csv · .* CSV · \d+ KB/);
+    expect(t).toMatch(/noite-2018-2\.csv · a noite do 2º turno de 2018 reproduzida, momento a momento.* CSV · \d+ KB/);
   });
 });
 

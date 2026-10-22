@@ -1,0 +1,78 @@
+---
+import { formatarCalculo, formatarNumero } from "../lib/formato";
+import { graficoDoPeso } from "../lib/graficos-da-metodologia";
+import { CONSTANTES, pesoDasPesquisasCom } from "../lib/metodologia";
+
+// O peso das pesquisas ao longo da apuração (Página de metodologia, decisão 2, gráfico extra): a curva K ÷ (K + % de
+// seções) de 0% a 10% das seções totalizadas no Brasil, com o K congelado pela calibração, e os pontos em que ela pesa
+// metade e com 5%.
+
+const LARGURA = 340;
+const ALTURA = 170;
+const k = CONSTANTES.secoesDasPesquisas;
+const g = graficoDoPeso(pesoDasPesquisasCom, k, { largura: LARGURA, altura: ALTURA });
+const [metade, com5] = g.pontos as [(typeof g.pontos)[number], (typeof g.pontos)[number]];
+const rotulos = [`metade com ${formatarNumero(k)}%`, `${formatarCalculo(100 * com5.peso)}% com 5%`];
+const descricao =
+  `Peso das pesquisas na base Apuração + pesquisas, de 0% a 10% das seções totalizadas no Brasil: 100% antes da primeira seção, ` +
+  `${rotulos[0]} das seções e ${rotulos[1]}.`;
+---
+
+<svg class="peso" viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={descricao}>
+  {g.marcasY.map((m) => (
+    <>
+      <line class="grade" x1={g.area.esquerda} x2={g.area.direita} y1={m.posicao} y2={m.posicao} />
+      <text class="eixo" x={g.area.esquerda - 5} y={m.posicao + 3.5} text-anchor="end">
+        {m.rotulo}
+      </text>
+    </>
+  ))}
+  {g.marcasX.map((m) => (
+    <text class="eixo" x={m.posicao} y={g.area.base + 14} text-anchor="middle">
+      {m.rotulo}
+    </text>
+  ))}
+  <text class="eixo" x={(g.area.esquerda + g.area.direita) / 2} y={ALTURA - 2} text-anchor="middle">
+    % de seções totalizadas no Brasil
+  </text>
+  <path class="curva" d={g.curva} />
+  {[metade, com5].map((p, i) => (
+    <>
+      <circle class="ponto" cx={p.x} cy={p.y} r="4" />
+      <text class="rotulo" x={p.x + 7} y={p.y - 6}>
+        {rotulos[i]}
+      </text>
+    </>
+  ))}
+</svg>
+
+<style>
+  .peso {
+    display: block;
+    width: 100%;
+    max-width: 30rem;
+    height: auto;
+    overflow: visible;
+  }
+  .grade {
+    stroke: var(--borda);
+    stroke-width: 1;
+  }
+  .eixo {
+    fill: var(--texto-suave);
+    font-size: 10px;
+  }
+  .curva {
+    fill: none;
+    stroke: var(--grafite);
+    stroke-width: 2.4;
+  }
+  .ponto {
+    fill: var(--grafite);
+  }
+  .rotulo {
+    fill: var(--texto);
+    font-size: 10.5px;
+    font-weight: 600;
+  }
+</style>

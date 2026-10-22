@@ -1,0 +1,122 @@
+---
+import { formatarPctComCasas } from "../lib/formato";
+import { corDoPartido, nomeCurto, type Cor } from "../lib/identidade";
+import { FINALISTAS } from "../lib/pesquisas";
+
+// O diagrama da transferência de votos (Página de metodologia, decisão 2, gráfico extra): um exemplo com números
+// redondos, como o `svgTransf` do protótipo. Num município, o 1º turno deu 46% a cada finalista e 8% aos eliminados;
+// no estado, até agora, 60% dos eliminados foram para o 1º finalista e 40% para o 2º, e o modelo aplica isso aos 8%.
+// Não é dado de nenhum lugar: a legenda diz que é um exemplo.
+
+const LARGURA = 340;
+const ALTURA = 150;
+const BARRA = 26;
+const ELIMINADOS = 8;
+const PARA_O_PRIMEIRO = 0.6;
+const [primeiro, segundo] = FINALISTAS.map((c) => ({ nome: nomeCurto(c.nomeUrna), cor: corDoPartido(c.partido) })) as [
+  { nome: string; cor: Cor },
+  { nome: string; cor: Cor },
+];
+const cada = (100 - ELIMINADOS) / 2;
+const linhas = [
+  {
+    y: 18,
+    rotulo: "1º turno, num município",
+    partes: [
+      { nome: primeiro.nome, pct: cada, cor: primeiro.cor },
+      { nome: segundo.nome, pct: cada, cor: segundo.cor },
+      { nome: "", pct: ELIMINADOS, cor: "cinza" as Cor },
+    ],
+  },
+  {
+    y: 112,
+    rotulo: "O voto que falta nesse município, no modelo",
+    partes: [
+      { nome: primeiro.nome, pct: cada + ELIMINADOS * PARA_O_PRIMEIRO, cor: primeiro.cor },
+      { nome: segundo.nome, pct: cada + ELIMINADOS * (1 - PARA_O_PRIMEIRO), cor: segundo.cor },
+    ],
+  },
+].map((l) => {
+  let antes = 0;
+  return {
+    ...l,
+    partes: l.partes.map((p) => {
+      const x = (antes / 100) * LARGURA;
+      antes += p.pct;
+      return { ...p, x, largura: (p.pct / 100) * LARGURA - 2 };
+    }),
+  };
+});
+const pct = (n: number) => formatarPctComCasas(n, 1);
+const descricao =
+  `Exemplo de transferência de votos, com números redondos: num município, o 1º turno deu ${pct(cada)} a ${primeiro.nome}, ${pct(cada)} a ${segundo.nome} ` +
+  `e ${pct(ELIMINADOS)} aos eliminados. No estado, até agora, ${100 * PARA_O_PRIMEIRO}% dos eliminados foram para ${primeiro.nome} e ` +
+  `${100 - 100 * PARA_O_PRIMEIRO}% para ${segundo.nome}. Aplicado aos ${ELIMINADOS}%, o voto que falta no município fica com ` +
+  `${pct(linhas[1]!.partes[0]!.pct)} para ${primeiro.nome} e ${pct(linhas[1]!.partes[1]!.pct)} para ${segundo.nome}.`;
+---
+
+<svg class="transferencia" viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={descricao}>
+  {linhas.map((l) => (
+    <>
+      <text class="titulo" x="0" y={l.y - 6}>
+        {l.rotulo}
+      </text>
+      {l.partes.map((p) => (
+        <>
+          <rect class="parte" data-cor={p.cor} x={p.x} y={l.y} width={p.largura} height={BARRA} rx="4" />
+          {p.nome && (
+            <text class="nome" x={p.x + 7} y={l.y + 17}>
+              {p.nome} {pct(p.pct)}
+            </text>
+          )}
+        </>
+      ))}
+    </>
+  ))}
+  <text class="eixo" x={LARGURA} y={18 + BARRA + 13} text-anchor="end">
+    ↑ {ELIMINADOS}% nos eliminados
+  </text>
+  <text class="eixo" x="0" y={18 + BARRA + 30}>
+    No estado, até agora, {100 * PARA_O_PRIMEIRO}% dos eliminados foram para {primeiro.nome}
+  </text>
+  <text class="eixo" x="0" y={18 + BARRA + 43}>
+    e {100 - 100 * PARA_O_PRIMEIRO}% para {segundo.nome}. O modelo aplica isso aos {ELIMINADOS}%:
+  </text>
+</svg>
+
+<style>
+  .transferencia {
+    display: block;
+    width: 100%;
+    max-width: 30rem;
+    height: auto;
+    overflow: visible;
+  }
+  .titulo {
+    fill: var(--texto);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .parte {
+    opacity: 0.85;
+  }
+  .parte[data-cor="flavio"] {
+    fill: var(--cor-flavio);
+  }
+  .parte[data-cor="lula"] {
+    fill: var(--cor-lula);
+  }
+  .parte[data-cor="cinza"] {
+    fill: var(--cor-cinza);
+    opacity: 0.5;
+  }
+  .nome {
+    fill: #fff;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .eixo {
+    fill: var(--texto-suave);
+    font-size: 10px;
+  }
+</style>

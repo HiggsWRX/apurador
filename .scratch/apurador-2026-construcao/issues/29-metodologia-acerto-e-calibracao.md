@@ -1,6 +1,6 @@
 # 29: Metodologia: histórico de acerto e calibração (seções 6 e 7)
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 10, 28
 Spec: [Apurador 2026: especificação da construção](../spec.md)
 
@@ -12,14 +12,14 @@ Decisões: [Página de metodologia](../../apurador-2026/issues/20-pagina-de-meto
 
 ## Critérios de aceite
 
-- [ ] **Noite reproduzida**: o gráfico alterna "2022 | 2018" e mostra o placar parcial, a projeção, a faixa de 95% e o resultado.
-- [ ] **Tabela de erros**: com 5%, 25% e 50% das seções, no placar parcial e nas duas bases, para as duas noites.
-- [ ] **Aviso**: a página diz "Este teste é otimista", porque os ajustes provisórios saíram de 2022.
-- [ ] **Agregado contra resultado**: o gráfico cobre os seis 2º turnos de 2002 a 2022, com a incerteza de cada ano calculada sem aquele ano, a partir do [ticket 05](05-historico-das-pesquisas.md).
-- [ ] **Seção 7**: traz a tabela da calibração (candidatos, números por noite e valor escolhido). O 1º turno de 2026 aparece só nela.
-- [ ] **"Em um minuto"**: ganha a frase do teste de 2022.
-- [ ] **Para baixar**: a calibração e as noites reproduzidas de 2018 e 2022, momento a momento, em CSV.
-- [ ] **Gráficos extras**: o peso das pesquisas ao longo da apuração, o diagrama da transferência de votos e o erro com as pesquisas deslocadas. São os primeiros a sair se atrasar.
+- [x] **Noite reproduzida**: o gráfico alterna "2022 | 2018" e mostra o placar parcial, a projeção, a faixa de 95% e o resultado.
+- [x] **Tabela de erros**: com 5%, 25% e 50% das seções, no placar parcial e nas duas bases, para as duas noites.
+- [x] **Aviso**: a página diz "Este teste é otimista", porque os ajustes provisórios saíram de 2022.
+- [x] **Agregado contra resultado**: o gráfico cobre os seis 2º turnos de 2002 a 2022, com a incerteza de cada ano calculada sem aquele ano, a partir do [ticket 05](05-historico-das-pesquisas.md).
+- [x] **Seção 7**: traz a tabela da calibração (candidatos, números por noite e valor escolhido). O 1º turno de 2026 aparece só nela.
+- [x] **"Em um minuto"**: ganha a frase do teste de 2022.
+- [x] **Para baixar**: a calibração e as noites reproduzidas de 2018 e 2022, momento a momento, em CSV.
+- [x] **Gráficos extras**: o peso das pesquisas ao longo da apuração, o diagrama da transferência de votos e o erro com as pesquisas deslocadas. São os primeiros a sair se atrasar.
 
 ## Comments
 
@@ -40,3 +40,76 @@ Decisões: [Página de metodologia](../../apurador-2026/issues/20-pagina-de-meto
   - **O que ficou de fora e é de 2022**: as limitações 3 ("O começo da noite engana") e 4 ("Seções tardias") saíram sem os números do protótipo (1,7 ponto com 1% das seções; ~0,4 ponto abaixo). Se entrarem, que venham do executor de noites, na seção 6 ou como referência nas limitações.
   - **Gráficos.** O sino é `components/Sino.astro` sobre a geometria pura de `lib/sino.ts` (viewBox 340×180, cores por `data-cor` e variáveis de CSS, `aria-label` com a descrição). Os gráficos da seção 6 que usam dados do TSE levam "Cálculo do Apurador com dados do TSE", como os da página de lugar.
   - **Palavras.** O teste confere, em todo o texto da página e nos `aria-label`, que não há "aprend", "IA", "inteligência artificial" nem "previs", fora a declaração do cartão. Vale para os textos das seções 6 e 7 também ("Este teste é otimista" passa).
+
+- 22/10/2026, decisão do dono: a frase do teste de 2022 entra em "Em um minuto" como a sexta, e a quinta (a curva projetada) fica como está.
+
+- 22/10/2026, registro do ticket 29 (branch `ticket/29-metodologia-acerto-e-calibracao`):
+  - **O que entrou**:
+    - As seções 6 (`#acerto`, "Como o modelo teria se saído") e 7 (`#constantes`, "Como escolhemos as constantes") entram na lista `SECOES`, entre `virada` e `limites`. `limites` passa a 08 e `fontes` a 09.
+    - A abertura diz "as contas, os testes e os limites".
+    - "Em um minuto" ganhou a sexta frase, pela decisão acima: "Na noite de 2022, com 5% das seções, a projeção errou menos de 0,1 ponto. O placar parcial errava 4,2 pontos." A projeção é a da base Apuração + pesquisas (0,0398), e o placar parcial erra 4,19.
+  - **De onde vêm os números**: dos CSVs que o executor de noites grava em `docs/calibracao/` com as constantes congeladas (`npm run calibracao`). `lib/metodologia.ts` os lê no build.
+    - O build não roda o executor de novo. Os números seriam os mesmos, os dos CSVs que a página oferece para baixar, e cada build precisaria das noites reconstruídas e de minutos a mais.
+    - Quem garante que os CSVs são os do código é o job `replay` do CI: ele roda a calibração de novo e falha se eles mudarem, e o deploy depende dele. Um deploy feito à mão com CSVs velhos passaria pelo build.
+    - A leitura confere que as linhas escolhidas dos CSVs são as do `constantes.json`, e o build para se não forem.
+    - A spec diz "rodado no build sobre as noites da calibração". Se o dono quiser o executor dentro do build, basta trocar a leitura dos CSVs pela chamada a ele, e os números ficam os mesmos.
+  - **Seção 6**:
+    - **Noite reproduzida** (`components/NoitesReproduzidas.astro`):
+      - Os botões "2022 | 2018" trocam a noite. O gráfico mostra o placar parcial, a projeção na base Apuração + pesquisas (a que a caixa da projeção abre na noite) com a faixa de 95%, e o resultado.
+      - O eixo vertical cobre o placar parcial da noite inteira, e a faixa larga do começo é recortada nele.
+      - Sem JavaScript, os botões somem e as duas noites ficam à vista, como no histórico da página de lugar.
+    - **Tabela de erros**: em módulo, com uma casa, no momento mais perto de cada ponto. O que fica abaixo de 0,05 é "<0,1" na tabela e "menos de 0,1 ponto" no texto.
+
+      | Noite | Com | Placar parcial | Só apuração | Apuração + pesquisas |
+      |---|---|---|---|---|
+      | 2022 (Lula 50,90%) | 5% | 4,2 | <0,1 | <0,1 |
+      | | 25% | 2,2 | 0,3 | 0,3 |
+      | | 50% | 1,2 | 0,4 | 0,4 |
+      | 2018 (Bolsonaro 55,13%) | 5% | 4,8 | 0,3 | 0,4 |
+      | | 25% | 2,4 | 0,9 | 0,9 |
+      | | 50% | 1,0 | 0,6 | 0,6 |
+
+    - **Cobertura**: o resultado fica dentro da faixa de 95% em todos os momentos depois de 1% das seções, nas duas noites e nas duas bases. A fotografia de 1% fica de fora, como na calibração.
+    - **Aviso**: "Este teste é otimista. Os ajustes provisórios do modelo saíram da noite de 2022, e a calibração das constantes também usou estas duas noites (veja como). Numa noite nova, o erro pode ser maior."
+    - **Pesquisas deslocadas** (gráfico extra, `PesquisasDeslocadas.astro`):
+      - Antes da primeira seção, a projeção erraria 2,1 pontos com +2 para Lula e 1,9 ponto com +2 para Bolsonaro.
+      - Com 5% das seções, o erro cai para 0,1145 e 0,0350: a página diz "0,1 ponto" e "menos de 0,1 ponto".
+      - A partir de 5% das seções, as duas versões ficam a menos de 0,1 ponto da Só apuração.
+      - O comentário do ticket 08 neste ticket (0,10, 0,23 e 0,03, e 7,0% das seções) traz os números das constantes provisórias, com K de 0,5%. Com o K congelado de 0,25%, a Apuração + pesquisas real erra 0,0398 com 5%.
+    - **Agregado contra resultado** (`AgregadoContraResultado.astro`): os seis 2º turnos, em % de quem liderou o 1º turno, com a faixa de 95% da incerteza sem o ano, saídos do `historicoDoAgregado`. São os números do registro do ticket 05, e os seis resultados caem na faixa.
+    - Nenhum texto da seção cita o 1º turno de 2026.
+  - **Seção 7**:
+    - A tabela das constantes: os candidatos, o valor de antes e o escolhido. Os candidatos saem dos CSVs, e o valor de antes, de `CONSTANTES_PROVISORIAS`. Na página, as incertezas regional e nacional se chamam "Desvio de cada estado" e "Desvio comum do país", como na seção 3.
+    - A regra, em cinco passos.
+    - A tabela por noite, com as constantes escolhidas. Traz a cobertura, a maior chance de quem perdeu depois de 5%, o erro médio e a margem média de 5% a 50%, o erro da curva projetada, o maior erro até 5% com pesquisas, a maior fração de momentos "sem sinal de virada" de municípios seguidos de virada e o erro médio com as zonas.
+    - Recolhidos em "Os números de cada candidato", o passo 1 em números e as tabelas da ordem de chegada, do K e do sinal de virada, com o escolhido em negrito.
+    - As medidas vão com duas casas e arredondam como o registro (`toFixed`). Por isso, o 1,8250 do K de 1% aparece como 1,82, igual ao docs/calibracao.md.
+    - O 1º turno de 2026 aparece só nesta seção.
+    - A chance de quem perdeu é a de noites passadas, mas, como toda chance na página, leva `data-chance-de-vitoria` e sai com a chave da projeção desligada.
+  - **Para baixar**: entraram `noite-2022-2.csv`, `noite-2018-2.csv` e os cinco CSVs da calibração, com o nome `calibracao-<nome>.csv`, iguais aos de `docs/calibracao/`. A noite do 1º turno de 2026 fica de fora: a decisão 6 fala das noites de 2018 e 2022, e 2026 aparece só na seção 7.
+  - **Gráficos extras**: os três entraram.
+    - O peso das pesquisas, na seção 4 (`PesoDasPesquisas.astro`), com o K congelado.
+    - A transferência de votos, na seção 3 (`TransferenciaDeVotos.astro`). É um exemplo com 46%, 46% e 8%, em que 60% dos eliminados vão para Flávio, com a legenda "Exemplo, com números redondos."
+    - O erro com as pesquisas deslocadas, na seção 6.
+  - **Geometria**: `lib/graficos-da-metodologia.ts`, ao lado de `lib/sino.ts`. Só calcula números e caminhos, e tem teste próprio, sem navegador.
+  - **Ficou de fora**: as limitações 3 e 4 seguem sem os números de 2022, porque a tabela da seção 6 já os mostra.
+  - **Testes**:
+    - `test/metodologia.test.ts`: as noites, os erros, a cobertura, as deslocadas, o agregado e a tabela da calibração com os passos, contra as linhas dos CSVs, o docs/calibracao.md, o ticket 05 e o resultado do TSE.
+    - `test/graficos-da-metodologia.test.ts`: a geometria.
+    - `test/build/metodologia.test.ts`: as nove âncoras, a numeração de 01 a 09, sete "As contas", as seis frases, as seções 6 e 7, a chance da calibração atrás da chave, os gráficos extras e os nove CSVs em `dist/dados/`.
+  - **Revisão** (`/code-review`). Corrigidos:
+    - a chance de quem perdeu sem a marca e sem a chave;
+    - a seção 7 sem os números de cada candidato;
+    - as condições que faltavam na regra do K e da zona;
+    - "0,0" na tabela contra "menos de 0,1" no texto;
+    - "4,2" sem "pontos";
+    - a chance e o peso carregados sem uso;
+    - nomes que confundiam px com % (`xFaixa`, `doAno`) e o ponto da apuração (`secoes`);
+    - parâmetros de um uso só;
+    - os testes da geometria que passavam por construção e o comentário que citava a série errada.
+
+    Ficaram de fora:
+    - o leitor de CSV próprio (`linhasDoCsv`), em vez do `lerCsv` do pipeline, que não é exportado: exportá-lo mexeria no pipeline, fora deste ticket;
+    - os ids das noites como texto (`"2022-2"`);
+    - o `metodologia.ts` com a leitura, as medidas e os textos das tabelas juntos.
+  - **Para os próximos**: notas nos comentários dos tickets 08, 32 e 35 e da decisão da [Página de metodologia](../../apurador-2026/issues/20-pagina-de-metodologia.md).

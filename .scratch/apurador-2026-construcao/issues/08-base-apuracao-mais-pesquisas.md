@@ -102,3 +102,5 @@ Decisões: [Combinação de pesquisas e apuração](../../apurador-2026/issues/1
   - o momento de 0% no executor, que é o `projetar` sobre a apuração sem nada totalizado;
   - o começo da curva em ~2%, já que a escala ignora até 3%.
 - **Vocabulário**: K ainda não tem nome no glossário. No código, ele é `secoesDasPesquisas`, "o % de seções que as pesquisas valem".
+
+- 22/10/2026, do [ticket 29](29-metodologia-acerto-e-calibracao.md): com as constantes congeladas pela calibração (K de 0,25%), a noite de 2022 do `docs/calibracao/noite-2022-2.csv` erra, com 5% das seções, 0,0398 com o agregado real, 0,1145 com +2 para Lula e 0,0350 com +2 para Bolsonaro, e as versões deslocadas ficam a menos de 0,1 ponto da "Só apuração" a partir de 5% das seções, e não de 7,0%. Os números deste registro são os das constantes provisórias (K de 0,5%), e a página de metodologia mostra os congelados.
