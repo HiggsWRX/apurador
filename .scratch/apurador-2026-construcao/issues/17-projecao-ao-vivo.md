@@ -135,7 +135,9 @@ Decisões: [Telas da página de lugar](../../apurador-2026/issues/12-telas-da-pa
   - **Precisão do erro e da margem**: o replay os mede na precisão da página. A conta compara a projeção e a margem com uma casa com o resultado como o TSE o publica, Bolsonaro com 49,10%, em centésimos.
     - Contra o resultado com todas as casas (49,0967), o 49,6 publicado com 28% a 36% das seções erra 0,503, e o teste reprovava.
     - Sem arredondar, o erro ali é de ~0,48 (`docs/calibracao/noite-2022-2.csv`).
-    - Medida assim, a tolerância deixa passar um erro de até ~0,55 antes do arredondamento. **Decisão do dono**: se o critério vale para o número publicado ou para o do modelo.
+    - Medida assim, a tolerância deixa passar um erro de até ~0,55 antes do arredondamento.
+    - **Decisão do dono em 22/10**: o critério vale nos dois lugares, cada um com a sua pergunta. O replay mede o número publicado contra o resultado publicado, que é o que o visitante vê e o ensaio geral confere nos arquivos. O `modelo` mede o erro e a cobertura sem arredondar, com as constantes congeladas, nas duas bases (`packages/modelo/test/noites.test.ts`, "o executor de noites com as constantes congeladas"). Juntos, os dois não deixam passar os ~0,55.
+    - **Também do dono**: as constantes congeladas no replay, no lugar das provisórias.
 - **Revisão** (`/code-review`, Standards e Spec).
   - **Corrigidos**:
     - a projeção saía nos JSONs antes das 17h, fora das chaves de antes das 17h;

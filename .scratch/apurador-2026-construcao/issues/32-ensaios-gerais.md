@@ -55,3 +55,4 @@ Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decis�
   - **Sem arredondar**: o erro chega a ~0,48 com 30% a 36% das seções, nas duas bases (`docs/calibracao/noite-2022-2.csv`).
   - **Publicado**: com uma casa, chega a 0,50 (49,6 contra os 49,10 do TSE).
   - **No replay**: a conta é na precisão da página, contra o resultado como o TSE o publica, e passa. Se o ensaio medir contra o resultado com mais casas, o arredondamento a reprova.
+  - **Decisão do dono em 22/10**: no ensaio, o critério se mede como no replay, no número publicado contra o resultado publicado. O erro do modelo sem arredondar fica com o teste do `modelo` (`packages/modelo/test/noites.test.ts`), com as constantes congeladas.
