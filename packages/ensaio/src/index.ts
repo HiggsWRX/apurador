@@ -12,6 +12,7 @@ export {
 } from "./relogio.ts";
 export { buscarNoTseFalso, servirTseFalso } from "./servidor.ts";
 export { conferirPlacar, resultadosDoTseFalso, type PlacarPublicado } from "./conferencia.ts";
+export { conferirPreditivos, type JsonPublico } from "./conferencia-dos-preditivos.ts";
 export {
   calibrar,
   CANDIDATOS,

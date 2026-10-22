@@ -1,9 +1,10 @@
-import type { ArquivoDeRodada, ArquivoDoLugar, ChavesDaNoite, EventoDaNarracao } from "@apurador/coletor";
+import type { ArquivoDeRodada, ArquivoDoLugar, ChavesDaNoite, EventoDaNarracao, ProjecaoDoLugar, ProjecaoNaBase } from "@apurador/coletor";
 import type { Lugar } from "@apurador/pipeline";
 import { render } from "preact-render-to-string";
 import { describe, expect, it } from "vitest";
 import { ColunaDaNarracao } from "../src/components/ColunaDaNarracao";
 import { VistaDoBlocoAoVivo, type PropsDaVista } from "../src/components/VistaDoBlocoAoVivo";
+import type { IdDaBase } from "../src/lib/bases-da-projecao";
 import type { QuadroAoVivo } from "../src/lib/leitor-ao-vivo";
 import { emLugar } from "../src/lib/lugares";
 import { elemento, elementos, texto } from "./html";
@@ -42,6 +43,8 @@ interface Momento {
   eventosDoBrasil?: EventoDaNarracao[];
   curva?: ArquivoDoLugar["curva"];
   fase?: QuadroAoVivo["fase"];
+  projecao?: ProjecaoDoLugar;
+  chaves?: Partial<ChavesDaNoite>;
 }
 
 function quadroEm({
@@ -52,14 +55,17 @@ function quadroEm({
   eventosDoBrasil = [],
   curva = [],
   fase = "ao-vivo",
+  projecao,
+  chaves: parte = {},
 }: Momento = {}): QuadroAoVivo {
+  const chaves = { ...LIGADAS, ...parte };
   // A rodada vem do relógio do coletor, que no ensaio geral está em outro dia: a manchete não pode depender dele.
   const rodada: ArquivoDeRodada = {
     rodada: "2026-10-22T23:42:15.000Z",
     fase,
     novidade: { totalizacao: `2022-10-30 ${agora}`, vista: "2026-10-22T23:42:12.000Z" },
     candidatos: CANDIDATOS,
-    chaves: LIGADAS,
+    chaves,
     aviso: null,
     pesoDasPesquisas: 3,
     eventosDoBrasil,
@@ -76,6 +82,7 @@ function quadroEm({
     },
     curva,
     narracao,
+    ...(projecao ? { projecao } : {}),
   };
   return {
     fase,
@@ -84,14 +91,14 @@ function quadroEm({
     lugar: arquivo,
     ultimaLeitura: 3,
     mudaram: [],
-    chaves: LIGADAS,
+    chaves,
     aviso: null,
     tabelaDeProjecoes: null,
     mapa: null,
   };
 }
 
-const vista = (m: Momento = {}) =>
+const vista = (m: Momento = {}, base?: IdDaBase) =>
   render(
     <VistaDoBlocoAoVivo
       quadro={quadroEm(m)}
@@ -100,9 +107,10 @@ const vista = (m: Momento = {}) =>
       movimentoReduzido={false}
       proximaLeitura={30}
       lendo={false}
+      base={base}
     />,
   );
-const manchete = (m: Momento) => texto(elemento(vista(m), /<p[^>]*data-manchete/));
+const manchete = (m: Momento, base?: IdDaBase) => texto(elemento(vista(m, base), /<p[^>]*data-manchete/));
 const BAHIA: [string, PropsDaVista["lugar"]] = ["BA", { tipo: "uf", uf: "BA", em: "na Bahia" }];
 const SALVADOR: [string, PropsDaVista["lugar"]] = ["38490", { tipo: "municipio", uf: "BA", em: "em Salvador (BA)" }];
 
@@ -199,11 +207,11 @@ describe("o último evento sob a manchete", () => {
 });
 
 describe("a coluna da narração", () => {
-  const coluna = (m: Momento, id = (m.lugar ?? ["BR"])[0]) => render(<ColunaDaNarracao quadro={quadroEm(m)} id={id} />);
+  const coluna = (m: Momento, id = (m.lugar ?? ["BR"])[0]) => render(<ColunaDaNarracao quadro={quadroEm(m)} id={id} base="com-pesquisas" />);
   const itens = (html: string) => elementos(html, /<li[^>]*data-evento/);
 
   it("antes das 17h, diz quando a narração começa", () => {
-    const html = render(<ColunaDaNarracao quadro={{ ...quadroEm(), fase: "antes-das-17h", rodada: null, lugar: null }} id="BR" />);
+    const html = render(<ColunaDaNarracao quadro={{ ...quadroEm(), fase: "antes-das-17h", rodada: null, lugar: null }} id="BR" base="com-pesquisas" />);
     expect(texto(elemento(html, /<aside[^>]*id="narracao"/))).toBe(
       "Narração da noite A narração começa às 17h, com as primeiras seções totalizadas. Narração do Apurador com dados do TSE",
     );
@@ -260,7 +268,7 @@ describe("a coluna da narração", () => {
 
   it("no plano zero, não mostra nada ao vivo", () => {
     const quadro = { ...quadroEm({ narracao: [{ ...VIRADA_NO_BRASIL, numero: 5 }] }), chaves: { ...LIGADAS, nucleoMinimo: false } };
-    expect(render(<ColunaDaNarracao quadro={quadro} id="BR" />)).not.toContain("Virada");
+    expect(render(<ColunaDaNarracao quadro={quadro} id="BR" base="com-pesquisas" />)).not.toContain("Virada");
   });
 });
 
@@ -289,5 +297,99 @@ describe("a narração na curva", () => {
   it('mostra a virada real como ponto cheio, com "Virada às HH:MM, com X% das seções"', () => {
     expect(svg).toMatch(/<circle[^>]*data-virada-real/);
     expect(texto(svg)).toContain("Virada às 18:44, com 67,74% das seções");
+  });
+});
+
+describe("os textos preditivos na página", () => {
+  // Narração da noite, decisões 5, 6 e 9; Sinal de virada, decisão 4. O coletor publica os preditivos prontos, nas duas
+  // bases, só com a chave ligada; a página mostra os da base escolhida e, sem a chave, nenhum, nem enquanto um JSON velho
+  // da CDN ainda os traz. A frase de projeção da manchete sai dos números do sinal de virada, que a curva já mostra.
+  const FLAVIO_A_FRENTE = {
+    tse: { secoes: { totalizadas: 237618, total: 472027, percentual: 50.34 }, percentuais: [50.43, 49.57], votos: [57_873_281, 56_885_102] },
+  };
+  const PLACAR = "Flávio lidera com 50,43% dos votos válidos e 50,34% das seções totalizadas";
+  const naBase = (sinalDeVirada: ProjecaoNaBase["sinalDeVirada"], virada: ProjecaoNaBase["virada"], chanceDeVirada = 25): ProjecaoNaBase => ({
+    projecao: 49.1,
+    margem: 0.6,
+    chance: 100 - chanceDeVirada,
+    chanceDeVirada,
+    sinalDeVirada,
+    curva: [
+      [50.34, 50.43, 0],
+      [100, 49.1, 0.6],
+    ],
+    virada,
+  });
+  const PROJETADA = naBase("virada projetada", { x: 88, cedo: 80, tarde: 95 }, 62);
+  const POSSIVEL = naBase("virada possível", { x: null, cedo: 69, tarde: 100 });
+  const SEM_SINAL = naBase("sem sinal de virada", { x: null, cedo: null, tarde: null }, 3);
+  const projecao = (soApuracao: ProjecaoNaBase, comPesquisas = soApuracao): ProjecaoDoLugar => ({
+    soApuracao,
+    comPesquisas,
+    coincidem: false,
+    comparacoes: { primeiroTurno: 51, pesquisas: 48 },
+  });
+  const LIGADA = { textosPreditivos: true };
+
+  it("com a chave ligada, a manchete ganha a frase de projeção do estado do sinal de virada, na base escolhida", () => {
+    expect(manchete({ ...FLAVIO_A_FRENTE, chaves: LIGADA, projecao: projecao(PROJETADA) })).toBe(
+      `${PLACAR}. A projeção do Apurador indica virada de Lula por volta de 88% das seções.`,
+    );
+    expect(manchete({ ...FLAVIO_A_FRENTE, chaves: LIGADA, projecao: projecao(POSSIVEL) })).toBe(
+      `${PLACAR}. A projeção do Apurador vê virada possível de Lula a partir de ~69% das seções.`,
+    );
+    expect(manchete({ ...FLAVIO_A_FRENTE, chaves: LIGADA, projecao: projecao(SEM_SINAL) })).toBe(
+      `${PLACAR}. A projeção do Apurador não indica virada: Flávio deve seguir à frente.`,
+    );
+    // A "Apuração + pesquisas" é a base da noite; o visitante pode escolher a outra.
+    const duas = { ...FLAVIO_A_FRENTE, chaves: LIGADA, projecao: projecao(POSSIVEL, PROJETADA) };
+    expect(manchete(duas)).toBe(`${PLACAR}. A projeção do Apurador indica virada de Lula por volta de 88% das seções.`);
+    expect(manchete(duas, "so-apuracao")).toBe(`${PLACAR}. A projeção do Apurador vê virada possível de Lula a partir de ~69% das seções.`);
+  });
+
+  it("com a chave desligada, sem a projeção no ar ou com a indicação do TSE, a manchete fica só com o placar oficial", () => {
+    expect(manchete({ ...FLAVIO_A_FRENTE, projecao: projecao(PROJETADA) })).toBe(PLACAR);
+    expect(manchete({ ...FLAVIO_A_FRENTE, chaves: { ...LIGADA, projecao: false }, projecao: projecao(PROJETADA) })).toBe(PLACAR);
+    const indicado = { narracao: [{ ...INDICACAO, numero: 9 }], tse: { percentuais: [49.17, 50.83], votos: [57_000_000, 58_920_000] } };
+    expect(manchete({ ...indicado, chaves: LIGADA, projecao: projecao(SEM_SINAL) })).toBe("O TSE indica Lula eleito");
+  });
+
+  const CHANCE_SO = evento("BR", "chance", "18:50:10", "Projeção do Apurador: chance de vitória de Lula passa de 90%.", { base: "soApuracao" });
+  const CHANCE_COM = evento("BR", "chance", "18:48:30", "Projeção do Apurador: chance de vitória de Lula passa de 90%.", { base: "comPesquisas" });
+  const MARCO = evento("BR", "marco", "18:26:53", "Passa de 50% das seções totalizadas no Brasil: 50,34%. Flávio 50,43%, Lula 49,57%.", {
+    numero: 4,
+    linhaDaProjecao: {
+      soApuracao: "Projeção do Apurador: Flávio 49,1% ± 0,6, Lula 50,9% ± 0,6.",
+      comPesquisas: "Projeção do Apurador: Flávio 48,7% ± 0,8, Lula 51,3% ± 0,8.",
+    },
+  });
+  const coluna = (m: Momento, base: IdDaBase) =>
+    elementos(render(<ColunaDaNarracao quadro={quadroEm(m)} id="BR" base={base} />), /<li[^>]*data-evento/).map(texto);
+
+  it("a coluna da narração mostra os preditivos e a linha da projeção dos marcos da base escolhida, sem número", () => {
+    const narracao = [CHANCE_SO, CHANCE_COM, MARCO];
+    expect(coluna({ narracao, chaves: LIGADA }, "so-apuracao")).toEqual([
+      "18:50 Projeção do Apurador: chance de vitória de Lula passa de 90%.",
+      "4 18:26 Passa de 50% das seções totalizadas no Brasil: 50,34%. Flávio 50,43%, Lula 49,57%. Projeção do Apurador: Flávio 49,1% ± 0,6, Lula 50,9% ± 0,6.",
+    ]);
+    expect(coluna({ narracao, chaves: LIGADA }, "com-pesquisas")).toEqual([
+      "18:48 Projeção do Apurador: chance de vitória de Lula passa de 90%.",
+      "4 18:26 Passa de 50% das seções totalizadas no Brasil: 50,34%. Flávio 50,43%, Lula 49,57%. Projeção do Apurador: Flávio 48,7% ± 0,8, Lula 51,3% ± 0,8.",
+    ]);
+    // Com a base com pesquisas fora do ar, vale a "Só apuração", como na caixa da projeção.
+    expect(coluna({ narracao, chaves: { ...LIGADA, baseComPesquisas: false } }, "com-pesquisas")[0]).toBe(
+      "18:50 Projeção do Apurador: chance de vitória de Lula passa de 90%.",
+    );
+  });
+
+  it("com a chave desligada, a coluna e a linha sob a manchete não mostram preditivo nenhum, mesmo num JSON que ainda os traz", () => {
+    const narracao = [CHANCE_SO, CHANCE_COM, MARCO];
+    expect(coluna({ narracao }, "so-apuracao")).toEqual(["4 18:26 Passa de 50% das seções totalizadas no Brasil: 50,34%. Flávio 50,43%, Lula 49,57%."]);
+    expect(texto(elemento(vista({ narracao }), /<p[^>]*data-ultimo-evento/))).toBe(
+      "18:26 Passa de 50% das seções totalizadas no Brasil: 50,34%. Flávio 50,43%, Lula 49,57%. Narração →",
+    );
+    expect(texto(elemento(vista({ narracao, chaves: LIGADA }, "com-pesquisas"), /<p[^>]*data-ultimo-evento/))).toBe(
+      "18:48 Projeção do Apurador: chance de vitória de Lula passa de 90%. Narração →",
+    );
   });
 });

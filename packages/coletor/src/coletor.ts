@@ -20,6 +20,7 @@ import {
   emOrdem,
   pontoDaCurvaReal,
   type ArquivoDoMapa,
+  type BaseDaProjecao,
   type Fase,
   type PontoDaCurvaReal,
   type TabelaDeProjecoes,
@@ -429,18 +430,32 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   const projecaoNoAr = (d: Divulgacao) => (controle.chaves.projecao && fase(d) !== "antes-das-17h" ? projecao : undefined);
   /** A base com pesquisas no ar: as duas chaves dela ligadas. */
   const comPesquisasNoAr = () => controle.chaves.projecao && controle.chaves.baseComPesquisas;
+  /**
+   * As bases cujos textos preditivos vão ao ar na rodada (Narração da noite, decisão 6): as da projeção no ar, com a chave
+   * dos textos preditivos ligada. Nenhuma com ela desligada: a narração esquece os preditivos, e os JSONs saem sem eles.
+   */
+  const preditivosNoAr = (d: Divulgacao): BaseDaProjecao[] =>
+    controle.chaves.textosPreditivos && controle.chaves.projecao && fase(d) !== "antes-das-17h"
+      ? ["soApuracao", ...(comPesquisasNoAr() ? (["comPesquisas"] as const) : [])]
+      : [];
 
   /**
-   * Passa à narração os resultados novos da rodada, na ordem dos lugares, e marca para gravar os lugares cuja narração
-   * mudou: o Brasil muda também com os eventos das UFs que entram nele. "As pesquisas deixaram de pesar" fala das duas
-   * bases, e só conta com elas no ar.
+   * Passa à narração os resultados novos da rodada, na ordem dos lugares, e a projeção dela, e marca para gravar os
+   * lugares cuja narração mudou: o Brasil muda também com os eventos das UFs que entram nele. "As pesquisas deixaram de
+   * pesar" fala das duas bases, e só conta com elas no ar. Os preditivos andam com a projeção da rodada, no ar ou não,
+   * e entram só nas bases no ar.
    */
   function narrar(d: Divulgacao) {
     const novos = new Map<string, ResultadoDoTse>();
     for (const a of d.acompanhados) if (a.id !== null && porNarrar.has(a.id)) novos.set(a.id, resultados.get(a.url)!);
     porNarrar.clear();
-    const coincidemNoBrasil = comPesquisasNoAr() && (projecao?.coincidemNoBrasil ?? false);
-    for (const id of narracao.narrar(novos, { coincidemNoBrasil })) sujos.add(id);
+    const daRodada = projecao;
+    const mudaram = narracao.narrar(novos, {
+      coincidemNoBrasil: comPesquisasNoAr() && (daRodada?.coincidemNoBrasil ?? false),
+      projecao: daRodada && ((id, base) => daRodada.numeros(id, base)),
+      preditivosNoAr: preditivosNoAr(d),
+    });
+    for (const id of mudaram) sujos.add(id);
   }
 
   function fase(d: Divulgacao): Fase {

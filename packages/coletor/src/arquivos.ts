@@ -40,6 +40,9 @@ export interface ArquivoDeRodada {
   eventosDoBrasil: EventoDaNarracao[];
 }
 
+/** Uma das duas bases da projeção, como os arquivos a nomeiam: "Só apuração" e "Apuração + pesquisas". */
+export type BaseDaProjecao = "soApuracao" | "comPesquisas";
+
 /** Um ponto da curva projetada: o % de seções do lugar, o % do 1º candidato e a margem de 95%, em pontos, com uma casa. */
 export type PontoDaCurvaProjetada = [secoes: number, pct: number, margem: number];
 

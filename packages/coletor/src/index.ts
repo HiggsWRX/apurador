@@ -3,6 +3,7 @@ export {
   type ArquivoDeRodada,
   type ArquivoDoLugar,
   type ArquivoDoMapa,
+  type BaseDaProjecao,
   type ColunasDaBase,
   type Fase,
   type MunicipiosDaTabela,
@@ -15,7 +16,7 @@ export {
 } from "./arquivos.ts";
 export { type EntradaDaProjecao } from "./projecao.ts";
 export { lerEntradaDaProjecao, NOITES_DA_PROJECAO, type NoiteDaProjecao } from "./entrada-da-projecao.ts";
-export { type EventoDaNarracao, type TipoDeEvento } from "./narracao.ts";
+export { TIPOS_PREDITIVOS, type EventoDaNarracao, type TipoDeEvento } from "./narracao.ts";
 export { pastaLocal, type Destino } from "./destino.ts";
 export { destinoR2, type CredenciaisDoR2 } from "./r2.ts";
 export { republicacaoDoWorker } from "./plano-b.ts";

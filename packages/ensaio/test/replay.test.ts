@@ -25,7 +25,7 @@ import {
 } from "@apurador/coletor";
 import { assinaturaDosLugares, idDoMunicipio } from "@apurador/pipeline";
 import type { AbrangenciaDaDivulgacao } from "@apurador/tse";
-import { buscarNoTseFalso, conferirPlacar, criarTseFalso, relogioDoReplay, resultadosDoTseFalso, type TseFalso } from "../src/index.ts";
+import { buscarNoTseFalso, conferirPlacar, conferirPreditivos, criarTseFalso, relogioDoReplay, resultadosDoTseFalso, type TseFalso } from "../src/index.ts";
 import { cadastro, instante, lugaresDoSite, noite, projecaoDe2022 } from "./noite-2022.ts";
 
 // O replay automático: o coletor inteiro, rodada a rodada, sobre o TSE falso servindo o 2º turno de 2022, sem
@@ -483,6 +483,11 @@ describe("a noite inteira", () => {
   it("publica em toda gravação de toda rodada o placar do TSE falso, sem divergência", () => {
     expect(r.placares().length).toBeGreaterThan(90_000);
     expect(conferirPlacar(r.placares(), { noite, cadastro })).toEqual([]);
+  }, 120_000);
+
+  it("com a chave dos textos preditivos desligada a noite toda, nenhum preditivo em nenhum JSON público de nenhuma rodada", () => {
+    expect(r.gravacoes.every((g) => g.caminho !== "rodada.json" || !(g.conteudo as ArquivoDeRodada).chaves.textosPreditivos)).toBe(true);
+    expect(conferirPreditivos(r.gravacoes)).toEqual([]);
   }, 120_000);
 
   it("termina com o resultado oficial em todos os lugares, e a fase encerrada", () => {
@@ -977,6 +982,66 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
     expect(noPlanoZero.length).toBeGreaterThan(5);
     expect(noPlanoZero.filter((x) => x.eventosDoBrasil.length > 0)).toEqual([]);
   }, 120_000);
+});
+
+describe("os textos preditivos, pela chave", () => {
+  // O dono liga a chave às 17:10 e a desliga às 17:30 (Narração da noite, decisões 5 e 6). A conferência é a do ensaio
+  // geral (decisão 22): desligada, nenhum preditivo no ar; ligada no meio, nada de antes; desligada de novo, somem todos.
+  const LIGA = ms("2022-10-30 17:10:00");
+  const DESLIGA = ms("2022-10-30 17:30:00");
+  let r: Awaited<ReturnType<typeof replay>>;
+  beforeAll(async () => {
+    r = await replay("2022-10-30 16:50:00", "2022-10-30 17:40:00", {
+      controle: (quando) => ({ ...CONTROLE_INICIAL, chaves: { ...CONTROLE_INICIAL.chaves, textosPreditivos: quando >= LIGA && quando < DESLIGA } }),
+    });
+  }, 180_000);
+  const lugaresEntre = (de: number, ate: number) =>
+    r.gravacoes.filter((g) => g.caminho.startsWith("lugares/") && g.quando >= de && g.quando < ate).map((g) => g.conteudo as ArquivoDoLugar);
+
+  it("a conferência dos preditivos não acusa nada na noite em que a chave liga e desliga", () => {
+    expect(conferirPreditivos(r.gravacoes)).toEqual([]);
+  });
+
+  it("ligada, entram os preditivos do Brasil, das UFs e dos municípios, nas duas bases, sem número na curva, e a linha da projeção nos marcos", () => {
+    const ligada = lugaresEntre(LIGA, DESLIGA);
+    const preditivos = ligada.flatMap((l) => l.narracao.filter((e) => e.base !== undefined).map((e) => ({ ...e, de: l.lugar })));
+    expect(new Set(preditivos.map((e) => e.tipo))).toEqual(new Set(["sinal-de-virada", "chance"]));
+    expect(new Set(preditivos.map((e) => e.base))).toEqual(new Set(BASES));
+    expect(preditivos.some((e) => e.lugar === "BR")).toBe(true);
+    expect(preditivos.some((e) => e.lugar.length === 2 && e.lugar !== "BR")).toBe(true);
+    expect(preditivos.some((e) => e.lugar.length === 5)).toBe(true);
+    // Cada um na narração do próprio lugar, com o texto da decisão 8, e nenhum na curva.
+    expect(preditivos.filter((e) => e.lugar !== e.de || "numero" in e || "ponto" in e || !e.texto.startsWith("Projeção do Apurador: "))).toEqual([]);
+    expect(
+      preditivos.filter(
+        (e) =>
+          !/^Projeção do Apurador: (virada projetada|virada possível|sem sinal de virada)\. (Bolsonaro|Lula) à frente no placar parcial; chance de virada de (Bolsonaro|Lula) (<1|>99|\d\d?)%\.$/.test(
+            e.texto,
+          ) && !/^Projeção do Apurador: chance de vitória de (Bolsonaro|Lula) passa de (90|99)%\.$/.test(e.texto),
+      ),
+    ).toEqual([]);
+    const linhas = ligada.flatMap((l) => l.narracao.filter((e) => e.linhaDaProjecao));
+    expect(linhas.length).toBeGreaterThan(0);
+    expect(linhas.every((e) => e.tipo === "marco" && Object.keys(e.linhaDaProjecao!).sort().join() === "comPesquisas,soApuracao")).toBe(true);
+    expect(
+      linhas
+        .flatMap((e) => Object.values(e.linhaDaProjecao!))
+        .filter((t) => !/^Projeção do Apurador: Bolsonaro \d\d,\d% ± \d+,\d, Lula \d\d,\d% ± \d+,\d\.$/.test(t)),
+    ).toEqual([]);
+  });
+
+  it("desligada de novo, os lugares com preditivos são regravados sem eles na rodada seguinte, e nenhum fica no ar", () => {
+    // Todo lugar com preditivos no ar às 17:30 é regravado antes das 17:30:40, e o último JSON de cada lugar não tem nenhum.
+    const comPreditivos = new Set(
+      lugaresEntre(LIGA, DESLIGA)
+        .filter((l) => l.narracao.some((e) => e.base || e.linhaDaProjecao))
+        .map((l) => l.lugar),
+    );
+    const regravados = new Set(lugaresEntre(DESLIGA, DESLIGA + 40_000).map((l) => l.lugar));
+    expect(comPreditivos.size).toBeGreaterThan(28);
+    expect([...comPreditivos].filter((id) => !regravados.has(id))).toEqual([]);
+    expect(lugares.filter((l) => r.publicado(l.caminho).narracao.some((e) => e.base || e.linhaDaProjecao))).toEqual([]);
+  });
 });
 
 describe("plano B", () => {
