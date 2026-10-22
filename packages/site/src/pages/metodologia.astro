@@ -1,17 +1,29 @@
 ---
 import { DIA_DA_ELEICAO, diasEntre, INCERTEZA_POR_DIA, Z_95, type OrdemDeChegada } from "@apurador/modelo";
+import AgregadoContraResultado from "../components/AgregadoContraResultado.astro";
+import NoitesReproduzidas from "../components/NoitesReproduzidas.astro";
+import PesoDasPesquisas from "../components/PesoDasPesquisas.astro";
+import PesquisasDeslocadas from "../components/PesquisasDeslocadas.astro";
 import Secao from "../components/Secao.astro";
 import Sino from "../components/Sino.astro";
+import TransferenciaDeVotos from "../components/TransferenciaDeVotos.astro";
 import Base from "../layouts/Base.astro";
+import { NOME_DA_BASE } from "../lib/bases-da-projecao";
 import { CHAVES } from "../lib/chaves";
-import { duasCasas, formatarCalculo, formatarDia, formatarNumero, formatarPontos, formatarVotos, umaCasa } from "../lib/formato";
+import { duasCasas, formatarCalculo, formatarDia, formatarNumero, formatarPctComCasas, formatarPontos, formatarVotos, umaCasa } from "../lib/formato";
 import { nomeCurto } from "../lib/identidade";
 import {
+  AGREGADO_CONTRA_RESULTADO,
+  CALIBRACAO,
+  coberturaDaNoite,
   CONSTANTES,
+  deslocadasDaNoite,
   DUVIDA_DO_VIES,
   ERRO_HISTORICO,
+  errosDaNoite,
   INCERTEZA_NA_ELEICAO,
   INSTITUTOS,
+  NOITES_REPRODUZIDAS,
   PARA_BAIXAR,
   pesoDasPesquisasCom,
   VIES_DO_PRIMEIRO_TURNO,
@@ -19,13 +31,13 @@ import {
 import { AGREGADO, entreOsFinalistas, FINALISTAS } from "../lib/pesquisas";
 import { EMAIL_DO_PROJETO, RESPONSAVEL } from "../lib/projeto";
 
-// A página de metodologia (Página de metodologia, decisões 1, 2, 4 a 9; Segunda consulta jurídica, decisão 3), na
-// estrutura A do protótipo: "Em um minuto" no topo e as seções numeradas, com âncoras fixas e as fórmulas recolhidas em
-// "As contas". Na etapa "Antes da noite" entram as seções 1 a 5, 8 e 9; as seções 6 (`acerto`) e 7 (`constantes`)
-// entram no build do ensaio 2, na lista abaixo, entre `virada` e `limites`, e os números seguem. A página não traz
-// "em breve": ela só cresce. Os textos falam com você, em frases curtas, e nunca dizem que o modelo "aprende", que é
-// "IA" ou que faz "previsão", fora a declaração do cartão. Os números saem do mesmo código da noite, no build: o
-// agregado do dia, as constantes congeladas e o histórico das pesquisas. A página nunca lê dados ao vivo.
+// A página de metodologia (Página de metodologia, decisões 1 a 9; Segunda consulta jurídica, decisão 3), na estrutura
+// A do protótipo: "Em um minuto" no topo e as seções numeradas, com âncoras fixas e as fórmulas recolhidas em "As
+// contas". Na etapa "Antes da noite" entraram as seções 1 a 5, 8 e 9; as seções 6 (`acerto`, o histórico de acerto) e
+// 7 (`constantes`, a calibração) entram no build do ensaio 2 (decisão 4). A página não traz "em breve": ela só cresce.
+// Os textos falam com você, em frases curtas, e nunca dizem que o modelo "aprende", que é "IA" ou que faz "previsão",
+// fora a declaração do cartão. Os números saem do mesmo código da noite, no build: o agregado do dia, as constantes
+// congeladas, o histórico das pesquisas e as noites que a calibração reproduziu. A página nunca lê dados ao vivo.
 
 const SECOES = [
   { id: "pesquisas", titulo: "Antes das 17h: o agregado de pesquisas" },
@@ -33,10 +45,12 @@ const SECOES = [
   { id: "apuracao", titulo: "A partir das 17h: a apuração" },
   { id: "juntas", titulo: "Como pesquisas e apuração se juntam" },
   { id: "virada", titulo: "A curva projetada e a virada" },
+  { id: "acerto", titulo: "Como o modelo teria se saído" },
+  { id: "constantes", titulo: "Como escolhemos as constantes" },
   { id: "limites", titulo: "Limitações" },
   { id: "fontes", titulo: "Fontes, dados e avisos" },
 ] as const;
-/** As âncoras fixas que a página já tem: uma seção que não está na lista não compila. */
+/** As âncoras fixas da página: uma seção que não está na lista não compila. */
 type Ancora = (typeof SECOES)[number]["id"];
 const secao = (id: Ancora) => {
   const posicao = SECOES.findIndex((s) => s.id === id);
@@ -74,6 +88,24 @@ const vies = VIES_DO_PRIMEIRO_TURNO;
 const erro = ERRO_HISTORICO;
 const numeroPorExtenso = ["zero", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez"];
 const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidade);
+
+// O histórico de acerto (seção 6): as noites de 2022 e de 2018 reproduzidas pela calibração, com as constantes
+// congeladas, e o agregado contra o resultado nos 2º turnos passados. Os erros vão em módulo e com uma casa, como todo
+// cálculo do Apurador; o que fica abaixo de 0,05 aparece como "menos de 0,1".
+const [noite2022, noite2018] = NOITES_REPRODUZIDAS as [(typeof NOITES_REPRODUZIDAS)[number], (typeof NOITES_REPRODUZIDAS)[number]];
+const erroEmPontos = (n: number) => (umaCasa(n) < 0.1 ? "menos de 0,1 ponto" : formatarPontos(n));
+// A sexta frase de "Em um minuto" (decisão do dono, 22/10): o teste de 2022 com 5% das seções, na base da noite.
+const erro2022Em5 = errosDaNoite(noite2022)[0]!;
+const cobertura = Math.min(...NOITES_REPRODUZIDAS.flatMap((n) => Object.values(coberturaDaNoite(n))));
+const todosNaFaixa = AGREGADO_CONTRA_RESULTADO.every((a) => a.resultado > a.faixa[0] && a.resultado < a.faixa[1]);
+const deslocadas = deslocadasDaNoite(noite2022)!;
+const [nome1, nome2] = noite2022.finalistas.map((f) => f.nome) as [string, string];
+const antesDaApuracao = noite2022.momentos[0]!.deslocadas!.map((d) => formatarPontos(Math.abs(d.projecao - noite2022.resultado)));
+const resultadoDe = (n: typeof noite2022) => `${n.finalistas[0].nome} ${formatarPctComCasas(n.resultado, 2)}`;
+const erroDasPesquisas2018 = formatarPontos(noite2018.agregado - noite2018.resultado);
+const anoDoAgregado = (ano: number) => AGREGADO_CONTRA_RESULTADO.find((a) => a.ano === ano)!;
+const [agregado2018, agregado2022] = [anoDoAgregado(2018), anoDoAgregado(2022)];
+const comoNoite = (secoes: number) => `${formatarNumero(Number(secoes.toFixed(2)))}%`;
 ---
 
 <Base titulo="Como calculamos a projeção">
@@ -81,8 +113,8 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
     <header class="topo-da-pagina">
       <h1>Como calculamos a projeção</h1>
       <p class="lead">
-        A projeção estima o resultado final a partir das pesquisas e, desde as 17h de 25/10, dos votos que o TSE já totalizou. Aqui estão as contas e os
-        limites.
+        A projeção estima o resultado final a partir das pesquisas e, desde as 17h de 25/10, dos votos que o TSE já totalizou. Aqui estão as contas, os testes e
+        os limites.
       </p>
       <p class="aviso-projecao">
         Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.
@@ -116,6 +148,12 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
           <li>
             <span>
               A <strong>curva projetada</strong> mostra para onde o placar parcial deve ir e se há sinal de virada, sempre com uma faixa de incerteza.
+            </span>
+          </li>
+          <li>
+            <span>
+              Na noite de 2022, com 5% das seções, a projeção errou <strong>{erroEmPontos(erro2022Em5.comPesquisas)}</strong>. O placar parcial errava{" "}
+              {formatarCalculo(erro2022Em5.placar)}.
             </span>
           </li>
         </ol>
@@ -269,6 +307,10 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
         candidatos eliminados: a <strong>transferência de votos</strong>. Depois aplica essa conta ao voto que falta de cada município do estado, partindo do 1º
         turno daquele município.
       </p>
+      <figure data-bloco="transferencia-de-votos">
+        <TransferenciaDeVotos />
+        <figcaption class="nota">Exemplo, com números redondos.</figcaption>
+      </figure>
       <p>
         Quando um município já tem votos totalizados, o placar dele também conta: com {formatarVotos(CONSTANTES.pesoDoMunicipio)} votos totalizados, ele pesa
         metade.
@@ -313,6 +355,9 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
         <strong>peso das pesquisas</strong> é o mesmo no país todo e cai conforme o Brasil é apurado: metade com {K}% das seções totalizadas, só {pesoCom5} com
         5%.
       </p>
+      <figure data-bloco="peso-das-pesquisas">
+        <PesoDasPesquisas />
+      </figure>
       <p>
         Na base <strong>Só apuração</strong>, as pesquisas não entram. Antes das 17h, ela parte do 1º turno, com incerteza bem maior.
       </p>
@@ -369,6 +414,192 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
             50%.
           </p>
           <p class="formula">chance de virada = chance de vitória de quem está atrás no placar parcial</p>
+        </div>
+      </details>
+    </Secao>
+
+    <Secao {...secao("acerto")}>
+      <p>
+        Rodamos o modelo, com as constantes que valem em 25/10, sobre duas noites passadas, seção por seção, na ordem e no horário reais em que o TSE as
+        totalizou: o 2º turno de 2022 e o de 2018, uma noite em que as pesquisas erraram {erroDasPesquisas2018}.
+      </p>
+      <figure data-bloco="noite-reproduzida">
+        <NoitesReproduzidas noites={NOITES_REPRODUZIDAS} />
+        <figcaption class="nota">Cálculo do Apurador com dados do TSE.</figcaption>
+      </figure>
+      <div class="tabela">
+        <table data-bloco="erros-das-noites">
+          <caption>O erro, em pontos, contra o resultado</caption>
+          <thead>
+            <tr>
+              <th scope="col">Com</th>
+              <th scope="col">Placar parcial</th>
+              <th scope="col">{NOME_DA_BASE["so-apuracao"]}</th>
+              <th scope="col">{NOME_DA_BASE["com-pesquisas"]}</th>
+            </tr>
+          </thead>
+          {NOITES_REPRODUZIDAS.map((n) => (
+            <tbody data-noite={n.ano}>
+              <tr>
+                <th scope="rowgroup" colspan="4">
+                  2º turno de {n.ano}: {resultadoDe(n)}
+                </th>
+              </tr>
+              {errosDaNoite(n).map((e) => (
+                <tr>
+                  <th scope="row">{e.ponto}% das seções</th>
+                  <td>{formatarCalculo(e.placar)}</td>
+                  <td>{formatarCalculo(e.soApuracao)}</td>
+                  <td>{formatarCalculo(e.comPesquisas)}</td>
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      </div>
+      <p class="nota">
+        Nas duas noites e nas duas bases, o resultado ficou dentro da faixa de 95% em{" "}
+        {cobertura === 1 ? "todos os momentos" : `pelo menos ${formatarCalculo(100 * cobertura)}% dos momentos`} depois de 1% das seções.
+      </p>
+      <p class="aviso-otimista" data-bloco="teste-otimista">
+        <strong>Este teste é otimista.</strong> Os ajustes provisórios do modelo saíram da noite de 2022, e a calibração das constantes também usou estas duas
+        noites (<a href="#constantes">veja como</a>). Numa noite nova, o erro pode ser maior.
+      </p>
+
+      <h3>E se as pesquisas errassem?</h3>
+      <p>
+        Repetimos a noite de 2022 com o agregado 2 pontos para cada lado, um erro do tamanho do de 2018. Antes da primeira seção, a projeção erraria{" "}
+        {antesDaApuracao[0]} com as pesquisas puxando para {nome1} e {antesDaApuracao[1]} puxando para {nome2}. Com 5% das seções, o erro já tinha caído para{" "}
+        {erroEmPontos(deslocadas.erroEm5[0])} e {erroEmPontos(deslocadas.erroEm5[1])}. A partir de {comoNoite(deslocadas.juntasDesde)} das seções, as versões
+        ficam a menos de 0,1 ponto da base {NOME_DA_BASE["so-apuracao"]}.
+      </p>
+      <figure data-bloco="pesquisas-deslocadas">
+        <PesquisasDeslocadas noite={noite2022} />
+        <figcaption class="nota">Cálculo do Apurador com dados do TSE.</figcaption>
+      </figure>
+
+      <h3>
+        O agregado, de {erro.anos[0]} a {erro.anos[1]}
+      </h3>
+      <p>
+        Testamos a mesma regra do agregado nos {quantosTurnos} 2º turnos desde {erro.anos[0]}. Em cada ano, a incerteza foi calculada{" "}
+        <strong>sem aquele ano</strong>, como se ele ainda não tivesse acontecido.
+      </p>
+      <figure data-bloco="agregado-contra-resultado">
+        <AgregadoContraResultado anos={AGREGADO_CONTRA_RESULTADO} />
+        <figcaption class="nota">
+          Círculo vazio: o agregado, com a faixa de 95%. Círculo cheio: o resultado oficial. O número é o erro do agregado, em pontos. Cálculo do Apurador com
+          dados do TSE, sobre as pesquisas finais de cada ano.
+        </figcaption>
+      </figure>
+      <p>
+        {[agregado2018, agregado2022]
+          .map(
+            (a) =>
+              `Em ${a.ano}, o agregado dava ${a.finalistas[0]} ${pct(a.agregado)}; ele teve ${formatarPctComCasas(a.resultado, 2)}, ` +
+              `${formatarPontos(Math.abs(a.erro))} a ${a.erro > 0 ? "menos" : "mais"}.`,
+          )
+          .join(" ")}
+        {todosNaFaixa && ` Nos ${quantosTurnos} anos, o resultado ficou dentro da faixa de 95%.`}
+      </p>
+      <details class="contas">
+        <summary>As contas</summary>
+        <div>
+          <p class="formula">erro = | projeção − resultado final |</p>
+          <p class="nota">
+            Em pontos de % dos votos válidos, no momento em que a noite chegou a 5%, 25% e 50% das seções totalizadas. Os momentos da noite são o começo, 0,1%,
+            0,25%, 0,5% e 0,75% das seções, cada ponto inteiro de 1% a 99%, 99,5%, 99,9% e o fim.
+          </p>
+          <p class="formula">incerteza do ano = √( média dos erros² dos outros {numeroPorExtenso[erro.quantidade - 1]} anos )</p>
+          <p class="formula">faixa de 95% = agregado ± {formatarNumero(duasCasas(Z_95))} × incerteza do ano</p>
+        </div>
+      </details>
+    </Secao>
+
+    <Secao {...secao("constantes")}>
+      <p>
+        As constantes do modelo foram escolhidas em três noites passadas: o {CALIBRACAO.noites.slice(0, -1).join(", o ")} e o{" "}
+        {CALIBRACAO.noites[CALIBRACAO.noites.length - 1]}. Os valores candidatos e a regra de escolha foram escritos <strong>antes</strong> de a calibração
+        rodar, em 19/10. Nada é treinado: cada constante sai de uma lista curta, pela regra.
+      </p>
+      <div class="tabela">
+        <table data-bloco="constantes-da-calibracao">
+          <thead>
+            <tr>
+              <th scope="col">Constante</th>
+              <th scope="col">Candidatos</th>
+              <th scope="col">Antes</th>
+              <th scope="col">Escolhida</th>
+            </tr>
+          </thead>
+          <tbody>
+            {CALIBRACAO.constantes.map((c) => (
+              <tr>
+                <th scope="row">{c.nome}</th>
+                <td>{c.candidatos}</td>
+                <td>{c.provisoria}</td>
+                <td>
+                  <strong>{c.escolhida}</strong>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <h3>A regra, nesta ordem</h3>
+      <ol class="regra">
+        <li>
+          <strong>Desvios e peso do município.</strong> O resultado fica dentro da faixa de 95% em pelo menos 95% dos momentos depois de 1% das seções, em cada
+          noite, e quem perdeu nunca passa de 95% de chance depois de 5%. Entre os que passam, fica o de menor erro médio de 5% a 50% das seções; no empate, a
+          incerteza mais larga.
+        </li>
+        <li>
+          <strong>Ordem de chegada.</strong> Fica a de menor erro da curva projetada contra o placar parcial real; a "mistura", se ficar a menos de 0,05 ponto
+          dela.
+        </li>
+        <li>
+          <strong>K.</strong> Fica o de menor erro até 5% das seções no pior caso, com o agregado real e com o deslocado 2 pontos para cada lado.
+        </li>
+        <li>
+          <strong>Sinal de virada.</strong> O limite de "sem sinal de virada" é posto à prova em 5%, 2% e 1%, e fica o primeiro em que nenhum momento sem sinal
+          de virada no Brasil, nos estados e no Exterior é seguido de virada, e no máximo 5% dos momentos dos municípios.
+        </li>
+        <li>
+          <strong>Zona.</strong> Cada zona eleitoral só entra como uma parte do município se reduzir o erro médio em pelo menos 0,05 ponto em cada noite.
+        </li>
+      </ol>
+      <h3>Por noite, com as constantes escolhidas</h3>
+      <div class="tabela">
+        <table data-bloco="calibracao-por-noite">
+          <thead>
+            <tr>
+              <th scope="col">Medida</th>
+              {CALIBRACAO.noites.map((n) => (
+                <th scope="col">{n}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {CALIBRACAO.medidas.map((m) => (
+              <tr>
+                <th scope="row">{m.nome}</th>
+                {m.porNoite.map((v) => (
+                  <td>{v}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="nota">
+        Erros e margens em pontos. Os números de todos os candidatos estão nos CSVs da calibração, em <a href="#fontes">Para baixar</a>.
+      </p>
+      <details class="contas">
+        <summary>As contas</summary>
+        <div>
+          <p class="formula">erro médio = média de | projeção − resultado | de 5% a 50% das seções</p>
+          <p class="formula">cobertura = momentos com o resultado na faixa de 95% ÷ momentos depois de 1% das seções</p>
+          <p class="nota">A média de um candidato dá o mesmo peso a cada noite.</p>
         </div>
       </details>
     </Secao>
@@ -613,6 +844,61 @@ const quantosTurnos = numeroPorExtenso[erro.quantidade] ?? String(erro.quantidad
   }
   .sinais strong {
     display: block;
+  }
+  .tabela {
+    margin: 0.75rem 0 0;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+  }
+  caption {
+    padding-bottom: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-align: left;
+    color: var(--texto-suave);
+  }
+  th,
+  td {
+    padding: 0.375rem 0.5rem;
+    border-bottom: 1px solid var(--borda);
+    text-align: left;
+    vertical-align: top;
+  }
+  thead th {
+    border-bottom: 1.5px solid var(--borda-forte);
+    font-size: 0.75rem;
+    color: var(--texto-suave);
+  }
+  tbody th[scope="row"] {
+    font-weight: 400;
+  }
+  th[scope="rowgroup"] {
+    padding-top: 0.625rem;
+    font-weight: 600;
+  }
+  [data-bloco="constantes-da-calibracao"] td + td {
+    white-space: nowrap;
+  }
+  [data-bloco="erros-das-noites"] td,
+  [data-bloco="erros-das-noites"] thead th + th,
+  [data-bloco="calibracao-por-noite"] td,
+  [data-bloco="calibracao-por-noite"] thead th + th {
+    text-align: right;
+    white-space: nowrap;
+  }
+  .aviso-otimista {
+    padding: 0.5rem 0.75rem;
+    border-left: 4px solid var(--borda-forte);
+    background: var(--cartao);
+    font-size: 0.9rem;
+  }
+  .regra li + li {
+    margin-top: 0.375rem;
   }
   .limites li + li {
     margin-top: 0.5rem;

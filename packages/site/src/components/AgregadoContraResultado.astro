@@ -1,0 +1,90 @@
+---
+import { formatarCalculo, formatarMudanca, formatarPctComCasas } from "../lib/formato";
+import { graficoDoAgregado } from "../lib/graficos-da-metodologia";
+import type { AnoDoAgregado } from "../lib/metodologia";
+
+// O agregado contra o resultado nos 2º turnos passados (Página de metodologia, decisão 2; Agregado de pesquisas e erro
+// histórico, decisão 10): uma linha por ano, com a faixa de 95% do agregado, o agregado e o resultado oficial, em % de
+// quem liderou o 1º turno, e o erro do agregado ao lado. A incerteza de cada ano é a medida nos outros anos.
+
+interface Props {
+  anos: AnoDoAgregado[];
+}
+const { anos } = Astro.props;
+const LARGURA = 340;
+const g = graficoDoAgregado(anos, LARGURA);
+const descricao =
+  `O agregado das pesquisas finais e o resultado oficial nos 2º turnos de ${anos[0]!.ano} a ${anos[anos.length - 1]!.ano}, em % de quem liderou o 1º turno: ` +
+  anos
+    .map((a) => {
+      const naFaixa = a.resultado > a.faixa[0] && a.resultado < a.faixa[1];
+      return `${a.ano}, ${a.finalistas[0]}: agregado ${formatarCalculo(a.agregado)}%, resultado ${formatarPctComCasas(a.resultado, 2)}, ${naFaixa ? "dentro" : "fora"} da faixa de 95%`;
+    })
+    .join("; ") +
+  ".";
+---
+
+<svg class="agregado-contra-resultado" viewBox={`0 0 ${LARGURA} ${g.altura}`} role="img" aria-label={descricao}>
+  <line class="meio" x1={g.x50} x2={g.x50} y1={g.area.topo} y2={g.area.base} />
+  {g.marcasX.map((m) => (
+    <text class="eixo" x={m.posicao} y={g.area.base + 14} text-anchor="middle">
+      {m.rotulo}
+    </text>
+  ))}
+  <text class="eixo" x={(g.area.esquerda + g.area.direita) / 2} y={g.altura - 2} text-anchor="middle">
+    % de quem liderou o 1º turno, nos votos válidos
+  </text>
+  {g.linhas.map((l) => (
+    <>
+      <text class="ano" x="0" y={l.y - 2}>
+        {l.ano.ano}
+      </text>
+      <text class="eixo" x="0" y={l.y + 11}>
+        {l.ano.finalistas[0]} × {l.ano.finalistas[1]}
+      </text>
+      <line class="faixa" x1={l.faixa[0]} x2={l.faixa[1]} y1={l.y} y2={l.y} />
+      <circle class="agregado" cx={l.agregado} cy={l.y} r="4.5" />
+      <circle class="resultado" cx={l.resultado} cy={l.y} r="3.5" />
+      <text class="eixo" x={l.faixa[1] + 6} y={l.y + 3.5}>
+        {formatarMudanca(l.ano.erro)}
+      </text>
+    </>
+  ))}
+</svg>
+
+<style>
+  .agregado-contra-resultado {
+    display: block;
+    width: 100%;
+    max-width: 30rem;
+    height: auto;
+    overflow: visible;
+  }
+  .meio {
+    stroke: var(--borda-forte);
+    stroke-width: 1.5;
+  }
+  .eixo {
+    fill: var(--texto-suave);
+    font-size: 10px;
+  }
+  .ano {
+    fill: var(--texto);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .faixa {
+    stroke: var(--grafite);
+    stroke-width: 7;
+    stroke-linecap: round;
+    opacity: 0.22;
+  }
+  .agregado {
+    fill: var(--cartao);
+    stroke: var(--grafite);
+    stroke-width: 2;
+  }
+  .resultado {
+    fill: var(--texto);
+  }
+</style>
