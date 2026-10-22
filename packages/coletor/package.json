@@ -12,7 +12,8 @@
   "scripts": {
     "coletor": "tsx src/principal.ts",
     "noite": "tsx src/noite.ts",
-    "conferir-entrega": "tsx src/conferir-entrega.ts"
+    "conferir-entrega": "tsx src/conferir-entrega.ts",
+    "alerta-de-teste": "tsx src/alerta-de-teste.ts"
   },
   "dependencies": {
     "@apurador/modelo": "*",

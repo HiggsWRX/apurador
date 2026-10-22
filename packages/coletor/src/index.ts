@@ -1,4 +1,16 @@
-export { criarColetor, type Buscar, type Coletor, type OpcoesDoColetor, type RegistroDaRodada } from "./coletor.ts";
+export {
+  criarColetor,
+  type Buscar,
+  type Coletor,
+  type OpcoesDoColetor,
+  type ProjecaoDoBrasilNaRodada,
+  type RegistroDaRodada,
+  type TipoDoArquivoDoTse,
+} from "./coletor.ts";
+export { criarPainelDoColetor, type LeituraDeFora, type MedidaDoComputador, type OpcoesDoPainelDoColetor, type PainelDoColetor } from "./painel-do-coletor.ts";
+export { despacharAlertas, LIMITES_DOS_ALERTAS, type Alerta, type IdDoAlerta, type LimitesDosAlertas, type NivelDoAlerta } from "./alertas.ts";
+export { placarDoArquivoDoTse, type PlacarDoTse } from "./placar-conferido.ts";
+export { enviarAoNtfy, type MensagemDoNtfy } from "./ntfy.ts";
 export {
   type ArquivoDeRodada,
   type ArquivoDoLugar,
@@ -20,7 +32,7 @@ export { lerEntradaDaProjecao, NOITES_DA_PROJECAO, type NoiteDaProjecao } from "
 export { ehPreditivo, TIPOS_PREDITIVOS, type EventoDaNarracao, type TipoDeEvento } from "./narracao.ts";
 export { pastaLocal, type Destino } from "./destino.ts";
 export { destinoR2, type CredenciaisDoR2 } from "./r2.ts";
-export { republicacaoDoWorker } from "./plano-b.ts";
+export { republicacaoDoWorker, type DestinoDoPlanoB } from "./plano-b.ts";
 export { criarContadorDeGravacoes, type ContadorDeGravacoes, type GravacoesDoMes } from "./contador.ts";
 export { relogioReal, relogioSemEspera, type RelogioDoColetor } from "./relogio.ts";
 export {

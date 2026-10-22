@@ -1,0 +1,29 @@
+// A sentinela (Operação na noite, decisão 8): um Worker sem rota nem endereço público, só com o Cron Trigger de cada
+// minuto (1.440 execuções por dia, dentro do Workers Free). Lê o arquivo de rodada público e alerta pelo ntfy se ele passar
+// 3 min parado (packages/coletor/cloudflare/sentinela.ts). O tópico do ntfy é segredo (`wrangler secret put NTFY_TOPICO`),
+// e o KV guarda a rodada já alertada. O ensaio tem a dele, com os endereços do ensaio (`--env ensaio`). Os passos estão
+// no README.md desta pasta.
+{
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "apurador-sentinela",
+  "main": "sentinela.ts",
+  "compatibility_date": "2026-10-01",
+  // Sem ela, um Worker não lê outro Worker nem um domínio da mesma conta por `fetch` (erro 1042): o pedido sai pela
+  // internet, como o de um visitante.
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": { "crons": ["* * * * *"] },
+  // A raiz principal e a do plano B (AMBIENTES, em packages/coletor/src/ambientes.ts), separadas por espaço.
+  "vars": { "ENDERECOS": "https://ao-vivo.apurador.org/ https://apurador-plano-b.hicampos93.workers.dev/" },
+  "kv_namespaces": [{ "binding": "ESTADO", "id": "COLE-AQUI-O-ID-DO-KV" }],
+  "env": {
+    "ensaio": {
+      "name": "apurador-sentinela-ensaio",
+      "triggers": { "crons": ["* * * * *"] },
+      "vars": { "ENDERECOS": "https://ao-vivo-ensaio.apurador.org/ https://apurador-ensaio-plano-b.hicampos93.workers.dev/" },
+      // O mesmo KV: a chave guarda a hora da rodada alertada, que nunca é a mesma no ensaio e na noite.
+      "kv_namespaces": [{ "binding": "ESTADO", "id": "COLE-AQUI-O-ID-DO-KV" }],
+    },
+  },
+}

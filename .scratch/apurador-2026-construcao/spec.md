@@ -519,7 +519,7 @@ Não há código de produção ainda. As referências são:
   - gravar os secrets `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` no GitHub;
   - criar as chaves de escrita só nos buckets de produção (`apurador-ao-vivo`) e do ensaio, e colá-las no `.env` do coletor;
   - preparar o computador até 21/10;
-  - instalar o ntfy;
+  - instalar o ntfy, criar o tópico e colá-lo no `.env` do coletor, e ligar a sentinela (KV, deploy e segredo, em `packages/coletor/cloudflare/README.md`);
   - medir o nobreak;
   - escolher o vigia;
   - confirmar 1 GB livre no celular.

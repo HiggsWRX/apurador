@@ -23,12 +23,14 @@ import {
   type BaseDaProjecao,
   type Fase,
   type PontoDaCurvaReal,
+  type ProjecaoNaBase,
   type TabelaDeProjecoes,
 } from "./arquivos.ts";
 import { chavesEfetivas, CONTROLE_INICIAL, type Controle } from "./chaves.ts";
 import type { ContadorDeGravacoes, GravacoesDoMes } from "./contador.ts";
 import type { Destino } from "./destino.ts";
 import { criarNarracao } from "./narracao.ts";
+import { placarDoArquivoDoTse, type PlacarDoTse } from "./placar-conferido.ts";
 import { criarProjecaoDaNoite, type EntradaDaProjecao, type ProjecaoDaRodada } from "./projecao.ts";
 import type { RelogioDoColetor } from "./relogio.ts";
 
@@ -102,6 +104,37 @@ export interface RegistroDaRodada {
   destinoAtivo: "principal" | "plano B";
   /** As gravações do mês nos buckets do R2, no fim da rodada, ou `null` sem contador. */
   gravacoesDoMes: GravacoesDoMes | null;
+  /**
+   * O placar do último arquivo do Brasil que o coletor aceitou, lido dos bytes sem o leitor do TSE: o painel do coletor
+   * o confere com o publicado (`placar-conferido.ts`). `null` antes do primeiro.
+   */
+  placarDoTse: PlacarDoTse | null;
+  /** A última totalização do Brasil e quando o coletor a viu (ISO, pelo relógio do coletor), como no arquivo de rodada. */
+  novidade: { totalizacao: string | null; vista: string | null };
+  /** O maior número de pedidos ao TSE num mesmo segundo da rodada, contra o limite de 100 por IP. */
+  picoDePedidos: number;
+  /**
+   * O relógio do coletor menos o `Date` do TSE, em ms, o menor da rodada: o `Date` corta os milissegundos e chega
+   * depois da latência, e o menor é o mais perto do desvio. `null` sem resposta com `Date`.
+   */
+  desvioDoRelogio: number | null;
+  /** Os arquivos do TSE que o leitor não entendeu na rodada, com o tipo do lugar: fica o último bom de cada um. */
+  ilegiveis: { tipo: TipoDoArquivoDoTse; url: string }[];
+  /** A projeção do Brasil da rodada, com as chaves ou sem elas, ou `null` sem projeção. */
+  projecaoDoBrasil: ProjecaoDoBrasilNaRodada | null;
+}
+
+/** De que é um arquivo do TSE: o resultado ou o índice de um lugar, ou a configuração da eleição. */
+export type TipoDoArquivoDoTse = TipoDoAcompanhado | "configuracao";
+
+/** A projeção do Brasil numa rodada, em % do 1º candidato do arquivo de rodada, como os arquivos a mostram. */
+export interface ProjecaoDoBrasilNaRodada {
+  /** O número do 1º candidato do arquivo de rodada, de quem são os %. */
+  candidato: number;
+  /** O peso das pesquisas na base com pesquisas, em %, inteiro. */
+  pesoDasPesquisas: number;
+  soApuracao: Pick<ProjecaoNaBase, "projecao" | "margem" | "chance">;
+  comPesquisas: Pick<ProjecaoNaBase, "projecao" | "margem" | "chance">;
 }
 
 /** O coletor de uma eleição: as rodadas e o último resultado bom de cada lugar. */
@@ -227,6 +260,13 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   /** Onde o coletor grava: o principal até o comando do plano B, e o plano B depois dele. */
   let destino = opcoes.destino;
 
+  // O que o painel do coletor lê da rodada, além do que ela fez.
+  /** Os bytes do último arquivo do Brasil que o leitor aceitou: o placar conferido os lê sem o leitor. */
+  let brasilEmBytes: Uint8Array | undefined;
+  /** O instante de cada pedido da rodada, pelo relógio do coletor. */
+  let pedidosDaRodada: number[] = [];
+  let menorDesvio = Infinity;
+
   // A fila dos pedidos, com o ritmo fixo.
   const intervaloEntrePedidos = 1000 / pedidosPorSegundo;
   let proximoPedido = -Infinity;
@@ -253,6 +293,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   /** Um GET ao TSE, com a ETag que o coletor tem. `null` se o pedido falhou. */
   async function pedir(url: string): Promise<{ status: 200; corpo: Uint8Array; etag: string | null } | { status: 304 } | null> {
     pedidoEm.set(url, relogio.agora());
+    pedidosDaRodada.push(relogio.agora());
     registro.pedidos++;
     const etag = etags.get(url);
     let resposta: Response;
@@ -264,7 +305,10 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     }
     registro.respostas[resposta.status] = (registro.respostas[resposta.status] ?? 0) + 1;
     const data = Date.parse(resposta.headers.get("date") ?? "");
-    if (!Number.isNaN(data)) horaDoTse = Math.max(horaDoTse, data);
+    if (!Number.isNaN(data)) {
+      horaDoTse = Math.max(horaDoTse, data);
+      menorDesvio = Math.min(menorDesvio, relogio.agora() - data);
+    }
     if (resposta.status === 200) return { status: 200, corpo: new Uint8Array(await resposta.arrayBuffer()), etag: resposta.headers.get("etag") };
     await resposta.body?.cancel();
     if (resposta.status === 304) return { status: 304 };
@@ -285,8 +329,22 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       return { status: 200, lido };
     } catch (erro) {
       registro.falhas.push(`${url}: ${(erro as Error).message}`);
+      registro.ilegiveis.push({ tipo: tipoDoArquivo(url), url });
       return null;
     }
+  }
+
+  /** De que é um arquivo do TSE pela URL: antes da configuração lida, só pode ser ela. */
+  function tipoDoArquivo(url: string): TipoDoArquivoDoTse {
+    const d = divulgacao;
+    if (!d) return "configuracao";
+    if (url === d.urls.acompanhamento(null)) return "brasil";
+    if (d.ufs.some((uf) => url === d.urls.acompanhamento(uf))) return "uf";
+    for (const a of d.acompanhados) {
+      if (a.url === url) return a.tipo;
+      if (a.zonas.some((z) => z.url === url)) return "zona";
+    }
+    return "configuracao";
   }
 
   /** O conteúdo de um arquivo que o coletor ainda não tem, ou `null`. */
@@ -387,9 +445,14 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     const vagas = Math.max(10, Math.floor((pedidosPorSegundo * TEMPO_DE_PEDIDOS) / 1000) - registro.pedidos);
 
     const ler = lerResultadoDaEleicao(d);
+    const lerOBrasil = (bytes: Uint8Array) => {
+      const lido = ler(bytes);
+      brasilEmBytes = bytes;
+      return lido;
+    };
     await emFila(atrasados.slice(0, vagas), async (a) => {
       const pedidoNo = relogio.agora();
-      const resposta = await pedirELer(a.url, ler);
+      const resposta = await pedirELer(a.url, a.tipo === "brasil" ? lerOBrasil : ler);
       const pendenteDesde = zonasPendentes.get(a.url);
       if (resposta !== null && pendenteDesde !== undefined && pedidoNo - pendenteDesde >= UM_MINUTO) zonasPendentes.delete(a.url);
       if (resposta?.status !== 200) return;
@@ -568,6 +631,38 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     for (const a of d?.acompanhados ?? []) if (a.id !== null && resultados.has(a.url)) sujos.add(a.id);
   }
 
+  /**
+   * O que o painel do coletor lê da rodada além do que ela fez: o placar do Brasil como o TSE o escreveu, a novidade, o
+   * pico de pedidos, o desvio do relógio e a projeção do Brasil, com as chaves ou sem elas (o painel mostra a de dentro).
+   */
+  function paraOPainelDoColetor(d: Divulgacao | undefined) {
+    if (brasilEmBytes) {
+      try {
+        registro.placarDoTse = placarDoArquivoDoTse(brasilEmBytes);
+      } catch (erro) {
+        registro.falhas.push(`placar conferido: ${(erro as Error).message}`);
+      }
+    }
+    registro.novidade = { totalizacao: novidade.totalizacao, vista: novidade.vista === null ? null : new Date(novidade.vista).toISOString() };
+    let inicio = 0;
+    for (let fim = 0; fim < pedidosDaRodada.length; fim++) {
+      while (pedidosDaRodada[fim]! - pedidosDaRodada[inicio]! >= 1000) inicio++;
+      registro.picoDePedidos = Math.max(registro.picoDePedidos, fim - inicio + 1);
+    }
+    registro.desvioDoRelogio = Number.isFinite(menorDesvio) ? Math.round(menorDesvio) : null;
+    const doBrasil = d && brasil(d);
+    const noBrasil = doBrasil && projecao?.doLugar("BR", true);
+    if (doBrasil && projecao && noBrasil?.comPesquisas) {
+      const numeros = ({ projecao, margem, chance }: ProjecaoNaBase) => ({ projecao, margem, chance });
+      registro.projecaoDoBrasil = {
+        candidato: emOrdem(doBrasil.candidatos)[0]!.numero,
+        pesoDasPesquisas: Math.round(100 * projecao.pesoDasPesquisas),
+        soApuracao: numeros(noBrasil.soApuracao),
+        comPesquisas: numeros(noBrasil.comPesquisas),
+      };
+    }
+  }
+
   async function rodada(): Promise<RegistroDaRodada> {
     const inicio = relogio.agora();
     const inicioReal = performance.now();
@@ -585,7 +680,15 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       controle,
       destinoAtivo: "principal",
       gravacoesDoMes: null,
+      placarDoTse: null,
+      novidade: { totalizacao: null, vista: null },
+      picoDePedidos: 0,
+      desvioDoRelogio: null,
+      ilegiveis: [],
+      projecaoDoBrasil: null,
     };
+    pedidosDaRodada = [];
+    menorDesvio = Infinity;
     // Um erro que escapou vira falha da rodada: o coletor nunca cai por um arquivo, e a rodada seguinte tenta de novo.
     try {
       await lerControleDaRodada();
@@ -605,6 +708,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     }
     registro.destinoAtivo = destino === opcoes.planoB ? "plano B" : "principal";
     registro.gravacoesDoMes = opcoes.contador?.doMes() ?? null;
+    paraOPainelDoColetor(divulgacao);
     registro.duracao = Math.round(relogio.agora() - inicio);
     registro.processamento = Math.round(performance.now() - inicioReal);
     return registro;

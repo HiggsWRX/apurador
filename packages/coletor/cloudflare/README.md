@@ -6,6 +6,7 @@ O caminho principal dos arquivos ao vivo é o bucket `apurador-ao-vivo` do R2, s
 
 - `cors-ao-vivo.json`: o CORS do bucket. A página em `https://apurador.org` lê com `GET` e o `If-None-Match` posto à mão, então o pedido tem preflight. O R2 responde ao `OPTIONS` pelas regras do bucket, sem `OPTIONS` na lista de métodos. `Date` e `ETag` ficam expostos, porque a página lê os dois. O preflight vale 24 h, e o Chrome corta em 2 h.
 - `plano-b.jsonc` e `plano-b-ensaio.jsonc`: os Workers do plano B, só com os static assets da pasta que o coletor grava (`.cache/coletor/plano-b/` e `.cache/coletor/plano-b-ensaio/`). O coletor os republica com `wrangler deploy --config`, pelo login do wrangler.
+- `sentinela.jsonc` e `sentinela.ts`: a sentinela, um Worker com Cron Trigger a cada minuto e sem endereço público. Lê o `rodada.json` do principal e do plano B, fica com o mais novo e manda um alerta pelo ntfy se ele passar 3 min parado, ou se os dois endereços derem erro por mais de 3 min. Com a fase "encerrada", ou com uma rodada de mais de 6 h (de outra noite), ela fica quieta. O ensaio tem a dele, `apurador-sentinela-ensaio`, com os endereços do ensaio (`--env ensaio`).
 
 ## O que configurar, na ordem
 
@@ -62,9 +63,56 @@ Os passos 1, 2 e 6 são comandos, rodados na raiz do repositório com o login do
 
 Se o CORS mudar depois de a borda já ter cópias, apague o cache do host: painel → Caching → Configuration → "Purge Cache" → "Custom Purge" → "Hostname" `ao-vivo.apurador.org`.
 
+## Os alertas e a sentinela
+
+Tudo aqui é do dono, e nada roda sozinho. Os comandos são na raiz do repositório, com o login do wrangler.
+
+1. **Tópico do ntfy**: gere um nome impossível de adivinhar e guarde-o, porque quem o sabe lê e publica no tópico.
+
+   ```bash
+   node -e "console.log('apurador-' + crypto.randomUUID())"
+   ```
+
+   - No celular, instale o app do ntfy e assine o tópico em `ntfy.sh`. No Android, deixe o app fora da economia de bateria.
+   - Cole o nome em `NTFY_TOPICO=` no `packages/coletor/.env`, como no `.env.exemplo`.
+   - Confira com o alerta de teste, que toca no computador e no celular sem o coletor rodando. É o mesmo das 16h de 25/10.
+
+     ```bash
+     npm run alerta-de-teste
+     ```
+
+2. **KV da sentinela**: a sentinela guarda nele a rodada parada que já alertou, para alertar uma vez só. O comando mostra o `id` do namespace: cole-o nos dois `"id"` do `sentinela.jsonc`, no lugar de `COLE-AQUI-O-ID-DO-KV`, e faça o commit. O `id` não é segredo.
+
+   ```bash
+   npx wrangler kv namespace create apurador-sentinela
+   ```
+
+3. **Ligar a sentinela da noite**: o deploy e depois o tópico, como segredo do Worker. O `--env=""` escolhe a da noite; a do ensaio é `--env ensaio`, com os mesmos dois comandos.
+
+   ```bash
+   npx wrangler deploy --config packages/coletor/cloudflare/sentinela.jsonc --env=""
+   ```
+
+   ```bash
+   npx wrangler secret put NTFY_TOPICO --config packages/coletor/cloudflare/sentinela.jsonc --env=""
+   ```
+
+   Ela pode ficar ligada desde o ensaio: com o arquivo de rodada de outra noite, fica quieta. Para ver cada execução do minuto, o painel da Cloudflare → Workers → `apurador-sentinela` → Logs, ou:
+
+   ```bash
+   npx wrangler tail --config packages/coletor/cloudflare/sentinela.jsonc --env=""
+   ```
+
+4. **Desligar**, no fim da noite (Operação na noite, decisão 21):
+
+   ```bash
+   npx wrangler delete --config packages/coletor/cloudflare/sentinela.jsonc --env=""
+   ```
+
 ## Na noite
 
 - O coletor: `npm run coletor -- --destino producao`. Ele grava no R2 com gzip e conta cada gravação em `.cache/coletor/gravacoes.json`.
+- O painel do coletor: `.cache/coletor/painel.html`, que o coletor mostra no começo, aberto no navegador. Ele se recarrega a cada 5 s, lê o site visto de fora em `ao-vivo.apurador.org` (e no Worker, depois do plano B) e toca os alertas no computador. Os críticos também vão ao celular pelo ntfy.
 - O plano B: `npm run noite -- plano-b`. Na rodada seguinte, o coletor passa ao Worker, regrava todos os arquivos na pasta dele e o republica a cada minuto, até o fim da noite.
 - O build do site leva `PUBLIC_AO_VIVO=https://ao-vivo.apurador.org/` e `PUBLIC_AO_VIVO_PLANO_B=https://apurador-plano-b.hicampos93.workers.dev/`.
 - **Sem domínio** (se `ao-vivo.apurador.org` não estiver pronto): `npm run coletor -- --destino producao --sem-dominio`, que publica só no Worker desde a primeira rodada e não pede a chave do R2. O build do site leva só `PUBLIC_AO_VIVO_PLANO_B`.

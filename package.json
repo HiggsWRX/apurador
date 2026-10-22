@@ -25,6 +25,7 @@
     "coletor": "npm run coletor -w @apurador/coletor --",
     "noite": "npm run noite -w @apurador/coletor --",
     "conferir-entrega": "npm run conferir-entrega -w @apurador/coletor --",
+    "alerta-de-teste": "npm run alerta-de-teste -w @apurador/coletor --",
     "replay": "vitest run packages/ensaio/test/replay.test.ts",
     "calibracao": "npm run calibracao -w @apurador/ensaio --",
     "conferir": "npm run conferir -w @apurador/pipeline --",

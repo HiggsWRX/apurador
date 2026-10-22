@@ -35,6 +35,15 @@ const CADENCIA = 50_000;
 /** Uma pasta com o arquivo de rodada mais velho que isso é de outra noite. */
 const OUTRA_NOITE = 6 * 3_600_000;
 
+/** O destino do plano B, que diz também quando o que ele grava chegou ao Worker. */
+export interface DestinoDoPlanoB extends Destino {
+  /**
+   * A hora em que terminou a última republicação boa, em ms do relógio do coletor, ou `null` antes da primeira: a última
+   * gravação boa do plano B no painel do coletor. Uma republicação que falha não a muda.
+   */
+  ultimaRepublicacaoBoa(): number | null;
+}
+
 /** O destino do plano B: a pasta dos static assets do Worker, republicado no fim da rodada. */
 export function republicacaoDoWorker(opcoes: {
   /** A pasta dos static assets, a do `assets.directory` da configuração do Worker. */
@@ -43,7 +52,7 @@ export function republicacaoDoWorker(opcoes: {
   publicar: () => Promise<void>;
   /** A hora em ms, pelo relógio do coletor. */
   agora: () => number;
-}): Destino {
+}): DestinoDoPlanoB {
   const { pasta, publicar, agora } = opcoes;
   const local = pastaLocal(pasta);
   let preparada: Promise<void> | undefined;
@@ -51,6 +60,7 @@ export function republicacaoDoWorker(opcoes: {
   let pendente = false;
   let emAndamento = false;
   let ultima = -Infinity;
+  let boa: number | null = null;
   let falhas: string[] = [];
 
   /** A pasta é desta noite: o arquivo de rodada dela tem menos de 6 h pelo relógio do coletor. */
@@ -84,6 +94,7 @@ export function republicacaoDoWorker(opcoes: {
         // Pelo `then`, até um erro síncrono de `publicar` vira rejeição, e a republicação nunca fica presa em andamento.
         Promise.resolve()
           .then(publicar)
+          .then(() => void (boa = agora()))
           .catch((erro: unknown) => {
             falhas.push(`republicar o plano B: ${(erro as Error).message}`);
             // O que estava na pasta não chegou ao Worker: a rodada seguinte tenta de novo, sem esperar o minuto.
@@ -94,6 +105,7 @@ export function republicacaoDoWorker(opcoes: {
       }
       return terminadas;
     },
+    ultimaRepublicacaoBoa: () => boa,
   };
 }
 
