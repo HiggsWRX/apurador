@@ -1,23 +1,26 @@
 import type { EventoDaNarracao } from "@apurador/coletor";
 import { useState } from "preact/hooks";
+import type { IdDaBase } from "../lib/bases-da-projecao";
 import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import { horaDoTse } from "../lib/formato";
 import type { QuadroAoVivo } from "../lib/leitor-ao-vivo";
-import { narracaoDaPagina } from "../lib/narracao";
+import { naBaseEscolhida, narracaoDaPagina } from "../lib/narracao";
 
 // A coluna da narração da noite (Telas da página de lugar, decisões 1 e 7; Narração da noite, decisões 1 e 7): o evento
 // mais novo primeiro, com a hora e o número que bate com o da curva. No computador, a lista inteira fica na coluna fixa
 // à direita; no celular, ela vem logo depois do bloco ao vivo (a ordem está no CSS), com os 5 últimos e "Ver toda a
-// narração". Os eventos do Brasil nas outras páginas vêm marcados como "Brasil", sem número.
+// narração". Os eventos do Brasil nas outras páginas vêm marcados como "Brasil", sem número, e os preditivos, da base
+// da projeção escolhida na caixa da projeção, também sem número.
 
 /** Quantos eventos o celular mostra antes de "Ver toda a narração": o resumo. */
 const EVENTOS_NO_RESUMO = 5;
 
 /** A coluna da narração do lugar para o quadro, ou nada no plano zero, quando nenhum dado ao vivo vai ao ar. */
-export function ColunaDaNarracao({ quadro, id }: { quadro: QuadroAoVivo; id: string }) {
+export function ColunaDaNarracao({ quadro, id, base }: { quadro: QuadroAoVivo; id: string; base: IdDaBase }) {
   const [toda, setToda] = useState(false);
   if (emPlanoZero(quadro)) return null;
-  const eventos = narracaoDaPagina(quadro);
+  const daPagina = narracaoDaPagina(quadro);
+  const eventos = daPagina && naBaseEscolhida(daPagina, quadro, base);
   return (
     <aside class="cartao narracao" id="narracao" aria-labelledby="narracao-titulo" data-toda={toda || undefined}>
       <h2 id="narracao-titulo">Narração da noite</h2>

@@ -20,6 +20,7 @@ import {
   emOrdem,
   pontoDaCurvaReal,
   type ArquivoDoMapa,
+  type BaseDaProjecao,
   type Fase,
   type PontoDaCurvaReal,
   type TabelaDeProjecoes,
@@ -426,21 +427,34 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
    * A projeção da rodada, ou `undefined` com a chave da projeção desligada ou antes das 17h: até lá, a projeção que vai
    * ao ar é a do painel, atrás das chaves de antes das 17h, que o coletor não lê.
    */
-  const projecaoNoAr = (d: Divulgacao) => (controle.chaves.projecao && fase(d) !== "antes-das-17h" ? projecao : undefined);
+  const projecaoNoAr = (d: Divulgacao) => (projecaoPodeIrAoAr(d) ? projecao : undefined);
+  /** A projeção vai ao ar com a chave dela ligada e depois das 17h, quando houver uma. */
+  const projecaoPodeIrAoAr = (d: Divulgacao) => controle.chaves.projecao && fase(d) !== "antes-das-17h";
   /** A base com pesquisas no ar: as duas chaves dela ligadas. */
   const comPesquisasNoAr = () => controle.chaves.projecao && controle.chaves.baseComPesquisas;
+  /** As bases da projeção no ar na rodada, com ou sem a projeção calculada: as dos textos preditivos, com a chave deles. */
+  const basesNoAr = (d: Divulgacao): BaseDaProjecao[] =>
+    projecaoPodeIrAoAr(d) ? ["soApuracao", ...(comPesquisasNoAr() ? (["comPesquisas"] as const) : [])] : [];
 
   /**
-   * Passa à narração os resultados novos da rodada, na ordem dos lugares, e marca para gravar os lugares cuja narração
-   * mudou: o Brasil muda também com os eventos das UFs que entram nele. "As pesquisas deixaram de pesar" fala das duas
-   * bases, e só conta com elas no ar.
+   * Passa à narração os resultados novos da rodada, na ordem dos lugares, e a projeção dela, e marca para gravar os
+   * lugares cuja narração mudou: o Brasil muda também com os eventos das UFs que entram nele. "As pesquisas deixaram de
+   * pesar" fala das duas bases, e só conta com elas no ar. Os preditivos andam com a projeção da rodada, no ar ou não,
+   * e entram só com a chave dos textos preditivos ligada, nas bases no ar (Narração da noite, decisão 6).
    */
   function narrar(d: Divulgacao) {
     const novos = new Map<string, ResultadoDoTse>();
     for (const a of d.acompanhados) if (a.id !== null && porNarrar.has(a.id)) novos.set(a.id, resultados.get(a.url)!);
     porNarrar.clear();
-    const coincidemNoBrasil = comPesquisasNoAr() && (projecao?.coincidemNoBrasil ?? false);
-    for (const id of narracao.narrar(novos, { coincidemNoBrasil })) sujos.add(id);
+    // A função que a narração chama lê a projeção desta rodada, e não a variável, que a próxima rodada troca.
+    const daRodada = projecao;
+    const mudaram = narracao.narrar(novos, {
+      coincidemNoBrasil: comPesquisasNoAr() && (daRodada?.coincidemNoBrasil ?? false),
+      numeros: daRodada && ((id, base) => daRodada.numeros(id, base)),
+      textosPreditivos: controle.chaves.textosPreditivos,
+      basesNoAr: basesNoAr(d),
+    });
+    for (const id of mudaram) sujos.add(id);
   }
 
   function fase(d: Divulgacao): Fase {

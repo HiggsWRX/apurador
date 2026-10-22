@@ -16,7 +16,15 @@ import {
 } from "@apurador/modelo";
 import { assinaturaDosLugares, idDoMunicipio } from "@apurador/pipeline";
 import type { AbrangenciaDaDivulgacao, ResultadoDoTse } from "@apurador/tse";
-import type { ColunasDaBase, MunicipiosDaTabela, ProjecaoDoLugar, ProjecaoNaBase, ProjecoesDosMunicipios } from "./arquivos.ts";
+import type {
+  BaseDaProjecao,
+  ColunasDaBase,
+  MunicipiosDaTabela,
+  NumerosDaProjecao,
+  ProjecaoDoLugar,
+  ProjecaoNaBase,
+  ProjecoesDosMunicipios,
+} from "./arquivos.ts";
 
 // A projeção da noite no coletor (spec, "Rodada", passo 4): a cada rodada com resultado novo, o `modelo` roda nas duas
 // bases sobre a apuração de cada município que o coletor guarda, e sai pronta para os JSONs do Brasil, de cada UF e do
@@ -48,6 +56,11 @@ export interface ProjecaoDaRodada {
   dosMunicipios(uf: string, comPesquisas: boolean): ProjecoesDosMunicipios | undefined;
   /** Os municípios da tabela de projeções de uma UF, com as comparações de cada um: o que não muda na noite. */
   municipiosDaTabela(uf: string): MunicipiosDaTabela | undefined;
+  /**
+   * Os números de qualquer lugar (o Brasil, uma UF, o Exterior ou um município) numa base, sem a curva, como vão nos
+   * arquivos: o que os textos preditivos da narração dizem. `undefined` num lugar fora da base do modelo.
+   */
+  numeros(id: string, base: BaseDaProjecao): NumerosDaProjecao | undefined;
 }
 
 /** A projeção da noite, preparada uma vez: o modelo e o 1º turno de cada lugar. */
@@ -97,6 +110,7 @@ export function criarProjecaoDaNoite({ base, constantes, agregado }: EntradaDaPr
     municipiosDaUf.get(m.uf)!.push(i);
   });
   const idDe = base.municipios.map((m) => idDoMunicipio(m.municipio));
+  const posicaoDe = new Map(idDe.map((id, i) => [id, i]));
   const primeiroTurnoDe = base.municipios.map((m) => placarEntreFinalistas(m.votos[0]!, m.votos[1]!) ?? 50);
   const assinaturaDaUf = new Map([...municipiosDaUf].map(([uf, indices]) => [uf, assinaturaDosLugares(indices.map((i) => idDe[i]!))]));
 
@@ -202,6 +216,13 @@ export function criarProjecaoDaNoite({ base, constantes, agregado }: EntradaDaPr
             comPesquisas: colunas(nasDuasBases.comPesquisas, indices),
             coincidem: indices.map((i) => nasDuasBases.coincidem.municipios[i]!),
           };
+        },
+        numeros(id, qual) {
+          const projecao = nasDuasBases[qual];
+          if (id === "BR") return numeros(projecao.brasil);
+          const i = posicaoDe.get(id);
+          const doLugar = i === undefined ? projecao.ufs[id] : projecao.municipios[i];
+          return doLugar && numeros(doLugar);
         },
         municipiosDaTabela(uf) {
           const indices = municipiosDaUf.get(uf);

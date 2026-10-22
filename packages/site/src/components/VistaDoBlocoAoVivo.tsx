@@ -79,9 +79,9 @@ export function VistaDoBlocoAoVivo({
   );
   // Com movimento reduzido, nada pisca.
   const mudou = (numero: string) => !movimentoReduzido && quadro.mudaram.includes(numero);
-  const frase = manchete(quadro, lugar);
-  const eleito = eleitoPelaIndicacao(quadro);
   const projecao = dados ? projecaoNaPagina(quadro, base) : null;
+  const frase = manchete(quadro, lugar, projecao);
+  const eleito = eleitoPelaIndicacao(quadro);
   return (
     <div class="bloco-ao-vivo">
       {dados && <LinhaFixa candidatos={dados.candidatos} tse={dados.tse} escondida={placarNaTela} indicador={indicador()} mudou={mudou} />}
@@ -90,7 +90,7 @@ export function VistaDoBlocoAoVivo({
           {frase}
         </p>
       )}
-      <UltimoEvento quadro={quadro} />
+      <UltimoEvento quadro={quadro} base={base} />
       <FaixaDeAviso aviso={quadro.aviso} />
       <PlacarOficial
         antesDas17h={quadro.fase === "antes-das-17h"}

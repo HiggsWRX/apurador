@@ -4,10 +4,12 @@ import { formatarPctComCasas, formatarVotos } from "./formato";
 import { nomeCurto } from "./identidade";
 import type { QuadroAoVivo } from "./leitor-ao-vivo";
 import { eventosDoLugar } from "./narracao";
+import type { ProjecaoNaPagina } from "./projecao-ao-vivo";
 
-// Os textos do bloco ao vivo. A manchete começa sempre pelo placar oficial e nunca traz frase de projeção enquanto os
-// textos preditivos não forem confirmados (Narração da noite, decisão 9; Segunda consulta jurídica). A virada e a
-// indicação do TSE saem da narração do lugar, que o coletor publica pronta.
+// Os textos do bloco ao vivo. A manchete começa sempre pelo placar oficial, e só ganha a frase de projeção com a chave
+// dos textos preditivos ligada (Narração da noite, decisão 9; Segunda consulta jurídica, decisão 5). A virada e a
+// indicação do TSE saem da narração do lugar, que o coletor publica pronta; a frase de projeção, dos números do sinal de
+// virada na base escolhida, os mesmos do rótulo da curva, e por isso ela nunca vai num JSON.
 
 /** O app oficial de resultados do TSE, na web, para onde a página manda quando a atualização para. */
 export const APP_DO_TSE = "https://resultados.tse.jus.br/oficial/app/index.html";
@@ -45,10 +47,28 @@ export function eleitoPelaIndicacao(quadro: QuadroAoVivo): string | null {
 }
 
 /**
- * A manchete do lugar no momento do quadro, ou `null` depois das 17h enquanto o arquivo do lugar não chega: ele pode
- * faltar por um erro da CDN, e dizer que a apuração não começou ali seria falso.
+ * A frase de projeção da manchete (Narração da noite, decisão 9; Sinal de virada, decisão 4), com a chave dos textos
+ * preditivos ligada: o estado do sinal de virada na base escolhida, dito de quem está atrás (`atras`) ou à frente
+ * (`frente`) no placar parcial. `null` sem a chave, sem a projeção na página, sem sinal ou com a indicação do TSE, quando
+ * o sinal para.
  */
-export function manchete(quadro: QuadroAoVivo, lugar: LugarDaManchete): string | null {
+function fraseDaProjecao(quadro: QuadroAoVivo, projecao: ProjecaoNaPagina | null, frente: string, atras: string): string | null {
+  if (!quadro.chaves.textosPreditivos || !projecao || projecao.comIndicacao) return null;
+  const { sinalDeVirada, virada } = projecao.naBase;
+  if (sinalDeVirada === "virada projetada")
+    return `A projeção do Apurador indica virada de ${atras}${virada?.x != null ? ` por volta de ${virada.x}% das seções` : ""}.`;
+  if (sinalDeVirada === "virada possível")
+    return `A projeção do Apurador vê virada possível de ${atras}${virada?.cedo != null ? ` a partir de ~${virada.cedo}% das seções` : ""}.`;
+  if (sinalDeVirada === "sem sinal de virada") return `A projeção do Apurador não indica virada: ${frente} deve seguir à frente.`;
+  return null;
+}
+
+/**
+ * A manchete do lugar no momento do quadro, ou `null` depois das 17h enquanto o arquivo do lugar não chega: ele pode
+ * faltar por um erro da CDN, e dizer que a apuração não começou ali seria falso. Com a projeção que a página mostra, na
+ * base escolhida, o placar ganha a frase de projeção, se a chave dos textos preditivos estiver ligada.
+ */
+export function manchete(quadro: QuadroAoVivo, lugar: LugarDaManchete, projecao: ProjecaoNaPagina | null = null): string | null {
   const { rodada, lugar: arquivo } = quadro;
   if (quadro.fase === "antes-das-17h" || !rodada) return "A apuração do 2º turno começa às 17h";
   if (!arquivo) return null;
@@ -66,14 +86,16 @@ export function manchete(quadro: QuadroAoVivo, lugar: LugarDaManchete): string |
   if (lugar.tipo === "brasil" && arquivo.tse.final) return `${frente.nome} foi eleito com ${pct} dos votos válidos`;
   if (eleitoPelaIndicacao(quadro)) return `O TSE indica ${frente.nome} eleito`;
   if (lugar.tipo !== "brasil" && secoes.totalizadas === secoes.total) return `${frente.nome} vence ${lugar.em} com ${pct} dos votos válidos`;
+  const frase = fraseDaProjecao(quadro, projecao, frente.nome, frente.segundo.nome);
+  const comFrase = (placar: string) => (frase ? `${placar}. ${frase}` : placar);
   // Com um número par de trocas na janela, a liderança voltou a quem estava à frente: não houve virada para anunciar.
   const virada = eventosDoLugar(quadro).find((e) => e.tipo === "virada");
   const agoraNoTse = rodada.novidade.totalizacao && instanteDoTse(rodada.novidade.totalizacao);
   if (virada && (virada.trocas ?? 1) % 2 === 1 && agoraNoTse && agoraNoTse - instanteDoTse(virada.quando) < MANCHETE_DA_VIRADA) {
-    return `Virada: ${frente.nome} passa à frente com ${pct}, com ${comSecoes}`;
+    return comFrase(`Virada: ${frente.nome} passa à frente com ${pct}, com ${comSecoes}`);
   }
   if (frente.centesimos - frente.segundo.centesimos < LIMITE_DA_DIFERENCA_EM_VOTOS) {
-    return `${frente.nome} à frente por ${formatarVotos(frente.votos - frente.segundo.votos)} votos, com ${comSecoes}`;
+    return comFrase(`${frente.nome} à frente por ${formatarVotos(frente.votos - frente.segundo.votos)} votos, com ${comSecoes}`);
   }
-  return `${frente.nome} lidera com ${pct} dos votos válidos e ${comSecoes}`;
+  return comFrase(`${frente.nome} lidera com ${pct} dos votos válidos e ${comSecoes}`);
 }

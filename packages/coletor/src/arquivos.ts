@@ -40,6 +40,9 @@ export interface ArquivoDeRodada {
   eventosDoBrasil: EventoDaNarracao[];
 }
 
+/** Uma das duas bases da projeção, como os arquivos a nomeiam: "Só apuração" e "Apuração + pesquisas". */
+export type BaseDaProjecao = "soApuracao" | "comPesquisas";
+
 /** Um ponto da curva projetada: o % de seções do lugar, o % do 1º candidato e a margem de 95%, em pontos, com uma casa. */
 export type PontoDaCurvaProjetada = [secoes: number, pct: number, margem: number];
 
@@ -62,6 +65,9 @@ export interface ProjecaoNaBase {
    */
   virada: { x: number | null; cedo: number | null; tarde: number | null } | null;
 }
+
+/** Os números da projeção de um lugar numa base, sem a curva nem a virada: o que os textos preditivos da narração dizem. */
+export type NumerosDaProjecao = Pick<ProjecaoNaBase, "projecao" | "margem" | "chance" | "chanceDeVirada" | "sinalDeVirada">;
 
 /** A projeção do Brasil, de uma UF ou do Exterior, nas bases que estão no ar. */
 export interface ProjecaoDoLugar {
