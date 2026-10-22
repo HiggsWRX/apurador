@@ -29,9 +29,17 @@ describe("página do Brasil, 1º turno de 2026", () => {
     expect(textoDe(html)).toMatch(/Fonte: TSE.*CC-BY/);
   });
 
-  it("não é indexada enquanto o site não é lançado", () => {
-    expect(html).toContain('<meta name="robots" content="noindex">');
-    expect(readFileSync(new URL("_headers", DIST), "utf8")).toMatch(/X-Robots-Tag: noindex/);
+  it("é indexada em apurador.org, e o *.workers.dev do site não", () => {
+    expect(html).not.toMatch(/<meta name="robots"/);
+    expect(readFileSync(new URL("_headers", DIST), "utf8")).toBe("https://apurador.hicampos93.workers.dev/*\n  X-Robots-Tag: noindex\n");
+  });
+
+  it("conta a audiência só pelo Cloudflare Web Analytics", () => {
+    const scripts = [...html.matchAll(/<script[^>]*\ssrc="([^"]+)"/g)].map((s) => s[1] ?? "");
+    expect(scripts.filter((src) => /^https?:/.test(src))).toEqual(["https://static.cloudflareinsights.com/beacon.min.js"]);
+    const beacon = html.match(/data-cf-beacon="([^"]+)"/)?.[1]?.replace(/&quot;|&#34;/g, '"');
+    expect(JSON.parse(beacon ?? "null")).toEqual({ token: "cc7b32506206448bb43d8ec6514d5f18" });
+    expect(html).not.toMatch(/googletagmanager|google-analytics|gtag\(|fbq\(|document\.cookie/);
   });
 });
 

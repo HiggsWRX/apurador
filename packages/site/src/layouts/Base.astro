@@ -5,6 +5,7 @@ import "../estilos/global.css";
 import BotaoDoTema from "../components/BotaoDoTema.astro";
 import Busca from "../components/Busca.astro";
 import Rodape from "../components/Rodape.astro";
+import { TOKEN_DO_WEB_ANALYTICS } from "../lib/projeto";
 
 interface Props {
   titulo: string;
@@ -17,7 +18,6 @@ const { titulo } = Astro.props;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex" />
     <meta name="color-scheme" content="light dark" />
     <title>{titulo} · Apurador</title>
     <script is:inline>
@@ -47,5 +47,12 @@ const { titulo } = Astro.props;
       <slot />
     </main>
     <Rodape />
+    <!-- A audiência, no Cloudflare Web Analytics: sem cookies, e nenhum outro rastreador. -->
+    <script
+      is:inline
+      defer
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon={JSON.stringify({ token: TOKEN_DO_WEB_ANALYTICS })}
+    ></script>
   </body>
 </html>

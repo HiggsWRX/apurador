@@ -3,15 +3,15 @@
     "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/pesquisa_eleitoral/pesquisa_eleitoral_2026.zip",
     "membro": "pesquisa_eleitoral_2026_BRASIL.csv",
     "geracao": [
-      "18/10/2026 05:46:37"
+      "21/10/2026 05:46:42"
     ],
-    "sha256": "4d2c371fddaaac25e21475ae6280b9d7e1faa68647382e611b15fcfeecdd4d14",
-    "bytes": 16845834,
-    "conferidoEm": "2026-10-19T12:24:28.225Z"
+    "sha256": "cf595288c856e60796199076beb446c301365f06db5daa7ff1480c1e693076c8",
+    "bytes": 17100341,
+    "conferidoEm": "2026-10-22T12:32:03.949Z"
   },
   "registros": [
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-00223/2026",
       "cnpj": "11849437000110",
       "empresa": "IPESPE INST DE PESQUISAS SOCIAIS POLITICAS E ECONOMICAS",
@@ -26,7 +26,7 @@
       "municipios": "A área física de realização da pesquisa é o Brasil. 8% das entrevistas serão realizadas no Norte, 27% no Nordeste, 42% no Sudeste, 8% no Centro-Oeste e 15% no Sul. Os municípios nos quais serão realizadas as entrevistas serão informados dentro do prazo legal previsto na Resolução-TSE nº. 23.600/2019."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-00466/2026",
       "cnpj": "07630546000175",
       "empresa": "DATAFOLHA INSTITUTO DE PESQUISAS LTDA.",
@@ -41,7 +41,7 @@
       "municipios": "A área de abrangência da coleta dos dados é Brasil, contemplando municípios das cinco grandes regiões geográficas. A relação completa dos municípios e bairros pesquisados será anexada ao registro até o dia seguinte à data de publicação da pesquisa, conforme Resolução 23.600/2019 do TSE, no art.2º §7º."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-00650/2026",
       "cnpj": "52908063000144",
       "empresa": "100% CIDADES PARTICIPACOES LTDA",
@@ -56,7 +56,7 @@
       "municipios": "A área de abrangência da coleta é nacional. A relação dos Municípios cuja totalidade do território e respectivos bairros foram selecionados como área de abrangência para a pesquisa constará em anexo a ser apresentado até o dia seguinte, a partir do dia em que a pesquisa puder ser divulgada, conforme as Resoluções 23.600/2019, no art. 2º; §7º e 23.727/2024 do TSE."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-00652/2026",
       "cnpj": "19090489000168",
       "empresa": "MDA-PESQUISA DE OPINIAO PUBLICA E CONSULT. ESTATIST. LTDA - EPP",
@@ -71,7 +71,7 @@
       "municipios": "A abrangência desta pesquisa compreende entrevistas nas 27 unidades da federação, totalizando aproximadamente 140 municípios. A distribuição prevista é: Sudeste: 42,2%; Nordeste: 27,7%; Sul: 14,4%; Centro-Oeste: 7,5%; Norte: 8,2%. A relação completa do número de entrevistados por município, bairro e setor censitário, bem como a composição final da amostra quanto a sexo, idade, escolaridade e nível econômico, será informada a este Tribunal até o dia seguinte à data a partir da qual a pesquisa puder ser divulgada, nos termos da regulamentação eleitoral vigente."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-00933/2026",
       "cnpj": "11849437000110",
       "empresa": "IPESPE INST DE PESQUISAS SOCIAIS POLITICAS E ECONOMICAS",
@@ -86,7 +86,7 @@
       "municipios": "A área física de realização da pesquisa é o Brasil. 8% das entrevistas serão realizadas no Norte, 27% no Nordeste, 42% no Sudeste, 8% no Centro-Oeste e 15% no Sul. Os municípios nos quais serão realizadas as entrevistas serão informados dentro do prazo legal previsto na Resolução-TSE nº. 23.600/2019."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-01107/2026",
       "cnpj": "00654576000172",
       "empresa": "INSTITUTO VERITA LTDA",
@@ -101,7 +101,7 @@
       "municipios": "Em observância ao art. 2º, § 7º, da Resolução TSE nº 23.600/2019, com redação dada pela Resolução TSE nº 23.747/2026, a presente pesquisa terá seu registro complementado no Sistema de Registro de Pesquisas Eleitorais a partir da data em que sua divulgação for permitida e até o dia seguinte, com a identificação dos municípios em que foram realizadas as entrevistas, bem como da composição final da amostra quanto a gênero, idade, grau de instrução e nível econômico, na forma exigida pela legislação eleitoral vigente."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-01209/2026",
       "cnpj": "29550908000150",
       "empresa": "PODERDATA PESQUISA, JORNALISMO E COMUNICACAO LTDA",
@@ -116,7 +116,7 @@
       "municipios": "A área de abrangência da coleta é nacional (Brasil). A relação dos municípios selecionados para a pesquisa constará em anexo a ser apresentado após a realização da pesquisa conforme o art. 2º, §7º da Resolução 23.600/2019 do TSE."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-02586/2026",
       "cnpj": "29550908000150",
       "empresa": "PODERDATA PESQUISA, JORNALISMO E COMUNICACAO LTDA",
@@ -131,7 +131,7 @@
       "municipios": "A área de abrangência da coleta é nacional (Brasil). A relação dos municípios selecionados para a pesquisa constará em anexo a ser apresentado após a realização da pesquisa conforme o art. 2º, §7º da Resolução 23.600/2019 do TSE."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-02949/2026",
       "cnpj": "07630546000175",
       "empresa": "DATAFOLHA INSTITUTO DE PESQUISAS LTDA.",
@@ -146,7 +146,7 @@
       "municipios": "A área de abrangência da coleta dos dados é Brasil, contemplando municípios das cinco grandes regiões geográficas. A relação completa dos municípios e bairros pesquisados será anexada ao registro até o dia seguinte à data de publicação da pesquisa, conforme Resolução 23.600/2019 do TSE, no art.2º §7º."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-03764/2026",
       "cnpj": "52908063000144",
       "empresa": "100% CIDADES PARTICIPACOES LTDA",
@@ -161,7 +161,7 @@
       "municipios": "A área de abrangência da coleta é nacional. A relação dos Municípios cuja totalidade do território e respectivos bairros foram selecionados como área de abrangência para a pesquisa constará em anexo a ser apresentado até o dia seguinte, a partir do dia em que a pesquisa puder ser divulgada, conforme as Resoluções 23.600/2019, no art. 2º; §7º e 23.727/2024 do TSE."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-04258/2026",
       "cnpj": "29550908000150",
       "empresa": "PODERDATA PESQUISA, JORNALISMO E COMUNICACAO LTDA",
@@ -176,7 +176,7 @@
       "municipios": "A área de abrangência da coleta é nacional (Brasil). A relação dos municípios selecionados para a pesquisa constará em anexo a ser apresentado após a realização da pesquisa conforme o art. 2º, §7º da Resolução 23.600/2019 do TSE."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-04499/2026",
       "cnpj": "11077560000160",
       "empresa": "NEXUS PESQUISA E INTELIGENCIA DE DADOS LTDA",
@@ -191,7 +191,7 @@
       "municipios": "Pesquisa realizada por meio de entrevistas telefônicas, utilizando como procedimento de seleção da amostra a técnica de Random Digit Dialing (RDD). Nesse tipo de metodologia, a unidade amostral primária é o número de telefone (com DDD), e não o domicílio ou o setor censitário.\n\nO Random Digit Dialing (RDD) é um método de amostragem amplamente utilizado em pesquisas telefônicas, no qual números de telefone são gerados aleatoriamente por algoritmo, respeitando as combinações válidas de prefixos e códigos de área da região geográfica pesquisada. Dessa forma, o sistema realiza chamadas para números que podem ou não estar previamente listados em cadastros públicos ou privados, permitindo alcançar tanto números fixos quanto celulares e ampliando a cobertura potencial da população-alvo.\n\nNesse procedimento, cada número telefônico elegível dentro da área geográfica definida possui probabilidade conhecida de ser selecionado, garantindo o caráter probabilístico da amostra. Após o contato, são aplicados critérios de elegibilidade (por exemplo, residência na área pesquisada e pertencimento ao eleitorado do local) e coletadas informações sociodemográficas do entrevistado para fins de controle amostral e ponderação estatística.\n\nDessa forma, não há setores censitários a serem informados ou divulgados no registro da pesquisa, uma vez que o processo de seleção amostral é realizado exclusivamente a partir de números telefônicos gerados aleatoriamente (RDD), que constituem a unidade amostral utilizada no estudo.\n\nA relação completa dos municípios pesquisados será encaminhada a este tribunal até o sétimo dia seguinte à data de registro da pesquisa, conforme a Resolução 23.600/2019 do TSE, art.2º §7º"
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-05187/2026",
       "cnpj": "05270800000146",
       "empresa": "GERP MERCADOLOGIA LTDA",
@@ -206,7 +206,7 @@
       "municipios": "A pesquisa englobará municípios das 5 (cinco) regiões do Brasil, são elas: Centro-Oeste, Nordeste, Norte, Sudeste e Sul."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-07877/2026",
       "cnpj": "05270800000146",
       "empresa": "GERP MERCADOLOGIA LTDA",
@@ -221,7 +221,7 @@
       "municipios": "A pesquisa englobará municípios das 5 (cinco) regiões do Brasil, são elas: Centro-Oeste, Nordeste, Norte, Sudeste e Sul."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-07997/2026",
       "cnpj": "11077560000160",
       "empresa": "NEXUS PESQUISA E INTELIGENCIA DE DADOS LTDA",
@@ -236,7 +236,7 @@
       "municipios": "Pesquisa realizada por meio de entrevistas telefônicas, utilizando como procedimento de seleção da amostra a técnica de Random Digit Dialing (RDD). Nesse tipo de metodologia, a unidade amostral primária é o número de telefone (com DDD), e não o domicílio ou o setor censitário.\n\nO Random Digit Dialing (RDD) é um método de amostragem amplamente utilizado em pesquisas telefônicas, no qual números de telefone são gerados aleatoriamente por algoritmo, respeitando as combinações válidas de prefixos e códigos de área da região geográfica pesquisada. Dessa forma, o sistema realiza chamadas para números que podem ou não estar previamente listados em cadastros públicos ou privados, permitindo alcançar tanto números fixos quanto celulares e ampliando a cobertura potencial da população-alvo.\n\nNesse procedimento, cada número telefônico elegível dentro da área geográfica definida possui probabilidade conhecida de ser selecionado, garantindo o caráter probabilístico da amostra. Após o contato, são aplicados critérios de elegibilidade (por exemplo, residência na área pesquisada e pertencimento ao eleitorado do local) e coletadas informações sociodemográficas do entrevistado para fins de controle amostral e ponderação estatística.\n\nDessa forma, não há setores censitários a serem informados ou divulgados no registro da pesquisa, uma vez que o processo de seleção amostral é realizado exclusivamente a partir de números telefônicos gerados aleatoriamente (RDD), que constituem a unidade amostral utilizada no estudo.\n\nA relação completa dos municípios pesquisados será encaminhada a este tribunal até o sétimo dia seguinte à data de registro da pesquisa, conforme a Resolução 23.600/2019 do TSE, art.2º §7º"
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-08134/2026",
       "cnpj": "29550908000150",
       "empresa": "PODERDATA PESQUISA, JORNALISMO E COMUNICACAO LTDA",
@@ -251,7 +251,7 @@
       "municipios": "A área de abrangência da coleta é nacional (Brasil). A relação dos municípios selecionados para a pesquisa constará em anexo a ser apresentado após a realização da pesquisa conforme o art. 2º, §7º da Resolução 23.600/2019 do TSE."
     },
     {
-      "geracao": "18/10/2026 05:46:37",
+      "geracao": "21/10/2026 05:46:42",
       "registro": "BR-08729/2026",
       "cnpj": "22445600000104",
       "empresa": "QUAEST PESQUISAS, CONSULTORIA E PROJETOS LTDA.",
