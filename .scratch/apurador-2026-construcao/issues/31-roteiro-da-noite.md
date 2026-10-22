@@ -78,3 +78,7 @@ Decisões: [Operação na noite](../../apurador-2026/issues/18-operacao-na-noite
     - **Como voltar**: não volta (Operação na noite, decisão 14).
     - **Se a republicação falhar** (`republicar o plano B: wrangler saiu com …`): confira o login com `npx wrangler whoami`; se ele caiu, `npx wrangler login`. Um `CLOUDFLARE_API_TOKEN` no `.env` dispensa o login.
   - **Depois de um ensaio com o plano B**: o arquivo de controle fica com `planoB: true` e sobrevive ao reinício do coletor. O roteiro já manda conferir e apagar o arquivo antes da noite.
+- 22/10/2026, do [ticket 17](17-projecao-ao-vivo.md):
+  - **O agregado da noite**: o coletor lê o `pesquisas.csv` quando parte (`lerEntradaDaProjecao`, em `packages/coletor/src/entrada-da-projecao.ts`) e imprime o agregado que usa. Uma retirada de pesquisa até as 16h só entra na projeção com o coletor reiniciado depois do deploy.
+  - **Reinício no meio da noite**: sem estado, ele segura a projeção por ~10 rodadas, até ter os municípios.
+  - **A noite**: `--noite 2026-2` é o padrão; o ensaio usa `2022-2`.

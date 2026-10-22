@@ -51,3 +51,7 @@ Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decis�
 - 19/10/2026, do [ticket 14](14-bloco-ao-vivo.md):
   - "Placar e curva visíveis em até 3 s num Android barato no 4G" não foi medido num aparelho. Fica para o ensaio. O JavaScript da ilha soma ~16 KB com gzip: ilha 6,0, Preact 4,4, signals 3,0, cliente do Astro 1,5 e hooks 1,2.
   - O limite de "TSE sem novidade" é provisório: 2 min sem totalização nova no Brasil, abaixo dos 3 min da interrompida. Nenhuma decisão fixa o número; o ensaio confirma ou ajusta.
+- 22/10/2026, do [ticket 17](17-projecao-ao-vivo.md): o critério "erro de até 0,5 p.p. depois de 5% das seções" fica no limite em 2022, com as constantes congeladas.
+  - **Sem arredondar**: o erro chega a ~0,48 com 30% a 36% das seções, nas duas bases (`docs/calibracao/noite-2022-2.csv`).
+  - **Publicado**: com uma casa, chega a 0,50 (49,6 contra os 49,10 do TSE).
+  - **No replay**: a conta é na precisão da página, contra o resultado como o TSE o publica, e passa. Se o ensaio medir contra o resultado com mais casas, o arredondamento a reprova.
