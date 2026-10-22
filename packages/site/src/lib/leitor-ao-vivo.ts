@@ -1,4 +1,15 @@
-import type { ArquivoDeRodada, ArquivoDoLugar, AvisoPronto, Buscar, ChavesDaNoite, Fase } from "@apurador/coletor";
+import type {
+  ArquivoDeRodada,
+  ArquivoDoLugar,
+  ArquivoDoMapa,
+  AvisoPronto,
+  Buscar,
+  ChavesDaNoite,
+  Fase,
+  MunicipiosDaTabela,
+  ProjecoesDosMunicipios,
+  TabelaDeProjecoes,
+} from "@apurador/coletor";
 import { DIA_DA_ELEICAO } from "@apurador/modelo";
 import { criarArquivosAoVivo, type EnderecoAoVivo } from "./enderecos-ao-vivo";
 import { horaDoTse } from "./formato";
@@ -7,7 +18,12 @@ import { horaDoTse } from "./formato";
 // página mostra. A fase vem só do arquivo de rodada (Ensaio geral, decisão 7), e a página passa sozinha de "antes das
 // 17h" a "ao vivo" na leitura em que ela muda. A interrupção compara a hora da rodada com o cabeçalho `Date` da
 // resposta, a hora do outro lado, nunca com o relógio do aparelho: 3 min sem rodada nova é "interrompido", como na
-// decisão 19 da Arquitetura, e com 10 min entra o link do app oficial do TSE (Operação na noite, decisão 11).
+// decisão 19 da Arquitetura, e com 10 min entra o link do app oficial do TSE (Operação na noite, decisão 11). Os arquivos
+// do cartão do mapa (o mapa.json e a tabela de projeções da UF) vêm pelo mesmo leitor, nas mesmas leituras, só depois
+// que o cartão entra na tela; num município, a tabela da UF vem desde a primeira, porque é dela que sai a projeção dele.
+// Cada um só é pedido quando pode aparecer, pela última rodada: o mapa.json, da fase ao vivo em diante, fora do plano
+// zero; a tabela, também só na fase ao vivo com a chave da projeção (o coletor só grava os municípios dela das 17h em
+// diante).
 
 /** O intervalo entre as leituras da página, em segundos (spec, "Entrega aos visitantes"). */
 export const INTERVALO_DAS_LEITURAS = 30;
@@ -54,6 +70,28 @@ export interface QuadroAoVivo {
   chaves: ChavesDaNoite;
   /** O aviso pronto que o dono publicou, pelo arquivo de rodada, ou `null`. */
   aviso: AvisoPronto | null;
+  /** A tabela de projeções da UF do lugar, quando a página a lê: num município, desde a primeira leitura; numa UF, com o cartão do mapa. */
+  tabelaDeProjecoes: TabelaDeProjecoesLida | null;
+  /** O mapa.json, depois que o cartão do mapa entra na tela. */
+  mapa: ArquivoDoMapa | null;
+}
+
+/**
+ * A tabela de projeções de uma UF como a página a usa: os municípios dela, com as comparações, que o coletor grava uma
+ * vez (`MunicipiosDaTabela`), e as projeções deles na mesma ordem, quando a tabela as traz e os dois arquivos levam a
+ * mesma assinatura.
+ */
+export interface TabelaDeProjecoesLida extends MunicipiosDaTabela {
+  projecao?: ProjecoesDosMunicipios;
+}
+
+/**
+ * A tabela de projeções que uma página lê, pela UF: num município, desde a primeira leitura, porque a projeção dele sai
+ * dela; numa UF e no Exterior, só com o cartão do mapa, para a coluna da projeção da tabela de lugares.
+ */
+export interface OpcaoDaTabelaDeProjecoes {
+  uf: string;
+  desdeOInicio: boolean;
 }
 
 /** O quadro antes de qualquer leitura: o de antes das 17h, sem dados, com as chaves do arquivo de chaves do site. É o que o build desenha. */
@@ -66,6 +104,8 @@ export const antesDaPrimeiraLeitura = (chaves: ChavesDaNoite): QuadroAoVivo => (
   mudaram: [],
   chaves,
   aviso: null,
+  tabelaDeProjecoes: null,
+  mapa: null,
 });
 
 /** As chaves dos números do placar que piscam: o % e os votos de cada candidato, na ordem do arquivo de rodada, e o % de seções. */
@@ -77,12 +117,15 @@ export const NUMEROS_DO_PLACAR = {
 
 /** Lê os arquivos ao vivo de um lugar, uma leitura por vez, e diz o que mostrar. */
 export interface LeitorAoVivo {
-  /** Lê o arquivo de rodada e o JSON do lugar uma vez. */
+  /** Lê o arquivo de rodada e o JSON do lugar uma vez, e os arquivos do cartão do mapa que a página já lê. */
   ler(): Promise<void>;
   /** O quadro da última leitura, com a contagem regressiva e "há N s" no instante do relógio. */
   quadro(): QuadroAoVivo;
+  /** Passa a ler também, nas próximas leituras, os arquivos do cartão do mapa: o mapa.json e, se a página tiver, a tabela de projeções. */
+  incluirOCartao(): void;
 }
 
+const CAMINHO_DO_MAPA = "mapa.json";
 const MINUTO = 60_000;
 const INTERROMPIDO = 3 * MINUTO;
 const LINK_DO_TSE = 10 * MINUTO;
@@ -114,9 +157,15 @@ export function criarLeitorAoVivo(opcoes: {
   relogio: () => number;
   /** As chaves do arquivo de chaves do site, que valem até a primeira rodada do coletor chegar. */
   chaves: ChavesDaNoite;
+  /** A tabela de projeções que a página lê, se alguma (no Brasil, nenhuma). */
+  tabelaDeProjecoes?: OpcaoDaTabelaDeProjecoes;
 }): LeitorAoVivo {
   let rodada: ArquivoDeRodada | null = null;
   let lugar: ArquivoDoLugar | null = null;
+  let tabelaDeProjecoes: TabelaDeProjecoes | null = null;
+  let municipiosDaTabela: MunicipiosDaTabela | null = null;
+  let mapa: ArquivoDoMapa | null = null;
+  let comOCartao = false;
   /** O `Date` da última resposta do arquivo de rodada, em ms. */
   let horaDoOutroLado: number | null = null;
   /** O relógio do aparelho quando chegou essa resposta. */
@@ -125,6 +174,23 @@ export function criarLeitorAoVivo(opcoes: {
   let mudaram: string[] = [];
   const arquivos = criarArquivosAoVivo({ enderecos: opcoes.enderecos, buscar: opcoes.buscar });
   const caminhoDoLugar = `lugares/${opcoes.lugar}.json`;
+  const daTabela = opcoes.tabelaDeProjecoes;
+  const caminhoDaTabela = daTabela && `tabelas/${daTabela.uf}.json`;
+  const caminhoDosMunicipios = daTabela && `tabelas/${daTabela.uf}-municipios.json`;
+  /** Pela última rodada, os números da noite podem aparecer: da fase ao vivo em diante, fora do plano zero. */
+  const noitePodeAparecer = () => rodada === null || (rodada.fase !== "antes-das-17h" && rodada.chaves.nucleoMinimo);
+  /** Pela última rodada, a projeção pode aparecer: na fase ao vivo, com a chave dela. Antes da primeira, a página ainda não sabe, e pede. */
+  const projecaoPodeAparecer = () => noitePodeAparecer() && (rodada === null || (rodada.fase === "ao-vivo" && rodada.chaves.projecao));
+  /**
+   * O que cada leitura pede além do arquivo de rodada: o JSON do lugar e os arquivos do cartão do mapa que a página lê. Os
+   * municípios da tabela não mudam na noite, e são pedidos de novo com a ETag, como os outros: o 304 não traz nada.
+   */
+  const caminhos = () => [
+    caminhoDoLugar,
+    ...(daTabela && (daTabela.desdeOInicio || comOCartao) && projecaoPodeAparecer() ? [caminhoDaTabela!, caminhoDosMunicipios!] : []),
+    ...(comOCartao && noitePodeAparecer() ? [CAMINHO_DO_MAPA] : []),
+  ];
+  const lerTodos = (lista: string[]) => Promise.allSettled(lista.map((caminho) => arquivos.ler<unknown>(caminho)));
   const fase = (): Fase => rodada?.fase ?? "antes-das-17h";
 
   function indicador(): Indicador {
@@ -159,8 +225,9 @@ export function criarLeitorAoVivo(opcoes: {
 
   return {
     async ler() {
-      const [novaRodada, lidoJunto] = await Promise.allSettled([arquivos.lerRodada(), arquivos.ler<ArquivoDoLugar>(caminhoDoLugar)]);
-      let novoLugar = lidoJunto;
+      let lista = caminhos();
+      const [[novaRodada], lidosJunto] = await Promise.all([Promise.allSettled([arquivos.lerRodada()]), lerTodos(lista)]);
+      let lidos = lidosJunto;
       // Sem resposta do arquivo de rodada em endereço nenhum, a falta é do lado do visitante; uma resposta de erro ainda
       // é a CDN no ar.
       semConexao = novaRodada.status === "rejected";
@@ -173,12 +240,34 @@ export function criarLeitorAoVivo(opcoes: {
           momentoDaResposta = opcoes.relogio();
         }
         rodada = lida ?? rodada;
-        // O JSON do lugar lido junto é do endereço anterior: a página o lê de novo no endereço da rodada.
-        if (trocou) [novoLugar] = await Promise.allSettled([arquivos.ler<ArquivoDoLugar>(caminhoDoLugar)]);
+        if (trocou) {
+          // Os arquivos lidos junto são do endereço anterior: a página os lê de novo no endereço da rodada.
+          lista = caminhos();
+          lidos = await lerTodos(lista);
+        } else {
+          // A rodada que passa à fase ao vivo, ou que religa uma chave, pede arquivos que esta leitura ainda não leu. Só
+          // eles: um lido de novo agora daria 304, e o corpo que acabou de chegar se perderia.
+          const faltando = caminhos().filter((caminho) => !lista.includes(caminho));
+          if (faltando.length > 0) {
+            lidos = [...lidos, ...(await lerTodos(faltando))];
+            lista = [...lista, ...faltando];
+          }
+        }
       }
-      const novo = novoLugar.status === "fulfilled" ? novoLugar.value : null;
-      mudaram = novo && lugar ? numerosQueMudaram(lugar.tse, novo.tse) : [];
-      lugar = novo ?? lugar;
+      /** O corpo novo de um dos arquivos pedidos, ou `null` sem corpo novo (304, erro ou não pedido). */
+      function novo<T>(caminho: string | undefined): T | null {
+        const lido = caminho === undefined ? undefined : lidos[lista.indexOf(caminho)];
+        return lido?.status === "fulfilled" ? (lido.value as T | null) : null;
+      }
+      const novoLugar = novo<ArquivoDoLugar>(caminhoDoLugar);
+      mudaram = novoLugar && lugar ? numerosQueMudaram(lugar.tse, novoLugar.tse) : [];
+      lugar = novoLugar ?? lugar;
+      tabelaDeProjecoes = novo<TabelaDeProjecoes>(caminhoDaTabela) ?? tabelaDeProjecoes;
+      municipiosDaTabela = novo<MunicipiosDaTabela>(caminhoDosMunicipios) ?? municipiosDaTabela;
+      mapa = novo<ArquivoDoMapa>(CAMINHO_DO_MAPA) ?? mapa;
+    },
+    incluirOCartao() {
+      comOCartao = true;
     },
     quadro() {
       const ultimaLeitura = momentoDaResposta === null ? null : Math.floor((opcoes.relogio() - momentoDaResposta) / 1000);
@@ -191,6 +280,11 @@ export function criarLeitorAoVivo(opcoes: {
         mudaram,
         chaves: rodada?.chaves ?? opcoes.chaves,
         aviso: rodada?.aviso ?? null,
+        tabelaDeProjecoes: municipiosDaTabela && {
+          ...municipiosDaTabela,
+          ...(tabelaDeProjecoes?.projecao?.assinatura === municipiosDaTabela.assinatura ? { projecao: tabelaDeProjecoes.projecao } : {}),
+        },
+        mapa,
       };
     },
   };

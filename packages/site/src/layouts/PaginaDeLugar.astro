@@ -1,6 +1,7 @@
 ---
 import { nomeCompleto, type Lugar } from "@apurador/pipeline";
 import BlocoAoVivo from "../components/BlocoAoVivo";
+import CartaoDoMapa from "../components/CartaoDoMapa";
 import Historico from "../components/Historico.astro";
 import NarracaoDaNoite from "../components/NarracaoDaNoite";
 import Trilha from "../components/Trilha.astro";
@@ -8,21 +9,33 @@ import { CHAVES } from "../lib/chaves";
 import { turnosDoLugar } from "../lib/curvas-passadas";
 import { enderecosDoBuild } from "../lib/enderecos-ao-vivo";
 import { FOTOS } from "../lib/fotos";
-import { emLugar } from "../lib/lugares";
+import { daUf, emLugar, lugarDaTabela } from "../lib/lugares";
 import { AGREGADO } from "../lib/pesquisas";
 import Base from "./Base.astro";
 
 // A casca de toda página de lugar (Telas da página de lugar, decisão 1). No celular, uma coluna:
-// cabeçalho, o conteúdo principal, a narração e o histórico. No computador, a narração fica numa
-// coluna fixa à direita da principal, e o histórico embaixo (o mapa, quando entrar, fica ao lado dele).
+// cabeçalho, o conteúdo principal, a narração, o cartão do mapa e o histórico. No computador, a narração
+// fica numa coluna fixa à direita da principal, e o cartão do mapa e o histórico, lado a lado embaixo.
 // O bloco ao vivo abre o conteúdo principal, e os blocos de antes das 17h vêm depois dele (o slot padrão).
-// A narração é outra ilha, que desenha o quadro que a do bloco ao vivo lê.
+// A narração e o cartão do mapa são outras ilhas, que desenham o quadro que a do bloco ao vivo lê.
 
 interface Props {
   lugar: Lugar;
 }
 const { lugar } = Astro.props;
 const nome = nomeCompleto(lugar);
+// O cartão do mapa traz os lugares logo abaixo deste; num município, os da UF dele, com ele destacado. A tabela de
+// projeções do mesmo lugar dá a coluna da projeção e, num município, a projeção dele, desde a primeira leitura.
+const daTabela = lugarDaTabela(lugar);
+const tituloDoCartao =
+  daTabela.tipo === "brasil"
+    ? "Estados e Exterior"
+    : daTabela.tipo === "exterior"
+      ? "Cidades do exterior"
+      : lugar === daTabela
+        ? "Municípios"
+        : `Municípios ${daUf(daTabela)}`;
+const tabelaDeProjecoes = daTabela.tipo === "brasil" ? undefined : { uf: daTabela.id, desdeOInicio: lugar.tipo === "municipio" };
 // Os endereços dos arquivos ao vivo: no build, PUBLIC_AO_VIVO (o R2) e PUBLIC_AO_VIVO_PLANO_B (o Worker do plano B); no
 // `astro dev`, as pastas que o coletor publica, servidas pela integração `ao-vivo-local`. Sem nenhum, a ilha não lê
 // nada e fica no estado de antes das 17h.
@@ -51,12 +64,14 @@ const enderecos = enderecosDoBuild(
         chaves={CHAVES.noite}
         turnosPassados={turnosDoLugar(lugar.id)}
         pesquisasDoAgregado={CHAVES.antesDas17h.agregado && AGREGADO ? AGREGADO.pesquisas.length : null}
+        tabelaDeProjecoes={tabelaDeProjecoes}
       />
       <slot />
     </div>
     <NarracaoDaNoite client:load id={lugar.id} chaves={CHAVES.noite} />
   </div>
   <div class="abaixo">
+    <CartaoDoMapa client:visible id={lugar.id} lugarDaTabela={daTabela.id} titulo={tituloDoCartao} chaves={CHAVES.noite} />
     <Historico lugar={lugar} />
   </div>
 </Base>

@@ -2,11 +2,16 @@ export { criarColetor, type Buscar, type Coletor, type OpcoesDoColetor, type Reg
 export {
   type ArquivoDeRodada,
   type ArquivoDoLugar,
+  type ArquivoDoMapa,
+  type ColunasDaBase,
   type Fase,
+  type MunicipiosDaTabela,
   type PontoDaCurvaProjetada,
   type PontoDaCurvaReal,
   type ProjecaoDoLugar,
   type ProjecaoNaBase,
+  type ProjecoesDosMunicipios,
+  type TabelaDeProjecoes,
 } from "./arquivos.ts";
 export { type EntradaDaProjecao } from "./projecao.ts";
 export { lerEntradaDaProjecao, NOITES_DA_PROJECAO, type NoiteDaProjecao } from "./entrada-da-projecao.ts";

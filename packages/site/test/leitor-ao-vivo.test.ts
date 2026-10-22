@@ -1,4 +1,13 @@
-import type { ArquivoDeRodada, ArquivoDoLugar, Buscar, ChavesDaNoite } from "@apurador/coletor";
+import type {
+  ArquivoDeRodada,
+  ArquivoDoLugar,
+  ArquivoDoMapa,
+  Buscar,
+  ChavesDaNoite,
+  MunicipiosDaTabela,
+  ProjecoesDosMunicipios,
+  TabelaDeProjecoes,
+} from "@apurador/coletor";
 import { describe, expect, it } from "vitest";
 import { enderecosDoBuild } from "../src/lib/enderecos-ao-vivo";
 import { criarLeitorAoVivo } from "../src/lib/leitor-ao-vivo";
@@ -79,10 +88,10 @@ function cdn() {
   };
 }
 
-function montar() {
+function montar(pagina: Pick<Parameters<typeof criarLeitorAoVivo>[0], "lugar" | "tabelaDeProjecoes"> = { lugar: "BR" }) {
   const borda = cdn();
   let agora = 0;
-  const leitor = criarLeitorAoVivo({ enderecos: enderecosDoBuild(BASE, null), lugar: "BR", buscar: borda.buscar, relogio: () => agora, chaves: DO_SITE });
+  const leitor = criarLeitorAoVivo({ enderecos: enderecosDoBuild(BASE, null), buscar: borda.buscar, relogio: () => agora, chaves: DO_SITE, ...pagina });
   return { ...borda, leitor, passar: (ms: number) => (agora += ms) };
 }
 
@@ -329,5 +338,107 @@ describe("leitor ao vivo", () => {
     responder("rodada.json", { status: 200, date: "2026-10-25T19:00:30-03:00", etag: '"r2"', corpo: rodada("2026-10-25T19:00:20-03:00", "ao-vivo") });
     await leitor.ler();
     expect(leitor.quadro().aviso).toBeNull();
+  });
+});
+
+describe("a tabela de projeções e o mapa.json", () => {
+  // Volume de gravações na noite, decisão 1: a projeção do município sai da tabela da UF dele, e o mapa.json só é baixado
+  // quando o cartão do mapa entra na tela. Cada um só é pedido quando pode aparecer.
+  const DATE = "2026-10-25T19:00:00-03:00";
+  const RODADA = rodada("2026-10-25T18:59:50-03:00", "ao-vivo");
+  const PROJECOES: ProjecoesDosMunicipios = {
+    assinatura: "0badcafe",
+    validos: [16000],
+    soApuracao: { projecao: [48.5], margem: [2.2], chance: [25], chanceDeVirada: [75], sinalDeVirada: ["virada projetada"], virada: [[92, 82, null]] },
+  };
+  const TABELA: TabelaDeProjecoes = { uf: "MG", projecao: PROJECOES };
+  const MUNICIPIOS: MunicipiosDaTabela = { uf: "MG", assinatura: "0badcafe", municipios: ["41238"], comparacoes: { primeiroTurno: [53.2], pesquisas: [53.2] } };
+  const MAPA: ArquivoDoMapa = { assinatura: "0badcafe", tse: [[12.34, 50.1, 49.9], null] };
+  const doLugar = (id: string): ArquivoDoLugar => ({ ...lugar(12.34, "2022-10-30 18:00:00"), lugar: id });
+  const caminhos = (pedidos: { caminho: string }[]) => pedidos.map((p) => p.caminho).sort();
+  const NO_MUNICIPIO = { lugar: "41238", tabelaDeProjecoes: { uf: "MG", desdeOInicio: true } };
+  /** Responde a rodada, o município de Uberlândia, a tabela de Minas Gerais, os municípios dela e o mapa.json. */
+  function responderTudo(responder: ReturnType<typeof montar>["responder"], corpoDaRodada = RODADA, date = DATE) {
+    responder("rodada.json", { status: 200, date, etag: `"${corpoDaRodada.rodada}"`, corpo: corpoDaRodada });
+    responder("lugares/41238.json", { status: 200, date, etag: '"m1"', corpo: doLugar("41238") });
+    responder("tabelas/MG.json", { status: 200, date, etag: '"t1"', corpo: TABELA });
+    responder("tabelas/MG-municipios.json", { status: 200, date, etag: '"c1"', corpo: MUNICIPIOS });
+    responder("mapa.json", { status: 200, date, etag: '"a1"', corpo: MAPA });
+  }
+
+  it("num município, lê também a tabela de projeções da UF dele e os municípios dela, desde a primeira leitura, e junta os dois", async () => {
+    const { leitor, responder, pedidos } = montar(NO_MUNICIPIO);
+    responderTudo(responder);
+    await leitor.ler();
+    expect(caminhos(pedidos)).toEqual(["lugares/41238.json", "rodada.json", "tabelas/MG-municipios.json", "tabelas/MG.json"]);
+    expect(leitor.quadro().tabelaDeProjecoes).toEqual({ ...MUNICIPIOS, projecao: PROJECOES });
+
+    // Um 304 mantém o que a página tem.
+    responder("tabelas/MG.json", { status: 304, date: DATE, etag: '"t1"' });
+    responder("tabelas/MG-municipios.json", { status: 304, date: DATE, etag: '"c1"' });
+    await leitor.ler();
+    expect(pedidos.filter((p) => p.caminho === "tabelas/MG.json").at(-1)).toEqual({ caminho: "tabelas/MG.json", ifNoneMatch: '"t1"' });
+    expect(leitor.quadro()).toMatchObject({ tabelaDeProjecoes: { ...MUNICIPIOS, projecao: PROJECOES }, mapa: null });
+  });
+
+  it("não junta os municípios de outra base à tabela: sem a mesma assinatura, as colunas não estariam na ordem deles", async () => {
+    const { leitor, responder } = montar(NO_MUNICIPIO);
+    responderTudo(responder);
+    responder("tabelas/MG.json", { status: 200, date: DATE, etag: '"t2"', corpo: { ...TABELA, projecao: { ...PROJECOES, assinatura: "12345678" } } });
+    await leitor.ler();
+    expect(leitor.quadro().tabelaDeProjecoes).toEqual(MUNICIPIOS);
+  });
+
+  it("numa UF, só passa a ler a tabela dela e o mapa.json quando o cartão do mapa entra na tela", async () => {
+    const { leitor, responder, pedidos } = montar({ lugar: "MG", tabelaDeProjecoes: { uf: "MG", desdeOInicio: false } });
+    responderTudo(responder);
+    responder("lugares/MG.json", { status: 200, date: DATE, etag: '"u1"', corpo: doLugar("MG") });
+    await leitor.ler();
+    expect(caminhos(pedidos)).toEqual(["lugares/MG.json", "rodada.json"]);
+    expect(leitor.quadro()).toMatchObject({ tabelaDeProjecoes: null, mapa: null });
+
+    leitor.incluirOCartao();
+    await leitor.ler();
+    expect(caminhos(pedidos.slice(2))).toEqual(["lugares/MG.json", "mapa.json", "rodada.json", "tabelas/MG-municipios.json", "tabelas/MG.json"]);
+    expect(leitor.quadro()).toMatchObject({ tabelaDeProjecoes: { ...MUNICIPIOS, projecao: PROJECOES }, mapa: MAPA });
+  });
+
+  it("no Brasil, o cartão do mapa lê só o mapa.json, que traz a projeção das UFs", async () => {
+    const { leitor, responder, pedidos } = montar();
+    responderTudo(responder);
+    leitor.incluirOCartao();
+    await leitor.ler();
+    expect(caminhos(pedidos)).toEqual(["lugares/BR.json", "mapa.json", "rodada.json"]);
+    expect(leitor.quadro()).toMatchObject({ tabelaDeProjecoes: null, mapa: MAPA });
+  });
+
+  it("antes das 17h, só a primeira leitura pede a tabela e o mapa.json; a que passa ao ao vivo pede os dois nela mesma", async () => {
+    // O coletor só grava os municípios da tabela a partir das 17h: antes, cada pedido a eles seria um 404.
+    const { leitor, responder, pedidos } = montar(NO_MUNICIPIO);
+    leitor.incluirOCartao();
+    responderTudo(responder, rodada("2026-10-25T15:59:50-03:00", "antes-das-17h"), "2026-10-25T16:00:00-03:00");
+    await leitor.ler();
+    expect(pedidos).toHaveLength(5);
+    await leitor.ler();
+    expect(caminhos(pedidos.slice(5))).toEqual(["lugares/41238.json", "rodada.json"]);
+
+    responderTudo(responder, rodada("2026-10-25T17:00:10-03:00", "ao-vivo"), "2026-10-25T17:00:20-03:00");
+    await leitor.ler();
+    expect(caminhos(pedidos.slice(7))).toEqual(["lugares/41238.json", "mapa.json", "rodada.json", "tabelas/MG-municipios.json", "tabelas/MG.json"]);
+    expect(leitor.quadro()).toMatchObject({ fase: "ao-vivo", tabelaDeProjecoes: { ...MUNICIPIOS, projecao: PROJECOES }, mapa: MAPA });
+  });
+
+  it("com a chave da projeção desligada, não pede a tabela; no plano zero, nem o mapa.json", async () => {
+    const { leitor, responder, pedidos } = montar(NO_MUNICIPIO);
+    leitor.incluirOCartao();
+    responderTudo(responder, rodada("2026-10-25T18:59:50-03:00", "ao-vivo", {}, { chaves: { ...LIGADAS, projecao: false, simulador: false } }));
+    await leitor.ler();
+    await leitor.ler();
+    expect(caminhos(pedidos.slice(5))).toEqual(["lugares/41238.json", "mapa.json", "rodada.json"]);
+
+    responderTudo(responder, rodada("2026-10-25T19:00:10-03:00", "ao-vivo", {}, { chaves: { ...LIGADAS, nucleoMinimo: false } }), "2026-10-25T19:00:20-03:00");
+    await leitor.ler();
+    await leitor.ler();
+    expect(caminhos(pedidos.slice(-2))).toEqual(["lugares/41238.json", "rodada.json"]);
   });
 });

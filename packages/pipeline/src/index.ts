@@ -1,5 +1,15 @@
 export { doTurno, idDoTurno, resultadoDoTurno, TOTAIS, type CandidatoDoTurno, type ResultadoOficialDoLugar, type Turno } from "./turno.ts";
-export { compararIds, idDoMunicipio, indiceDeLugares, nomeCompleto, type Artigo, type Lugar, type TipoDeLugar } from "./lugares.ts";
+export {
+  assinaturaDosLugares,
+  compararIds,
+  idDoMunicipio,
+  indiceDeLugares,
+  nomeCompleto,
+  ordemDoMapa,
+  type Artigo,
+  type Lugar,
+  type TipoDeLugar,
+} from "./lugares.ts";
 export { conferirTotais, type Divergencia } from "./conferencia.ts";
 export {
   dataHoraDoInstante,

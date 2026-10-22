@@ -37,6 +37,12 @@ const abaixo = Map.groupBy(
 /** Os lugares logo abaixo deste: as UFs e o Exterior no Brasil, os municípios numa UF e as cidades no Exterior. */
 export const lugaresAbaixo = (l: Lugar): Lugar[] => abaixo.get(l.id) ?? [];
 
+/**
+ * O lugar cuja tabela a página de um lugar mostra (a tabela de lugares, com os lugares abaixo dele, e a tabela de
+ * projeções, das UFs e do Exterior): o próprio lugar, ou a UF (ou o Exterior) de um município.
+ */
+export const lugarDaTabela = (l: Lugar): Lugar => (l.tipo === "municipio" ? lugarAcima(l)! : l);
+
 /** O caminho da página do lugar: "/", "/sp/", "/exterior/", "/sp/campinas/". */
 export function caminhoDe(l: Lugar): string {
   if (l.tipo === "brasil") return "/";
@@ -65,3 +71,6 @@ export function emLugar(lugar: Lugar): string {
   if (lugar.tipo === "uf") return `${lugar.artigo ? `n${lugar.artigo}` : "em"} ${lugar.nome}`;
   return `no ${lugar.nome}`;
 }
+
+/** A UF com a preposição "de" pelo artigo dela: "do Acre", "da Bahia", "de São Paulo". */
+export const daUf = (uf: Lugar) => `${uf.artigo ? `d${uf.artigo}` : "de"} ${uf.nome}`;

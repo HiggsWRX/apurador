@@ -1,9 +1,10 @@
-import type { ArquivoDeRodada, ArquivoDoLugar, ChavesDaNoite, EventoDaNarracao, ProjecaoDoLugar, ProjecaoNaBase } from "@apurador/coletor";
+import type { ArquivoDeRodada, ArquivoDoLugar, ChavesDaNoite, ColunasDaBase, EventoDaNarracao, ProjecaoDoLugar, ProjecaoNaBase } from "@apurador/coletor";
 import { render } from "preact-render-to-string";
 import { describe, expect, it } from "vitest";
 import { VistaDoBlocoAoVivo, type PropsDaVista } from "../src/components/VistaDoBlocoAoVivo";
 import { COMPARACAO_DESLIGADA, type EstadoDaComparacao, type TurnoPassado } from "../src/lib/curva-de-comparacao";
-import type { QuadroAoVivo } from "../src/lib/leitor-ao-vivo";
+import type { QuadroAoVivo, TabelaDeProjecoesLida } from "../src/lib/leitor-ao-vivo";
+import { projecaoDoLugar } from "../src/lib/projecao-ao-vivo";
 import { botoes, elemento, texto } from "./html";
 
 // O que o bloco ao vivo mostra para cada quadro do leitor, renderizado em HTML como a ilha o desenha. Os números de
@@ -27,6 +28,8 @@ function quadro(parte: Partial<QuadroAoVivo> = {}): QuadroAoVivo {
     mudaram: [],
     chaves: LIGADAS,
     aviso: null,
+    tabelaDeProjecoes: null,
+    mapa: null,
     ...parte,
   };
 }
@@ -617,6 +620,131 @@ describe("projeção ao vivo", () => {
 
   it("a manchete continua só com o placar oficial", () => {
     expect(texto(elemento(comProjecao(), /<p[^>]*data-manchete/))).toBe("Flávio lidera com 50,43% dos votos válidos e 50,34% das seções totalizadas");
+  });
+});
+
+describe("projeção do município, pela tabela de projeções da UF", () => {
+  // Volume de gravações na noite, decisão 1: o JSON do município só tem o TSE e a narração dele, e a projeção sai da linha
+  // dele na tabela da UF. Num município só, a curva projetada é a ligação do placar parcial à projeção. Aqui, Flávio tem
+  // 6.000 votos e Lula 4.000 com 60% das seções, e a projeção dá 48,0% a Flávio em 16.000 válidos: Flávio fica com 1.680
+  // dos 6.000 que faltam, e a curva passa por 50% com 90,3% das seções (6.000 + 1.680f = 5.000 + 3.000f).
+  const colunas = (parte: Partial<ColunasDaBase>): ColunasDaBase => ({
+    projecao: [51.0, 48.0],
+    margem: [3.0, 2.0],
+    chance: [62, 20],
+    chanceDeVirada: [null, 80],
+    sinalDeVirada: [null, "virada projetada"],
+    virada: [
+      [null, null, null],
+      [90, 80, 97],
+    ],
+    ...parte,
+  });
+  /** A tabela de Minas Gerais como o leitor a junta: os municípios, com as comparações, e as projeções deles. */
+  const TABELA: TabelaDeProjecoesLida = {
+    uf: "MG",
+    assinatura: "0badcafe",
+    municipios: ["41000", "41238"],
+    comparacoes: { primeiroTurno: [55.0, 53.2], pesquisas: [55.0, 53.2] },
+    projecao: {
+      assinatura: "0badcafe",
+      validos: [500, 16000],
+      soApuracao: colunas({
+        projecao: [51.2, 48.5],
+        margem: [3.1, 2.2],
+        chance: [64, 25],
+        chanceDeVirada: [null, 75],
+        virada: [
+          [null, null, null],
+          [92, 82, null],
+        ],
+      }),
+      comPesquisas: colunas({}),
+      coincidem: [true, false],
+    },
+  };
+  const MUNICIPIO: ArquivoDoLugar = {
+    ...dadosDoLugar({ secoes: { totalizadas: 120, total: 200, percentual: 60 }, votos: [6000, 4000], percentuais: [60, 40] }, [[60, 60, 40]]),
+    lugar: "41238",
+  };
+  const NO_MUNICIPIO: PropsDaVista["lugar"] = { tipo: "municipio", uf: "MG", em: "em Uberlândia (MG)" };
+  const aoVivo = (parte: Partial<QuadroAoVivo> = {}) =>
+    quadro({
+      fase: "ao-vivo",
+      indicador: { estado: "ao-vivo" },
+      rodada: rodada("ao-vivo"),
+      lugar: MUNICIPIO,
+      tabelaDeProjecoes: TABELA,
+      ...parte,
+    });
+  const comTabela = (parte: Partial<QuadroAoVivo> = {}, outras: Partial<PropsDaVista> = {}) => vista(aoVivo(parte), { lugar: NO_MUNICIPIO, ...outras });
+  const caixa = (html: string) => elemento(html, /<section[^>]*data-projecao-ao-vivo/);
+  const curva = (html: string) => elemento(html, /<section[^>]*data-curva-real/);
+
+  it("mostra a caixa da projeção e o rótulo do sinal de virada a partir da linha do município na tabela da UF", () => {
+    const html = comTabela();
+    expect(texto(elemento(caixa(html), /<p class="valores"/))).toBe("FLAVIO BOLSONARO 48,0% ± 2,0 LULA 52,0% ± 2,0");
+    expect(texto(elemento(caixa(html), /<p class="chance-rotulos"/))).toBe("FLAVIO BOLSONARO 20% LULA 80%");
+    expect(texto(caixa(html))).toContain("As pesquisas pesam 3% na projeção agora.");
+    expect(texto(caixa(html))).toContain("com o 1º turno, pelo placar entre finalistas (FLAVIO BOLSONARO 53,2%, LULA 46,8%), LULA +5,2");
+    expect(texto(elemento(curva(html), /<p[^>]*data-sinal-de-virada/))).toBe("Virada projetada · ~90% das seções (80–97%) · chance de virada 80%");
+    expect(curva(html)).toContain("losango-virada");
+    // Na "Só apuração", a linha da outra base.
+    const soApuracao = comTabela({}, { base: "so-apuracao" });
+    expect(texto(elemento(caixa(soApuracao), /<p class="valores"/))).toBe("FLAVIO BOLSONARO 48,5% ± 2,2 LULA 51,5% ± 2,2");
+    expect(texto(elemento(curva(soApuracao), /<p[^>]*data-sinal-de-virada/))).toBe("Virada projetada · ~92% das seções · chance de virada 75%");
+  });
+
+  it("desenha a curva projetada do placar parcial à projeção, sem modelo no navegador, cruzando 50% onde a virada projetada diz", () => {
+    expect(curva(comTabela())).toContain(
+      'aria-label="Curva real: Flávio 60,00% e Lula 40,00% com 60,00% das seções totalizadas; Curva projetada na base Apuração + pesquisas: ' +
+        'FLAVIO BOLSONARO de 60,0% a 48,0% e LULA de 40,0% a 52,0%, de 60,0% a 100,0% das seções totalizadas"',
+    );
+    const { comPesquisas } = projecaoDoLugar(aoVivo())!;
+    const pontos = comPesquisas!.curva;
+    // Com 90% das seções, Flávio ainda tem 7.260 de 14.500 votos (50,07%); com 92%, 7.344 de 14.800 (49,62%).
+    const antes = pontos.filter(([, pct]) => pct >= 50).at(-1)!;
+    const depois = pontos.find(([, pct]) => pct < 50)!;
+    expect([antes[0], depois[0]]).toEqual([90, 92]);
+    expect(depois[1]).toBeCloseTo(49.62, 2);
+    // A margem cresce com o que chega, de 0 no placar parcial à da projeção.
+    expect([pontos[0]![2], pontos.at(-1)![2]]).toEqual([0, 2.0]);
+  });
+
+  it("antes da primeira seção do município, a curva é a própria projeção, de 0% a 100%; terminado ele, não há curva", () => {
+    const semSecoes = {
+      ...MUNICIPIO,
+      tse: { ...MUNICIPIO.tse, secoes: { totalizadas: 0, total: 200, percentual: 0 }, votos: [0, 0], percentuais: [0, 0] },
+      curva: [],
+    };
+    const curvaAntes = projecaoDoLugar(aoVivo({ lugar: semSecoes }))!.comPesquisas!.curva;
+    expect([curvaAntes[0], curvaAntes.at(-1)]).toEqual([
+      [0, 48.0, 2.0],
+      [100, 48.0, 2.0],
+    ]);
+    const terminou = {
+      ...MUNICIPIO,
+      tse: { ...MUNICIPIO.tse, secoes: { totalizadas: 200, total: 200, percentual: 100 }, votos: [7680, 8320], percentuais: [48, 52] },
+    };
+    expect(projecaoDoLugar(aoVivo({ lugar: terminou }))!.comPesquisas!.curva).toHaveLength(1);
+  });
+
+  it("sem a tabela, sem o município nela ou sem a projeção no ar, a página do município fica sem a caixa e sem a curva projetada", () => {
+    // Sem a projeção, a tabela vem só com os municípios: a projeção desligada, ou a tabela de outra base (o leitor não junta).
+    const { projecao, ...semProjecao } = TABELA;
+    for (const parte of [{ tabelaDeProjecoes: null }, { tabelaDeProjecoes: semProjecao }, { lugar: { ...MUNICIPIO, lugar: "41999" } }]) {
+      const html = comTabela(parte);
+      expect(html).not.toContain("data-projecao-ao-vivo");
+      expect(html).not.toContain("linha-projetada");
+    }
+    // Desligada a base com pesquisas, a tabela vem só com a "Só apuração".
+    const { assinatura, validos, soApuracao } = projecao!;
+    const semPesquisas = comTabela({
+      tabelaDeProjecoes: { ...semProjecao, projecao: { assinatura, validos, soApuracao } },
+      chaves: { ...LIGADAS, baseComPesquisas: false },
+    });
+    expect(botoes(caixa(semPesquisas))).toEqual([]);
+    expect(texto(elemento(caixa(semPesquisas), /<p class="valores"/))).toBe("FLAVIO BOLSONARO 48,5% ± 2,2 LULA 51,5% ± 2,2");
   });
 });
 

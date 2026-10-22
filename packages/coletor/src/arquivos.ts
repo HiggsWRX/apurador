@@ -5,9 +5,11 @@ import type { EventoDaNarracao } from "./narracao.ts";
 
 // Os arquivos ao vivo que a página lê (spec, "Contratos dos arquivos ao vivo"). O arquivo de rodada traz o que é
 // nacional; o de cada lugar, os dados do TSE do próprio lugar, sem alteração e com as duas casas do TSE, a curva
-// real e a narração, e o do Brasil, de cada UF e do Exterior, também a projeção. Os votos, os percentuais e a
-// projeção vão na ordem dos candidatos do arquivo de rodada. Os números da projeção vão como a página os mostra
-// (Volume de gravações na noite, decisão 2): projeção e margem com uma casa, chance e % da virada inteiros.
+// real e a narração, e o do Brasil, de cada UF e do Exterior, também a projeção. A projeção dos municípios fica numa
+// tabela por UF, e o `mapa.json` traz os números do TSE de todos os lugares, para o mapa e a tabela de lugares (Volume
+// de gravações na noite, decisão 1). Os votos, os percentuais e a projeção vão na ordem dos candidatos do arquivo de
+// rodada. Os números da projeção vão como a página os mostra (decisão 2): projeção e margem com uma casa, chance e %
+// da virada inteiros.
 
 /** O momento da noite que a página mostra. */
 export type Fase = "antes-das-17h" | "ao-vivo" | "encerrada";
@@ -75,6 +77,82 @@ export interface ProjecaoDoLugar {
   comparacoes: { primeiroTurno: number; pesquisas: number };
 }
 
+/**
+ * Uma base da projeção na tabela de projeções, em colunas: um valor por município, na ordem de `municipios`, com os
+ * números de `ProjecaoNaBase`. Sem a curva: a página do município a desenha do placar parcial à projeção.
+ */
+export interface ColunasDaBase {
+  projecao: number[];
+  margem: number[];
+  chance: number[];
+  chanceDeVirada: (number | null)[];
+  sinalDeVirada: (SinalDeVirada | null)[];
+  /** A virada projetada, em % das seções do município, inteiros: o ponto e a faixa, cada um `null` quando não há. */
+  virada: [x: number | null, cedo: number | null, tarde: number | null][];
+}
+
+/**
+ * As projeções dos municípios de uma UF ou das cidades do Exterior, nas bases que estão no ar, na ordem dos municípios da
+ * tabela. As colunas cabem a tabela de Minas Gerais, a maior, em 10,6 KB com gzip no pico de 2022: com um objeto por
+ * município, os nomes dos campos se repetiriam 853 vezes.
+ */
+export interface ProjecoesDosMunicipios {
+  /** A assinatura dos municípios em cuja ordem as colunas vêm (`MunicipiosDaTabela`): a página só junta os dois com a mesma. */
+  assinatura: string;
+  /**
+   * Os votos válidos projetados de cada município, inteiros: os apurados mais o voto que falta. São os mesmos nas duas
+   * bases, que só repartem diferente o voto que falta. Com eles e o placar parcial, a página desenha a curva projetada.
+   */
+  validos: number[];
+  soApuracao: ColunasDaBase;
+  /** Só com a chave da base com pesquisas ligada. */
+  comPesquisas?: ColunasDaBase;
+  /** Se as duas bases já coincidem em cada município. Só com as duas. */
+  coincidem?: boolean[];
+}
+
+/**
+ * A tabela de projeções de uma UF ou do Exterior (`tabelas/<UF>.json`), regravada quando muda. O que não muda na noite (os
+ * municípios e as comparações) fica em `MunicipiosDaTabela`, gravado uma vez: repetido a cada rodada, custaria 38 KB com
+ * gzip das 28 tabelas, ~50 MB numa noite.
+ */
+export interface TabelaDeProjecoes {
+  /** A sigla da UF, ou `ZZ`. */
+  uf: string;
+  /** Com a projeção no ar; sem ela, a tabela é regravada vazia, para nenhuma projeção velha ficar no ar. */
+  projecao?: ProjecoesDosMunicipios;
+}
+
+/** Os municípios da tabela de projeções de uma UF ou do Exterior (`tabelas/<UF>-municipios.json`): gravado uma vez, a partir das 17h. */
+export interface MunicipiosDaTabela {
+  /** A sigla da UF, ou `ZZ`. */
+  uf: string;
+  /** A assinatura de `municipios` (`assinaturaDosLugares`), que a tabela de projeções repete. */
+  assinatura: string;
+  /** O código do TSE de cada município, com 5 dígitos, na ordem da base do modelo: a das colunas da tabela. */
+  municipios: string[];
+  /** Com o que "A projeção, comparada" compara em cada município, como em `ProjecaoDoLugar`. */
+  comparacoes: { primeiroTurno: number[]; pesquisas: number[] };
+}
+
+/**
+ * O `mapa.json`: o % de seções e o placar de cada UF, do Exterior e de cada município, baixado só quando o cartão do mapa
+ * entra na tela. Para caber em ~25 KB com gzip (20 KB no pico de 2022), ele segue a ordem dos lugares do site
+ * (`dados/lugares.json`, sem o Brasil) sem repetir os ids, que sozinhos dariam ~17 KB, e só leva o % do 2º candidato
+ * quando ele não é o que falta para 100,00.
+ */
+export interface ArquivoDoMapa {
+  /** A assinatura da lista de lugares em que `tse` vem (`assinaturaDosLugares`): a página confere que é a dela. */
+  assinatura: string;
+  /**
+   * De cada lugar, o % de seções e o do 1º candidato, como o TSE os publica, e o do 2º só quando a soma dos dois não dá
+   * 100,00: o TSE arredonda cada um à parte, e numa seção sem votos válidos os dois são 0. `null` sem arquivo do TSE.
+   */
+  tse: ([secoes: number, primeiro: number, segundo?: number] | null)[];
+  /** A projeção de cada UF e do Exterior, em % do 1º candidato com uma casa, nas bases no ar: a coluna da tabela do Brasil. */
+  projecao?: { soApuracao: Record<string, number>; comPesquisas?: Record<string, number> };
+}
+
 /** Um ponto da curva real: o % de seções totalizadas e o % de cada candidato, como o TSE os publica. */
 export type PontoDaCurvaReal = number[];
 
@@ -137,6 +215,37 @@ export function arquivoDoLugar(
     narracao,
     ...(projecao ? { projecao } : {}),
   };
+}
+
+/**
+ * O `mapa.json`, com o resultado de cada lugar do site na ordem dele (`undefined` num lugar sem arquivo do TSE), os
+ * candidatos na ordem do arquivo de rodada e, com a projeção no ar, a das UFs e do Exterior.
+ */
+export function arquivoDoMapa(
+  assinatura: string,
+  resultados: (ResultadoDoTse | undefined)[],
+  ordem: number[],
+  projecao?: ArquivoDoMapa["projecao"],
+): ArquivoDoMapa {
+  const tse = resultados.map((r): ArquivoDoMapa["tse"][number] => {
+    if (!r) return null;
+    const [secoes, primeiro, segundo] = pontoDaCurvaReal(r, ordem) as [number, number, number];
+    return segundo === oQueFaltaPara100(primeiro) ? [secoes, primeiro] : [secoes, primeiro, segundo];
+  });
+  return { assinatura, tse, ...(projecao ? { projecao } : {}) };
+}
+
+/** O que falta a um % do TSE para 100,00, contado em centésimos: o % do 2º candidato que o mapa.json não repete. */
+const oQueFaltaPara100 = (pct: number) => (10_000 - Math.round(100 * pct)) / 100;
+
+/**
+ * O % de seções e o placar de um lugar no mapa.json, como o TSE os publica, com o % do 2º candidato de volta quando o
+ * arquivo não o repete; `null` sem arquivo do TSE. Fica ao lado de quem o escreve: a página lê com a mesma regra.
+ */
+export function lugarNoMapa(ponto: ArquivoDoMapa["tse"][number]): { secoes: number; placar: [number, number] } | null {
+  if (!ponto) return null;
+  const [secoes, primeiro, segundo = oQueFaltaPara100(primeiro)] = ponto;
+  return { secoes, placar: [primeiro, segundo] };
 }
 
 /**

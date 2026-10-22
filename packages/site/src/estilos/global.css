@@ -575,6 +575,76 @@ a {
   color: var(--cor-lula);
 }
 
+/* ---------- cartão do mapa: a tabela de lugares ---------- */
+
+/* Numa UF, a tabela tem centenas de municípios: ela rola dentro do cartão, com o cabeçalho preso no alto. */
+.tabela-dos-lugares {
+  max-height: 28rem;
+  overflow: auto;
+  margin-top: 0.5rem;
+}
+
+.tabela-dos-lugares table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.tabela-dos-lugares th,
+.tabela-dos-lugares td {
+  padding: 0.375rem 0.25rem;
+  border-top: 1px solid var(--borda);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tabela-dos-lugares th:first-child {
+  text-align: left;
+  white-space: normal;
+}
+
+.tabela-dos-lugares tbody th {
+  font-weight: 500;
+}
+
+.tabela-dos-lugares thead th {
+  position: sticky;
+  top: 0;
+  border-top: 0;
+  background: var(--cartao);
+}
+
+.tabela-dos-lugares thead button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tabela-dos-lugares th[aria-sort="ascending"] button::after {
+  content: " ▲";
+}
+.tabela-dos-lugares th[aria-sort="descending"] button::after {
+  content: " ▼";
+}
+
+.tabela-dos-lugares tr[aria-current="page"] {
+  background: var(--fundo);
+}
+
+.tabela-dos-lugares [data-cor="flavio"] {
+  color: var(--cor-flavio);
+  font-weight: 700;
+}
+.tabela-dos-lugares [data-cor="lula"] {
+  color: var(--cor-lula);
+  font-weight: 700;
+}
+
 /* ---------- painel de antes das 17h: o que esperar da noite e a projeção ---------- */
 
 /* Cada base da projeção tem a sua cópia dos blocos; o controle mostra uma. Sem JavaScript, as duas ficam à vista, cada

@@ -77,7 +77,18 @@ function quadroEm({
     curva,
     narracao,
   };
-  return { fase, indicador: { estado: "ao-vivo" }, rodada, lugar: arquivo, ultimaLeitura: 3, mudaram: [], chaves: LIGADAS, aviso: null };
+  return {
+    fase,
+    indicador: { estado: "ao-vivo" },
+    rodada,
+    lugar: arquivo,
+    ultimaLeitura: 3,
+    mudaram: [],
+    chaves: LIGADAS,
+    aviso: null,
+    tabelaDeProjecoes: null,
+    mapa: null,
+  };
 }
 
 const vista = (m: Momento = {}) =>
