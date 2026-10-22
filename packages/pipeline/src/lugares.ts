@@ -32,6 +32,17 @@ export const idDoMunicipio = (codigoTse: number) => String(codigoTse).padStart(5
 /** Ordena os ids como os dados os listam: o Brasil, as UFs e o Exterior pela sigla, e os municípios pelo código. */
 export const compararIds = (a: string, b: string) => (a === "BR" ? -1 : b === "BR" ? 1 : a.length - b.length || a.localeCompare(b));
 
+/**
+ * A assinatura de uma lista de ids, na ordem dela (FNV-1a de 32 bits, em hexadecimal). Um arquivo que segue a ordem dos
+ * lugares do site sem repetir os ids, como o `mapa.json`, leva a assinatura da lista com que foi escrito, e a página só o
+ * lê se ela for a da lista com que foi construída: com outra, cada número cairia no lugar errado.
+ */
+export function assinaturaDosLugares(ids: string[]): string {
+  let hash = 0x811c9dc5;
+  for (const c of ids.join(",")) hash = Math.imul(hash ^ c.charCodeAt(0), 0x01000193) >>> 0;
+  return hash.toString(16).padStart(8, "0");
+}
+
 const UFS: Record<string, { nome: string; artigo: Artigo }> = {
   AC: { nome: "Acre", artigo: "o" },
   AL: { nome: "Alagoas", artigo: "" },

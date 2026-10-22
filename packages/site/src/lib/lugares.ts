@@ -65,3 +65,6 @@ export function emLugar(lugar: Lugar): string {
   if (lugar.tipo === "uf") return `${lugar.artigo ? `n${lugar.artigo}` : "em"} ${lugar.nome}`;
   return `no ${lugar.nome}`;
 }
+
+/** A UF com a preposição "de" pelo artigo dela: "do Acre", "da Bahia", "de São Paulo". */
+export const daUf = (uf: Lugar) => `${uf.artigo ? `d${uf.artigo}` : "de"} ${uf.nome}`;

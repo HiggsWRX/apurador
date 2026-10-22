@@ -75,6 +75,18 @@ function noTurno(t: Turno, id: string): { pct: [number, number]; votos: number }
   return { pct, votos: bolsonaro + pt };
 }
 
+/** Os candidatos dos dois lados num turno: o do partido de Bolsonaro e o do PT. */
+export const candidatosDosLados = (t: Turno) => indicesDosLados(t).map((i) => t.candidatos[i]!) as [Turno["candidatos"][number], Turno["candidatos"][number]];
+
+/**
+ * O % do partido de Bolsonaro num lugar, como a página o mostra (num 1º turno, o placar entre finalistas, com uma casa),
+ * ou `null` onde o lugar não votou ou os dois lados não tiveram voto. A tabela de lugares o mostra antes das 17h.
+ */
+export function doPartidoDeBolsonaro(t: Turno, id: string): number | null {
+  const doLugar = noTurno(t, id);
+  return typeof doLugar === "string" ? null : doLugar.pct[0];
+}
+
 /** depois − antes, com uma casa (metade para longe do zero), contado em centésimos para não herdar o erro do ponto flutuante. */
 function mudancaComUmaCasa(antes: number, depois: number): number {
   const centesimos = Math.round(100 * depois) - Math.round(100 * antes);

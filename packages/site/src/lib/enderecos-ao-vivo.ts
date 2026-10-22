@@ -12,7 +12,7 @@ import type { ArquivoDeRodada, Buscar } from "@apurador/coletor";
 // 20/10/2026), então ali o pedido vai sem cabeçalho próprio, e é o cache do navegador (`no-cache`) que revalida com a
 // ETag: o 304 chega como 200, com o corpo que o navegador guardou e o `Date` novo.
 
-/** Uma raiz de onde a página lê `rodada.json` e `lugares/<id>.json`, e como pedir a ela. */
+/** Uma raiz de onde a página lê `rodada.json`, `lugares/<id>.json` e os arquivos do cartão do mapa, e como pedir a ela. */
 export interface EnderecoAoVivo {
   /** A raiz, com a barra no fim. */
   base: string;

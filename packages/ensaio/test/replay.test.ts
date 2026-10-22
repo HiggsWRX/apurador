@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { gzipSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   CONTROLE_INICIAL,
@@ -12,14 +13,17 @@ import {
   republicacaoDoWorker,
   type ArquivoDeRodada,
   type ArquivoDoLugar,
+  type ArquivoDoMapa,
   type Buscar,
   type ContadorDeGravacoes,
   type Controle,
   type Destino,
   type EventoDaNarracao,
+  type MunicipiosDaTabela,
   type RegistroDaRodada,
+  type TabelaDeProjecoes,
 } from "@apurador/coletor";
-import { idDoMunicipio } from "@apurador/pipeline";
+import { assinaturaDosLugares, idDoMunicipio } from "@apurador/pipeline";
 import type { AbrangenciaDaDivulgacao } from "@apurador/tse";
 import { buscarNoTseFalso, conferirPlacar, criarTseFalso, relogioDoReplay, resultadosDoTseFalso, type TseFalso } from "../src/index.ts";
 import { cadastro, instante, lugaresDoSite, noite, projecaoDe2022 } from "./noite-2022.ts";
@@ -131,6 +135,15 @@ const lugares: { caminho: string; abrangencia: AbrangenciaDaDivulgacao }[] = [
   ]),
 ];
 
+/** O caminho da tabela de projeções de cada UF e do Exterior, e o dos municípios dela. */
+const TABELAS = cadastro.ufs.map((uf) => `tabelas/${uf.sigla}.json`);
+const MUNICIPIOS_DAS_TABELAS = cadastro.ufs.map((uf) => `tabelas/${uf.sigla}-municipios.json`);
+/** Os lugares do site na ordem do `mapa.json`: a de `dados/lugares.json`, sem o Brasil. */
+const DO_MAPA = lugaresDoSite.filter((l) => l.tipo !== "brasil");
+const BASES = ["soApuracao", "comPesquisas"] as const;
+const comUmaCasa = (n: number) => Math.abs(10 * n - Math.round(10 * n)) < 1e-9;
+const inteiro = (n: number | null) => n === null || Number.isInteger(n);
+
 /** As zonas dos municípios com mais de uma. */
 const zonas: Required<AbrangenciaDaDivulgacao>[] = (() => {
   const doMunicipio = new Map<string, number[]>();
@@ -165,6 +178,10 @@ describe("antes das 17h", () => {
     const { gravacoes } = await replay("2022-10-30 16:50:00", "2022-10-30 16:55:00");
 
     expect(gravacoes.filter((g) => g.caminho.startsWith("lugares/")).length).toBeGreaterThan(5_000);
+    // Nem os lugares, nem as tabelas de projeções, nem o mapa.json; os municípios das tabelas, com as comparações, nem saem.
+    expect(gravacoes.filter((g) => TABELAS.includes(g.caminho)).length).toBeGreaterThanOrEqual(TABELAS.length);
+    expect(gravacoes.filter((g) => g.caminho === "mapa.json").length).toBeGreaterThan(0);
+    expect(gravacoes.filter((g) => MUNICIPIOS_DAS_TABELAS.includes(g.caminho))).toEqual([]);
     expect(gravacoes.filter((g) => "projecao" in (g.conteudo as ArquivoDoLugar))).toEqual([]);
     expect(gravacoes.filter((g) => g.caminho === "rodada.json" && (g.conteudo as ArquivoDeRodada).pesoDasPesquisas !== null)).toEqual([]);
   }, 60_000);
@@ -273,6 +290,105 @@ describe("a primeira meia hora da apuração", () => {
     expect(ultimo.curva.length).toBeGreaterThan(20);
     expect(ultimo.curva).toEqual(publicados);
     expect(r.rodada().novidade.totalizacao).toBe(ultimo.tse.totalizacao);
+  });
+
+  describe("a tabela de projeções de cada UF e do Exterior", () => {
+    // Volume de gravações na noite, decisão 1: as projeções dos municípios ficam numa tabela por UF, nas duas bases, e o
+    // JSON do município fica só com o que vem do arquivo do TSE dele e a narração dele.
+    const tabela = (caminho: string) => r.publicado<TabelaDeProjecoes>(caminho);
+    const municipios = (i: number) => r.publicado<MunicipiosDaTabela>(MUNICIPIOS_DAS_TABELAS[i]!);
+    const comProjecao = () => r.gravacoes.filter((g) => TABELAS.includes(g.caminho) && (g.conteudo as TabelaDeProjecoes).projecao);
+
+    it("há 28, uma para cada UF e uma para o Exterior, cada uma com os municípios dela nas duas bases", () => {
+      expect(TABELAS).toHaveLength(28);
+      for (const [i, uf] of cadastro.ufs.entries()) {
+        const { uf: sigla, projecao } = tabela(TABELAS[i]!);
+        const daTabela = municipios(i);
+        expect([sigla, daTabela.uf]).toEqual([uf.sigla, uf.sigla]);
+        expect([...daTabela.municipios].sort()).toEqual(uf.municipios.map((m) => idDoMunicipio(m.codigo)).sort());
+        expect([daTabela.assinatura, projecao!.assinatura]).toEqual(Array(2).fill(assinaturaDosLugares(daTabela.municipios)));
+        expect(Object.keys(projecao!).sort()).toEqual(["assinatura", "coincidem", "comPesquisas", "soApuracao", "validos"]);
+        const n = daTabela.municipios.length;
+        for (const base of BASES) {
+          expect(Object.keys(projecao![base]!).sort()).toEqual(["chance", "chanceDeVirada", "margem", "projecao", "sinalDeVirada", "virada"]);
+          expect(Object.values(projecao![base]!).map((coluna) => coluna.length)).toEqual(Array(6).fill(n));
+        }
+        expect([projecao!.validos, projecao!.coincidem!, daTabela.comparacoes.primeiroTurno, daTabela.comparacoes.pesquisas].map((c) => c.length)).toEqual(
+          Array(4).fill(n),
+        );
+      }
+    });
+
+    it("grava os municípios de cada tabela, com as comparações, uma vez só, a partir das 17h", () => {
+      const gravados = r.gravacoes.filter((g) => MUNICIPIOS_DAS_TABELAS.includes(g.caminho));
+      expect(gravados.map((g) => g.caminho).sort()).toEqual([...MUNICIPIOS_DAS_TABELAS].sort());
+      expect(gravados.every((g) => g.quando >= ms("2022-10-30 17:00:00"))).toBe(true);
+    });
+
+    it("leva os números como a página os mostra: projeção, margem e comparações com uma casa; chance, chance de virada, % da virada e válidos inteiros", () => {
+      const publicadas = comProjecao().map((g) => (g.conteudo as TabelaDeProjecoes).projecao!);
+      expect(publicadas.length).toBeGreaterThan(28 * 50);
+      const fora = publicadas.filter(
+        (p) =>
+          !p.validos.every(inteiro) ||
+          !BASES.every(
+            (base) =>
+              [...p[base]!.projecao, ...p[base]!.margem].every(comUmaCasa) &&
+              [...p[base]!.chance, ...p[base]!.chanceDeVirada, ...p[base]!.virada.flat()].every(inteiro),
+          ),
+      );
+      expect(fora).toEqual([]);
+      const comparacoes = cadastro.ufs.flatMap((_, i) => [...municipios(i).comparacoes.primeiroTurno, ...municipios(i).comparacoes.pesquisas]);
+      expect(comparacoes.filter((c) => !comUmaCasa(c))).toEqual([]);
+    });
+
+    it("a projeção de cada UF é a dos municípios dela, pesados pelos votos válidos projetados, nas duas bases", () => {
+      // Cada município entra com uma casa: a média pesada fica a menos de 0,05 da conta sem arredondar, e a da UF também.
+      const longe = TABELAS.flatMap((caminho, i) => {
+        const { projecao } = tabela(caminho);
+        const daUf = r.publicado(`lugares/${cadastro.ufs[i]!.sigla}.json`).projecao!;
+        const total = projecao!.validos.reduce((s, v) => s + v, 0);
+        return BASES.flatMap((base) => {
+          const media = projecao![base]!.projecao.reduce((s, p, j) => s + p * projecao!.validos[j]!, 0) / total;
+          return Math.abs(media - daUf[base]!.projecao) > 0.1 ? [`${caminho} ${base}: ${media.toFixed(3)} × ${daUf[base]!.projecao}`] : [];
+        });
+      });
+      expect(longe).toEqual([]);
+    });
+
+    it("o JSON do município continua só com o que vem do arquivo do TSE dele e a narração dele", () => {
+      const municipios = lugares.filter((l) => l.abrangencia.municipio !== undefined).map((l) => r.publicado(l.caminho));
+      expect(municipios.filter((m) => Object.keys(m).sort().join() !== "curva,lugar,narracao,tse")).toEqual([]);
+    });
+  });
+
+  describe("o mapa.json", () => {
+    it("traz o % de seções e o placar de cada UF e de cada município, com as duas casas do TSE, iguais aos dos JSONs publicados", () => {
+      const mapa = r.publicado<ArquivoDoMapa>("mapa.json");
+      // Na ordem dos lugares do site, que a página confere pela assinatura; os do site que não votaram em 2022 ficam vazios.
+      expect(mapa.assinatura).toBe(assinaturaDosLugares(DO_MAPA.map((l) => l.id)));
+      expect(mapa.tse).toHaveLength(DO_MAPA.length);
+      // O % do 2º candidato só vai quando não é o que falta para 100,00.
+      const lido = (ponto: ArquivoDoMapa["tse"][number]) => ponto && [ponto[0], ponto[1], ponto[2] ?? (10_000 - Math.round(100 * ponto[1])) / 100];
+      const diferentes = DO_MAPA.flatMap((l, i) => {
+        const publicado = r.publicado(`lugares/${l.id}.json`);
+        const esperado = publicado ? [publicado.tse.secoes.percentual, ...publicado.tse.percentuais] : null;
+        return JSON.stringify(lido(mapa.tse[i]!)) === JSON.stringify(esperado) ? [] : [l.id];
+      });
+      expect(diferentes).toEqual([]);
+      expect(mapa.tse.filter((x) => x?.length === 2).length).toBeGreaterThan(1_000);
+      expect(mapa.tse.filter((x) => x === null)).toHaveLength(DO_MAPA.length - lugares.length + 1);
+      expect(mapa.tse.filter((x) => x !== null && x[0]! > 0).length).toBeGreaterThan(1_000);
+    });
+
+    it("traz a projeção de cada UF e do Exterior nas duas bases, a mesma do JSON dela: a coluna da tabela do Brasil", () => {
+      const { projecao } = r.publicado<ArquivoDoMapa>("mapa.json");
+      for (const base of BASES) {
+        expect(projecao![base]).toEqual(
+          Object.fromEntries(cadastro.ufs.map((uf) => [uf.sigla, r.publicado(`lugares/${uf.sigla}.json`).projecao![base]!.projecao])),
+        );
+      }
+    });
   });
 });
 
@@ -405,6 +521,45 @@ describe("a noite inteira", () => {
     expect(pico.processamento).toBeLessThan(5_000);
     // A partida a frio, com os ~6.500 arquivos, cabe em poucas rodadas antes das 17h.
     expect(r.rodadas.findIndex((x) => x.baixados.municipios === 0)).toBeLessThan(15);
+  });
+
+  it("grava na ordem das contas do ticket 24, ~135 mil na noite, e nenhuma rodada chega ao teto de 1.500", () => {
+    // Volume de gravações na noite: ~135 mil na noite, com a meta do ensaio 1 abaixo de 200 mil (decisão 9), e no
+    // máximo 1.500 por rodada (decisão 5), com o pico esperado em ~700. Em 22/10/2026: 124.053, e 629 na maior rodada.
+    expect(r.gravacoes.length).toBeGreaterThan(100_000);
+    expect(r.gravacoes.length).toBeLessThan(200_000);
+    expect(Math.max(...r.rodadas.map((x) => x.gravacoes))).toBeLessThan(1_500);
+  });
+
+  it("o mapa.json fica em ~25 KB com gzip, e as 28 tabelas de projeções na ordem dos 68 KB somados", () => {
+    // Uma gravação em cada 20: o mapa.json muda quase a cada rodada. O gzip é o do destino R2 (`r2.ts`). Em 22/10/2026,
+    // o mapa.json chegou a 20,7 KB, e as tabelas a 69,5 KB somadas (Minas Gerais 10,6 KB e São Paulo 6,8 KB).
+    const gz = (g: { bytes: Uint8Array }) => gzipSync(g.bytes).length / 1024;
+    const mapas = r.gravacoes.filter((g) => g.caminho === "mapa.json").filter((_, i) => i % 20 === 0);
+    expect(mapas.length).toBeGreaterThan(30);
+    expect(Math.max(...mapas.map(gz))).toBeLessThan(25);
+    // As 28 no maior momento delas, cada uma no seu.
+    const maiores = new Map<string, number>();
+    for (const g of r.gravacoes.filter((g) => TABELAS.includes(g.caminho)).filter((_, i) => i % 20 === 0)) {
+      maiores.set(g.caminho, Math.max(maiores.get(g.caminho) ?? 0, gz(g)));
+    }
+    expect([...maiores.values()].reduce((s, t) => s + t, 0)).toBeLessThan(80);
+  }, 60_000);
+
+  it("no fim, a projeção de cada município é o resultado dele, sem margem, e os válidos projetados são os votos dos dois", () => {
+    const longe = TABELAS.flatMap((caminho, j) => {
+      const { projecao } = r.publicado<TabelaDeProjecoes>(caminho);
+      return r.publicado<MunicipiosDaTabela>(MUNICIPIOS_DAS_TABELAS[j]!).municipios.flatMap((id, i) => {
+        const [primeiro, segundo] = r.publicado(`lugares/${id}.json`).tse.votos as [number, number];
+        const resultado = primeiro + segundo > 0 ? Math.round((1000 * primeiro) / (primeiro + segundo)) / 10 : 50;
+        return BASES.flatMap((base) => {
+          const p = projecao![base]!;
+          const certo = p.projecao[i] === resultado && p.margem[i] === 0 && projecao!.validos[i] === primeiro + segundo;
+          return certo ? [] : [`${id} ${base}: ${p.projecao[i]} ± ${p.margem[i]} com ${projecao!.validos[i]} válidos; o resultado, ${resultado}`];
+        });
+      });
+    });
+    expect(longe).toEqual([]);
   });
 
   it("nunca passa de 50 pedidos num segundo, o limite que alerta o dono, nem pede URL inexistente", () => {
@@ -554,7 +709,6 @@ describe("a noite inteira", () => {
     // com uma casa. Os números publicados são os de Bolsonaro, o 1º candidato do arquivo de rodada.
     const FINAL_EM_CENTESIMOS = 4910;
     const erroEmCentesimos = (p: { projecao: number }) => Math.abs(10 * Math.round(10 * p.projecao) - FINAL_EM_CENTESIMOS);
-    const BASES = ["soApuracao", "comPesquisas"] as const;
     /** As gravações de um lugar com a projeção: a partir das 17h. */
     const publicadosEm = (caminho: string) =>
       r.gravacoes.filter((g) => g.caminho === caminho && "projecao" in (g.conteudo as ArquivoDoLugar)).map((g) => g.conteudo as ArquivoDoLugar);
@@ -578,8 +732,6 @@ describe("a noite inteira", () => {
     });
 
     it("leva os números como a página os mostra: projeção, margem e curva com uma casa, chance, chance de virada e % da virada inteiros", () => {
-      const comUmaCasa = (n: number) => Math.abs(10 * n - Math.round(10 * n)) < 1e-9;
-      const inteiro = (n: number | null) => n === null || Number.isInteger(n);
       const publicados = ["lugares/BR.json", ...UFS_E_EXTERIOR].flatMap(publicadosEm);
       expect(publicados.length).toBeGreaterThan(1_000);
       const fora = publicados
@@ -724,6 +876,21 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
     expect(comAsDuas.filter((b) => b.projecao?.comPesquisas === undefined || b.projecao.coincidem === undefined)).toEqual([]);
     expect(semPesquisas.length).toBeGreaterThan(0);
     expect(semPesquisas.map((b) => Object.keys(b.projecao!).sort())).toEqual(semPesquisas.map(() => ["comparacoes", "soApuracao"]));
+    // As tabelas e o mapa.json também.
+    const depois = r.gravacoes.filter(
+      (g) =>
+        (TABELAS.includes(g.caminho) || g.caminho === "mapa.json") &&
+        g.quando >= ms("2022-10-30 17:02:00") + DUAS_RODADAS &&
+        g.quando < ms("2022-10-30 17:05:00"),
+    );
+    expect(depois.filter((g) => TABELAS.includes(g.caminho)).length).toBeGreaterThanOrEqual(28);
+    expect(depois.filter((g) => g.caminho === "mapa.json").length).toBeGreaterThan(0);
+    expect(
+      depois.filter((g) => {
+        const { projecao } = g.conteudo as TabelaDeProjecoes | ArquivoDoMapa;
+        return !projecao || "comPesquisas" in projecao || "coincidem" in projecao || !("soApuracao" in projecao);
+      }),
+    ).toEqual([]);
     const pesosComAsDuas = entre("2022-10-30 17:00:21", "2022-10-30 17:02:00").map((x) => x.pesoDasPesquisas);
     const pesosSemPesquisas = entre("2022-10-30 17:02:40", "2022-10-30 17:05:00").map((x) => x.pesoDasPesquisas);
     expect(pesosComAsDuas.length).toBeGreaterThan(3);
@@ -733,9 +900,12 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
   });
 
   it("desligada a projeção, nenhum JSON a leva em até 2 rodadas, nem o arquivo de rodada o peso das pesquisas", () => {
-    const depois = r.gravacoes.filter((g) => g.caminho.startsWith("lugares/") && g.quando >= ms("2022-10-30 17:05:00") + DUAS_RODADAS);
+    const depois = r.gravacoes.filter((g) => g.caminho !== "rodada.json" && g.quando >= ms("2022-10-30 17:05:00") + DUAS_RODADAS);
     expect(depois.length).toBeGreaterThan(100);
-    expect(depois.filter((g) => "projecao" in (g.conteudo as ArquivoDoLugar))).toEqual([]);
+    // As tabelas de projeções são regravadas sem ela, para nenhuma ficar com a projeção de antes no destino.
+    expect(TABELAS.filter((caminho) => r.publicado<TabelaDeProjecoes>(caminho).projecao !== undefined)).toEqual([]);
+    expect(depois.filter((g) => g.caminho === "mapa.json").length).toBeGreaterThan(0);
+    expect(depois.filter((g) => "projecao" in (g.conteudo as ArquivoDoLugar | TabelaDeProjecoes | ArquivoDoMapa))).toEqual([]);
     const pesos = entre("2022-10-30 17:05:40", "2022-10-30 17:26:00").map((x) => x.pesoDasPesquisas);
     expect(pesos.length).toBeGreaterThan(50);
     expect(pesos.filter((p) => p !== null)).toEqual([]);
@@ -878,10 +1048,10 @@ describe("plano B", () => {
   });
 
   it("na rodada do comando, regrava todos os lugares no plano B, e cada republicação leva todos os arquivos ao vivo, dentro dos 20.000 por versão", () => {
-    const todos = ["_headers", "rodada.json", ...lugares.map((l) => l.caminho)].sort();
+    const todos = ["_headers", "rodada.json", "mapa.json", ...TABELAS, ...MUNICIPIOS_DAS_TABELAS, ...lugares.map((l) => l.caminho)].sort();
     expect(republicacoes[0]!.quando).toBeGreaterThanOrEqual(Date.parse(troca().inicio));
     expect(republicacoes[0]!.quando).toBeLessThan(Date.parse(troca().inicio) + 20_000);
-    expect(troca().gravacoes).toBe(lugares.length + 1);
+    expect(troca().gravacoes).toBe(todos.length - 1);
     for (const p of republicacoes) expect(p.arquivos).toEqual(todos);
     expect(todos.length).toBeLessThan(20_000);
   });

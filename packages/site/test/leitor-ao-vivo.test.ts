@@ -1,4 +1,4 @@
-import type { ArquivoDeRodada, ArquivoDoLugar, Buscar, ChavesDaNoite } from "@apurador/coletor";
+import type { ArquivoDeRodada, ArquivoDoLugar, ArquivoDoMapa, Buscar, ChavesDaNoite, MunicipiosDaTabela, TabelaDeProjecoes } from "@apurador/coletor";
 import { describe, expect, it } from "vitest";
 import { enderecosDoBuild } from "../src/lib/enderecos-ao-vivo";
 import { criarLeitorAoVivo } from "../src/lib/leitor-ao-vivo";
@@ -79,10 +79,10 @@ function cdn() {
   };
 }
 
-function montar() {
+function montar(pagina: Pick<Parameters<typeof criarLeitorAoVivo>[0], "lugar" | "tabela"> = { lugar: "BR" }) {
   const borda = cdn();
   let agora = 0;
-  const leitor = criarLeitorAoVivo({ enderecos: enderecosDoBuild(BASE, null), lugar: "BR", buscar: borda.buscar, relogio: () => agora, chaves: DO_SITE });
+  const leitor = criarLeitorAoVivo({ enderecos: enderecosDoBuild(BASE, null), buscar: borda.buscar, relogio: () => agora, chaves: DO_SITE, ...pagina });
   return { ...borda, leitor, passar: (ms: number) => (agora += ms) };
 }
 
@@ -329,5 +329,61 @@ describe("leitor ao vivo", () => {
     responder("rodada.json", { status: 200, date: "2026-10-25T19:00:30-03:00", etag: '"r2"', corpo: rodada("2026-10-25T19:00:20-03:00", "ao-vivo") });
     await leitor.ler();
     expect(leitor.quadro().aviso).toBeNull();
+  });
+});
+
+describe("a tabela de projeções e o mapa.json", () => {
+  // Volume de gravações na noite, decisão 1: a projeção do município sai da tabela da UF dele, e o mapa.json só é baixado
+  // quando o cartão do mapa entra na tela.
+  const DATE = "2026-10-25T19:00:00-03:00";
+  const RODADA = rodada("2026-10-25T18:59:50-03:00", "ao-vivo");
+  const TABELA: TabelaDeProjecoes = { uf: "MG" };
+  const MUNICIPIOS: MunicipiosDaTabela = { uf: "MG", assinatura: "0badcafe", municipios: ["41238"], comparacoes: { primeiroTurno: [53.2], pesquisas: [53.2] } };
+  const MAPA: ArquivoDoMapa = { assinatura: "0badcafe", tse: [[12.34, 50.1, 49.9], null] };
+  const doLugar = (id: string): ArquivoDoLugar => ({ ...lugar(12.34, "2022-10-30 18:00:00"), lugar: id });
+  const caminhos = (pedidos: { caminho: string }[]) => pedidos.map((p) => p.caminho).sort();
+
+  it("num município, lê também a tabela de projeções da UF dele e os municípios dela, desde a primeira leitura, e um 304 mantém o que a página tem", async () => {
+    const { leitor, responder, pedidos } = montar({ lugar: "41238", tabela: { uf: "MG", desdeOInicio: true } });
+    responder("rodada.json", { status: 200, date: DATE, etag: '"r1"', corpo: RODADA });
+    responder("lugares/41238.json", { status: 200, date: DATE, etag: '"m1"', corpo: doLugar("41238") });
+    responder("tabelas/MG.json", { status: 200, date: DATE, etag: '"t1"', corpo: TABELA });
+    responder("tabelas/MG-municipios.json", { status: 200, date: DATE, etag: '"c1"', corpo: MUNICIPIOS });
+    await leitor.ler();
+    expect(caminhos(pedidos)).toEqual(["lugares/41238.json", "rodada.json", "tabelas/MG-municipios.json", "tabelas/MG.json"]);
+    expect(leitor.quadro()).toMatchObject({ tabela: TABELA, municipiosDaTabela: MUNICIPIOS });
+
+    responder("tabelas/MG.json", { status: 304, date: DATE, etag: '"t1"' });
+    responder("tabelas/MG-municipios.json", { status: 304, date: DATE, etag: '"c1"' });
+    await leitor.ler();
+    expect(pedidos.filter((p) => p.caminho === "tabelas/MG.json").at(-1)).toEqual({ caminho: "tabelas/MG.json", ifNoneMatch: '"t1"' });
+    expect(leitor.quadro()).toMatchObject({ tabela: TABELA, municipiosDaTabela: MUNICIPIOS, mapa: null });
+  });
+
+  it("numa UF, só passa a ler a tabela dela e o mapa.json quando o cartão do mapa entra na tela", async () => {
+    const { leitor, responder, pedidos } = montar({ lugar: "MG", tabela: { uf: "MG", desdeOInicio: false } });
+    responder("rodada.json", { status: 200, date: DATE, etag: '"r1"', corpo: RODADA });
+    responder("lugares/MG.json", { status: 200, date: DATE, etag: '"u1"', corpo: doLugar("MG") });
+    responder("tabelas/MG.json", { status: 200, date: DATE, etag: '"t1"', corpo: TABELA });
+    responder("tabelas/MG-municipios.json", { status: 200, date: DATE, etag: '"c1"', corpo: MUNICIPIOS });
+    responder("mapa.json", { status: 200, date: DATE, etag: '"a1"', corpo: MAPA });
+    await leitor.ler();
+    expect(caminhos(pedidos)).toEqual(["lugares/MG.json", "rodada.json"]);
+    expect(leitor.quadro()).toMatchObject({ tabela: null, municipiosDaTabela: null, mapa: null });
+
+    leitor.incluirOCartao();
+    await leitor.ler();
+    expect(caminhos(pedidos.slice(2))).toEqual(["lugares/MG.json", "mapa.json", "rodada.json", "tabelas/MG-municipios.json", "tabelas/MG.json"]);
+    expect(leitor.quadro()).toMatchObject({ tabela: TABELA, municipiosDaTabela: MUNICIPIOS, mapa: MAPA });
+  });
+
+  it("no Brasil, o cartão do mapa lê só o mapa.json, que traz a projeção das UFs", async () => {
+    const { leitor, responder, pedidos } = montar();
+    responder("rodada.json", { status: 200, date: DATE, etag: '"r1"', corpo: RODADA });
+    responder("mapa.json", { status: 200, date: DATE, etag: '"a1"', corpo: MAPA });
+    leitor.incluirOCartao();
+    await leitor.ler();
+    expect(caminhos(pedidos)).toEqual(["lugares/BR.json", "mapa.json", "rodada.json"]);
+    expect(leitor.quadro()).toMatchObject({ tabela: null, mapa: MAPA });
   });
 });

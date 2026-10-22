@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { Lugar } from "@apurador/pipeline";
+import { assinaturaDosLugares, type Lugar } from "@apurador/pipeline";
 import {
   ArquivoDoTseInvalido,
   eleicaoDaConfiguracao,
@@ -13,7 +13,17 @@ import {
   type EleicaoDaDivulgacao,
   type ResultadoDoTse,
 } from "@apurador/tse";
-import { arquivoDeRodada, arquivoDoLugar, emOrdem, pontoDaCurvaReal, type Fase, type PontoDaCurvaReal } from "./arquivos.ts";
+import {
+  arquivoDeRodada,
+  arquivoDoLugar,
+  arquivoDoMapa,
+  emOrdem,
+  pontoDaCurvaReal,
+  type ArquivoDoMapa,
+  type Fase,
+  type PontoDaCurvaReal,
+  type TabelaDeProjecoes,
+} from "./arquivos.ts";
 import { chavesEfetivas, CONTROLE_INICIAL, type Controle } from "./chaves.ts";
 import type { ContadorDeGravacoes, GravacoesDoMes } from "./contador.ts";
 import type { Destino } from "./destino.ts";
@@ -139,6 +149,8 @@ interface Divulgacao {
   ufs: string[];
   /** O Brasil primeiro, e cada UF seguida dos seus municípios. */
   acompanhados: Acompanhado[];
+  /** Os lugares do site na ordem do `mapa.json`, cada um com o arquivo que o coletor acompanha, ou nenhum se o TSE não o tem. */
+  doMapa: (Acompanhado | undefined)[];
 }
 
 const UM_MINUTO = 60_000;
@@ -194,6 +206,9 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   let horaDoTse = -Infinity;
 
   // O que o coletor publicou.
+  /** Os lugares do site na ordem do `mapa.json`: a de `dados/lugares.json`, sem o Brasil, que a página também conhece. */
+  const lugaresDoMapa = opcoes.lugares.filter((l) => l.tipo !== "brasil");
+  const assinaturaDoMapa = assinaturaDosLugares(lugaresDoMapa.map((l) => l.id));
   const hashes = new Map<string, string>();
   const curvas = new Map<string, PontoDaCurvaReal[]>();
   /** Os lugares cujo resultado ou narração mudou e ainda não foram gravados. */
@@ -307,7 +322,8 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
         );
       }
     }
-    return { eleicao, urls, ufs: configuracao.ufs.map((uf) => uf.sigla), acompanhados };
+    const porId = new Map(acompanhados.map((a) => [a.id, a]));
+    return { eleicao, urls, ufs: configuracao.ufs.map((uf) => uf.sigla), acompanhados, doMapa: lugaresDoMapa.map((l) => porId.get(l.id)) };
   }
 
   const brasil = (d: Divulgacao) => resultados.get(d.urls.resultado({}));
@@ -476,7 +492,39 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
         if (await gravarSeMudou(`lugares/${id}.json`, arquivo)) sujos.delete(id);
       });
     }
+    // A tabela de projeções de cada UF e do Exterior e o mapa.json são montados a cada rodada, e só os bytes que mudam vão
+    // ao destino. Sem a projeção no ar, a tabela vai vazia. Os municípios da tabela, com as comparações, não mudam na
+    // noite: com a projeção no ar, são gravados uma vez. No plano zero, nada disso.
+    if (controle.chaves.nucleoMinimo) {
+      const comPesquisas = controle.chaves.baseComPesquisas;
+      for (const uf of d.ufs) {
+        const projecao = noAr?.dosMunicipios(uf, comPesquisas);
+        const tabela: TabelaDeProjecoes = { uf, ...(projecao ? { projecao } : {}) };
+        gravacoes.push(async () => void (await gravarSeMudou(`tabelas/${uf}.json`, tabela)));
+        const municipios = noAr?.municipiosDaTabela(uf);
+        if (municipios) gravacoes.push(async () => void (await gravarSeMudou(`tabelas/${uf}-municipios.json`, municipios)));
+      }
+      const mapa = arquivoDoMapa(
+        assinaturaDoMapa,
+        d.doMapa.map((a) => a && resultados.get(a.url)),
+        ordem,
+        noAr && projecaoDasUfs(d, noAr, comPesquisas),
+      );
+      gravacoes.push(async () => void (await gravarSeMudou("mapa.json", mapa)));
+    }
     await emParalelo(gravacoes, GRAVACOES_EM_VOO);
+  }
+
+  /** A projeção de cada UF e do Exterior, para o mapa.json: só o resultado final estimado, nas bases no ar. */
+  function projecaoDasUfs(d: Divulgacao, noAr: ProjecaoDaRodada, comPesquisas: boolean): ArquivoDoMapa["projecao"] {
+    const naBase = (qual: "soApuracao" | "comPesquisas") =>
+      Object.fromEntries(
+        d.ufs.flatMap((uf) => {
+          const p = noAr.doLugar(uf, comPesquisas)?.[qual];
+          return p ? [[uf, p.projecao]] : [];
+        }),
+      );
+    return { soApuracao: naBase("soApuracao"), ...(comPesquisas ? { comPesquisas: naBase("comPesquisas") } : {}) };
   }
 
   /** Lê o controle do dono para esta rodada. Uma leitura que falha não derruba nada: fica o controle anterior. */
