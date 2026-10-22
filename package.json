@@ -12,6 +12,7 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && npm run typecheck -w @apurador/site",
     "lint": "eslint .",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,astro,css}\"",
     "test": "vitest run",
     "build": "npm run build -w @apurador/site --",
     "dados": "npm run gerar -w @apurador/pipeline --",
@@ -35,6 +36,8 @@
     "eslint": "^10.12.0",
     "eslint-plugin-jsdoc": "^65.1.0",
     "fflate": "^0.8.3",
+    "prettier": "^3.9.10",
+    "prettier-plugin-astro": "^1.1.1",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.1",
