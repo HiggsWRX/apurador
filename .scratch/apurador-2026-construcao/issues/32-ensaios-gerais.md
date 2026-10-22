@@ -63,3 +63,7 @@ Decisões: [Ensaio geral](../../apurador-2026/issues/15-ensaio-geral.md) (decis�
   - **Sentinela do ensaio**: `apurador-sentinela-ensaio`, com `--env ensaio`, lê `ao-vivo-ensaio.apurador.org` e o plano B do ensaio. Para o ensaio conferir "os alertas no computador, no celular e da sentinela", o dono faz antes os passos de "Os alertas e a sentinela" no `packages/coletor/cloudflare/README.md`.
 
 - 22/10/2026, do [ticket 29](29-metodologia-acerto-e-calibracao.md): o build do ensaio 2 leva as seções 6 e 7 da metodologia. Nos celulares, vale olhar a página `/metodologia/#acerto`: os botões "2022 | 2018" trocam a noite, as tabelas das seções 6 e 7 (e as de "Os números de cada candidato") rolam de lado sem rolar a página, e os gráficos cabem na largura.
+
+- 22/10/2026, da junção dos tickets 19, 21 e 29 (`4f51901`, no ar): o que falta antes do ensaio.
+  - **Sentinela**: nenhuma das duas está publicada, e o KV dela não existe. Os passos do dono são os de "Os alertas e a sentinela" (`packages/coletor/cloudflare/README.md`), a partir do passo do KV: o tópico do ntfy já está no `packages/coletor/.env`, e o alerta de teste foi aceito pelo ntfy. Falta assinar o tópico no app do celular.
+  - **Ambiente do ensaio**: o [ticket 30](30-ambiente-de-ensaio-e-conferencias.md) ainda não foi construído. Sem ele, o ensaio 1 não tem Worker, subdomínio nem bucket próprios. Decisão do dono: rodar o ensaio 1 com o `npm run noite-local` ou juntá-lo ao ensaio 2.
