@@ -985,14 +985,26 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
 });
 
 describe("os textos preditivos, pela chave", () => {
-  // O dono liga a chave às 17:10 e a desliga às 17:30 (Narração da noite, decisões 5 e 6). A conferência é a do ensaio
-  // geral (decisão 22): desligada, nenhum preditivo no ar; ligada no meio, nada de antes; desligada de novo, somem todos.
+  // O dono liga a chave às 17:10 e a desliga às 17:30 (Narração da noite, decisões 5 e 6); no meio, desliga a projeção das
+  // 17:18 às 17:22. A conferência é a do ensaio geral (decisão 22): desligada, nenhum preditivo no ar; ligada no meio,
+  // nada de antes; desligada de novo, somem todos.
   const LIGA = ms("2022-10-30 17:10:00");
+  const SEM_PROJECAO = ms("2022-10-30 17:18:00");
+  const COM_PROJECAO = ms("2022-10-30 17:22:00");
   const DESLIGA = ms("2022-10-30 17:30:00");
+  /** O critério do Ensaio geral (decisão 20): a chave aparece no site em até 2 rodadas mais o cache. */
+  const DUAS_RODADAS = 2 * 20_000;
   let r: Awaited<ReturnType<typeof replay>>;
   beforeAll(async () => {
     r = await replay("2022-10-30 16:50:00", "2022-10-30 17:40:00", {
-      controle: (quando) => ({ ...CONTROLE_INICIAL, chaves: { ...CONTROLE_INICIAL.chaves, textosPreditivos: quando >= LIGA && quando < DESLIGA } }),
+      controle: (quando) => ({
+        ...CONTROLE_INICIAL,
+        chaves: {
+          ...CONTROLE_INICIAL.chaves,
+          projecao: quando < SEM_PROJECAO || quando >= COM_PROJECAO,
+          textosPreditivos: quando >= LIGA && quando < DESLIGA,
+        },
+      }),
     });
   }, 180_000);
   const lugaresEntre = (de: number, ate: number) =>
@@ -1000,6 +1012,19 @@ describe("os textos preditivos, pela chave", () => {
 
   it("a conferência dos preditivos não acusa nada na noite em que a chave liga e desliga", () => {
     expect(conferirPreditivos(r.gravacoes)).toEqual([]);
+  });
+
+  it("desligada a projeção, os preditivos saem dos JSONs em até 2 rodadas e voltam com ela, regravados em até 2 rodadas", () => {
+    const comPreditivos = (l: ArquivoDoLugar) => l.narracao.filter((e) => e.base || e.linhaDaProjecao).map((e) => `${e.lugar} ${e.tipo} ${e.base} ${e.quando}`);
+    const semProjecao = lugaresEntre(SEM_PROJECAO + DUAS_RODADAS, COM_PROJECAO);
+    expect(semProjecao.length).toBeGreaterThan(100);
+    expect(semProjecao.filter((l) => comPreditivos(l).length > 0)).toEqual([]);
+    // Cada lugar com preditivos no ar antes de a projeção sair volta a tê-los, todos, em até 2 rodadas da volta dela.
+    const antes = new Map(lugaresEntre(LIGA, SEM_PROJECAO).map((l) => [l.lugar, comPreditivos(l)]));
+    const depois = new Map(lugaresEntre(COM_PROJECAO, COM_PROJECAO + DUAS_RODADAS).map((l) => [l.lugar, comPreditivos(l)]));
+    const comAlgum = [...antes].filter(([, eventos]) => eventos.length > 0);
+    expect(comAlgum.length).toBeGreaterThan(28);
+    expect(comAlgum.filter(([id, eventos]) => !eventos.every((e) => depois.get(id)?.includes(e)))).toEqual([]);
   });
 
   it("ligada, entram os preditivos do Brasil, das UFs e dos municípios, nas duas bases, sem número na curva, e a linha da projeção nos marcos", () => {
@@ -1038,6 +1063,7 @@ describe("os textos preditivos, pela chave", () => {
         .map((l) => l.lugar),
     );
     const regravados = new Set(lugaresEntre(DESLIGA, DESLIGA + 40_000).map((l) => l.lugar));
+    // Mais que o Brasil e as 27 UFs: municípios também.
     expect(comPreditivos.size).toBeGreaterThan(28);
     expect([...comPreditivos].filter((id) => !regravados.has(id))).toEqual([]);
     expect(lugares.filter((l) => r.publicado(l.caminho).narracao.some((e) => e.base || e.linhaDaProjecao))).toEqual([]);

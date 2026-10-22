@@ -15,10 +15,11 @@ const rodada = (textosPreditivos: boolean, totalizacao: string): JsonPublico => 
     eventosDoBrasil: [],
   } satisfies Partial<ArquivoDeRodada>,
 });
-const brasil = (totalizacao: string, narracao: EventoDaNarracao[]): JsonPublico => ({
-  caminho: "lugares/BR.json",
-  conteudo: { lugar: "BR", tse: { totalizacao }, narracao } satisfies Partial<Omit<ArquivoDoLugar, "tse">> & { tse: object },
+const lugar = (id: string, totalizacao: string, narracao: EventoDaNarracao[]): JsonPublico => ({
+  caminho: `lugares/${id}.json`,
+  conteudo: { lugar: id, tse: { totalizacao }, narracao } satisfies Partial<Omit<ArquivoDoLugar, "tse">> & { tse: object },
 });
+const brasil = (totalizacao: string, narracao: EventoDaNarracao[]) => lugar("BR", totalizacao, narracao);
 
 const MARCO: EventoDaNarracao = {
   lugar: "BR",
@@ -86,5 +87,19 @@ describe("conferirPreditivos", () => {
 
     expect(divergencias).toHaveLength(2);
     expect(divergencias.every((d) => d.includes("antes de a chave ligar"))).toBe(true);
+  });
+
+  it("não acusa o preditivo da rodada da ligação com a hora do arquivo novo do lugar, mesmo mais velha que a de outro lugar", () => {
+    // O coletor dá a um preditivo a hora do arquivo novo do lugar na rodada, que pode ser mais velha que a de outro.
+    const emSaoPaulo = { ...CHANCE("2022-10-30 18:26:10"), lugar: "SP" };
+    expect(
+      conferirPreditivos([
+        rodada(false, "2022-10-30 18:26:53"),
+        lugar("SP", "2022-10-30 18:25:00", []),
+        brasil("2022-10-30 18:26:53", []),
+        rodada(true, "2022-10-30 18:26:53"),
+        lugar("SP", "2022-10-30 18:26:10", [emSaoPaulo]),
+      ]),
+    ).toEqual([]);
   });
 });

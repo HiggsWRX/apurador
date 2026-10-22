@@ -1,8 +1,13 @@
+import type { BaseDaProjecao } from "@apurador/coletor";
+
 // As duas bases da projeção, como o visitante as escolhe na caixa da projeção e no simulador (glossário: Base da
 // projeção). Sem dados do build: a ilha do simulador também usa isto.
 
 /** Um dos dois conjuntos de informações que a projeção usa, como o visitante o escolhe. */
 export type IdDaBase = "so-apuracao" | "com-pesquisas";
+
+/** Como os arquivos ao vivo nomeiam cada base: a chave dela na projeção e nos textos preditivos. */
+export const BASE_NOS_ARQUIVOS = { "so-apuracao": "soApuracao", "com-pesquisas": "comPesquisas" } as const satisfies Record<IdDaBase, BaseDaProjecao>;
 
 /** As bases na ordem do controle. */
 export const BASES_DA_PROJECAO: IdDaBase[] = ["so-apuracao", "com-pesquisas"];

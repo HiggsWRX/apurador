@@ -1,6 +1,5 @@
-import type { BaseDaProjecao } from "@apurador/coletor";
-import { antesNaNarracao, TIPOS_PREDITIVOS, type EventoDaNarracao } from "@apurador/coletor/narracao";
-import type { IdDaBase } from "./bases-da-projecao";
+import { antesNaNarracao, ehPreditivo, type EventoDaNarracao } from "@apurador/coletor/narracao";
+import { BASE_NOS_ARQUIVOS, type IdDaBase } from "./bases-da-projecao";
 import type { QuadroAoVivo } from "./leitor-ao-vivo";
 
 // A narração da noite como a página a mostra (Narração da noite, decisões 1, 5, 6 e 10): a do próprio lugar, que vem
@@ -27,9 +26,9 @@ export const eventosDoLugar = (quadro: QuadroAoVivo): EventoDaNarracao[] => (qua
  */
 export function naBaseEscolhida(eventos: EventoDaNarracao[], quadro: Pick<QuadroAoVivo, "chaves">, escolhida: IdDaBase): EventoDaNarracao[] {
   const { textosPreditivos, projecao, baseComPesquisas } = quadro.chaves;
-  const base: BaseDaProjecao | null = !textosPreditivos || !projecao ? null : escolhida === "com-pesquisas" && baseComPesquisas ? "comPesquisas" : "soApuracao";
+  const base = textosPreditivos && projecao ? BASE_NOS_ARQUIVOS[escolhida === "com-pesquisas" && baseComPesquisas ? "com-pesquisas" : "so-apuracao"] : null;
   return eventos.flatMap((e) => {
-    if (e.base !== undefined || TIPOS_PREDITIVOS.includes(e.tipo)) return e.base === base ? [e] : [];
+    if (ehPreditivo(e)) return e.base === base ? [e] : [];
     const linha = base && e.linhaDaProjecao?.[base];
     return linha ? [{ ...e, texto: `${e.texto} ${linha}` }] : [e];
   });

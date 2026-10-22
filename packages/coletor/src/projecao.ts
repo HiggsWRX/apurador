@@ -16,8 +16,15 @@ import {
 } from "@apurador/modelo";
 import { assinaturaDosLugares, idDoMunicipio } from "@apurador/pipeline";
 import type { AbrangenciaDaDivulgacao, ResultadoDoTse } from "@apurador/tse";
-import type { BaseDaProjecao, ColunasDaBase, MunicipiosDaTabela, ProjecaoDoLugar, ProjecaoNaBase, ProjecoesDosMunicipios } from "./arquivos.ts";
-import type { NumerosDaProjecao } from "./narracao.ts";
+import type {
+  BaseDaProjecao,
+  ColunasDaBase,
+  MunicipiosDaTabela,
+  NumerosDaProjecao,
+  ProjecaoDoLugar,
+  ProjecaoNaBase,
+  ProjecoesDosMunicipios,
+} from "./arquivos.ts";
 
 // A projeção da noite no coletor (spec, "Rodada", passo 4): a cada rodada com resultado novo, o `modelo` roda nas duas
 // bases sobre a apuração de cada município que o coletor guarda, e sai pronta para os JSONs do Brasil, de cada UF e do

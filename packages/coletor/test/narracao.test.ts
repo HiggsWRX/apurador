@@ -3,7 +3,8 @@ import type { SinalDeVirada } from "@apurador/modelo";
 import type { Lugar } from "@apurador/pipeline";
 import { lerResultado, type ResultadoDoTse } from "@apurador/tse";
 import { describe, expect, it } from "vitest";
-import { criarNarracao } from "../src/narracao.ts";
+import type { BaseDaProjecao, NumerosDaProjecao } from "../src/arquivos.ts";
+import { criarNarracao, type RodadaDaNarracao } from "../src/narracao.ts";
 
 // A narração factual (Narração da noite, decisões 1 a 3, 7, 8, 10 e 11), pela interface que o coletor usa: os
 // resultados novos de cada rodada entram, a narração de cada lugar sai, pronta. Os números são os dos modelos de texto
@@ -20,8 +21,8 @@ const LUGARES: Lugar[] = [
 ];
 
 interface Parte {
-  /** `AAAA-MM-DD HH:MM:SS`, em Brasília. */
-  quando: string;
+  /** `AAAA-MM-DD HH:MM:SS`, em Brasília, ou `null` num lugar ainda sem seção, como o TSE o escreve. */
+  quando: string | null;
   secoes: [totalizadas: number, total: number, percentual: number];
   /** Flávio e Lula: votos e % dos válidos, como o TSE os escreve. */
   flavio?: [number, number];
@@ -475,8 +476,7 @@ describe("os eventos preditivos", () => {
   // Narração da noite, decisões 5, 6 e 8: o coletor os calcula sempre, a cada rodada, pela projeção dela, e só os guarda
   // nas bases cujos textos preditivos estão no ar. Os números são os de um lugar com Flávio à frente no placar parcial;
   // a chance é a de vitória do 1º candidato do arquivo de rodada, Flávio.
-  type Numeros = { projecao: number; margem: number; chance: number; chanceDeVirada: number | null; sinalDeVirada: SinalDeVirada | null };
-  const numeros = (sinalDeVirada: SinalDeVirada | null, chanceDeVirada: number | null, chance = 100 - (chanceDeVirada ?? 0)): Numeros => ({
+  const numeros = (sinalDeVirada: SinalDeVirada | null, chanceDeVirada: number | null, chance = 100 - (chanceDeVirada ?? 0)): NumerosDaProjecao => ({
     projecao: 50.9,
     margem: 0.6,
     chance,
@@ -484,11 +484,18 @@ describe("os eventos preditivos", () => {
     sinalDeVirada,
   });
   const SO_APURACAO = ["soApuracao"] as const;
-  /** A rodada da narração com a projeção de cada lugar na "Só apuração" e as bases cujos preditivos estão no ar. */
-  const comProjecao = (porLugar: Record<string, Numeros>, preditivosNoAr: readonly ("soApuracao" | "comPesquisas")[] = SO_APURACAO) => ({
+  type Chaves = Pick<RodadaDaNarracao, "textosPreditivos" | "basesNoAr">;
+  const DESLIGADOS: Chaves = { textosPreditivos: false };
+  /**
+   * A rodada da narração com a projeção de cada lugar na "Só apuração": por padrão, com a chave dos textos preditivos
+   * ligada e só a "Só apuração" no ar.
+   */
+  const comProjecao = (porLugar: Record<string, NumerosDaProjecao>, chaves: Chaves = {}): RodadaDaNarracao => ({
     coincidemNoBrasil: false,
-    projecao: (id: string, base: string) => (base === "soApuracao" ? porLugar[id] : undefined),
-    preditivosNoAr,
+    numeros: (id, base) => (base === "soApuracao" ? porLugar[id] : undefined),
+    textosPreditivos: true,
+    basesNoAr: SO_APURACAO,
+    ...chaves,
   });
   const BRASIL_COM_FLAVIO_A_FRENTE: [string, Parte] = [
     "BR",
@@ -496,7 +503,7 @@ describe("os eventos preditivos", () => {
   ];
   const preditivos = (narracao: ReturnType<typeof criarNarracao>, id = "BR") => narracao.doLugar(id).filter((e) => e.texto.startsWith("Projeção do Apurador"));
 
-  it("a mudança do sinal de virada entra depois de durar 3 rodadas, na hora do TSE mais nova, sem número na curva", () => {
+  it("a mudança do sinal de virada entra depois de durar 3 rodadas, numa rodada sem arquivo do lugar na hora do TSE mais nova, sem número na curva", () => {
     const narracao = criarNarracao(LUGARES);
     narracao.narrar(rodada(BRASIL_COM_FLAVIO_A_FRENTE), comProjecao({ BR: numeros("sem sinal de virada", 3) }));
     narracao.narrar(new Map(), comProjecao({ BR: numeros("virada possível", 22) }));
@@ -558,12 +565,14 @@ describe("os eventos preditivos", () => {
       "BR",
       { quando: "2022-10-30 18:26:53", secoes: [237618, 472027, 50.34], flavio: [57_873_281, 50.43], lula: [56_885_102, 49.57] },
     ];
-    const nasDuasBases = (preditivosNoAr: readonly ("soApuracao" | "comPesquisas")[]) => ({
-      projecao: (id: string, base: string) => ({
+    const nasDuasBases = (chaves: Chaves = {}): RodadaDaNarracao => ({
+      numeros: (_id, base) => ({
         ...numeros("virada projetada", 62),
         ...(base === "soApuracao" ? { projecao: 49.1, margem: 0.6 } : { projecao: 48.7, margem: 0.8 }),
       }),
-      preditivosNoAr,
+      textosPreditivos: true,
+      basesNoAr: ["soApuracao", "comPesquisas"],
+      ...chaves,
     });
     const narracao = criarNarracao(LUGARES);
     narracao.narrar(
@@ -572,7 +581,7 @@ describe("os eventos preditivos", () => {
         ["SP", { ...SP_A_50[1], quando: "2022-10-30 18:20:00", secoes: [40000, 101073, 39.58] }],
       ),
     );
-    narracao.narrar(rodada(BR_A_50, SP_A_50), nasDuasBases(["soApuracao", "comPesquisas"]));
+    narracao.narrar(rodada(BR_A_50, SP_A_50), nasDuasBases());
 
     expect(narracao.doLugar("BR").find((e) => e.lugar === "BR" && e.tipo === "marco")!.linhaDaProjecao).toEqual({
       soApuracao: "Projeção do Apurador: Flávio 49,1% ± 0,6, Lula 50,9% ± 0,6.",
@@ -586,15 +595,15 @@ describe("os eventos preditivos", () => {
 
     const semPreditivos = criarNarracao(LUGARES);
     semPreditivos.narrar(rodada(["BR", { ...BR_A_50[1], quando: "2022-10-30 18:20:00", secoes: [212412, 472027, 45.0] }]));
-    semPreditivos.narrar(rodada(BR_A_50), nasDuasBases([]));
+    semPreditivos.narrar(rodada(BR_A_50), nasDuasBases(DESLIGADOS));
     expect(semPreditivos.doLugar("BR").find((e) => e.tipo === "marco")).not.toHaveProperty("linhaDaProjecao");
   });
 
   it("ligados no meio da noite, entram só dali em diante: as travas andaram com eles desligados, e nada do que mudou antes sai", () => {
     const narracao = criarNarracao(LUGARES);
-    narracao.narrar(rodada(BRASIL_COM_FLAVIO_A_FRENTE), comProjecao({ BR: numeros("sem sinal de virada", 3) }, []));
+    narracao.narrar(rodada(BRASIL_COM_FLAVIO_A_FRENTE), comProjecao({ BR: numeros("sem sinal de virada", 3) }, DESLIGADOS));
     // Desligados, o sinal muda e a chance de Lula passa de 90%.
-    for (const chance of [25, 26, 27, 91]) narracao.narrar(new Map(), comProjecao({ BR: numeros("virada possível", chance) }, []));
+    for (const chance of [25, 26, 27, 91]) narracao.narrar(new Map(), comProjecao({ BR: numeros("virada possível", chance) }, DESLIGADOS));
     expect(preditivos(narracao)).toEqual([]);
 
     // Ligados, o mesmo sinal e a mesma chance não são novidade; a virada projetada, que dura 3 rodadas, é.
@@ -612,15 +621,14 @@ describe("os eventos preditivos", () => {
       { quando: "2022-10-30 18:26:53", secoes: [237618, 472027, 50.34], flavio: [57_873_281, 50.43], lula: [56_885_102, 49.57] },
     ];
     const narracao = criarNarracao(LUGARES);
-    const lula = (chance: number, preditivosNoAr?: readonly ("soApuracao" | "comPesquisas")[]) =>
-      comProjecao({ BR: numeros("virada possível", chance) }, preditivosNoAr);
+    const lula = (chance: number, chaves?: Chaves) => comProjecao({ BR: numeros("virada possível", chance) }, chaves);
     narracao.narrar(rodada(BRASIL_COM_FLAVIO_A_FRENTE), lula(60));
     narracao.narrar(rodada(BR_A_50), lula(91));
     expect(preditivos(narracao)).toHaveLength(1);
     // Os marcos de 25% e de 50%.
     expect(narracao.doLugar("BR").filter((e) => e.linhaDaProjecao)).toHaveLength(2);
 
-    const mudaram = narracao.narrar(new Map(), lula(91, []));
+    const mudaram = narracao.narrar(new Map(), lula(91, DESLIGADOS));
     expect(mudaram).toEqual(new Set(["BR"]));
     expect(preditivos(narracao)).toEqual([]);
     expect(narracao.doLugar("BR").filter((e) => "linhaDaProjecao" in e)).toEqual([]);
@@ -630,25 +638,39 @@ describe("os eventos preditivos", () => {
     expect(textos(preditivos(narracao))).toEqual(["18:26 · Projeção do Apurador: chance de vitória de Lula passa de 90%."]);
   });
 
-  it("uma base que sai do ar perde os preditivos dela, e a outra fica com os seus", () => {
+  it("uma base fora do ar esconde os preditivos dela, que voltam com ela; os que surgem com ela fora do ar não entram", () => {
     const narracao = criarNarracao(LUGARES);
-    const nasDuas = (chance: number, preditivosNoAr: readonly ("soApuracao" | "comPesquisas")[]) => ({
-      projecao: () => numeros("virada possível", chance),
-      preditivosNoAr,
+    const nasDuas = (chance: number, basesNoAr: readonly BaseDaProjecao[]): RodadaDaNarracao => ({
+      numeros: () => numeros("virada possível", chance),
+      textosPreditivos: true,
+      basesNoAr,
     });
-    narracao.narrar(rodada(BRASIL_COM_FLAVIO_A_FRENTE), nasDuas(60, ["soApuracao", "comPesquisas"]));
-    narracao.narrar(new Map(), nasDuas(91, ["soApuracao", "comPesquisas"]));
-    expect(
+    const bases = () =>
       preditivos(narracao)
         .map((e) => e.base)
-        .sort(),
-    ).toEqual(["comPesquisas", "soApuracao"]);
+        .sort();
+    narracao.narrar(rodada(BRASIL_COM_FLAVIO_A_FRENTE), nasDuas(60, ["soApuracao", "comPesquisas"]));
+    narracao.narrar(new Map(), nasDuas(91, ["soApuracao", "comPesquisas"]));
+    expect(bases()).toEqual(["comPesquisas", "soApuracao"]);
 
-    narracao.narrar(new Map(), nasDuas(91, ["soApuracao"]));
-    expect(preditivos(narracao).map((e) => e.base)).toEqual(["soApuracao"]);
+    // Sem a base com pesquisas, os preditivos dela saem dos arquivos, e a chance que passa de 90% de novo só entra na outra.
+    const mudaram = narracao.narrar(new Map(), nasDuas(91, ["soApuracao"]));
+    expect(mudaram).toEqual(new Set(["BR"]));
+    expect(bases()).toEqual(["soApuracao"]);
+    narracao.narrar(new Map(), nasDuas(79, ["soApuracao"]));
+    narracao.narrar(new Map(), nasDuas(93, ["soApuracao"]));
+    expect(bases()).toEqual(["soApuracao", "soApuracao"]);
+
+    // De volta, ela traz os dela de antes. Sem a projeção no ar, nenhum sai; com ela de volta, voltam todos.
+    narracao.narrar(new Map(), nasDuas(93, ["soApuracao", "comPesquisas"]));
+    expect(bases()).toEqual(["comPesquisas", "soApuracao", "soApuracao"]);
+    narracao.narrar(new Map(), nasDuas(93, []));
+    expect(preditivos(narracao)).toEqual([]);
+    narracao.narrar(new Map(), nasDuas(93, ["soApuracao", "comPesquisas"]));
+    expect(bases()).toEqual(["comPesquisas", "soApuracao", "soApuracao"]);
   });
 
-  it("os municípios também têm os seus, e param quando o lugar termina e, em todo lugar, com a indicação do TSE", () => {
+  it("os municípios também têm os seus, e param quando o lugar termina", () => {
     const SALVADOR: [string, Parte] = ["38490", { quando: "2022-10-30 18:05:00", secoes: [1000, 4370, 22.88], flavio: [60_000, 30.1], lula: [139_000, 69.9] }];
     const narracao = criarNarracao(LUGARES);
     const rodadaCom = (chanceDeFlavio: number) =>
@@ -660,10 +682,70 @@ describe("os eventos preditivos", () => {
     // Terminado, a chance de Lula vai a 100%: nada entra depois do "terminou".
     narracao.narrar(rodada(["38490", { ...SALVADOR[1], quando: "2022-10-30 19:27:00", secoes: [4370, 4370, 100] }]), rodadaCom(0));
     expect(narracao.doLugar("38490").map((e) => e.tipo)).toEqual(["fim", "chance", "comeco"]);
+  });
 
-    // Com a indicação do TSE, a eleição está definida, e o sinal de virada para (Sinal de virada, decisão 3).
-    narracao.narrar(rodada(["BR", { ...BRASIL_COM_FLAVIO_A_FRENTE[1], quando: "2022-10-30 19:56:23", indicacao: true }]), rodadaCom(0));
-    for (let i = 0; i < 3; i++) narracao.narrar(new Map(), comProjecao({ BR: numeros("virada projetada", 100) }));
+  it("na rodada de um arquivo novo do lugar, o preditivo leva a hora dele e vem depois da virada, que fica no topo (decisão 10)", () => {
+    const narracao = criarNarracao(LUGARES);
+    // São Paulo com Flávio à frente; na rodada seguinte, Lula passa à frente, e a chance dele passa de 90%. O arquivo do
+    // Brasil da mesma rodada é mais novo que o de São Paulo.
+    narracao.narrar(
+      rodada(["SP", { quando: "2022-10-30 18:00:00", secoes: [20000, 101073, 19.79], flavio: [1_000_000, 50.5], lula: [980_000, 49.5] }]),
+      comProjecao({ SP: numeros("virada possível", 30) }),
+    );
+    narracao.narrar(
+      rodada(
+        ["SP", { quando: "2022-10-30 18:05:00", secoes: [30000, 101073, 29.68], flavio: [1_400_000, 49.6], lula: [1_420_000, 50.4] }],
+        ["BR", { ...BRASIL_COM_FLAVIO_A_FRENTE[1], quando: "2022-10-30 18:05:40" }],
+      ),
+      comProjecao({ SP: numeros("virada possível", 9, 9) }),
+    );
+
+    expect(
+      narracao
+        .doLugar("SP")
+        .slice(0, 3)
+        .map((e) => [e.tipo, e.quando.slice(11)]),
+    ).toEqual([
+      ["virada", "18:05:00"],
+      ["chance", "18:05:00"],
+      ["marco", "18:05:00"],
+    ]);
+  });
+
+  it("as travas andam antes do começo do lugar: a chance que passa de 90% com a primeira seção entra, e a que passou antes dela, não", () => {
+    const ainda: [string, Parte] = ["38490", { quando: null, secoes: [0, 4370, 0] }];
+    const comeca: [string, Parte] = ["38490", { quando: "2022-10-30 18:12:00", secoes: [400, 4370, 9.15], flavio: [20_000, 25.0], lula: [60_000, 75.0] }];
+    const lula = (chance: number) => comProjecao({ "38490": numeros(null, null, 100 - chance) });
+
+    const narracao = criarNarracao(LUGARES);
+    narracao.narrar(rodada(BRASIL_COM_FLAVIO_A_FRENTE, ainda), lula(85));
+    narracao.narrar(new Map(), lula(88));
+    narracao.narrar(rodada(comeca), lula(93));
+    expect(textos(preditivos(narracao, "38490"))).toEqual(["18:12 · Projeção do Apurador: chance de vitória de Lula passa de 90%."]);
+
+    const jaPassou = criarNarracao(LUGARES);
+    jaPassou.narrar(rodada(BRASIL_COM_FLAVIO_A_FRENTE, ainda), lula(85));
+    jaPassou.narrar(new Map(), lula(93));
+    jaPassou.narrar(rodada(comeca), lula(95));
+    expect(preditivos(jaPassou, "38490")).toEqual([]);
+  });
+
+  it("com a indicação do TSE, param o sinal de virada em todo lugar e a chance no Brasil; a das UFs e dos municípios segue", () => {
+    const narracao = criarNarracao(LUGARES);
+    const SP: [string, Parte] = ["SP", { quando: "2022-10-30 19:50:00", secoes: [90000, 101073, 89.05], flavio: [12_000_000, 55.0], lula: [9_800_000, 45.0] }];
+    const rodadaCom = (sinalNoBrasil: SinalDeVirada, chanceDeFlavio: { BR: number; SP: number }) =>
+      comProjecao({
+        BR: numeros(sinalNoBrasil, 100 - chanceDeFlavio.BR, chanceDeFlavio.BR),
+        SP: numeros("sem sinal de virada", 100 - chanceDeFlavio.SP, chanceDeFlavio.SP),
+      });
+    narracao.narrar(rodada(BRASIL_COM_FLAVIO_A_FRENTE, SP), rodadaCom("sem sinal de virada", { BR: 60, SP: 80 }));
+    narracao.narrar(
+      rodada(["BR", { ...BRASIL_COM_FLAVIO_A_FRENTE[1], quando: "2022-10-30 19:56:23", indicacao: true }]),
+      rodadaCom("virada projetada", { BR: 100, SP: 95 }),
+    );
+    for (let i = 0; i < 3; i++) narracao.narrar(new Map(), rodadaCom("virada projetada", { BR: 100, SP: 95 }));
+
     expect(preditivos(narracao)).toEqual([]);
+    expect(textos(preditivos(narracao, "SP"))).toEqual(["19:56 · Projeção do Apurador: chance de vitória de Flávio passa de 90%."]);
   });
 });

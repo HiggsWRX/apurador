@@ -1,6 +1,6 @@
 import type { ArquivoDeRodada, ArquivoDoLugar, ColunasDaBase, PontoDaCurvaProjetada, ProjecaoDoLugar, ProjecaoNaBase } from "@apurador/coletor";
 import { Z_95, type PontoDaCurva, type ViradaProjetada } from "@apurador/modelo";
-import { BASES_DA_PROJECAO, NOME_DA_BASE, type IdDaBase } from "./bases-da-projecao";
+import { BASE_NOS_ARQUIVOS, BASES_DA_PROJECAO, NOME_DA_BASE, type IdDaBase } from "./bases-da-projecao";
 import { formatarCalculo, formatarChance } from "./formato";
 import type { QuadroAoVivo } from "./leitor-ao-vivo";
 import { narracaoDaPagina } from "./narracao";
@@ -35,7 +35,7 @@ export function projecaoNaPagina(quadro: QuadroAoVivo, escolhida: IdDaBase): Pro
   return {
     bases,
     base,
-    naBase: base === "com-pesquisas" ? comPesquisas! : doLugar.soApuracao,
+    naBase: doLugar[BASE_NOS_ARQUIVOS[base]]!,
     doLugar,
     pesoDasPesquisas: quadro.rodada?.pesoDasPesquisas ?? null,
     comIndicacao: (narracaoDaPagina(quadro) ?? []).some((e) => e.lugar === "BR" && e.tipo === "indicacao"),

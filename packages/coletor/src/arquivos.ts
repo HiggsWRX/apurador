@@ -66,6 +66,9 @@ export interface ProjecaoNaBase {
   virada: { x: number | null; cedo: number | null; tarde: number | null } | null;
 }
 
+/** Os números da projeção de um lugar numa base, sem a curva nem a virada: o que os textos preditivos da narração dizem. */
+export type NumerosDaProjecao = Pick<ProjecaoNaBase, "projecao" | "margem" | "chance" | "chanceDeVirada" | "sinalDeVirada">;
+
 /** A projeção do Brasil, de uma UF ou do Exterior, nas bases que estão no ar. */
 export interface ProjecaoDoLugar {
   soApuracao: ProjecaoNaBase;

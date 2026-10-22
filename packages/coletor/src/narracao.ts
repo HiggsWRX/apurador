@@ -1,14 +1,15 @@
 import { REGIOES, regiaoDe, type SinalDeVirada } from "@apurador/modelo";
 import type { Lugar } from "@apurador/pipeline";
 import type { CandidatoDoResultado, ResultadoDoTse } from "@apurador/tse";
-import { emOrdem, type BaseDaProjecao, type PontoDaCurvaReal, type ProjecaoNaBase } from "./arquivos.ts";
+import { emOrdem, type BaseDaProjecao, type NumerosDaProjecao, type PontoDaCurvaReal } from "./arquivos.ts";
 
 // A narração da noite (Narração da noite, decisões 1 a 3 e 5 a 11): o coletor a gera a cada rodada, a partir dos
 // resultados novos do TSE e da projeção da rodada, e a publica pronta, igual para todos. Cada lugar tem a sua. A hora de
 // um evento é o `ht` do arquivo do TSE em que ele foi visto, e os números são os do TSE, com as duas casas. Os eventos
 // preditivos e a linha da projeção nos marcos ficam atrás da chave dos textos preditivos (decisões 5 e 6): as travas
-// deles andam sempre, mas a narração só os guarda nas bases cujos preditivos estão no ar, e os esquece quando saem. A
-// página importa daqui os tipos, a ordem e os nomes curtos, por `@apurador/coletor/narracao`: nada aqui usa o Node.
+// deles andam sempre, mas a narração só os guarda com a chave ligada, nas bases da projeção no ar, e os esquece quando a
+// chave desliga. A página importa daqui os tipos, a ordem e os nomes curtos, por `@apurador/coletor/narracao`: nada aqui
+// usa o Node.
 
 /**
  * O tipo de um evento. A totalização final é o fim do Brasil; nos outros lugares, o fim é "terminou a totalização".
@@ -18,6 +19,12 @@ export type TipoDeEvento = "comeco" | "marco" | "fim" | "virada" | "indicacao" |
 
 /** Os tipos dos eventos preditivos, que começam com "Projeção do Apurador:" e só vão ao ar com a chave deles ligada. */
 export const TIPOS_PREDITIVOS: readonly TipoDeEvento[] = ["sinal-de-virada", "chance"];
+
+/** Se um evento é preditivo: pelo tipo ou pela base da projeção de que ele fala. A página e a conferência usam a mesma regra. */
+export const ehPreditivo = (evento: Pick<EventoDaNarracao, "tipo" | "base">) => evento.base !== undefined || TIPOS_PREDITIVOS.includes(evento.tipo);
+
+/** O começo de todo texto preditivo da narração (decisão 7), que o separa do que aconteceu. */
+const PROJECAO_DO_APURADOR = "Projeção do Apurador:";
 
 /** Um evento da narração, como vai nos arquivos ao vivo. */
 export interface EventoDaNarracao {
@@ -77,17 +84,22 @@ export const instanteDoTse = (dataHora: string) => Date.parse(`${dataHora.replac
  */
 export const COMECO_INSTAVEL = 3;
 
-/** Os números da projeção de um lugar numa base, como vão nos arquivos: o que os textos preditivos dizem. */
-export type NumerosDaProjecao = Pick<ProjecaoNaBase, "projecao" | "margem" | "chance" | "chanceDeVirada" | "sinalDeVirada">;
-
 /** O que a narração sabe da rodada, além dos resultados novos dela. */
 export interface RodadaDaNarracao {
   /** Se as duas bases da projeção coincidem no Brasil, pela projeção da rodada. */
   coincidemNoBrasil?: boolean;
-  /** Os números da projeção da rodada de cada lugar (o Brasil, as UFs, o Exterior e os municípios) em cada base. Sem ela, os preditivos esperam. */
-  projecao?: (id: string, base: BaseDaProjecao) => NumerosDaProjecao | undefined;
-  /** As bases cujos textos preditivos estão no ar na rodada: nenhuma com a chave deles desligada. */
-  preditivosNoAr?: readonly BaseDaProjecao[];
+  /** Os números da projeção da rodada de cada lugar (o Brasil, as UFs, o Exterior e os municípios) em cada base. Sem eles, os preditivos esperam. */
+  numeros?: (id: string, base: BaseDaProjecao) => NumerosDaProjecao | undefined;
+  /**
+   * A chave dos textos preditivos (decisão 6): desligada, a narração esquece todos os preditivos e as linhas dos marcos,
+   * inclusive os passados; ligada no meio da noite, guarda só os que surgem dali em diante.
+   */
+  textosPreditivos?: boolean;
+  /**
+   * As bases da projeção no ar na rodada. Os preditivos de uma base fora do ar (a projeção ou a base com pesquisas
+   * desligada) ficam guardados e fora dos arquivos, e voltam com ela; os que surgem nela enquanto isso não entram.
+   */
+  basesNoAr?: readonly BaseDaProjecao[];
 }
 
 /** A narração de todos os lugares de uma noite. */
@@ -184,7 +196,7 @@ function linhaDaProjecao(r: ResultadoDoTse, numeros: NumerosDaProjecao): string 
   const [primeiro, segundo] = emOrdem(r.candidatos);
   const margem = UMA_CASA.format(numeros.margem);
   const doSegundo = (1000 - Math.round(10 * numeros.projecao)) / 10;
-  return `Projeção do Apurador: ${nomeCurto(primeiro!.nomeUrna)} ${UMA_CASA.format(numeros.projecao)}% ± ${margem}, ${nomeCurto(segundo!.nomeUrna)} ${UMA_CASA.format(doSegundo)}% ± ${margem}.`;
+  return `${PROJECAO_DO_APURADOR} ${nomeCurto(primeiro!.nomeUrna)} ${UMA_CASA.format(numeros.projecao)}% ± ${margem}, ${nomeCurto(segundo!.nomeUrna)} ${UMA_CASA.format(doSegundo)}% ± ${margem}.`;
 }
 
 /** A chance de vitória ou de virada como a página a mostra: inteira, com "<1%" e ">99%" nas pontas. */
@@ -211,9 +223,9 @@ interface LugarNarrado {
   visto: string | null;
   /** O arquivo mais novo visto: o placar parcial de que os preditivos falam. */
   ultimo: ResultadoDoTse | null;
-  /** As travas dos preditivos em cada base, a partir da primeira rodada com projeção depois do começo do lugar. */
+  /** As travas dos preditivos em cada base, a partir da primeira rodada com projeção: antes do começo do lugar, só andam. */
   travas: Partial<Record<BaseDaProjecao, Travas>>;
-  /** Os eventos preditivos que entraram com a base deles no ar, na ordem em que entraram. Sem número na curva. */
+  /** Os eventos preditivos que entraram com a chave ligada e a base deles no ar, na ordem em que entraram. Sem número na curva. */
   preditivos: EventoDaNarracao[];
   /** Se a indicação do TSE já entrou (só no Brasil). */
   indicacao: boolean;
@@ -241,9 +253,16 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
   let ultimoDoBrasil: ResultadoDoTse | null = null;
   /** "As pesquisas deixaram de pesar" entra uma vez na noite (decisão 2), mesmo que as bases deixem de coincidir e voltem. */
   let pesquisasNarradas = false;
-  /** A última totalização mais nova de todos os arquivos vistos: a hora dos preditivos, que a projeção da rodada inteira muda. */
+  /**
+   * A última totalização mais nova de todos os arquivos vistos: a hora de um preditivo numa rodada sem arquivo novo do
+   * lugar, quando o que o mudou foi a projeção, que chega dos outros lugares.
+   */
   let maisNovo: string | null = null;
-  /** A linha da projeção de cada marco que entrou com preditivos no ar, nas bases que estavam no ar. */
+  /** Os lugares com arquivo novo na rodada: um preditivo deles leva a hora desse arquivo, a dos factuais da mesma rodada. */
+  const vistosNaRodada = new Set<string>();
+  /** As bases cujos preditivos vão ao ar, pela última rodada: nenhuma com a chave desligada. */
+  let visiveis: readonly BaseDaProjecao[] = [];
+  /** A linha da projeção de cada marco que entrou com a chave ligada, nas bases que estavam no ar. */
   const linhas = new Map<EventoDaNarracao, Partial<Record<BaseDaProjecao, string>>>();
 
   /** "As pesquisas deixaram de pesar", na hora e com o % de seções do arquivo do Brasil. */
@@ -340,6 +359,7 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
     if (quando === null || (narrado.visto !== null && quando < narrado.visto) || (totalizacaoFinal !== null && quando > totalizacaoFinal)) return [];
     narrado.visto = quando;
     narrado.ultimo = r;
+    vistosNaRodada.add(id);
     if (maisNovo === null || quando > maisNovo) maisNovo = quando;
     if (daUf(lugar)) faltam.set(id, r.secoes.total - r.secoes.totalizadas);
     if (lugar.tipo === "brasil" && r.totalizacaoFinal) totalizacaoFinal = quando;
@@ -358,7 +378,7 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
       narrado.nivel = nivel;
       const evento = eventoDoNivel(lugar, nivel, r, quando);
       novos.push(evento);
-      if (evento.tipo === "marco") guardarLinha(evento, r, rodada);
+      if (evento.tipo === "marco") guardarLinha(evento, r, rodada.numeros);
     }
     const eleito = lider(r);
     if (lugar.tipo === "brasil" && r.indicacao && !narrado.indicacao && eleito) {
@@ -403,10 +423,10 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
   }
 
   /** Guarda a linha da projeção de um marco que acaba de entrar, nas bases com os preditivos no ar e com projeção. */
-  function guardarLinha(marco: EventoDaNarracao, r: ResultadoDoTse, { projecao, preditivosNoAr = [] }: RodadaDaNarracao) {
+  function guardarLinha(marco: EventoDaNarracao, r: ResultadoDoTse, daRodada: RodadaDaNarracao["numeros"]) {
     const porBase: Partial<Record<BaseDaProjecao, string>> = {};
-    for (const base of preditivosNoAr) {
-      const numeros = projecao?.(marco.lugar, base);
+    for (const base of visiveis) {
+      const numeros = daRodada?.(marco.lugar, base);
       if (numeros) porBase[base] = linhaDaProjecao(r, numeros);
     }
     if (Object.keys(porBase).length > 0) linhas.set(marco, porBase);
@@ -430,10 +450,10 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
     if (travas.durando.rodadas < DURACAO_DO_SINAL) return undefined;
     travas.sinal = sinal;
     travas.durando = null;
-    const frente = lider(narrado.ultimo!);
-    const atras = narrado.ultimo!.candidatos.find((c) => c !== frente);
+    const frente = narrado.ultimo && lider(narrado.ultimo);
+    const atras = narrado.ultimo?.candidatos.find((c) => c !== frente);
     if (!frente || !atras || chanceDeVirada === null) return undefined;
-    return `Projeção do Apurador: ${sinal}. ${nomeCurto(frente.nomeUrna)} à frente no placar parcial; chance de virada de ${nomeCurto(atras.nomeUrna)} ${chanceNoTexto(chanceDeVirada)}.`;
+    return `${PROJECAO_DO_APURADOR} ${sinal}. ${nomeCurto(frente.nomeUrna)} à frente no placar parcial; chance de virada de ${nomeCurto(atras.nomeUrna)} ${chanceNoTexto(chanceDeVirada)}.`;
   }
 
   /**
@@ -441,9 +461,9 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
    * de quem o passou cai abaixo da volta. Na primeira rodada, só arma; com os dois passados na mesma rodada, o texto é o
    * do mais alto. Devolve o texto do evento, ou `undefined`.
    */
-  function chanceDeVitoria(narrado: LugarNarrado, travas: Travas, numeros: NumerosDaProjecao, primeira: boolean): string | undefined {
+  function chanceDeVitoria(daNoite: CandidatoDoResultado[], travas: Travas, numeros: NumerosDaProjecao, primeira: boolean): string | undefined {
     // A chance do arquivo é a do 1º candidato na ordem do site; a do outro, o que falta para 100.
-    const candidatos = emOrdem(narrado.ultimo!.candidatos).map((c, i) => ({ c, chance: i === 0 ? numeros.chance : 100 - numeros.chance }));
+    const candidatos = emOrdem(daNoite).map((c, i) => ({ c, chance: i === 0 ? numeros.chance : 100 - numeros.chance }));
     let passou: { nome: string; limiar: number } | undefined;
     LIMIARES_DA_CHANCE.forEach(({ passa, volta }, i) => {
       const armada = candidatos.find(({ c }) => c.numero === travas.acima[i]);
@@ -455,51 +475,61 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
       passou = { nome: nomeCurto(acima.c.nomeUrna), limiar: passa };
     });
     if (!passou || primeira) return undefined;
-    return `Projeção do Apurador: chance de vitória de ${passou.nome} passa de ${passou.limiar}%.`;
+    return `${PROJECAO_DO_APURADOR} chance de vitória de ${passou.nome} passa de ${passou.limiar}%.`;
   }
 
   /**
-   * Esquece os preditivos e as linhas dos marcos das bases que não estão no ar (decisão 6): desligados, somem todos,
-   * inclusive os passados, e religados entram só dali em diante. Marca os lugares cuja narração mudou.
+   * O que vai ao ar dos preditivos nesta rodada (decisão 6). Desligada a chave dos textos preditivos, a narração os esquece
+   * todos, inclusive os passados e as linhas dos marcos, e religada guarda só os que surgem dali em diante. Uma base que
+   * sai do ar só esconde os dela, que voltam com ela. Marca os lugares cujos arquivos mudam.
    */
-  function esquecerForaDoAr(preditivosNoAr: readonly BaseDaProjecao[], mudaram: Set<string>) {
-    const noAr = (base: BaseDaProjecao | undefined) => base !== undefined && preditivosNoAr.includes(base);
-    for (const [id, narrado] of narrados) {
-      if (narrado.preditivos.every((e) => noAr(e.base))) continue;
-      narrado.preditivos = narrado.preditivos.filter((e) => noAr(e.base));
-      mudaram.add(id);
+  function porNoAr({ textosPreditivos = false, basesNoAr = [] }: RodadaDaNarracao, mudaram: Set<string>) {
+    if (!textosPreditivos) {
+      for (const [id, narrado] of narrados) {
+        if (narrado.preditivos.length === 0) continue;
+        narrado.preditivos = [];
+        mudaram.add(id);
+      }
+      for (const marco of linhas.keys()) mudaram.add(marco.lugar);
+      linhas.clear();
     }
-    for (const [marco, porBase] of linhas) {
-      const fora = (Object.keys(porBase) as BaseDaProjecao[]).filter((base) => !noAr(base));
-      if (fora.length === 0) continue;
-      for (const base of fora) delete porBase[base];
-      if (Object.keys(porBase).length === 0) linhas.delete(marco);
-      mudaram.add(marco.lugar);
+    const agora = textosPreditivos ? basesNoAr : [];
+    const mudou = BASES.filter((base) => visiveis.includes(base) !== agora.includes(base));
+    if (mudou.length > 0) {
+      for (const [id, narrado] of narrados) if (narrado.preditivos.some((e) => mudou.includes(e.base!))) mudaram.add(id);
+      for (const [marco, porBase] of linhas) if (mudou.some((base) => porBase[base] !== undefined)) mudaram.add(marco.lugar);
     }
+    visiveis = agora;
   }
 
   /**
-   * Os preditivos da rodada (decisão 5), pela projeção dela, em todo lugar que já começou e ainda não terminou, até a
-   * indicação do TSE, quando a eleição fica definida. As travas andam em toda base; os eventos só entram nas bases no ar.
+   * Os preditivos da rodada (decisão 5), pela projeção dela, em todo lugar que ainda não terminou. As travas andam em toda
+   * base, inclusive antes do começo do lugar; os eventos entram depois dele, e só nas bases visíveis. Com a indicação do
+   * TSE, a eleição está definida: o sinal de virada para em todo lugar (Sinal de virada, decisão 3), e a chance do Brasil
+   * não diz mais nada. Um preditivo leva a hora do arquivo novo do lugar na rodada, a dos factuais dela, que a prioridade
+   * ordena (decisão 10); sem ele, a do arquivo mais novo da noite.
    */
-  function preditivosDaRodada(rodada: RodadaDaNarracao, mudaram: Set<string>) {
-    const { projecao, preditivosNoAr = [] } = rodada;
-    if (!projecao || totalizacaoFinal !== null || narrados.get("BR")?.indicacao) return;
+  function preditivosDaRodada(daRodada: RodadaDaNarracao["numeros"], mudaram: Set<string>) {
+    if (!daRodada || totalizacaoFinal !== null) return;
+    const comIndicacao = narrados.get("BR")?.indicacao ?? false;
     for (const [id, narrado] of narrados) {
-      if (narrado.nivel < COMECO || narrado.nivel === FIM) continue;
+      // Antes do arquivo com hora do lugar, os candidatos são os do Brasil, os mesmos em todo arquivo que o coletor aceita.
+      const candidatos = (narrado.ultimo ?? ultimoDoBrasil)?.candidatos;
+      if (narrado.nivel === FIM || !candidatos) continue;
       for (const base of BASES) {
-        const numeros = projecao(id, base);
+        const numeros = daRodada(id, base);
         if (!numeros) continue;
         const primeira = narrado.travas[base] === undefined;
         const travas = (narrado.travas[base] ??= { sinal: null, durando: null, acima: LIMIARES_DA_CHANCE.map(() => null) });
         const entram = [
-          ["sinal-de-virada", sinalDeVirada(narrado, travas, numeros)],
-          ["chance", chanceDeVitoria(narrado, travas, numeros, primeira)],
+          ["sinal-de-virada", comIndicacao ? undefined : sinalDeVirada(narrado, travas, numeros)],
+          ["chance", comIndicacao && id === "BR" ? undefined : chanceDeVitoria(candidatos, travas, numeros, primeira)],
         ] as const;
-        if (!preditivosNoAr.includes(base)) continue;
+        if (narrado.nivel < COMECO || !visiveis.includes(base)) continue;
+        const quando = vistosNaRodada.has(id) ? narrado.visto! : maisNovo!;
         for (const [tipo, texto] of entram) {
           if (texto === undefined) continue;
-          narrado.preditivos.push({ lugar: id, tipo, base, quando: maisNovo!, texto });
+          narrado.preditivos.push({ lugar: id, tipo, base, quando, texto });
           mudaram.add(id);
         }
       }
@@ -512,7 +542,8 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
       // As UFs primeiro: os marcos do Brasil dizem onde faltam seções pelo que chegou na mesma rodada.
       const emOrdemDeNarrar = [...novos].sort(([a], [b]) => Number(!daUf(lugarDe(a))) - Number(!daUf(lugarDe(b))));
       const mudaram = new Set<string>();
-      esquecerForaDoAr(rodada.preditivosNoAr ?? [], mudaram);
+      porNoAr(rodada, mudaram);
+      vistosNaRodada.clear();
       for (const [id, r] of emOrdemDeNarrar) {
         const eventos = observar(id, r, rodada);
         if (eventos.length > 0) mudaram.add(id);
@@ -524,12 +555,16 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
         guardar(lugarDe("BR"), narrados.get("BR")!, [eventoDasPesquisas(ultimoDoBrasil)], pontoNaCurva(ultimoDoBrasil));
         mudaram.add("BR");
       }
-      preditivosDaRodada(rodada, mudaram);
+      preditivosDaRodada(rodada.numeros, mudaram);
       return mudaram;
     },
     doLugar(id) {
-      const preditivos = narrados.get(id)?.preditivos ?? [];
-      const comLinha = (e: EventoDaNarracao) => (linhas.has(e) ? { ...e, linhaDaProjecao: linhas.get(e) } : e);
+      const preditivos = (narrados.get(id)?.preditivos ?? []).filter((e) => visiveis.includes(e.base!));
+      const comLinha = (e: EventoDaNarracao) => {
+        const porBase = linhas.get(e);
+        const noAr = porBase && visiveis.flatMap((base) => (porBase[base] === undefined ? [] : [[base, porBase[base]] as const]));
+        return noAr?.length ? { ...e, linhaDaProjecao: Object.fromEntries(noAr) } : e;
+      };
       if (id === "BR") return doMaisNovo([...noBrasil, ...preditivos]).map((e) => (e.lugar === "BR" ? comLinha(e) : deOutroLugar(e)));
       return doMaisNovo([...(narrados.get(id)?.eventos ?? []), ...preditivos]).map(comLinha);
     },
