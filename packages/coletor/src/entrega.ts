@@ -7,8 +7,10 @@ import type { Buscar } from "./coletor.ts";
 // 1. um leitor sem `Origin` (a sentinela, o painel do coletor), com o cache ainda frio: o JSON tem de chegar igual ao
 //    gravado, com ETag e, no R2, com os 15 s de cache que a página espera (o TTL do navegador da zona em "Respect
 //    Existing Headers");
-// 2. o navegador, logo depois: a cópia da borda (a Cache Rule de `ao-vivo.apurador.org`), com o CORS. A Cloudflare
-//    guarda os cabeçalhos de CORS na cópia, e a cópia feita pelo pedido sem `Origin` pode chegar ao navegador sem eles;
+// 2. o navegador, logo depois, duas vezes: o CORS no primeiro pedido e, no segundo, a cópia da borda (a Cache Rule de
+//    `ao-vivo.apurador.org`). A Cloudflare guarda os cabeçalhos de CORS na cópia, e uma cópia feita pelo pedido sem
+//    `Origin` poderia chegar ao navegador sem eles. Na conta, o R2 responde com `Vary: Origin` e a borda guarda uma
+//    cópia para cada `Origin`: o primeiro pedido do navegador ainda vai ao R2, e os seguintes, de qualquer navegador, não;
 // 3. a releitura da página, com a ETag: 304, com o CORS, que é o que o código da página recebe;
 // 4. no R2, o preflight do navegador, que manda o `If-None-Match` à mão (`enderecos-ao-vivo.ts`, no site).
 //
@@ -69,10 +71,6 @@ export async function conferirEntrega(opcoes: {
 
   const segunda = await buscar(url, { headers: { origin: origem } });
   await segunda.body?.cancel();
-  if (tipo === "r2") {
-    const status = segunda.headers.get("cf-cache-status");
-    item("cache-da-borda", "o segundo pedido vem da cópia da borda", status === "HIT", `CF-Cache-Status ${status ?? "ausente"}`);
-  }
   const expostos = valoresDoCabecalho(segunda.headers.get("access-control-expose-headers"));
   item(
     "cors",
@@ -80,6 +78,12 @@ export async function conferirEntrega(opcoes: {
     permiteAOrigem(segunda) && expostos.includes("date") && expostos.includes("etag"),
     `${origemNaResposta(segunda)}, Expose-Headers ${segunda.headers.get("access-control-expose-headers") ?? "ausente"}`,
   );
+  if (tipo === "r2") {
+    const repetida = await buscar(url, { headers: { origin: origem } });
+    await repetida.body?.cancel();
+    const status = repetida.headers.get("cf-cache-status");
+    item("cache-da-borda", "o segundo pedido do navegador vem da cópia da borda", status === "HIT", `CF-Cache-Status ${status ?? "ausente"}`);
+  }
 
   const terceira = await buscar(url, { headers: { origin: origem, "if-none-match": etag ?? "" } });
   await terceira.body?.cancel();

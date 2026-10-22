@@ -27,9 +27,9 @@ Os passos 1, 2 e 6 são comandos, rodados na raiz do repositório com o login do
    - **Cache Rules** → "Create rule", com o nome "ao-vivo: respeitar a origem":
      - "Custom filter expression": `Hostname` `equals` `ao-vivo.apurador.org`;
      - "Cache eligibility": "Eligible for cache";
-     - "Edge TTL": "Use cache-control header if present, use default Cloudflare caching behavior if not". Os arquivos do coletor vão com `max-age=15`. Um 404 fica na borda pelo padrão da Cloudflare (3 min), e assim um arquivo que falta não vira uma leitura no R2 a cada visitante;
+     - "Edge TTL": "Use cache-control header if present, cache request with Cloudflare's default TTL for the response status if not". Os arquivos do coletor vão com `max-age=15`. Um 404 fica na borda pelo padrão da Cloudflare (3 min), e assim um arquivo que falta não vira uma leitura no R2 a cada visitante;
      - "Browser TTL": "Respect origin TTL".
-   - **Tiered Cache** → "Smart Tiered Caching Topology" ligado.
+   - **Smart Tiered Cache** ligado. Ele saiu de Caching e fica em Speed → Smart Shield → "Get started for free", no pacote gratuito.
    - **Configuration** → "Browser Cache TTL": "Respect Existing Headers". O padrão do plano gratuito, 4 h, trocaria o `max-age=15` da origem.
 
 4. **CORS em toda resposta** (painel → apurador.org → Rules → Transform Rules → "Modify Response Header" → "Create rule", com o nome "ao-vivo: CORS"):

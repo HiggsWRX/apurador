@@ -26,12 +26,14 @@ interface Defeitos {
   corsNaCopia?: boolean;
   /** O preflight não permite o `If-None-Match`. */
   preflightSemIfNoneMatch?: boolean;
+  /** Não é defeito, é a borda da conta: o R2 responde com `Vary: Origin`, e ela guarda uma cópia para cada `Origin`. */
+  copiaPorOrigem?: boolean;
 }
 
 /** A borda de `ao-vivo.apurador.org`, com o objeto gravado e os defeitos do teste. */
 function borda(defeitos: Defeitos = {}) {
   const etag = defeitos.recomprime ? 'W/"9b2cf535f27731c974343645a3985328"' : '"9b2cf535f27731c974343645a3985328"';
-  let copia: { comCors: boolean } | null = null;
+  const copias = new Map<string, { comCors: boolean }>();
   const buscar: Buscar = async (url, init) => {
     const pedido = new Headers(init?.headers);
     const origem = pedido.get("origin");
@@ -45,9 +47,10 @@ function borda(defeitos: Defeitos = {}) {
         headers: { ...cors(true), "access-control-allow-methods": "GET, HEAD", "access-control-allow-headers": permitidos, "access-control-max-age": "86400" },
       });
     }
-    const status = defeitos.semCacheRule ? "DYNAMIC" : copia ? "HIT" : "MISS";
-    if (!defeitos.semCacheRule) copia ??= { comCors: origem !== null };
-    const comCors = defeitos.corsNaCopia ? (copia?.comCors ?? true) : true;
+    const chave = defeitos.copiaPorOrigem ? (origem ?? "") : "";
+    const status = defeitos.semCacheRule ? "DYNAMIC" : copias.has(chave) ? "HIT" : "MISS";
+    if (!defeitos.semCacheRule && !copias.has(chave)) copias.set(chave, { comCors: origem !== null });
+    const comCors = defeitos.corsNaCopia ? (copias.get(chave)?.comCors ?? true) : true;
     const cabecalhos = {
       ...cors(comCors),
       etag,
@@ -77,6 +80,18 @@ describe("a conferência da entrega", () => {
 
   it("uma borda que recomprime e enfraquece a ETag ainda passa: o JSON chega igual e o 304 vale para a ETag fraca", async () => {
     expect(Object.values(await resultado("r2", { recomprime: true })).every(Boolean)).toBe(true);
+  });
+
+  it("a borda da conta, com uma cópia para cada `Origin`, passa: o cache conta no segundo pedido do navegador", async () => {
+    expect(await resultado("r2", { copiaPorOrigem: true })).toEqual({
+      corpo: true,
+      etag: true,
+      "cache-control": true,
+      "cache-da-borda": true,
+      cors: true,
+      "304": true,
+      preflight: true,
+    });
   });
 
   it("aponta cada defeito no seu item", async () => {
