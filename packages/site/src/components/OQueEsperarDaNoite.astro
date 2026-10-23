@@ -1,7 +1,8 @@
 ---
 import { turnosDoLugar } from "../lib/curvas-passadas";
 import { corDoPartido } from "../lib/identidade";
-import { FINALISTAS } from "../lib/pesquisas";
+import { formatarDia } from "../lib/formato";
+import { CALENDARIO, FINALISTAS, TURNO } from "../lib/pesquisas";
 import { BASE_PADRAO, METADE_DAS_SECOES, ORDEM_DE_CHEGADA, PROJECAO_ANTES_DAS_17H } from "../lib/projecao-antes-das-17h";
 import { CurvaProjetada } from "./CurvaProjetada";
 import NoitesPassadas from "./NoitesPassadas";
@@ -11,14 +12,15 @@ import NoitesPassadas from "./NoitesPassadas";
 // projeção, com a virada projetada. Antes da primeira seção ninguém está atrás no placar parcial, então não há rótulo
 // do sinal de virada, e nenhuma frase diz quem vence ou quando vira. Com a chave da projeção desligada, fica o texto
 // da ordem de chegada e, sem número de projeção, as curvas reais de noites passadas (Consulta a advogado eleitoral,
-// decisão 2). A base desenhada é a escolhida no controle da projeção, logo abaixo.
+// decisão 2). A base desenhada é a escolhida no controle da projeção, logo abaixo. No build do ensaio geral, o 1º turno
+// e o dia são os da noite do painel, os de 2022.
 
 const [primeiro, segundo] = FINALISTAS.map((c) => ({ nomeUrna: c.nomeUrna, cor: corDoPartido(c.partido) }));
 const pct = (fracao: number) => `${Math.round(100 * fracao)}%`;
 const [cedo, ...resto] = ORDEM_DE_CHEGADA;
 const chegada =
   cedo && resto.length > 0
-    ? `No 1º turno de 2026, quando o Brasil tinha ${METADE_DAS_SECOES}% das seções totalizadas, o ${cedo.regiao} já tinha ${pct(cedo.fracao)} das suas; ` +
+    ? `No 1º turno de ${TURNO.ano}, quando o Brasil tinha ${METADE_DAS_SECOES}% das seções totalizadas, o ${cedo.regiao} já tinha ${pct(cedo.fracao)} das suas; ` +
       resto.map((r, i) => `${i === resto.length - 1 ? "e " : ""}o ${r.regiao}, ${pct(r.fracao)}`).join("; ") +
       "."
     : "";
@@ -35,7 +37,10 @@ const chegada =
           <CurvaProjetada id={base.id} base={base.nome} primeiro={primeiro!} segundo={segundo!} curva={base.curva} />
         </div>
       ))}
-      <p class="nota">A curva projetada supõe, em 25/10, a ordem de chegada do 1º turno de 2026, e parte da projeção de cada base, que se escolhe abaixo.</p>
+      <p class="nota">
+        A curva projetada supõe, em {formatarDia(CALENDARIO.dia)}, a ordem de chegada do 1º turno de {TURNO.ano}, e parte da projeção de cada base, que se
+        escolhe abaixo.
+      </p>
     </>
   )}
   {!PROJECAO_ANTES_DAS_17H && <NoitesPassadas client:visible turnos={turnosDoLugar("BR")} />}

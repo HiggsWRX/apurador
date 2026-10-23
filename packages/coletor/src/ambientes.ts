@@ -21,11 +21,13 @@ export const CONTA_DA_CLOUDFLARE = "40aa2d90c0ed3139d2e8a10389f509ec";
 const RAIZ = new URL("../../../", import.meta.url);
 const caminho = (relativo: string, base: URL | string = RAIZ) => fileURLToPath(new URL(relativo, base));
 
-/** Um ambiente no R2: o bucket com o endereço público e o Worker do plano B. */
+/** Um ambiente no R2: o bucket com o endereço público, o site que o lê e o Worker do plano B. */
 export interface AmbienteDoR2 {
   bucket: string;
   /** O endereço público do bucket, com a barra no fim: o `PUBLIC_AO_VIVO` do build do site. */
   endereco: string;
+  /** A origem do site que lê o bucket: a do CORS do bucket e a do `Origin` da página. */
+  site: string;
   /** Os nomes, no `.env` do coletor, do Access Key ID e do Secret Access Key da chave de escrita só neste bucket. */
   variaveis: { chave: string; segredo: string };
   planoB: {
@@ -44,6 +46,7 @@ export const AMBIENTES = {
   producao: {
     bucket: "apurador-ao-vivo",
     endereco: "https://ao-vivo.apurador.org/",
+    site: "https://apurador.org",
     variaveis: { chave: "R2_PRODUCAO_ACCESS_KEY_ID", segredo: "R2_PRODUCAO_SECRET_ACCESS_KEY" },
     planoB: {
       worker: "apurador-plano-b",
@@ -55,6 +58,8 @@ export const AMBIENTES = {
   ensaio: {
     bucket: "apurador-ensaio",
     endereco: "https://ao-vivo-ensaio.apurador.org/",
+    // O Worker do site do ensaio (`packages/site/ensaio/wrangler.jsonc`), só em `*.workers.dev`: o link fica com quem assiste.
+    site: "https://apurador-ensaio.hicampos93.workers.dev",
     variaveis: { chave: "R2_ENSAIO_ACCESS_KEY_ID", segredo: "R2_ENSAIO_SECRET_ACCESS_KEY" },
     planoB: {
       worker: "apurador-ensaio-plano-b",

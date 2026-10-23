@@ -86,6 +86,32 @@ export function relogioAcelerado(opcoes: { partida: number; ritmo?: Trecho[]; ag
   };
 }
 
+/** A partida (ms reais) e o ritmo do relógio de um TSE falso rodando, como `npm run tse-falso` os grava. */
+export interface PartidaDoRelogio {
+  partida: number;
+  /** Sem ele, o ritmo do ensaio (`RITMO_DO_ENSAIO`). */
+  ritmo?: Trecho[];
+}
+
+/** Onde `npm run tse-falso` grava a partida do relógio, trocada a cada vez que ele parte. */
+export const ARQUIVO_DO_RELOGIO = new URL("../../../.cache/tse-falso/relogio.json", import.meta.url);
+
+/**
+ * A hora real (ms) em que o relógio do ensaio chega a um instante da noite: a conta inversa de `relogioAcelerado`. É
+ * quando o TSE falso passa a servir um arquivo com aquela hora de totalização, de onde o atraso visto de fora conta.
+ * Um instante de antes do primeiro trecho já estava no ar na partida.
+ */
+export function momentoReal(opcoes: PartidaDoRelogio, instante: number): number {
+  const ritmo = opcoes.ritmo ?? RITMO_DO_ENSAIO;
+  let segundos = 0;
+  for (const [i, trecho] of ritmo.entries()) {
+    const fim = ritmo[i + 1]?.desde ?? Infinity;
+    if (instante < fim) return opcoes.partida + 1000 * (segundos + Math.max(0, instante - trecho.desde) / trecho.velocidade);
+    segundos += (fim - trecho.desde) / trecho.velocidade;
+  }
+  throw new Error("O ritmo do relógio precisa de pelo menos um trecho");
+}
+
 /**
  * O relógio do replay, na velocidade máxima: anda com o relógio simulado do coletor (`agoraReal`, em ms), a 1x,
  * a partir de `inicio`. As esperas do coletor não esperam de verdade, e o limite de pedidos por segundo conta

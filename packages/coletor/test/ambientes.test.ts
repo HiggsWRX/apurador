@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -70,11 +71,12 @@ describe("os destinos do coletor", () => {
     );
   });
 
-  it("nada do ensaio é de produção: bucket, endereço, Worker, configuração, pasta e chave", () => {
+  it("nada do ensaio é de produção: bucket, endereço, site, Worker, configuração, pasta e chave", () => {
     const { producao, ensaio } = AMBIENTES;
     const valores = (a: typeof producao | typeof ensaio) => [
       a.bucket,
       a.endereco,
+      a.site,
       a.variaveis.chave,
       a.variaveis.segredo,
       a.planoB.worker,
@@ -83,6 +85,16 @@ describe("os destinos do coletor", () => {
       a.planoB.endereco,
     ];
     expect(valores(ensaio).filter((v) => valores(producao).includes(v))).toEqual([]);
+  });
+
+  it("o CORS de cada bucket, na pasta cloudflare/, deixa ler só o site do próprio ambiente", () => {
+    const origens = (arquivo: string) =>
+      (JSON.parse(readFileSync(new URL(`../cloudflare/${arquivo}`, import.meta.url), "utf8")) as { rules: { allowed: { origins: string[] } }[] }).rules.flatMap(
+        (r) => r.allowed.origins,
+      );
+
+    expect(origens("cors-ao-vivo.json")).toEqual([AMBIENTES.producao.site]);
+    expect(origens("cors-ao-vivo-ensaio.json")).toEqual([AMBIENTES.ensaio.site]);
   });
 
   it("a produção grava no bucket dos JSONs ao vivo e republica o Worker do plano B pelo login do wrangler", async () => {

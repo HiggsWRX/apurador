@@ -8,6 +8,7 @@ import Trilha from "../components/Trilha.astro";
 import { CHAVES } from "../lib/chaves";
 import { turnosDoLugar } from "../lib/curvas-passadas";
 import { enderecosDoBuild } from "../lib/enderecos-ao-vivo";
+import { SUBTITULO_DA_ELEICAO } from "../lib/ensaio";
 import { FOTOS } from "../lib/fotos";
 import { daUf, emLugar, lugarDaTabela } from "../lib/lugares";
 import { AGREGADO } from "../lib/pesquisas";
@@ -49,7 +50,7 @@ const enderecos = enderecosDoBuild(
   <div class="cabecalho">
     <Trilha lugar={lugar} />
     <h1>{nome}</h1>
-    <p class="subtitulo">Eleição para Presidente · 2º turno em 25 de outubro de 2026</p>
+    <p class="subtitulo">{SUBTITULO_DA_ELEICAO}</p>
   </div>
   <div class="colunas">
     <div class="principal">

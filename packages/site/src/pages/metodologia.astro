@@ -28,7 +28,7 @@ import {
   pesoDasPesquisasCom,
   VIES_DO_PRIMEIRO_TURNO,
 } from "../lib/metodologia";
-import { AGREGADO, entreOsFinalistas, FINALISTAS } from "../lib/pesquisas";
+import { PESQUISAS_DE_2026 } from "../lib/pesquisas";
 import { EMAIL_DO_PROJETO, RESPONSAVEL } from "../lib/projeto";
 
 // A página de metodologia (Página de metodologia, decisões 1 a 9; Segunda consulta jurídica, decisão 3), na estrutura
@@ -57,6 +57,8 @@ const secao = (id: Ancora) => {
   return { id, numero: String(posicao + 1).padStart(2, "0"), titulo: SECOES[posicao]!.titulo };
 };
 
+// A metodologia é a da noite de 25/10, também no build do ensaio geral, que só troca o painel de antes das 17h.
+const { agregado: AGREGADO, entreOsFinalistas, finalistas: FINALISTAS } = PESQUISAS_DE_2026;
 const [flavio, lula] = FINALISTAS.map((c) => nomeCurto(c.nomeUrna)) as [string, string];
 const pct = (n: number) => `${formatarCalculo(n)}%`;
 

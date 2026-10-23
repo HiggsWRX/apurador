@@ -33,7 +33,8 @@ export { ehPreditivo, TIPOS_PREDITIVOS, type EventoDaNarracao, type TipoDeEvento
 export { pastaLocal, type Destino } from "./destino.ts";
 export { destinoR2, type CredenciaisDoR2 } from "./r2.ts";
 export { republicacaoDoWorker, type DestinoDoPlanoB } from "./plano-b.ts";
-export { criarContadorDeGravacoes, type ContadorDeGravacoes, type GravacoesDoMes } from "./contador.ts";
+export { AMBIENTES, type AmbienteDoR2 } from "./ambientes.ts";
+export { ARQUIVO_DO_CONTADOR, criarContadorDeGravacoes, lerContadorDeGravacoes, type ContadorDeGravacoes, type GravacoesDoMes } from "./contador.ts";
 export { relogioReal, relogioSemEspera, type RelogioDoColetor } from "./relogio.ts";
 export {
   AVISOS_PRONTOS,

@@ -1,9 +1,9 @@
-import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
 import { instanteDaNoite, lerCadastro, lerNoite } from "@apurador/pipeline";
-import { relogioAcelerado, ritmoDesde } from "./relogio.ts";
+import { ARQUIVO_DO_RELOGIO, relogioAcelerado, ritmoDesde, type PartidaDoRelogio } from "./relogio.ts";
 import { servirTseFalso } from "./servidor.ts";
 import { criarTseFalso } from "./tse-falso.ts";
 
@@ -12,7 +12,8 @@ import { criarTseFalso } from "./tse-falso.ts";
 //   --partida: a hora da noite em que o relógio começa (padrão 16:50).
 //   --velocidade: uma velocidade só para a noite toda; sem ela, o ritmo do ensaio (3x até 20:30, 30x depois).
 // Comandos, digitados no terminal enquanto ele roda: "403 <segundos>", "liberar", "estado", "sair".
-// O registro (404, 403 e violações do limite) vai para .cache/tse-falso/, uma linha JSON por entrada.
+// O registro (404, 403 e violações do limite) vai para .cache/tse-falso/, uma linha JSON por entrada, e a partida do
+// relógio, para a conferência do ensaio, para .cache/tse-falso/relogio.json.
 
 const { values: opcoes } = parseArgs({
   options: {
@@ -37,7 +38,11 @@ if (ritmo.some((t) => !(t.velocidade > 0))) throw new Error(`--velocidade deve s
 const PASTA = new URL(".cache/tse-falso/", RAIZ);
 mkdirSync(PASTA, { recursive: true });
 const arquivoDoRegistro = new URL(`registro-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`, PASTA);
-const relogio = relogioAcelerado({ partida: Date.now(), ritmo });
+const partida = Date.now();
+const relogio = relogioAcelerado({ partida, ritmo });
+// A partida e o ritmo, para a conferência do ensaio saber quando cada arquivo entrou no ar (`momentoReal`).
+const partidaDoRelogio: PartidaDoRelogio = { partida, ritmo };
+writeFileSync(ARQUIVO_DO_RELOGIO, `${JSON.stringify(partidaDoRelogio)}\n`);
 const tse = criarTseFalso({
   noite,
   cadastro,

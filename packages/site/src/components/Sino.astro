@@ -1,7 +1,7 @@
 ---
 import { formatarCalculo, formatarChance } from "../lib/formato";
 import { corDoPartido, nomeCurto } from "../lib/identidade";
-import { FINALISTAS } from "../lib/pesquisas";
+import { PESQUISAS_DE_2026 } from "../lib/pesquisas";
 import { sino } from "../lib/sino";
 
 // O sino da seção "De onde vem a chance de vitória" (Página de metodologia, decisão 5): o agregado do dia desenhado
@@ -19,8 +19,8 @@ const { valor, incerteza } = Astro.props;
 const LARGURA = 340;
 const ALTURA = 180;
 const s = sino({ valor, incerteza, largura: LARGURA, altura: ALTURA });
-const [primeiro, segundo] = FINALISTAS;
-const nome = (c: (typeof FINALISTAS)[number]) => nomeCurto(c.nomeUrna);
+const [primeiro, segundo] = PESQUISAS_DE_2026.finalistas;
+const nome = (c: typeof primeiro) => nomeCurto(c.nomeUrna);
 const chances = [formatarChance(s.chance), formatarChance(1 - s.chance)] as const;
 const descricao =
   `Distribuição do resultado final, em % de ${nome(primeiro)} nos votos válidos, de ${s.marcas[0]!.valor}% a ${s.marcas[2]!.valor}%, ` +

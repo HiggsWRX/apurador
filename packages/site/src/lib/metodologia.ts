@@ -30,7 +30,7 @@ import pesquisasCsv from "../../../../dados/pesquisas.csv?raw";
 import resultadosHistoricos from "../../../../dados/resultados-historicos.json";
 import { formatarNumero, formatarPctComCasas, formatarPontos, formatarVotos } from "./formato";
 import { nomeCurto } from "./identidade";
-import { PLACAR_ENTRE_FINALISTAS_DO_BRASIL, TURNO } from "./pesquisas";
+import { PESQUISAS_DE_2026 } from "./pesquisas";
 
 // Os números da página de metodologia que não são o agregado do dia (Página de metodologia, decisões 2, 3, 5 e 9): as
 // constantes congeladas do modelo, a lista fechada de institutos, o erro do agregado nos 2º turnos passados, o viés do
@@ -108,8 +108,9 @@ export interface ViesDoPrimeiroTurno {
 
 /** O viés do 1º turno de 2026, pela regra do agregado sobre as pesquisas finais do 1º turno (ticket 05). */
 export const VIES_DO_PRIMEIRO_TURNO: ViesDoPrimeiroTurno = (() => {
-  const pesquisas = agregadoDaNoite(historicas, resultados, { ano: TURNO.ano, turno: TURNO.turno }, finalistas(TURNO) as [number, number]).valor;
-  return { pesquisas, resultado: PLACAR_ENTRE_FINALISTAS_DO_BRASIL, diferenca: PLACAR_ENTRE_FINALISTAS_DO_BRASIL - pesquisas };
+  const { turno, placarEntreFinalistasDoBrasil: resultado } = PESQUISAS_DE_2026;
+  const pesquisas = agregadoDaNoite(historicas, resultados, { ano: turno.ano, turno: turno.turno }, finalistas(turno) as [number, number]).valor;
+  return { pesquisas, resultado, diferenca: resultado - pesquisas };
 })();
 
 /** A incerteza do agregado no dia da eleição, em pontos: a da decisão 5, que o modelo usa. */
