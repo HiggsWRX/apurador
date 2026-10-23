@@ -27,9 +27,9 @@ export {
   type ProjecoesDosMunicipios,
   type TabelaDeProjecoes,
 } from "./arquivos.ts";
-export { type EntradaDaProjecao } from "./projecao.ts";
+export { type EntradaDaProjecao, type ProjecaoDaRodada } from "./projecao.ts";
 export { lerEntradaDaProjecao, NOITES_DA_PROJECAO, type NoiteDaProjecao } from "./entrada-da-projecao.ts";
-export { ehPreditivo, TIPOS_PREDITIVOS, type EventoDaNarracao, type TipoDeEvento } from "./narracao.ts";
+export { ehPreditivo, TIPOS_PREDITIVOS, type EstadoDaNarracao, type EventoDaNarracao, type TipoDeEvento } from "./narracao.ts";
 export { pastaLocal, type Destino } from "./destino.ts";
 export { destinoR2, type CredenciaisDoR2 } from "./r2.ts";
 export { republicacaoDoWorker, type DestinoDoPlanoB } from "./plano-b.ts";
@@ -51,3 +51,4 @@ export {
   type NomeDaChave,
 } from "./chaves.ts";
 export { ARQUIVO_DE_CONTROLE, controleDoArquivoDeChaves, gravarArquivoDeControle, lerArquivoDeControle, type ArquivoDeControle } from "./controle.ts";
+export { lerEstadoGuardado, reproduzirAProjecao, type ArquivoDoTseGuardado, type EstadoDeRetomada, type EstadoGuardado, type Partida } from "./retomada.ts";

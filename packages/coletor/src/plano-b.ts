@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import type { Destino } from "./destino.ts";
 import { pastaLocal } from "./destino.ts";
+import { OUTRA_NOITE } from "./retomada.ts";
 
 // O plano B (Arquitetura e tecnologia, decisão 15; Operação na noite, decisão 14): um Worker só com os arquivos ao
 // vivo como static assets, que funciona em `*.workers.dev` sem o domínio nem o R2. O coletor grava os arquivos na pasta
@@ -31,9 +32,6 @@ const CABECALHOS_DO_PLANO_B = ["/*", "  Access-Control-Allow-Origin: *", "  Acce
  * fica em uma a cada 3 rodadas de 20 s.
  */
 const CADENCIA = 50_000;
-
-/** Uma pasta com o arquivo de rodada mais velho que isso é de outra noite. */
-const OUTRA_NOITE = 6 * 3_600_000;
 
 /** O destino do plano B, que diz também quando o que ele grava chegou ao Worker. */
 export interface DestinoDoPlanoB extends Destino {

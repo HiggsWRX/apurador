@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -10,13 +10,15 @@ import type { ArquivoDeRodada, ArquivoDoLugar } from "./arquivos.ts";
 import { CHAVES_DA_NOITE, NOMES_DAS_CHAVES } from "./chaves.ts";
 import { criarColetor, type RegistroDaRodada } from "./coletor.ts";
 import { medidorDoComputador, tocarNoComputador } from "./computador.ts";
+import { horaDeBrasilia } from "./formatos.ts";
 import { ARQUIVO_DO_CONTADOR, criarContadorDeGravacoes, gravarContadorDeGravacoes, lerContadorDeGravacoes, somaDoMes } from "./contador.ts";
-import { ARQUIVO_DE_CONTROLE, controleDoArquivoDeChaves, lerArquivoDeControle } from "./controle.ts";
+import { ARQUIVO_DE_CONTROLE, controleDoArquivoDeChaves, gravarArquivoDeControle, lerArquivoDeControle } from "./controle.ts";
 import { lerEntradaDaProjecao, NOITES_DA_PROJECAO, type NoiteDaProjecao } from "./entrada-da-projecao.ts";
 import { enviarAoNtfy } from "./ntfy.ts";
 import { criarPainelDoColetor, type LeituraDeFora } from "./painel-do-coletor.ts";
 import { implantarWorker } from "./plano-b.ts";
 import { relogioReal } from "./relogio.ts";
+import { arquivoDoEstado, escolherRetomada, gravarEstadoNoDisco, lerEstadoDoDisco, OUTRA_NOITE, type Retomada } from "./retomada.ts";
 import { lerPelosEnderecos } from "./visto-de-fora.ts";
 
 // O coletor no terminal.
@@ -34,6 +36,12 @@ import { lerPelosEnderecos } from "./visto-de-fora.ts";
 //   --controle: o arquivo de controle que `npm run noite` grava (padrão: .cache/coletor/controle.json), lido a cada rodada.
 //   --gravacoes: o contador de gravações nos buckets (padrão: .cache/coletor/gravacoes.json), guardado a cada rodada.
 //   --noite: a noite que a projeção usa (entrada-da-projecao.ts): 2026-2, o padrão, ou 2022-2, a do TSE falso.
+//   --partida: `retomada`, o padrão com ensaio ou producao, retoma do estado em disco (.cache/coletor/estado-<destino>.json)
+//              ou, sem ele, do último objeto da noite, se forem desta noite (menos de 6 h); `a-frio`, o padrão com pasta,
+//              ignora os dois e regrava tudo uma vez. Para começar outra noite ou outro ensaio menos de 6 h depois do
+//              anterior, `--partida a-frio`.
+// A cada rodada, o coletor grava o objeto da noite (no R2, no bucket da noite do destino, com a chave dele no .env; na
+// pasta local, nenhum) e o estado em disco (retomada.ts).
 // O registro de cada rodada vai para .cache/coletor/, uma linha JSON por rodada, e o painel do coletor, para
 // .cache/coletor/painel.html, que o dono abre no navegador. Os alertas críticos vão ao celular pelo ntfy, com o tópico
 // NTFY_TOPICO do packages/coletor/.env; sem ele, ficam no computador.
@@ -51,6 +59,7 @@ const { values: opcoes } = parseArgs({
     "sem-dominio": { type: "boolean", default: false },
     gravacoes: { type: "string", default: ARQUIVO_DO_CONTADOR },
     noite: { type: "string", default: "2026-2" },
+    partida: { type: "string" },
   },
 });
 
@@ -68,6 +77,8 @@ if (destino !== "pasta" && !(destino in AMBIENTES)) throw new Error(`--destino d
 const noite = opcoes.noite as NoiteDaProjecao;
 if (!NOITES_DA_PROJECAO.includes(noite)) throw new Error(`--noite deve ser ${NOITES_DA_PROJECAO.join(" ou ")}, e não ${opcoes.noite}`);
 const projecao = lerEntradaDaProjecao(noite);
+const partida = opcoes.partida ?? (destino === "pasta" ? "a-frio" : "retomada");
+if (partida !== "retomada" && partida !== "a-frio") throw new Error(`--partida deve ser retomada ou a-frio, e não ${partida}`);
 
 // As chaves de escrita ficam só no .env do coletor, fora do Git, e só valem fora da pasta local; o tópico do ntfy vale
 // em todo destino.
@@ -85,6 +96,40 @@ const destinos = destinosDoColetor({
   agora: relogioReal.agora,
   implantar: implantarWorker,
 });
+
+// A retomada: do estado em disco ou do último objeto da noite, o mais novo desta noite. Uma leitura que falha não
+// segura o coletor: ele segue com o outro, ou a frio.
+const arquivoDoEstadoEmDisco = arquivoDoEstado(destino);
+const lerOuNulo = <T>(onde: string, leitura: () => Promise<T | null>) =>
+  leitura().catch((erro: Error) => {
+    console.log(`Não deu para ler ${onde}: ${erro.message}`);
+    return null;
+  });
+const retomada: Retomada =
+  partida === "a-frio"
+    ? { partida: "a frio", guardado: null }
+    : escolherRetomada({
+        disco: await lerOuNulo("o estado em disco", () => lerEstadoDoDisco(arquivoDoEstadoEmDisco)),
+        objetoDaNoite:
+          destinos.objetosDaNoite && (await lerOuNulo("o último objeto da noite", () => destinos.objetosDaNoite!.ultimo(Date.now() - OUTRA_NOITE))),
+        eleicao: opcoes.eleicao,
+        agora: Date.now(),
+      });
+if (retomada.partida !== "a frio") {
+  const { estado } = retomada.guardado;
+  contador.juntar(estado.gravacoesDoMes);
+  // Numa outra máquina, sem o arquivo de controle, as chaves do dono vêm do estado, e não do arquivo de chaves do site.
+  if (!existsSync(opcoes.controle)) await gravarArquivoDeControle(opcoes.controle, estado.controle, new Date());
+  console.log(`Retoma do ${retomada.partida} da rodada ${estado.numero}, de ${horaDeBrasilia(Date.parse(estado.quando))}.`);
+} else {
+  console.log(
+    `Parte a frio: grava todos os arquivos ao vivo uma vez${partida === "a-frio" ? " (--partida a-frio)" : ", sem estado desta noite no disco nem no R2"}.`,
+  );
+}
+if (destino !== "pasta" && !destinos.objetosDaNoite) {
+  const { variaveis } = AMBIENTES[destino].noite;
+  console.log(`Sem ${variaveis.chave} ou ${variaveis.segredo} no .env: o coletor não grava o objeto da noite e só retoma do disco.`);
+}
 
 mkdirSync(CACHE, { recursive: true });
 const arquivoDoRegistro = new URL(`rodadas-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`, CACHE);
@@ -184,6 +229,11 @@ const coletor = criarColetor({
   pedidosPorSegundo,
   controle: async () => (await lerArquivoDeControle(opcoes.controle)) ?? (await controleDoArquivoDeChaves()),
   projecao,
+  ...(retomada.partida !== "a frio" && { retomada }),
+  guardar: {
+    ...(destinos.objetosDaNoite && { objetoDaNoite: destinos.objetosDaNoite.gravar }),
+    disco: (json) => gravarEstadoNoDisco(arquivoDoEstadoEmDisco, json),
+  },
 });
 const temporizador = setInterval(() => void painel.atualizar(), 5_000);
 await coletor.rodar({

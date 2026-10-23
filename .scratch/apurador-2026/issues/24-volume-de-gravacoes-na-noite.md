@@ -100,3 +100,10 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
    - A gravação comprimida funciona (decisão 6).
 
 **Do dono**: conferir a franquia livre do celular antes de 24/10 e, se faltar 1 GB, comprar um pacote extra. A operadora e o plano não foram informados.
+
+## Comments
+
+- 22/10/2026, do [ticket 22](../../apurador-2026-construcao/issues/22-retomada-e-objeto-da-noite.md):
+  - **Arquivo da noite maior que a conta** (decisões 3 e 7): construído como a decisão 3 pede, com o estado de retomada inteiro em cada objeto, ele mediu ~1,2 MB por rodada no fim da noite e ~1,7 GB no replay da noite de 2022 inteira (16:50–00:50, 1.440 rodadas), e não 150 a 200 MB. O grosso é a narração dos 5.789 lugares (~670 KB com gzip no fim) e as curvas reais (~580 KB). As gravações seguem uma por rodada. A conta de ~500 MB por noite pelo celular (decisão 7) passa a ~2 GB. O que fazer com isso ficou com o dono, em 22/10.
+  - **Onde fica** (decisão do dono em 22/10): num bucket privado por ambiente, `apurador-noite` e `apurador-ensaio-noite`, sem domínio, com chave própria. O contador soma esse bucket aos outros.
+  - **Partida a frio** (decisão 2): no replay de 2022, 5.838 arquivos ao vivo (5.780 lugares do TSE falso, 28 tabelas de projeções, os municípios delas, o mapa.json e o arquivo de rodada), ~6.050 gravações até o último lugar, contando os que tiveram novidade do TSE nessas ~10 rodadas.

@@ -83,6 +83,9 @@ describe("os destinos do coletor", () => {
       a.planoB.configuracao,
       a.planoB.pasta,
       a.planoB.endereco,
+      a.noite.bucket,
+      a.noite.variaveis.chave,
+      a.noite.variaveis.segredo,
     ];
     expect(valores(ensaio).filter((v) => valores(producao).includes(v))).toEqual([]);
   });
@@ -131,5 +134,20 @@ describe("os destinos do coletor", () => {
     expect(implantados).toEqual([]);
     expect(await readdir(join(pasta, "pasta"))).toEqual(["rodada.json"]);
     expect((await readdir(join(pasta, "pasta-plano-b"))).sort()).toEqual(["_headers", "rodada.json"]);
+  });
+
+  it("os objetos da noite vão para o bucket da noite do ambiente, com a chave dele, e sem ela ficam de fora", async () => {
+    const chavesDaNoite = { R2_NOITE_ACCESS_KEY_ID: "id-noite", R2_NOITE_SECRET_ACCESS_KEY: "segredo-noite" };
+    const { objetosDaNoite, pedidos } = montar("producao", { ...CHAVES_DE_PRODUCAO, ...chavesDaNoite });
+    await objetosDaNoite!.gravar("{}", { numero: 1, quando: "2026-10-25T20:00:00.000Z" });
+
+    expect(pedidos).toEqual(["https://40aa2d90c0ed3139d2e8a10389f509ec.r2.cloudflarestorage.com/apurador-noite/noite/2026-10-25T20-00-00.000Z-r00001.json.gz"]);
+    expect(AMBIENTES.producao.noite.bucket).not.toBe(AMBIENTES.producao.bucket);
+    expect(montar("producao", CHAVES_DE_PRODUCAO).objetosDaNoite).toBeNull();
+    expect(montar("producao", chavesDaNoite, true).objetosDaNoite).not.toBeNull();
+  });
+
+  it("na pasta local, sem objetos da noite: o coletor só retoma do disco", () => {
+    expect(montar("pasta", {}).objetosDaNoite).toBeNull();
   });
 });

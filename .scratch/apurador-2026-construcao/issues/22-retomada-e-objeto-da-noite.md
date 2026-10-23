@@ -1,6 +1,6 @@
 # 22: Retomada, objeto da noite e reprodutibilidade
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 15, 18
 Spec: [Apurador 2026: especificação da construção](../spec.md)
 
@@ -17,16 +17,16 @@ Decisões: [Volume de gravações na noite](../../apurador-2026/issues/24-volume
 
 ## Critérios de aceite
 
-- [ ] **Objeto da noite**: um por rodada, comprimido, nunca um por arquivo do TSE. Traz a narração, os hashes, as chaves e o contador de gravações. Dá ~1.800 objetos por noite.
-- [ ] **Retomada do disco**: com estado em disco, o coletor retoma dele.
-- [ ] **Retomada do R2**: sem disco, o coletor retoma do último objeto da noite e baixa de novo do TSE o que faltar.
-- [ ] **Sem reconstruir o passado**: na volta, publica só o marco mais alto cruzado, com o % e a hora observados. Uma virada que aconteceu e se desfez durante a parada não aparece.
-- [ ] **Partida a frio**: sem estado no disco nem no R2, o coletor regrava todos os arquivos ao vivo uma vez, ~5.900 gravações.
-- [ ] **Supervisor**: um script cria a tarefa do Agendador "ao iniciar o computador", que volta sem login. O dono digita a senha do Windows ao criar a tarefa, e a tarefa fica desligada fora da noite.
-- [ ] Derrubado, o coletor volta em menos de 1 min.
-- [ ] **Replay com quedas**: o coletor é derrubado em rodadas escolhidas e retoma do disco e do objeto da noite, sem evento repetido nem retroativo.
-- [ ] **Reprodutível**: rodar o modelo de novo sobre os objetos da noite do replay dá exatamente os números publicados.
-- [ ] **Máquina reserva**: o roteiro para retomar num notebook (repositório, Node e `.env`) fica descrito para o [Roteiro da noite](31-roteiro-da-noite.md).
+- [x] **Objeto da noite**: um por rodada, comprimido, nunca um por arquivo do TSE. Traz a narração, os hashes, as chaves e o contador de gravações. Dá ~1.800 objetos por noite.
+- [x] **Retomada do disco**: com estado em disco, o coletor retoma dele.
+- [x] **Retomada do R2**: sem disco, o coletor retoma do último objeto da noite e baixa de novo do TSE o que faltar.
+- [x] **Sem reconstruir o passado**: na volta, publica só o marco mais alto cruzado, com o % e a hora observados. Uma virada que aconteceu e se desfez durante a parada não aparece.
+- [x] **Partida a frio**: sem estado no disco nem no R2, o coletor regrava todos os arquivos ao vivo uma vez, ~5.900 gravações.
+- [x] **Supervisor**: um script cria a tarefa do Agendador "ao iniciar o computador", que volta sem login. O dono digita a senha do Windows ao criar a tarefa, e a tarefa fica desligada fora da noite.
+- [x] Derrubado, o coletor volta em menos de 1 min.
+- [x] **Replay com quedas**: o coletor é derrubado em rodadas escolhidas e retoma do disco e do objeto da noite, sem evento repetido nem retroativo.
+- [x] **Reprodutível**: rodar o modelo de novo sobre os objetos da noite do replay dá exatamente os números publicados.
+- [x] **Máquina reserva**: o roteiro para retomar num notebook (repositório, Node e `.env`) fica descrito para o [Roteiro da noite](31-roteiro-da-noite.md).
 
 ## Comments
 
@@ -50,3 +50,37 @@ Decisões: [Volume de gravações na noite](../../apurador-2026/issues/24-volume
   - **Na narração**: `maisNovo` (a última totalização mais nova de todos os arquivos, a hora dos preditivos numa rodada sem arquivo novo do lugar), `visiveis` (as bases cujos preditivos foram ao ar na última rodada) e `linhas` (a linha da projeção de cada marco, por base). `linhas` é um `Map` com o próprio evento do marco como chave: guarde-a pelo lugar e pelo índice do marco em `eventos`, como a última virada. Sem `visiveis`, a primeira rodada da retomada regrava todo lugar com preditivos (~1.700 municípios na noite de 2022 com a chave ligada desde o começo).
   - **Sem as travas**, a retomada não repete eventos, mas se comporta como a chave ligando de novo: o primeiro sinal e a primeira chance de cada lugar só armam as travas, e uma mudança de sinal que já durava 1 ou 2 rodadas recomeça a contar. Sem `preditivos` e `linhas`, os preditivos que já foram ao ar somem dos JSONs na primeira rodada.
 - 22/10/2026, do [ticket 21](21-painel-alertas-e-sentinela.md): o `RegistroDaRodada` ganhou campos para o painel do coletor (`placarDoTse`, `novidade`, `picoDePedidos`, `desvioDoRelogio`, `ilegiveis`, `projecaoDoBrasil`). Nenhum é estado de retomada. O `placarDoTse` sai dos bytes do último arquivo do Brasil que o leitor aceitou (`brasilEmBytes`, em `criarColetor`). Se a retomada recarregar o Brasil do objeto da noite sem baixá-lo, guarde os bytes ali também; sem eles, o placar conferido fica "sem conferência" até o Brasil chegar de novo, em até 1 min.
+
+**22/10/2026, resolvido:**
+
+- **Decisão do dono (22/10/2026)**: o objeto da noite vai para um bucket privado por ambiente, sem domínio nem `r2.dev`: `apurador-noite` na noite e no 24/10, `apurador-ensaio-noite` nos ensaios. Cada um tem uma chave "Object Read & Write" só dele, no `packages/coletor/.env` (`R2_NOITE_*` e `R2_ENSAIO_NOITE_*`). O motivo: o estado de retomada leva as travas dos preditivos, que andam com a chave dos textos preditivos ou a da projeção desligada, e os preditivos guardados de uma base fora do ar. Num prefixo de `apurador-ao-vivo`, isso sairia por `ao-vivo.apurador.org`, com nomes adivinháveis. A configuração fica em `AMBIENTES.*.noite` (`packages/coletor/src/ambientes.ts`), e o passo a passo em `packages/coletor/cloudflare/README.md`, "Os objetos da noite". Os dois buckets foram criados em 22/10; criar as chaves antes do ensaio 2 entrou nas "Pendências do dono" da spec. Sem a chave, o coletor avisa ao começar, não grava o objeto da noite e só retoma do disco.
+- **Estado de retomada** (`EstadoDeRetomada`, em `packages/coletor/src/retomada.ts`, montado por `estadoDeRetomada()` em `coletor.ts`): a narração, os hashes, as curvas, os lugares por gravar (`sujos`, como os do plano zero), o controle, o contador de gravações, a novidade, a hora do TSE (que dá a fase), as zonas pendentes e marcadas e os pedidos do último minuto. Junto vão arquivos de resultado do TSE (`ArquivoDoTseGuardado`: a abrangência, a ETag e o texto como o TSE o mandou). No disco vão todos os que o coletor tem; no objeto da noite, os que chegaram na rodada.
+  - **Narração**: `narracao.estado()` e `criarNarracao(lugares, estado)` (`packages/coletor/src/narracao.ts`). Cada evento vai uma vez, nos eventos do lugar dele. A virada aberta, a narração do Brasil (`noBrasil`) e a linha da projeção dos marcos (`linhas`) apontam para ele por `[lugar, índice]`, e uma virada reescrita depois da retomada muda também o Brasil. `LugarNarrado.ultimo` virou `placar`, só os candidatos do último arquivo; o `ultimoDoBrasil` vai inteiro. O teste para a narração em cada uma das 14 rodadas de uma noite com tudo isso e a retoma do JSON: o resto sai igual ao da narração que não parou.
+  - **Hashes**: 16 caracteres base64url do SHA-256 (96 bits), e não os 64 em hexadecimal. No objeto da noite, caem de 231 para ~85 KB.
+- **Objeto da noite** (`objetosDaNoiteNoR2`, em `packages/coletor/src/r2.ts`): um por rodada, `noite/<hora ISO em UTC, sem os dois-pontos>-r<rodada>.json.gz`, comprimido como arquivo (`Content-Type: application/gzip`, sem `Content-Encoding`) e com `Cache-Control: private, no-store`. A ordem dos nomes é a das rodadas. O contador soma cada gravação no bucket da noite, e também a lista (classe A) da retomada.
+  - Um objeto que falha leva os arquivos do TSE dele para o objeto seguinte, e o disco os guarda até lá (`pendentes`).
+  - O primeiro objeto de cada coletor diz de onde ele partiu (`partida`: `a frio`, `disco` ou `objeto da noite`).
+  - **Tamanho**: no replay da noite de 2022 inteira (16:50–00:50, 1.440 rodadas), ~1,35 MB por objeto com os hashes inteiros, 1.897 MB na noite. No fim, a narração tinha 674 KB, as curvas 580 KB, os hashes 231 KB (85 KB encurtados) e as zonas marcadas 47 KB, com gzip. Com os hashes encurtados, ~1,2 MB por objeto e ~1,7 GB na noite, contra os 150 a 200 MB da decisão 3 do Volume de gravações. Ficou o estado inteiro em todo objeto, como a decisão pede. O tamanho foi levado ao dono em 22/10, com a alternativa (o estado inteiro a cada 5 min, e a retomada refaz as rodadas seguintes), e a resposta não tinha chegado até este registro.
+- **Estado em disco**: `.cache/coletor/estado-<destino>.json`, gravado inteiro depois do objeto da noite, num arquivo ao lado depois renomeado (`gravarEstadoNoDisco`). Leva também os dois arquivos de configuração do TSE (a eleição e os municípios), que a retomada do disco não pede de novo.
+- **De onde retoma** (`escolherRetomada`, no `principal.ts`): do mais novo entre o disco e o último objeto da noite, desde que seja da mesma eleição e tenha menos de 6 h (`OUTRA_NOITE`, a regra da pasta do plano B). No empate, do disco, que tem todos os arquivos. O objeto da noite é gravado antes do disco: com o objeto uma rodada à frente (o coletor caiu entre os dois), valem o estado dele e os arquivos do disco, com os do objeto por cima, e a retomada é a do disco. Mais à frente que isso, outra máquina seguiu a noite, e vale o objeto.
+  - `--partida retomada` é o padrão com `ensaio` e `producao`, e `--partida a-frio` é o padrão com `pasta`: a noite local e os testes de 15 min contra o TSE zerado partem a frio.
+  - Na retomada, o contador junta o do estado ao do arquivo (`juntarGravacoes`, o maior de cada bucket). Sem arquivo de controle, as chaves do dono vêm do estado.
+- **Retomada do disco**: os arquivos do TSE voltam com a ETag, e o coletor só pede de novo o que mudou. No replay, da volta até a queda seguinte (15 min), as gravações são as mesmas da noite sem queda, nos mesmos instantes, e a primeira rodada faz os mesmos pedidos.
+  - O que fica: os pedidos da rodada em que ele caiu entram no estado só no fim dela. Derrubado no meio de uma rodada, ele pede de novo, antes do minuto, os arquivos que ela já tinha pedido. São no máximo os ~600 de uma rodada, uma vez, e a CDN do TSE os tem.
+- **Retomada do objeto da noite**: só os arquivos da rodada dele voltam, e o resto o coletor baixa de novo do TSE. No replay das 17:30, foram 10 rodadas e 1.440 gravações nelas, só do que mudou.
+  - Até pedir de novo todos os lugares, ele não grava o mapa.json nem as tabelas, que sairiam com buracos. Vale também para a retomada do disco de um coletor que caiu antes de terminar a nova baixa. Um pedido que falha conta como pedido, para um arquivo estragado não segurar o resto.
+  - O Brasil e as UFs são gravados com o placar novo e sem a projeção, que o modelo segura até faltar no máximo 1% dos municípios (a regra do ticket 17). O núcleo mínimo vem antes, e falta não é número errado.
+  - Um lugar por gravar sem resultado espera ser baixado de novo.
+- **Sem reconstruir o passado**: no replay, o coletor parte às 17:30, cai às 17:57 e volta do objeto da noite às 19:37. O Brasil ganha só o marco de 95% e a virada, com o % e a hora observados, sem os de 50, 75 e 90%. Minas Gerais virou para Bolsonaro às 17:58 e de volta para Lula às 19:35, e não ganha virada.
+- **Partida a frio**: no replay de 2022, 5.838 arquivos ao vivo em ~6.050 gravações até o último lugar. São os 5.780 lugares do TSE falso, as 28 tabelas de projeções, os municípios delas, o mapa.json e o arquivo de rodada. A diferença são os municípios com novidade do TSE nessas ~10 rodadas, e nenhum vai duas vezes com a mesma hora.
+- **Supervisor** (`packages/coletor/src/supervisor.ts`, e `supervisionar.ts` no terminal, `npm run supervisor -- <argumentos do coletor>`): roda o coletor e o põe de volta 5 s depois de ele cair. O que termina com código 0 (o `--minutos`, o Ctrl+C, o fim da noite) não volta. O que o coletor escreve vai também para `.cache/coletor/coletor-<dia>.log`.
+  - **A tarefa do Agendador**: `packages/coletor/agendador/criar-tarefa.ps1 -Destino producao|ensaio` cria a tarefa "Apurador coletor", "ao iniciar o computador", com a senha do Windows pedida ao dono, e a deixa desligada. O script passou na checagem de sintaxe do PowerShell. Criar a tarefa é do dono, porque pede a senha dele.
+  - **Volta em menos de 1 min**: no Windows, contra o TSE falso na porta 8122, o coletor derrubado com `Stop-Process -Force` às 21:06:03 começou a rodada seguinte às 21:06:08, retomando do disco da rodada 4.
+  - **No ensaio**, a tarefa leva os argumentos do TSE falso: `-Destino ensaio -Argumentos "--tse http://127.0.0.1:8022/oficial --noite 2022-2"`.
+  - **O que fica**: o supervisor não espera mais a cada queda nem desiste. Um estado que derruba o coletor ao partir vira uma volta a cada 5 s, que o log mostra e a sentinela alerta em 3 min. A saída é parar a tarefa e rodar `npm run coletor -- --partida a-frio`. O Agendador só tenta de novo quando a tarefa não consegue começar; se o próprio supervisor cair, a tarefa não volta sozinha até `Start-ScheduledTask`. No terminal, o Ctrl+C chega também ao coletor, que para depois da rodada: no Windows, um sinal do supervisor o derrubaria na hora.
+- **Replay com quedas** (`packages/ensaio/test/retomada.test.ts`): das 16:50 às 17:50, o coletor cai às 17:15 e volta do disco, e cai às 17:30 e volta do objeto da noite. O relógio do coletor anda em 2026 e o do TSE falso na noite de 2022, como no ensaio.
+  - Em nenhuma gravação um lugar perde, repete ou muda um evento já publicado, nem publica um evento com hora mais velha que um já publicado (`conferirNarracao`).
+  - O placar é sempre o do TSE falso, e a narração do Brasil fica igual à da noite sem queda.
+  - Uma queda no plano zero volta sem derrubar rodada e, religado o núcleo mínimo, publica os lugares com o placar do TSE falso.
+- **Reprodutível** (`reproduzirAProjecao`, em `retomada.ts`): rodar o modelo de novo sobre os objetos da noite do replay com quedas, em ordem, dá exatamente a projeção publicada do Brasil, das UFs, do Exterior e das 28 tabelas em cada rodada que a gravou. Os resultados seguem os do coletor: a partida a frio começa sem nenhum, e a retomada do objeto da noite, só com os do objeto anterior, de que ela retomou. Com dois coletores gravando na mesma noite, o objeto anterior pode ser do outro, e a reprodução daquele trecho não vale.
+- **Máquina reserva**: o roteiro (repositório, Node, `.env` e o que esperar nos primeiros minutos) ficou no [ticket 31](31-roteiro-da-noite.md).
