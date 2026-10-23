@@ -12,6 +12,7 @@ import {
   type Alerta,
   type ArquivoDeRodada,
   type ArquivoDoLugar,
+  type ConexaoDoComputador,
   type ContadorDeGravacoes,
   type Controle,
   type DestinoDoPlanoB,
@@ -69,6 +70,8 @@ interface OpcoesDaNoite {
    * isso, como no ensaio, os dois ficam anos longe, e o desvio não é conferido.
    */
   comoOTseDeVerdade?: boolean;
+  /** A conexão do computador, pela hora da noite. */
+  conexao?: (naNoite: number) => ConexaoDoComputador;
 }
 
 /** O coletor com o painel do coletor, de `de` a `ate` da noite de 2022, com os alertas notificados e o último painel gravado. */
@@ -127,6 +130,7 @@ async function noiteComPainel(de: string, ate: string, opcoes: OpcoesDaNoite = {
   const contador = opcoes.contador?.(base.agora);
   const planoB = opcoes.planoB?.(base.agora);
   const lerControle = opcoes.controle;
+  const lerConexao = opcoes.conexao;
   const coletor = criarColetor({
     base: BASE,
     eleicao: "6258",
@@ -152,6 +156,7 @@ async function noiteComPainel(de: string, ate: string, opcoes: OpcoesDaNoite = {
     planoB,
     contador,
     controle: lerControle && (async () => lerControle(naNoite())),
+    conexao: lerConexao && (() => lerConexao(naNoite())),
     pedidosPorSegundo: opcoes.pedidosPorSegundo,
     projecao: projecaoDe2022,
   });
@@ -240,20 +245,56 @@ describe("uma noite sem nada errado", () => {
 
 describe("os alertas críticos", () => {
   it.each([403, 429])(
-    "o TSE respondendo %i uma vez basta, e o alerta é um só enquanto o bloqueio dura",
+    "o TSE respondendo %i uma vez basta, e o alerta fica enquanto o coletor está parado, mesmo depois dos 10 min da janela",
     async (status) => {
-      const r = await noiteComPainel("2022-10-30 16:58:00", "2022-10-30 17:08:00", {
+      const r = await noiteComPainel("2022-10-30 16:58:00", "2022-10-30 17:16:00", {
         responder: async (_url, naNoite) =>
           entre(naNoite, "2022-10-30 17:03:00", "2022-10-30 17:04:00") ? new Response("Access Denied", { status }) : undefined,
       });
 
+      // Parado, o coletor não pede nada: nem o "sem rodada" nem o "TSE sem novidade", que o crítico já explica.
       expect(r.comecaram.map((a) => [a.id, a.nivel])).toEqual([["tse-bloqueou", "critico"]]);
       expect(r.comecaram[0]!.quando).toBeGreaterThanOrEqual(r.doColetor("2022-10-30 17:03:00"));
       expect(r.comecaram[0]!.quando).toBeLessThan(r.doColetor("2022-10-30 17:04:00"));
-      expect(r.comecaram[0]!.mensagem).toBe(`TSE respondeu ${status} nos últimos 10 min`);
+      expect(r.comecaram[0]!.mensagem).toBe(`TSE respondeu ${status}: o coletor parou de pedir até a conexão mudar`);
+      expect(r.terminaram).toEqual([]);
+      expect(r.texto()).toMatch(new RegExp(`Pedidos ao TSE parados no bloqueio desde 19:05:\\d\\d \\(${status}\\): troque a conexão`));
     },
     60_000,
   );
+
+  it("o bloqueio termina 10 min depois do último 403, com o coletor de volta na troca da conexão", async () => {
+    const r = await noiteComPainel("2022-10-30 16:58:00", "2022-10-30 17:16:00", {
+      responder: async (_url, naNoite) =>
+        entre(naNoite, "2022-10-30 17:03:00", "2022-10-30 17:04:00") ? new Response("Access Denied", { status: 403 }) : undefined,
+      conexao: (naNoite) => ({ ip: naNoite < ms("2022-10-30 17:06:00") ? "200.160.1.1" : "177.79.2.2", voltouEm: null, via: "cabo" }),
+    });
+    const bloqueada = r.rodadas.find((x) => x.bloqueio !== null)!;
+
+    expect(r.comecaram.map((a) => a.id)).toEqual(["tse-bloqueou"]);
+    expect(r.terminaram.map((a) => [a.id, a.mensagem])).toEqual([["tse-bloqueou", "TSE respondeu 403 nos últimos 10 min"]]);
+    expect(r.terminaram[0]!.quando - fimDa(bloqueada)).toBeGreaterThan(600_000);
+    expect(r.terminaram[0]!.quando - fimDa(bloqueada)).toBeLessThanOrEqual(605_000);
+    expect(r.texto()).toMatch(/Pedidos ao TSE uma rodada a cada 40 s até 19:2\d:\d\d, 15 min depois da volta/);
+  }, 60_000);
+
+  it("as gravações do mês em 90% do plano gratuito do R2: o coletor trava as gravações sozinho, e o crítico vem depois do de atenção dos 70%", async () => {
+    const r = await noiteComPainel("2022-10-30 16:58:00", "2022-10-30 17:02:00", {
+      contador: (agora) => criarContadorDeGravacoes({ mes: "2026-10", buckets: { "apurador-ao-vivo": 898_000, "apurador-ensaio": 900 } }, agora),
+    });
+    const travada = r.rodadas.find((x) => x.gravacoesTravadas)!;
+
+    expect(r.rodadas.indexOf(travada)).toBeGreaterThan(0);
+    expect(r.comecaram.map((a) => [a.id, a.nivel])).toEqual([
+      ["gravacoes-do-mes", "atencao"],
+      ["gravacoes-travadas", "critico"],
+    ]);
+    expect(r.comecaram[1]!.mensagem).toBe(
+      "Gravações do mês em 90% do plano gratuito do R2: o coletor grava só o arquivo de rodada, o Brasil, as UFs e as tabelas, e cada município a cada 5 min",
+    );
+    expect(r.comecaram[1]!.quando).toBe(fimDa(travada));
+    expect(r.texto()).toMatch(/Trava de 90% ligada/);
+  }, 60_000);
 
   it("nenhuma rodada completa há 60 s: o temporizador o percebe no meio da rodada presa, e ele termina quando ela termina", async () => {
     let presa = false;
@@ -317,7 +358,8 @@ describe("os alertas críticos", () => {
     async (resultado, esperados) => {
       const pasta = join(await mkdtemp(join(tmpdir(), "painel-plano-b-")), "arquivos");
       try {
-        const r = await noiteComPainel("2022-10-30 16:58:00", "2022-10-30 17:05:30", {
+        // A passagem ao plano B leva 4 rodadas no teto de gravações, e a primeira republicação sai depois delas.
+        const r = await noiteComPainel("2022-10-30 16:58:00", "2022-10-30 17:06:30", {
           controle: (naNoite) => ({ ...CONTROLE_INICIAL, planoB: naNoite >= ms("2022-10-30 17:04:00") }),
           planoB: (agora) =>
             republicacaoDoWorker({
@@ -329,9 +371,12 @@ describe("os alertas críticos", () => {
             }),
         });
 
-        expect(ids(r.comecaram)).toEqual(esperados);
-        if (resultado === "falha") expect(r.comecaram[0]!.mensagem).toBe("Gravação no plano B falhando 2 vezes seguidas");
-        else expect(r.texto()).toMatch(/Última republicação boa do plano B 19:0[5-7]:\d\d \(há \d+ s\)/);
+        // O visto de fora deste teste lê só o principal, cujo arquivo de rodada para no comando: passados 2 min, ele dá
+        // também o "arquivo de rodada público parado", que não é o que se confere aqui.
+        const comecaram = r.comecaram.filter((a) => a.id !== "rodada-publica-parada");
+        expect(ids(comecaram)).toEqual(esperados);
+        if (resultado === "falha") expect(comecaram[0]!.mensagem).toBe("Gravação no plano B falhando 2 vezes seguidas");
+        else expect(r.texto()).toMatch(/Última republicação boa do plano B 19:0[7-8]:\d\d \(há \d+ s\)/);
       } finally {
         await rm(join(pasta, ".."), { recursive: true, force: true });
       }

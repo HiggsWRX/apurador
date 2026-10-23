@@ -6,8 +6,9 @@ import { fileURLToPath } from "node:url";
 // operações classe A por mês, somando os dois buckets da conta (o de produção e o do ensaio), e passar disso vira
 // cobrança. O coletor conta cada gravação que o R2 aceitou, por bucket, e guarda o contador num arquivo que sobrevive a
 // um reinício e é o mesmo para o ensaio e a noite, no mesmo checkout. O mês é o do relógio em UTC; o painel da
-// Cloudflare é a referência, e o ensaio confere a diferença (até 1%). A trava de 90% é do ticket 23. O estado de
-// retomada e o objeto da noite também levam o contador: numa outra máquina, sem o arquivo, a retomada o junta a ele.
+// Cloudflare é a referência, e o ensaio confere a diferença (até 1%). Com 90% do plano, o coletor trava as gravações
+// (`TRAVA_DAS_GRAVACOES`). O estado de retomada e o objeto da noite também levam o contador: numa outra máquina, sem o
+// arquivo, a retomada o junta a ele.
 
 const RAIZ = new URL("../../../", import.meta.url);
 
@@ -24,6 +25,12 @@ export interface GravacoesDoMes {
 
 /** As gravações do mês somando os buckets: o que conta contra o 1 milhão do plano gratuito. */
 export const somaDoMes = (gravacoes: GravacoesDoMes) => Object.values(gravacoes.buckets).reduce((soma, n) => soma + n, 0);
+
+/**
+ * A trava (Volume de gravações na noite, decisão 5): com 90% do plano gratuito no mês, 900 mil gravações, o coletor passa
+ * sozinho a gravar só o essencial, porque a alternativa é cobrança.
+ */
+export const TRAVA_DAS_GRAVACOES = 900_000;
 
 /** O contador de gravações nos buckets, que os destinos R2 alimentam. */
 export interface ContadorDeGravacoes {

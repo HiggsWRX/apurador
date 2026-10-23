@@ -1,4 +1,4 @@
-import { somaDoMes } from "./contador.ts";
+import { somaDoMes, TRAVA_DAS_GRAVACOES } from "./contador.ts";
 import type { RegistroDaRodada } from "./coletor.ts";
 import { comCasas, duracao, ROTULO_DAS_BASES, TITULO_DO_ALERTA_CRITICO } from "./formatos.ts";
 import type { MensagemDoNtfy } from "./ntfy.ts";
@@ -11,8 +11,8 @@ import type { MensagemDoNtfy } from "./ntfy.ts";
 // Um alerta está ativo enquanto a condição vale, e o dono é alertado quando ele começa; um crítico que termina vai ao
 // celular sem som. As condições de um momento só, como o 403 ou o arquivo que o leitor não entende, valem por 10 min,
 // a janela do TSE no painel: o arquivo do Brasil é pedido uma vez por minuto, e sem a janela o mesmo arquivo estragado
-// tocaria a cada minuto. O fim da janela não diz que o problema acabou (depois do 403, o coletor para de pedir), e por
-// isso essas não vão ao celular quando terminam.
+// tocaria a cada minuto. O fim da janela não diz que o problema acabou, e por isso essas não vão ao celular quando
+// terminam. O do 403 fica também enquanto o coletor está parado no bloqueio, sem pedir: lá, a janela acabaria sozinha.
 //
 // "Rodada completa" é a que chegou ao TSE: com a internet fora, os pedidos falham na hora e as rodadas seguem a cada
 // 20 s, e o sinal da queda é justamente o "nenhuma rodada" (decisão 13). A gravação falhando conta as tentativas que
@@ -36,6 +36,7 @@ export type IdDoAlerta =
   | "rodada-lenta"
   | "relogio-desviado"
   | "gravacoes-do-mes"
+  | "gravacoes-travadas"
   | "municipio-ilegivel";
 
 /** Um alerta ativo: a mensagem só diz o estado ("Coletor sem rodada completa há 75 s"). */
@@ -152,9 +153,11 @@ export function avaliarAlertas(s: SituacaoDaNoite, limites: LimitesDosAlertas = 
   const ultima = s.rodadas.at(-1);
   const ilegiveis = s.rodadas.filter((r) => s.agora - r.fim <= limites.janela).flatMap((r) => r.registro.ilegiveis);
 
-  // Críticos.
+  // Críticos. O do bloqueio fica enquanto o coletor está parado nele, mesmo depois da janela.
+  const parado = ultima?.registro.bloqueio ?? null;
   const bloqueios = [403, 429].filter((status) => respostasNaJanela(s.rodadas, s.agora, limites.janela, (x) => x === status) > 0);
-  if (bloqueios.length > 0) critico("tse-bloqueou", `TSE respondeu ${bloqueios.join(" e ")} nos últimos ${duracao(limites.janela)}`);
+  if (parado) critico("tse-bloqueou", `TSE respondeu ${parado.status}: o coletor parou de pedir até a conexão mudar`);
+  else if (bloqueios.length > 0) critico("tse-bloqueou", `TSE respondeu ${bloqueios.join(" e ")} nos últimos ${duracao(limites.janela)}`);
   const semRodada = s.agora - s.ultimaRodadaCompleta;
   if (semRodada > limites.semRodada) critico("sem-rodada", `Coletor sem rodada completa há ${duracao(semRodada)}`);
   const seguidas = tentativasDeGravar(s.rodadas).slice(-limites.falhasDeGravacaoSeguidas);
@@ -169,11 +172,16 @@ export function avaliarAlertas(s: SituacaoDaNoite, limites: LimitesDosAlertas = 
   const doBrasilOuUf = ilegiveis.filter((i) => i.tipo !== "municipio" && i.tipo !== "zona");
   if (doBrasilOuUf.length > 0)
     critico("brasil-ou-uf-ilegivel", `Arquivo do TSE que o leitor não entende: ${[...new Set(doBrasilOuUf.map((i) => nomeDoArquivo(i.url)))].join(", ")}`);
+  if (ultima?.registro.gravacoesTravadas)
+    critico(
+      "gravacoes-travadas",
+      `Gravações do mês em ${comCasas((100 * TRAVA_DAS_GRAVACOES) / PLANO_GRATUITO_DO_R2)}% do plano gratuito do R2: o coletor grava só o arquivo de rodada, o Brasil, as UFs e as tabelas, e cada município a cada 5 min`,
+    );
 
-  // De atenção.
+  // De atenção. Parado no bloqueio, a falta de novidade é do coletor, e o crítico já a explica.
   const fase = ultima?.registro.fase ?? null;
   const secoes = ultima?.registro.placarDoTse?.secoes.percentual ?? null;
-  if (fase === "ao-vivo" && secoes !== null && secoes < limites.secoesSemNovidade) {
+  if (fase === "ao-vivo" && secoes !== null && secoes < limites.secoesSemNovidade && !parado) {
     const vista = ultima!.registro.novidade.vista;
     const desde = vista === null ? s.aoVivoDesde : Date.parse(vista);
     if (desde !== null && s.agora - desde >= limites.semNovidade)

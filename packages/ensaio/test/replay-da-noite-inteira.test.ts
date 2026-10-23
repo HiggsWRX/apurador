@@ -5,13 +5,13 @@ import { conferirPlacar, conferirPreditivos, resultadosDoTseFalso } from "../src
 import { cadastro, instante, noite } from "./noite-2022.ts";
 import { ms, replay, lugares, TABELAS, MUNICIPIOS_DAS_TABELAS, BASES, comUmaCasa, inteiro, zonas } from "./replay.ts";
 
-// O replay automático (`replay.ts`): a noite inteira, até 30 min depois da totalização final.
+// O replay automático (`replay.ts`): a noite inteira, até o coletor parar sozinho, 30 min depois da totalização final.
 
 describe("a noite inteira", () => {
   let r: Awaited<ReturnType<typeof replay>>;
   beforeAll(async () => {
-    // Das 16:50 até 30 min depois da totalização final, quando o coletor para (ticket 23).
-    r = await replay("2022-10-30 16:50:00", (tse) => tse.estado().momento.instante >= instante(tse.estado().dataHoraDaTotalizacaoFinal!) + 30 * 60);
+    // Das 16:50 até o coletor parar sozinho. Os 40 min depois da totalização final só seguram um coletor que não pare.
+    r = await replay("2022-10-30 16:50:00", (tse) => tse.estado().momento.instante >= instante(tse.estado().dataHoraDaTotalizacaoFinal!) + 40 * 60);
   }, 600_000);
 
   it("publica em toda gravação de toda rodada o placar do TSE falso, sem divergência", () => {
@@ -43,6 +43,17 @@ describe("a noite inteira", () => {
 
     expect(fases[primeira]!.quando - ms(r.tse.estado().dataHoraDaTotalizacaoFinal!)).toBeLessThan(80_000);
     expect(fases.slice(primeira).every((f) => f.fase === "encerrada")).toBe(true);
+  });
+
+  it("para sozinho 30 min depois da primeira rodada na fase encerrada, e o registro diz quando desde ela", () => {
+    const encerrada = r.rodadas.find((x) => x.fase === "encerrada")!;
+    const para = Date.parse(encerrada.inicio) + 30 * 60_000;
+    const ultima = r.rodadas.at(-1)!;
+
+    expect(Date.parse(ultima.inicio)).toBeLessThan(para);
+    expect(Date.parse(ultima.inicio) + 20_000).toBeGreaterThanOrEqual(para);
+    expect(r.rodadas.slice(r.rodadas.indexOf(encerrada)).every((x) => x.encerraEm === new Date(para).toISOString())).toBe(true);
+    expect(r.rodadas.slice(0, r.rodadas.indexOf(encerrada)).every((x) => x.encerraEm === null)).toBe(true);
   });
 
   it("guarda as zonas dos municípios com mais de uma, iguais às do TSE falso no fim", () => {

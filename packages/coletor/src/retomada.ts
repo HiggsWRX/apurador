@@ -5,6 +5,7 @@ import { gunzipSync } from "node:zlib";
 import { lerResultado, type AbrangenciaDaDivulgacao, type ResultadoDoTse } from "@apurador/tse";
 import { emOrdem, type PontoDaCurvaReal } from "./arquivos.ts";
 import type { Controle } from "./chaves.ts";
+import type { BloqueioDoTse } from "./conexao.ts";
 import type { GravacoesDoMes } from "./contador.ts";
 import type { EstadoDaNarracao } from "./narracao.ts";
 import { criarProjecaoDaNoite, type EntradaDaProjecao, type ProjecaoDaRodada } from "./projecao.ts";
@@ -65,6 +66,17 @@ export interface EstadoDeRetomada {
   zonasMarcadas: Record<string, string | null>;
   /** Os arquivos pedidos ao TSE no último minuto, pela URL, com a hora do pedido em ms: a retomada não os pede de novo antes do minuto. */
   pedidosRecentes: Record<string, number>;
+  // As proteções (ticket 23). Opcionais, porque os estados guardados antes delas não as têm: sem elas, nenhuma está valendo.
+  /** Parado no bloqueio do TSE: sem isso, o coletor que volta pede de novo e renova o bloqueio. */
+  bloqueio?: BloqueioDoTse | null;
+  /** Quando o coletor voltou a pedir depois do último bloqueio (ms do relógio do coletor), para a rodada de 40 s. */
+  retomouEm?: number | null;
+  /** Alguma rodada da noite passou do pico de pedidos que alerta o dono: a rodada de 40 s vai até o fim. */
+  picoAcimaDoLimite?: boolean;
+  /** Com a trava de 90%, quando cada município e o mapa.json foram gravados pela última vez (ms), pelo caminho. */
+  gravadoNaTrava?: Record<string, number>;
+  /** O começo da primeira rodada na fase encerrada (ms), de que contam os 30 min até o coletor parar sozinho. */
+  encerradaEm?: number | null;
 }
 
 /** De onde o coletor partiu. */

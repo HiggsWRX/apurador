@@ -10,12 +10,13 @@ import type { ArquivoDeRodada, ArquivoDoLugar } from "./arquivos.ts";
 import { CHAVES_DA_NOITE, NOMES_DAS_CHAVES } from "./chaves.ts";
 import { criarColetor, type RegistroDaRodada } from "./coletor.ts";
 import { medidorDoComputador, tocarNoComputador } from "./computador.ts";
+import { INTERVALO_DA_SONDA, sondaDaConexao } from "./conexao.ts";
 import { horaDeBrasilia } from "./formatos.ts";
 import { ARQUIVO_DO_CONTADOR, criarContadorDeGravacoes, gravarContadorDeGravacoes, lerContadorDeGravacoes, somaDoMes } from "./contador.ts";
 import { ARQUIVO_DE_CONTROLE, controleDoArquivoDeChaves, gravarArquivoDeControle, lerArquivoDeControle } from "./controle.ts";
 import { lerEntradaDaProjecao, NOITES_DA_PROJECAO, type NoiteDaProjecao } from "./entrada-da-projecao.ts";
 import { enviarAoNtfy } from "./ntfy.ts";
-import { criarPainelDoColetor, type LeituraDeFora } from "./painel-do-coletor.ts";
+import { criarPainelDoColetor, type LeituraDeFora, type MedidaDoComputador } from "./painel-do-coletor.ts";
 import { implantarWorker } from "./plano-b.ts";
 import { relogioReal } from "./relogio.ts";
 import { arquivoDoEstado, escolherRetomada, gravarEstadoNoDisco, lerEstadoDoDisco, OUTRA_NOITE, type Retomada } from "./retomada.ts";
@@ -157,7 +158,16 @@ function resumo(r: RegistroDaRodada): string {
     r.destinoAtivo === "plano B" ? " · plano B" : "",
   ].join("");
   const doMes = r.gravacoesDoMes && destino !== "pasta" ? ` (${somaDoMes(r.gravacoesDoMes)} no mês)` : "";
-  return `#${r.numero} ${hora} ${r.fase ?? "sem fase"} · ${(r.duracao / 1000).toFixed(1)} s · ${r.pedidos} pedidos (${respostas}) · novos: Brasil ${brasil}, UFs ${ufs}, municípios ${municipios}, zonas ${zonas} · ${r.gravacoes} gravações${doMes}${controle}${falhas}`;
+  // As proteções, só quando valem: o bloqueio, a rodada de 40 s, o teto, a trava, o objeto da noite no disco e o fim.
+  const protecoes = [
+    r.bloqueio ? ` · PARADO NO BLOQUEIO (${r.bloqueio.status}): troque a conexão` : "",
+    r.rodadaDe40s ? ` · rodada de 40 s até ${r.rodadaDe40s.ate ? horaDeBrasilia(Date.parse(r.rodadaDe40s.ate)) : "o fim"}` : "",
+    r.adiadas > 0 ? ` · teto: ${r.adiadas} para a rodada seguinte` : "",
+    r.gravacoesTravadas ? " · TRAVA DE 90%" : "",
+    r.objetoDaNoite === "no disco" ? " · objeto da noite no disco (celular)" : "",
+    r.encerraEm ? ` · para às ${horaDeBrasilia(Date.parse(r.encerraEm))}` : "",
+  ].join("");
+  return `#${r.numero} ${hora} ${r.fase ?? "sem fase"} · ${(r.duracao / 1000).toFixed(1)} s · ${r.pedidos} pedidos (${respostas}) · novos: Brasil ${brasil}, UFs ${ufs}, municípios ${municipios}, zonas ${zonas} · ${r.gravacoes} gravações${doMes}${controle}${protecoes}${falhas}`;
 }
 
 const ondePublica =
@@ -181,10 +191,13 @@ const enderecos =
     ? null
     : { principal: opcoes["sem-dominio"] ? AMBIENTES[destino].planoB.endereco : AMBIENTES[destino].endereco, "plano B": AMBIENTES[destino].planoB.endereco };
 let erroDoPainel = "";
+const medir = medidorDoComputador({ pasta: fileURLToPath(RAIZ), agora: relogioReal.agora });
+/** A última medida do computador: a rota padrão dela (cabo ou celular) vai para a sonda da conexão. */
+let medida: MedidaDoComputador | null = null;
 const painel = criarPainelDoColetor({
   agora: relogioReal.agora,
   lerDeFora: enderecos ? lerPelosEnderecos({ enderecos, buscar: fetch, agora: relogioReal.agora }) : lerDaPasta,
-  medirComputador: medidorDoComputador({ pasta: fileURLToPath(RAIZ), agora: relogioReal.agora }),
+  medirComputador: async () => (medida = await medir()),
   notificar: despacharAlertas({ ntfy: topico ? enviarAoNtfy({ topico, buscar: fetch }) : undefined, tocar: tocarNoComputador, registrar: console.log }),
   gravar: async (html) => {
     // Inteiro de uma vez, como o arquivo de controle: o navegador nunca lê um painel pela metade. Se o Windows segurar o
@@ -215,6 +228,13 @@ async function lerDaPasta(destinoAtivo: RegistroDaRodada["destinoAtivo"]): Promi
   return { endereco: raiz, rodada: await ler<ArquivoDeRodada>("rodada.json"), brasil: await ler<ArquivoDoLugar>("lugares/BR.json"), data: Date.now() };
 }
 
+// A sonda da conexão (conexao.ts): o IP público a cada 5 s e a rota padrão da última medida do computador. Parado no
+// bloqueio do TSE, o coletor volta a pedir quando ela muda; pelo celular, o objeto da noite fica no disco.
+const sonda = sondaDaConexao({ buscar: fetch, agora: relogioReal.agora, via: () => medida?.conexao ?? null });
+await sonda.sondar();
+let sondando: Promise<void> | null = null;
+const temporizadorDaSonda = setInterval(() => void (sondando ??= sonda.sondar().finally(() => (sondando = null))), INTERVALO_DA_SONDA);
+
 // Sem arquivo de controle, as chaves são as do arquivo de chaves do site, lidas de novo a cada rodada: um deploy que
 // mude o arquivo vale no coletor que já roda, até o primeiro comando.
 const coletor = criarColetor({
@@ -229,6 +249,7 @@ const coletor = criarColetor({
   pedidosPorSegundo,
   controle: async () => (await lerArquivoDeControle(opcoes.controle)) ?? (await controleDoArquivoDeChaves()),
   projecao,
+  conexao: sonda.ler,
   ...(retomada.partida !== "a frio" && { retomada }),
   guardar: {
     ...(destinos.objetosDaNoite && { objetoDaNoite: destinos.objetosDaNoite.gravar }),
@@ -236,9 +257,11 @@ const coletor = criarColetor({
   },
 });
 const temporizador = setInterval(() => void painel.atualizar(), 5_000);
+let ultima: RegistroDaRodada | undefined;
 await coletor.rodar({
   ate: () => parar || Date.now() >= fim,
   aoRodar(registro) {
+    ultima = registro;
     appendFileSync(arquivoDoRegistro, `${JSON.stringify(registro)}\n`);
     if (registro.gravacoesDoMes) {
       gravarContadorDeGravacoes(opcoes.gravacoes, registro.gravacoesDoMes).catch((erro: Error) =>
@@ -250,4 +273,10 @@ await coletor.rodar({
   },
 });
 clearInterval(temporizador);
+clearInterval(temporizadorDaSonda);
 await painel.atualizar();
+// O fim da noite: o coletor sai com código 0, e o supervisor não o põe de volta.
+if (!parar && Date.now() < fim)
+  console.log(
+    `Fim da noite: o coletor parou sozinho${ultima?.encerraEm ? `, 30 min depois da totalização final (${horaDeBrasilia(Date.parse(ultima.encerraEm))})` : ", com a noite já encerrada"}.`,
+  );
