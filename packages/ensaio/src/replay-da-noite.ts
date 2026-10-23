@@ -7,7 +7,7 @@ import { criarTseFalso } from "./tse-falso.ts";
 
 // A narração do replay automático da mesma noite, a referência da narração factual do ensaio geral (Ensaio geral,
 // decisão 20): o coletor inteiro sobre o TSE falso, sem rede e na velocidade máxima, como no teste do replay
-// (`test/replay.test.ts`), só com o que a conferência precisa: a narração final do Brasil. Roda a noite toda em ~1 min.
+// (`test/replay.ts`), só com o que a conferência precisa: a narração final do Brasil. Roda a noite toda em ~1 min.
 
 /** A data e a hora de Brasília de um instante da noite em ms, como o relógio do coletor as conta. */
 const emMs = (noite: Noite, instante: number) => Date.parse(`${dataHoraDoInstante(noite, instante).replace(" ", "T")}-03:00`);

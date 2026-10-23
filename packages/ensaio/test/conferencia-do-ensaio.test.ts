@@ -204,7 +204,7 @@ describe("a conferência do ensaio geral", () => {
 describe("a narração do replay, a referência da narração factual", () => {
   it("dá a virada do Brasil às ~18:44, como a medição de 2022, num trecho da noite", async () => {
     // A primeira troca para Lula depois de 3% é às 18:42:53, e a última, às 18:44:50. O coletor lê o Brasil uma vez por
-    // minuto: a virada sai na primeira leitura com Lula à frente, até 18:45:50 (a mesma conta do replay.test.ts).
+    // minuto: a virada sai na primeira leitura com Lula à frente, até 18:45:50 (a mesma conta do `replay-da-noite-inteira.test.ts`).
     const narracao = await narracaoDoReplay({
       noite,
       cadastro,

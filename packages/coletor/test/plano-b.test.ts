@@ -7,7 +7,7 @@ import { republicacaoDoWorker } from "../src/plano-b.ts";
 // O destino do plano B (Operação na noite, decisão 14): os arquivos ao vivo vão para a pasta de static assets de um
 // Worker, que é republicado no fim da rodada, no máximo uma vez por minuto. A republicação de verdade é um
 // `wrangler deploy`; aqui ela é injetada, e os testes decidem quando ela termina e se falha. Os testes de que ela
-// leva todos os arquivos e sai a cada minuto da noite estão no replay (`packages/ensaio/test/replay.test.ts`).
+// leva todos os arquivos e sai a cada minuto da noite estão no replay (`packages/ensaio/test/replay-do-plano-b.test.ts`).
 
 let pasta: string;
 beforeEach(async () => {
