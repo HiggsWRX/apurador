@@ -10,6 +10,7 @@ export {
 export { criarPainelDoColetor, type LeituraDeFora, type MedidaDoComputador, type OpcoesDoPainelDoColetor, type PainelDoColetor } from "./painel-do-coletor.ts";
 export { despacharAlertas, LIMITES_DOS_ALERTAS, type Alerta, type IdDoAlerta, type LimitesDosAlertas, type NivelDoAlerta } from "./alertas.ts";
 export { placarDoArquivoDoTse, type PlacarDoTse } from "./placar-conferido.ts";
+export { type ConexaoDoComputador } from "./conexao.ts";
 export { enviarAoNtfy, type MensagemDoNtfy } from "./ntfy.ts";
 export {
   type ArquivoDeRodada,

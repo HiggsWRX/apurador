@@ -1,19 +1,16 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   CONTROLE_INICIAL,
-  criarColetor,
   lerEstadoGuardado,
-  relogioSemEspera,
   reproduzirAProjecao,
   type ArquivoDoLugar,
   type Controle,
   type EventoDaNarracao,
-  type OpcoesDoColetor,
-  type RegistroDaRodada,
   type TabelaDeProjecoes,
 } from "@apurador/coletor";
-import { buscarNoTseFalso, conferirPlacar, criarTseFalso, relogioDoReplay } from "../src/index.ts";
-import { cadastro, instante, lugaresDoSite, noite, projecaoDe2022 } from "./noite-2022.ts";
+import { conferirPlacar } from "../src/index.ts";
+import { noColetor, noiteComQuedas, type Gravacao, type NoiteComQuedas } from "./noite-com-quedas.ts";
+import { cadastro, noite, projecaoDe2022 } from "./noite-2022.ts";
 
 // O replay com quedas (Ensaio geral, decisões 20 e 21; Operação na noite, decisões 4 e 15; Narração da noite, decisão
 // 11): o coletor da noite de 2022 é derrubado em rodadas escolhidas e volta, como pelo supervisor, retomando do estado
@@ -22,90 +19,11 @@ import { cadastro, instante, lugaresDoSite, noite, projecaoDe2022 } from "./noit
 // o TSE falso e a medição da narração de 2022 (.scratch/apurador-2026/research/14-narracao-noite-2t-2022.md). Como no
 // ensaio geral, o relógio do coletor anda em 2026 e o do TSE falso na noite de 2022: o estado guarda horas dos dois.
 
-const BASE = "http://tse-falso.local/oficial";
-/** Uma data e hora de Brasília, `AAAA-MM-DD HH:MM:SS`, em milissegundos. */
-const ms = (dataHora: string) => Date.parse(`${dataHora.replace(" ", "T")}-03:00`);
-/** O relógio do coletor quando a noite começa, como no ensaio geral de 2026. */
-const COLETOR_NO_INICIO = ms("2026-10-25 19:00:00");
-/** O instante do relógio do coletor de uma hora da noite de 2022, numa noite que começa em `de`. */
-const noColetor = (de: string, dataHora: string) => COLETOR_NO_INICIO + ms(dataHora) - ms(de);
-
 /** Os lugares que o TSE falso de 2022 tem: o Brasil, as UFs, o Exterior e os municípios do cadastro. */
 const LUGARES_DO_TSE = 1 + cadastro.ufs.reduce((soma, uf) => soma + 1 + uf.municipios.length, 0);
 /** Os arquivos ao vivo: os lugares, as 28 tabelas de projeções e os municípios delas, o mapa.json e o arquivo de rodada. */
 const ARQUIVOS_AO_VIVO = LUGARES_DO_TSE + 2 * cadastro.ufs.length + 2;
 
-interface Gravacao {
-  caminho: string;
-  conteudo: unknown;
-  /** O relógio do coletor, em ms. */
-  quando: number;
-}
-
-/** Uma queda: o coletor cai depois da última rodada antes de `em` (hora da noite) e volta `fora` segundos depois da seguinte. */
-interface Queda {
-  em: string;
-  de: "disco" | "objeto da noite";
-  fora?: number;
-}
-
-/** A noite de `de` a `ate` (horas da noite de 2022), com as quedas e, se dado, o arquivo de controle pelo relógio do coletor. */
-async function noiteComQuedas(de: string, ate: string, quedas: Queda[] = [], controle?: (quando: number) => Controle) {
-  const relogio = relogioSemEspera(COLETOR_NO_INICIO);
-  const tse = criarTseFalso({ noite, cadastro, relogio: relogioDoReplay(instante(de), relogio.agora) });
-  const buscar = buscarNoTseFalso(tse);
-  const gravacoes: Gravacao[] = [];
-  /** O objeto da noite de cada rodada, com quantas gravações tinham sido feitas até ele. */
-  const objetos: { json: string; numero: number; gravacoes: number }[] = [];
-  let disco: string | undefined;
-  const rodadas: RegistroDaRodada[] = [];
-  /** Onde cada retomada começa: a primeira gravação e a primeira rodada depois da volta. */
-  const voltas: { gravacao: number; rodada: number }[] = [];
-  let retomada: OpcoesDoColetor["retomada"];
-  for (const [i, ateAQueda] of [...quedas.map((q) => q.em), ate].entries()) {
-    const coletor = criarColetor({
-      base: BASE,
-      eleicao: "6258",
-      lugares: lugaresDoSite,
-      relogio,
-      buscar,
-      projecao: projecaoDe2022,
-      destino: {
-        async gravar(caminho, bytes) {
-          gravacoes.push({ caminho, conteudo: JSON.parse(new TextDecoder().decode(bytes)), quando: relogio.agora() });
-        },
-      },
-      retomada,
-      ...(controle && { controle: async () => controle(relogio.agora()) }),
-      guardar: {
-        async objetoDaNoite(json, { numero }) {
-          objetos.push({ json, numero, gravacoes: gravacoes.length });
-        },
-        async disco(json) {
-          disco = json;
-        },
-      },
-    });
-    await coletor.rodar({ ate: () => relogio.agora() >= noColetor(de, ateAQueda), aoRodar: (r) => rodadas.push(r) });
-    const queda = quedas[i];
-    if (!queda) break;
-    await relogio.esperar((queda.fora ?? 0) * 1000);
-    retomada = { partida: queda.de, guardado: lerEstadoGuardado(queda.de === "disco" ? disco! : objetos.at(-1)!.json) };
-    voltas.push({ gravacao: gravacoes.length, rodada: rodadas.length });
-  }
-  const lugares = (de = 0, ate = gravacoes.length) =>
-    gravacoes.slice(de, ate).filter((g) => g.caminho.startsWith("lugares/")) as (Gravacao & { conteudo: ArquivoDoLugar })[];
-  /** O último JSON publicado de um lugar até a gravação `ate`. */
-  const publicado = (id: string, ate = gravacoes.length) => lugares(0, ate).findLast((g) => g.caminho === `lugares/${id}.json`)?.conteudo;
-  /** As gravações da rodada de número dado, entre o objeto da noite da anterior e o dela. */
-  const daRodada = (numero: number) => {
-    const i = objetos.findIndex((o) => o.numero === numero);
-    return gravacoes.slice(i === 0 ? 0 : objetos[i - 1]!.gravacoes, objetos[i]!.gravacoes);
-  };
-  return { gravacoes, objetos, rodadas, voltas, lugares, publicado, daRodada, noColetor: (dataHora: string) => noColetor(de, dataHora) };
-}
-
-type Noite = Awaited<ReturnType<typeof noiteComQuedas>>;
 const doLugar = (id: string, eventos: EventoDaNarracao[]) => eventos.filter((e) => e.lugar === id);
 
 /**
@@ -113,7 +31,7 @@ const doLugar = (id: string, eventos: EventoDaNarracao[]) => eventos.filter((e) 
  * repetir um evento (um marco, o começo, o fim) ou publicar um evento com hora mais velha que um já publicado. Só a
  * virada aberta muda de texto, quando outra troca entra na janela dela.
  */
-function conferirNarracao(r: Noite): string[] {
+function conferirNarracao(r: NoiteComQuedas): string[] {
   const problemas: string[] = [];
   const antes = new Map<string, EventoDaNarracao[]>();
   for (const g of r.lugares()) {
@@ -141,8 +59,8 @@ function conferirNarracao(r: Noite): string[] {
 describe("o replay com quedas", () => {
   // Das 16:50 às 17:50, com ~10% das seções: o coletor cai às 17:15 e volta do disco na rodada seguinte, como pelo
   // supervisor; cai de novo às 17:30 e volta do último objeto da noite, sem o disco, como numa outra máquina.
-  let semQueda: Noite;
-  let comQuedas: Noite;
+  let semQueda: NoiteComQuedas;
+  let comQuedas: NoiteComQuedas;
   beforeAll(async () => {
     semQueda = await noiteComQuedas("2022-10-30 16:50:00", "2022-10-30 17:50:00");
     comQuedas = await noiteComQuedas("2022-10-30 16:50:00", "2022-10-30 17:50:00", [
@@ -153,7 +71,7 @@ describe("o replay com quedas", () => {
 
   it("não perde, não repete e não publica evento retroativo em nenhum lugar, e o Brasil termina com a mesma narração da noite sem queda", () => {
     expect(conferirNarracao(comQuedas)).toEqual([]);
-    const tipos = (r: Noite) => doLugar("BR", r.publicado("BR")!.narracao).map((e) => (e.tipo === "marco" ? `${e.marco}%` : e.tipo));
+    const tipos = (r: NoiteComQuedas) => doLugar("BR", r.publicado("BR")!.narracao).map((e) => (e.tipo === "marco" ? `${e.marco}%` : e.tipo));
     expect(tipos(comQuedas)).toEqual(tipos(semQueda));
     expect(tipos(comQuedas)).toContain("10%");
   });
@@ -237,7 +155,7 @@ describe("uma parada longa", () => {
   // O coletor parte a frio às 17:30, cai às 17:57, com o Brasil logo depois de 25%, e só volta às 19:37, do objeto da
   // noite. No meio, o Brasil passou de 50, 75, 90 e 95%, Lula passou à frente às 18:44 e Minas Gerais virou para
   // Bolsonaro às 17:58 e de volta para Lula às 19:35 (medição de 2022, seções 1 e 3).
-  let r: Noite;
+  let r: NoiteComQuedas;
   beforeAll(async () => {
     r = await noiteComQuedas("2022-10-30 17:30:00", "2022-10-30 19:45:00", [{ em: "2022-10-30 17:57:00", de: "objeto da noite", fora: 100 * 60 }]);
   }, 600_000);
@@ -276,13 +194,13 @@ describe("uma queda no plano zero", () => {
   // núcleo mínimo às 17:20. Os lugares que mudaram no plano zero estavam por gravar quando ele caiu, e esperam o coletor
   // baixá-los de novo.
   const DE = "2022-10-30 16:50:00";
-  let r: Noite;
+  let r: NoiteComQuedas;
   beforeAll(async () => {
     const planoZero = (quando: number): Controle =>
       quando >= noColetor(DE, "2022-10-30 17:05:00") && quando < noColetor(DE, "2022-10-30 17:20:00")
         ? { ...CONTROLE_INICIAL, chaves: { ...CONTROLE_INICIAL.chaves, nucleoMinimo: false } }
         : CONTROLE_INICIAL;
-    r = await noiteComQuedas(DE, "2022-10-30 17:25:00", [{ em: "2022-10-30 17:12:00", de: "objeto da noite" }], planoZero);
+    r = await noiteComQuedas(DE, "2022-10-30 17:25:00", [{ em: "2022-10-30 17:12:00", de: "objeto da noite" }], { controle: planoZero });
   }, 300_000);
 
   it("volta sem derrubar nenhuma rodada e, religado o núcleo mínimo, publica de novo os lugares com o placar do TSE falso", () => {

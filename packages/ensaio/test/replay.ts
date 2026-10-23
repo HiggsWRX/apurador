@@ -4,6 +4,7 @@ import {
   type ArquivoDeRodada,
   type ArquivoDoLugar,
   type Buscar,
+  type ConexaoDoComputador,
   type ContadorDeGravacoes,
   type Controle,
   type Destino,
@@ -42,9 +43,15 @@ interface OpcoesDoReplay {
   controle?: (quando: number) => Controle;
   /**
    * Os destinos de verdade no lugar do que só registra as gravações (o ticket 20), montados com o relógio do coletor:
-   * o principal, o do plano B e o contador de gravações.
+   * o principal, o do plano B e o contador de gravações. Com só o contador, o destino que registra conta cada gravação
+   * no bucket de produção, como o R2.
    */
   destinos?: (agora: () => number) => { destino?: Destino; planoB?: Destino; contador?: ContadorDeGravacoes };
+  /** O TSE falso responde 403 a todos por `segundos`, a partir do primeiro pedido feito em `em` ou depois. */
+  bloquearOTse?: { em: string; segundos: number };
+  /** A conexão do computador, pelo relógio do coletor (ms): a troca do cabo pelo celular, o modo avião. */
+  conexao?: (quando: number) => ConexaoDoComputador;
+  pedidosPorSegundo?: number;
 }
 
 /**
@@ -75,15 +82,23 @@ export async function replay(de: string, ate: string | ((tse: TseFalso) => boole
   const gravacoes: Gravacao[] = [];
   const arquivos = new Map<string, Gravacao>();
   const lerControle = opcoes.controle;
+  const lerConexao = opcoes.conexao;
   const destinos = opcoes.destinos?.(relogio.agora) ?? {};
+  let bloquear = opcoes.bloquearOTse;
   const coletor = criarColetor({
     base: BASE,
     eleicao: "6258",
     lugares: lugaresDoSite,
     relogio,
     controle: lerControle && (async () => lerControle(relogio.agora())),
+    conexao: lerConexao && (() => lerConexao(relogio.agora())),
+    pedidosPorSegundo: opcoes.pedidosPorSegundo,
     buscar: async (url, init) => {
       const quando = relogio.agora();
+      if (bloquear && quando >= ms(bloquear.em)) {
+        tse.bloquear(bloquear.segundos);
+        bloquear = undefined;
+      }
       pedidos.push({ url, quando });
       const trocado = opcoes.trocar?.(url, quando);
       return trocado === undefined ? doTse(url, init) : new Response(trocado, { status: 200 });
@@ -93,6 +108,7 @@ export async function replay(de: string, ate: string | ((tse: TseFalso) => boole
         const g = { caminho, bytes, conteudo: JSON.parse(new TextDecoder().decode(bytes)), quando: relogio.agora() };
         gravacoes.push(g);
         arquivos.set(caminho, g);
+        destinos.contador?.contar("apurador-ao-vivo");
       },
     },
     planoB: destinos.planoB,
