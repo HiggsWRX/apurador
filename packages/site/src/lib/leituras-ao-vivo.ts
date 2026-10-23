@@ -1,11 +1,17 @@
-import { useEffect, useRef, useState } from "preact/hooks";
-import { INTERVALO_DAS_LEITURAS, type LeitorAoVivo, type QuadroAoVivo } from "./leitor-ao-vivo";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { antesDaPrimeiraLeitura, criarLeitorAoVivo, INTERVALO_DAS_LEITURAS, type LeitorAoVivo, type QuadroAoVivo } from "./leitor-ao-vivo";
 
-// O ritmo das leituras na ilha que tem o leitor ao vivo da página: o bloco ao vivo, nas páginas de lugar, e o simulador,
-// na tela dele. Cada página tem um leitor só, e as outras ilhas recebem o quadro dela (`quadro-da-pagina.ts`).
+// O leitor ao vivo e o ritmo das leituras na ilha que lê os arquivos ao vivo da página: o bloco ao vivo, nas páginas de
+// lugar, e o simulador, na tela dele. Cada página tem um leitor só, e as outras ilhas recebem o quadro dela
+// (`quadro-da-pagina.ts`).
 
-/** O que as leituras dão à ilha: o quadro da última, o anel dos 30 s e um jeito de ler fora do ritmo. */
+/** O leitor da página: o de `criarLeitorAoVivo`, com a rede e o relógio do navegador. */
+export type OpcoesDasLeituras = Omit<Parameters<typeof criarLeitorAoVivo>[0], "buscar" | "relogio">;
+
+/** O que as leituras dão à ilha: o leitor, o quadro da última leitura, o anel dos 30 s e um jeito de ler fora do ritmo. */
 export interface LeiturasAoVivo {
+  /** O leitor da página, ou `null` sem endereço ao vivo (o build sem o coletor). */
+  leitor: LeitorAoVivo | null;
   quadro: QuadroAoVivo;
   /** Uma leitura em andamento: o anel vira uma rodinha. */
   lendo: boolean;
@@ -20,12 +26,27 @@ export interface LeiturasAoVivo {
 /**
  * As leituras: a primeira logo ao abrir, as outras 30 s depois do começo da anterior, sem duas ao mesmo tempo. A página
  * volta a ler na hora quando a aba volta a aparecer ou a internet volta; pedida no meio de outra, a leitura vem logo
- * depois dela. A cada segundo, a contagem regressiva, "há N s" e o anel andam, sem ler nada. Sem leitor (o build sem o
- * coletor), fica o quadro inicial.
+ * depois dela. A cada segundo, a contagem regressiva, "há N s" e o anel andam, sem ler nada. Sem endereço ao vivo (o
+ * build sem o coletor), fica o quadro de antes da primeira leitura.
  */
-export function useLeiturasAoVivo(leitor: LeitorAoVivo | null, inicial: () => QuadroAoVivo): LeiturasAoVivo {
+export function useLeiturasAoVivo({ enderecos, lugar, chaves, tabelaDeProjecoes, simulador }: OpcoesDasLeituras): LeiturasAoVivo {
+  const leitor = useMemo(
+    () =>
+      enderecos.length > 0
+        ? criarLeitorAoVivo({
+            enderecos,
+            lugar,
+            buscar: (url, init) => fetch(url, init),
+            relogio: () => performance.now(),
+            chaves,
+            tabelaDeProjecoes,
+            simulador,
+          })
+        : null,
+    [enderecos, lugar, chaves, tabelaDeProjecoes, simulador],
+  );
   const lerAgora = useRef<(() => void) | null>(null);
-  const [quadro, setQuadro] = useState(inicial);
+  const [quadro, setQuadro] = useState(() => antesDaPrimeiraLeitura(chaves));
   const [lendo, setLendo] = useState(false);
   const [lida, setLida] = useState(false);
   const [proximaLeitura, setProximaLeitura] = useState<number | null>(null);
@@ -75,7 +96,7 @@ export function useLeiturasAoVivo(leitor: LeitorAoVivo | null, inicial: () => Qu
     };
   }, [leitor]);
 
-  return { quadro, lendo, proximaLeitura, lida, lerAgora: () => lerAgora.current?.() };
+  return { leitor, quadro, lendo, proximaLeitura, lida, lerAgora: () => lerAgora.current?.() };
 }
 
 /** Se o visitante prefere movimento reduzido: nada pulsa nem pisca, e o anel vira texto. */

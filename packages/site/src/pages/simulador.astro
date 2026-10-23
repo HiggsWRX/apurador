@@ -2,25 +2,21 @@
 import Simulador from "../components/Simulador";
 import Base from "../layouts/Base.astro";
 import { CHAVES } from "../lib/chaves";
-import { enderecosDoBuild } from "../lib/enderecos-ao-vivo";
+import { ENDERECOS_DO_BUILD } from "../lib/enderecos-do-build";
 import { SUBTITULO_DA_ELEICAO } from "../lib/ensaio";
 import { BASE_PADRAO } from "../lib/projecao-antes-das-17h";
 import { CAMINHO_DO_ARQUIVO, FINALISTAS_DO_SIMULADOR, SIMULADOR_ANTES_DAS_17H, VIES_DAS_HIPOTESES_PRONTAS } from "../lib/simulador-antes-das-17h";
 
 // A tela própria do simulador "e se" (Simulador "e se", decisões 5 a 13), aberta pelo link da caixa da projeção. A ilha
-// baixa o arquivo do build, que começa a vir junto com o HTML, e roda o `modelo` no navegador: antes das 17h, com a
-// chave dele (e a da projeção) ligada; desligada, a tela diz que ele abre às 17h. Às 17h, sem recarregar, passa ao
-// arquivo do coletor, pelo leitor ao vivo, com os mesmos endereços das páginas de lugar (`PaginaDeLugar.astro`). A
-// prévia do link é a do site: o cabeçalho é o mesmo de toda página, sem imagem por simulação.
+// roda o `modelo` no navegador sobre o arquivo do build: antes das 17h, com a chave dele (e a da projeção) ligada, e aí
+// o arquivo começa a vir junto com o HTML; desligada, a tela diz que ele abre às 17h. Às 17h, sem recarregar, passa ao
+// arquivo do coletor, pelo leitor ao vivo, com os mesmos endereços das páginas de lugar. A prévia do link é a do site:
+// o cabeçalho é o mesmo de toda página, sem imagem por simulação.
 const titulo = 'Simulador "e se"';
-const enderecos = enderecosDoBuild(
-  import.meta.env.PUBLIC_AO_VIVO ?? (typeof __AO_VIVO_LOCAL__ === "string" ? __AO_VIVO_LOCAL__ : null),
-  import.meta.env.PUBLIC_AO_VIVO_PLANO_B ?? (typeof __AO_VIVO_LOCAL_PLANO_B__ === "string" ? __AO_VIVO_LOCAL_PLANO_B__ : null),
-);
 ---
 
 <Base titulo={titulo}>
-  <link slot="head" rel="preload" href={CAMINHO_DO_ARQUIVO} as="fetch" crossorigin="anonymous" />
+  {SIMULADOR_ANTES_DAS_17H && <link slot="head" rel="preload" href={CAMINHO_DO_ARQUIVO} as="fetch" crossorigin="anonymous" />}
   <div class="cabecalho">
     <nav class="trilha" aria-label="Onde você está">
       <ol>
@@ -40,8 +36,8 @@ const enderecos = enderecosDoBuild(
     finalistas={FINALISTAS_DO_SIMULADOR}
     basePadrao={BASE_PADRAO}
     viesDoPrimeiroTurno={VIES_DAS_HIPOTESES_PRONTAS}
-    antesDas17h={SIMULADOR_ANTES_DAS_17H}
-    enderecos={enderecos}
+    noArAntesDas17h={SIMULADOR_ANTES_DAS_17H}
+    enderecos={ENDERECOS_DO_BUILD}
     chaves={CHAVES.noite}
   />
   <noscript>

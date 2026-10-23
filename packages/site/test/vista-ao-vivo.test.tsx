@@ -516,6 +516,14 @@ describe("projeção ao vivo", () => {
     const indicado = comProjecao(PROJECAO, {}, {}, { ...TSE, votos: [57000000, 58920000], percentuais: [49.17, 50.83] }, [INDICACAO]);
     expect(texto(caixa(indicado))).not.toContain("Simular");
     expect(texto(caixa(indicado))).toContain("Como calculamos →");
+    // Numa UF, a indicação chega pelos eventos do Brasil do arquivo de rodada.
+    const bahia: ArquivoDoLugar = { ...dadosDoLugar(TSE, [[50.34, 50.43, 49.57]]), lugar: "BA", projecao: PROJECAO };
+    const naBahia = (eventosDoBrasil: EventoDaNarracao[]) =>
+      vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: { ...rodada("ao-vivo"), eventosDoBrasil }, lugar: bahia }), {
+        lugar: { tipo: "uf", uf: "BA", em: "na Bahia" },
+      });
+    expect(texto(caixa(naBahia([])))).toContain("Simular");
+    expect(texto(caixa(naBahia([INDICACAO])))).not.toContain("Simular");
   });
 
   it("desenha por cima da curva real a curva projetada tracejada, com a faixa de 95% e a legenda, e a escala conta a faixa", () => {

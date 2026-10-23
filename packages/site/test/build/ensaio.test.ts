@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { AMBIENTES } from "@apurador/coletor";
+import { AMBIENTES, criarProjecaoDaNoite, lerEntradaDaProjecao } from "@apurador/coletor";
 import { DIST, DIST_ENSAIO, elemento, texto } from "../html";
 
 // O build do site do ensaio geral (Ensaio geral, decisões 3, 5 e 12; ticket 30): toda página com `noindex` e a tarja,
@@ -44,6 +44,10 @@ describe("o site do ensaio geral", () => {
     expect(simulador).toContain(AMBIENTES.ensaio.endereco);
     expect(simulador).toContain(AMBIENTES.ensaio.planoB.endereco);
     expect(simulador).not.toContain(AMBIENTES.producao.endereco);
+    // A base do modelo do build é a do coletor com `--noite 2022-2`: com outra, a ilha não junta os dois arquivos.
+    const doBuild = JSON.parse(ler(DIST_ENSAIO, "dados/simulador.json")) as { assinatura: string };
+    expect(doBuild.assinatura).toBe(criarProjecaoDaNoite(lerEntradaDaProjecao("2022-2")).assinatura);
+    expect(doBuild.assinatura).not.toBe(criarProjecaoDaNoite(lerEntradaDaProjecao("2026-2")).assinatura);
   });
 
   it("mostra antes das 17h o agregado de 2022, congelado na véspera de 30/10, com as 12 pesquisas finais", () => {

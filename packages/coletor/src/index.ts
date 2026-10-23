@@ -30,7 +30,7 @@ export {
   type ProjecoesDosMunicipios,
   type TabelaDeProjecoes,
 } from "./arquivos.ts";
-export { type EntradaDaProjecao, type ProjecaoDaRodada } from "./projecao.ts";
+export { criarProjecaoDaNoite, type EntradaDaProjecao, type ProjecaoDaRodada } from "./projecao.ts";
 export { lerEntradaDaProjecao, NOITES_DA_PROJECAO, type NoiteDaProjecao } from "./entrada-da-projecao.ts";
 export { ehPreditivo, TIPOS_PREDITIVOS, type EstadoDaNarracao, type EventoDaNarracao, type TipoDeEvento } from "./narracao.ts";
 export { pastaLocal, type Destino } from "./destino.ts";

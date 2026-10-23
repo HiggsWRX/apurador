@@ -164,7 +164,10 @@ export interface ApuracaoEmColunas {
 export interface ArquivoDoSimuladorAoVivo {
   /** A assinatura dos municípios da base do modelo, na ordem dela (`assinaturaDosLugares`): a ilha só junta os dois com a mesma. */
   assinatura: string;
-  /** Com o simulador no ar; sem ele, o arquivo é regravado só com a assinatura, para nenhuma apuração velha ficar no ar. */
+  /**
+   * Com o simulador no ar: na fase ao vivo, com a chave dele e antes da indicação do TSE. Sem ele, o arquivo é regravado
+   * só com a assinatura, para nenhuma apuração velha ficar no ar.
+   */
   apuracao?: ApuracaoEmColunas;
   /** O agregado de pesquisas da noite, em % do 1º finalista da base: só com a base com pesquisas no ar. */
   agregado?: { valor: number; incerteza: number };

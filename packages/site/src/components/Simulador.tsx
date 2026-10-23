@@ -1,28 +1,27 @@
 import type { ArquivoDoSimuladorAoVivo, ChavesDaNoite } from "@apurador/coletor";
 import { HIPOTESES_ZERADAS, type Hipoteses } from "@apurador/modelo";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { ArquivoDoSimulador } from "../lib/arquivo-do-simulador";
 import type { IdDaBase } from "../lib/bases-da-projecao";
 import type { EnderecoAoVivo } from "../lib/enderecos-ao-vivo";
 import { enderecoDaSimulacao, lerEndereco, mexidas, type EnderecoLido, type FinalistasDoSimulador } from "../lib/hipoteses";
 import { useLeiturasAoVivo, useMovimentoReduzido } from "../lib/leituras-ao-vivo";
-import { antesDaPrimeiraLeitura, criarLeitorAoVivo } from "../lib/leitor-ao-vivo";
 import { baseNoSimulador, prepararSimulador, regiaoDaUf, simularNaTela, type DadosDoSimulador } from "../lib/simulador";
-import { curvaRealNoSimulador, faseDoSimulador } from "../lib/simulador-ao-vivo";
+import { curvaRealNoSimulador, situacaoDoSimulador } from "../lib/simulador-ao-vivo";
 import { IndicadorAoVivo } from "./IndicadorAoVivo";
 import { SimuladorFechado } from "./SimuladorFechado";
 import { VistaDoSimulador, type PropsDaVistaDoSimulador } from "./VistaDoSimulador";
 
 // A ilha do simulador "e se", na tela própria dele (Simulador "e se", decisões 5, 6, 11, 12 e 13). No build, ela sai como
 // "Carregando o simulador…": o modelo e o arquivo só carregam quando a tela abre, nunca na página de lugar. No
-// navegador, baixa o arquivo do build (a base do modelo) e lê, pelo leitor ao vivo, o arquivo de rodada, o Brasil e o
-// arquivo do simulador que o coletor publica, a cada 30 s, como uma página de lugar, com um leitor só. Antes das 17h,
-// simula sobre o arquivo do build, nada totalizado; na noite, sobre cada arquivo novo do coletor, com as hipóteses
-// paradas; no fim, fecha. O endereço traz a base escolhida na página, a UF de onde o simulador foi aberto e, num link
-// compartilhado, as hipóteses.
+// navegador, lê, pelo leitor ao vivo, o arquivo de rodada, o Brasil e o arquivo do simulador que o coletor publica, a
+// cada 30 s, como uma página de lugar, com um leitor só, e baixa o arquivo do build (a base do modelo) quando vai
+// simular. Antes das 17h, simula sobre o arquivo do build, nada totalizado; na noite, sobre cada arquivo novo do
+// coletor, com as hipóteses paradas; no fim, fecha. O endereço traz a base escolhida na página, a UF de onde o simulador
+// foi aberto e, num link compartilhado, as hipóteses.
 
-/** O arquivo do simulador nos arquivos ao vivo, que o coletor grava a cada rodada em que ele muda. */
-const ARQUIVO_DA_NOITE = "simulador.json";
+/** O caminho do arquivo do simulador nos arquivos ao vivo, que o coletor grava a cada rodada em que ele muda. */
+const CAMINHO_DO_ARQUIVO_DA_NOITE = "simulador.json";
 
 /** O que o simulador faz, acima dele; a tela fechada fica sem. */
 const Introducao = () => (
@@ -40,8 +39,8 @@ interface Props {
   basePadrao: IdDaBase;
   /** O voto das hipóteses prontas: quanto as pesquisas finais do 1º turno subestimaram o 1º finalista, em pontos entre os dois. */
   viesDoPrimeiroTurno: number;
-  /** Se o simulador abre antes das 17h, pelas chaves de antes das 17h (`SIMULADOR_ANTES_DAS_17H`). */
-  antesDas17h: boolean;
+  /** Se o simulador vai ao ar antes das 17h, pelas chaves de antes das 17h (`SIMULADOR_ANTES_DAS_17H`). */
+  noArAntesDas17h: boolean;
   /** Os endereços dos arquivos ao vivo, o principal primeiro, ou nenhum quando não há coletor. */
   enderecos: EnderecoAoVivo[];
   /** As chaves da noite do arquivo de chaves do site, que valem até a primeira rodada do coletor. */
@@ -66,30 +65,24 @@ function regioesDoEndereco(dados: DadosDoSimulador, endereco: EnderecoLido): num
   return [...new Set([...(doLugar === null ? [] : [doLugar]), ...mexidasNoLink])];
 }
 
-/** A ilha do simulador: o arquivo, as leituras, as hipóteses e a base escolhida. */
-export default function Simulador({ arquivo, finalistas, basePadrao, viesDoPrimeiroTurno, antesDas17h, enderecos, chaves }: Props) {
+/** A ilha do simulador: as leituras, o arquivo do build, as hipóteses e a base escolhida. */
+export default function Simulador({ arquivo, finalistas, basePadrao, viesDoPrimeiroTurno, noArAntesDas17h, enderecos, chaves }: Props) {
   const [estado, setEstado] = useState<Estado>({ tipo: "carregando" });
   const [endereco, setEndereco] = useState<EnderecoLido | null>(null);
   const [hipoteses, setHipoteses] = useState<Hipoteses>(HIPOTESES_ZERADAS);
   const [base, setBase] = useState<IdDaBase>(basePadrao);
   const [deOutraPessoa, setDeOutraPessoa] = useState(false);
   const [copia, setCopia] = useState<PropsDaVistaDoSimulador["copia"]>(null);
-  const leitor = useMemo(
-    () =>
-      enderecos.length > 0
-        ? criarLeitorAoVivo({
-            enderecos,
-            lugar: "BR",
-            buscar: (url, init) => fetch(url, init),
-            relogio: () => performance.now(),
-            chaves,
-            simulador: ARQUIVO_DA_NOITE,
-          })
-        : null,
-    [enderecos, chaves],
-  );
-  const { quadro, lendo, proximaLeitura, lida } = useLeiturasAoVivo(leitor, () => antesDaPrimeiraLeitura(chaves));
+  const pedido = useRef(false);
+  const { leitor, quadro, lendo, proximaLeitura, lida } = useLeiturasAoVivo({ enderecos, lugar: "BR", chaves, simulador: CAMINHO_DO_ARQUIVO_DA_NOITE });
   const movimentoReduzido = useMovimentoReduzido();
+
+  const situacao = situacaoDoSimulador(quadro, { noArAntesDas17h, lido: !leitor || lida });
+  const daNoite = situacao.tipo === "ao-vivo" ? situacao.daNoite : undefined;
+  const simula = situacao.tipo === "antes-das-17h" || situacao.tipo === "ao-vivo";
+  // O arquivo do build só vem quando a tela vai simular: com ela fechada, nada a baixar. Na noite, ele começa a vir na
+  // leitura que sabe a fase, junto com o arquivo do coletor.
+  const precisaDoBuild = simula || (situacao.tipo === "esperando" && quadro.rodada?.fase === "ao-vivo");
 
   useEffect(() => {
     const lido = lerEndereco(location.search, finalistas);
@@ -98,33 +91,32 @@ export default function Simulador({ arquivo, finalistas, basePadrao, viesDoPrime
     setHipoteses(lido.hipoteses);
     // Um link com hipóteses é a simulação de outra pessoa, recalculada com os dados de agora (decisão 11).
     setDeOutraPessoa(mexidas(lido.hipoteses));
-    let cancelado = false;
+  }, [finalistas]);
+
+  useEffect(() => {
+    if (!precisaDoBuild || pedido.current) return;
+    pedido.current = true;
     fetch(arquivo)
       .then((r) => {
         if (!r.ok) throw new Error(`${arquivo}: ${r.status}`);
         return r.json() as Promise<ArquivoDoSimulador>;
       })
-      .then((a) => !cancelado && setEstado({ tipo: "pronto", arquivo: a }))
-      .catch(() => !cancelado && setEstado({ tipo: "erro" }));
-    return () => {
-      cancelado = true;
-    };
-  }, [arquivo, finalistas]);
+      .then(
+        (a) => setEstado({ tipo: "pronto", arquivo: a }),
+        () => setEstado({ tipo: "erro" }),
+      );
+  }, [arquivo, precisaDoBuild]);
 
-  // Com o leitor, a fase só se sabe depois da primeira leitura: até lá, a tela espera, para não simular antes das 17h
-  // no meio da noite.
-  const fase = leitor && !lida ? null : faseDoSimulador(quadro, antesDas17h);
-  const daNoite = fase?.tipo === "ao-vivo" ? fase.daNoite : undefined;
   const doBuild = estado.tipo === "pronto" ? estado.arquivo : null;
   // Cada arquivo novo do coletor refaz a projeção; as hipóteses ficam.
-  const dados = useMemo(() => (doBuild && fase !== null && daNoite !== null ? preparar(doBuild, daNoite) : null), [doBuild, fase !== null, daNoite]);
+  const dados = useMemo(() => (doBuild && simula ? preparar(doBuild, daNoite) : null), [doBuild, simula, daNoite]);
   // A base que vai ao ar: sem o agregado, só a "Só apuração", qualquer que seja a do endereço.
   const baseNoAr = dados ? baseNoSimulador(dados, base).id : base;
   const tela = useMemo(() => (dados ? simularNaTela(dados, baseNoAr, hipoteses) : null), [dados, baseNoAr, hipoteses]);
   const regioesAbertas = useMemo(() => (dados && endereco ? regioesDoEndereco(dados, endereco) : []), [dados, endereco]);
 
-  if (fase && fase.tipo !== "antes-das-17h" && fase.tipo !== "ao-vivo") return <SimuladorFechado fechamento={fase} />;
-  if (estado.tipo === "erro" || (doBuild && fase !== null && daNoite !== null && !dados)) {
+  if (situacao.tipo !== "antes-das-17h" && situacao.tipo !== "ao-vivo" && situacao.tipo !== "esperando") return <SimuladorFechado fechamento={situacao} />;
+  if (estado.tipo === "erro" || (doBuild && simula && !dados)) {
     return (
       <>
         <Introducao />
@@ -160,7 +152,17 @@ export default function Simulador({ arquivo, finalistas, basePadrao, viesDoPrime
     );
   };
   const comPesquisas = dados.bases.find((b) => b.id === "com-pesquisas")?.partida.projecao;
-  const naNoite = fase?.tipo === "ao-vivo";
+  // Com o coletor, o indicador ao vivo na barra fixa, nos estados da página: antes das 17h, a contagem regressiva.
+  const indicador = leitor && (
+    <IndicadorAoVivo
+      indicador={quadro.indicador}
+      ultimaLeitura={quadro.ultimaLeitura}
+      ultimaTotalizacao={quadro.rodada?.novidade.totalizacao ?? null}
+      movimentoReduzido={movimentoReduzido}
+      proximaLeitura={proximaLeitura}
+      lendo={lendo}
+    />
+  );
 
   return (
     <>
@@ -178,19 +180,8 @@ export default function Simulador({ arquivo, finalistas, basePadrao, viesDoPrime
         deOutraPessoa={deOutraPessoa}
         regioesAbertas={regioesAbertas}
         copia={copia}
-        indicador={
-          naNoite && (
-            <IndicadorAoVivo
-              indicador={quadro.indicador}
-              ultimaLeitura={quadro.ultimaLeitura}
-              ultimaTotalizacao={quadro.rodada?.novidade.totalizacao ?? null}
-              movimentoReduzido={movimentoReduzido}
-              proximaLeitura={proximaLeitura}
-              lendo={lendo}
-            />
-          )
-        }
-        curvaReal={naNoite ? curvaRealNoSimulador(quadro, [finalistas[0].nomeUrna, finalistas[1].nomeUrna]) : undefined}
+        indicador={indicador}
+        curvaReal={daNoite ? curvaRealNoSimulador(quadro, finalistas[0].nomeUrna) : undefined}
         aoMudarHipoteses={(h) => {
           setHipoteses(h);
           mexeu();

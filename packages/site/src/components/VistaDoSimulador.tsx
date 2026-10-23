@@ -21,11 +21,11 @@ import { CurvaProjetada } from "./CurvaProjetada";
 // O desenho do simulador "e se" (Simulador "e se", decisões 6 a 10 e 13): a simulação no terceiro nível visual, em
 // moldura pontilhada com fundo hachurado e o selo, sempre ao lado da projeção do Apurador; os controles das hipóteses,
 // cada um com a tradução em relação ao 1º turno; "o que seria preciso"; as hipóteses prontas; a tabela das regiões;
-// "Zerar" e "Copiar link". No celular, de cima para baixo, na ordem da decisão 13, com a barra da simulação fixa e, na
-// noite, o indicador ao vivo nela (decisão 14); no computador, os controles à esquerda e o resultado fixo à direita (o
-// CSS reordena). Sem estado e sem leitura: a ilha
-// (`Simulador.tsx`) guarda as hipóteses e passa a tela, e os testes renderizam esta vista em HTML. Nenhuma frase diz
-// quem vence: os números, os rótulos curtos e a frase de "o que seria preciso", que fala da simulação.
+// "Zerar" e "Copiar link". No celular, de cima para baixo, na ordem da decisão 13, com a barra da simulação fixa e, com
+// o coletor, o indicador ao vivo nela (decisão 14); no computador, os controles à esquerda e o resultado fixo à direita
+// (o CSS reordena). Sem estado e sem leitura: a ilha (`Simulador.tsx`) guarda as hipóteses e passa a tela, e os testes
+// renderizam esta vista em HTML. Nenhuma frase diz quem vence: os números, os rótulos curtos e a frase de "o que seria
+// preciso", que fala da simulação.
 
 const METODOLOGIA = "/metodologia/";
 /** O selo da simulação (decisão 8). */
@@ -54,7 +54,7 @@ export interface PropsDaVistaDoSimulador {
   regioesAbertas: number[];
   /** O que "Copiar link" deu: copiado, ou o endereço para copiar à mão, quando o navegador não deixa. */
   copia: { estado: "copiado" } | { estado: "manual"; endereco: string } | null;
-  /** Na noite, o indicador ao vivo da barra fixa (`IndicadorAoVivo`), o mesmo das páginas de lugar; antes das 17h, nenhum. */
+  /** Com o coletor, o indicador ao vivo da barra fixa (`IndicadorAoVivo`), o mesmo das páginas de lugar; sem ele, nenhum. */
   indicador?: ComponentChildren;
   /** Na noite, a curva real do Brasil, que a curva da simulação continua e que se estende a cada leitura. */
   curvaReal?: PontoDaCurvaRealNoSimulador[];

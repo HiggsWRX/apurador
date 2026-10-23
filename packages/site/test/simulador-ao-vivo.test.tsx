@@ -3,7 +3,7 @@ import { render } from "preact-render-to-string";
 import { describe, expect, it } from "vitest";
 import { SimuladorFechado } from "../src/components/SimuladorFechado";
 import { antesDaPrimeiraLeitura, type QuadroAoVivo } from "../src/lib/leitor-ao-vivo";
-import { curvaRealNoSimulador, faseDoSimulador, type Fechamento } from "../src/lib/simulador-ao-vivo";
+import { curvaRealNoSimulador, situacaoDoSimulador, type Fechamento } from "../src/lib/simulador-ao-vivo";
 import { elemento, texto } from "./html";
 
 // O que a tela do simulador mostra pela última leitura do leitor ao vivo (Simulador "e se", decisões 5 e 12): sobre que
@@ -53,30 +53,41 @@ function quadro(fase: ArquivoDeRodada["fase"], parte: Partial<QuadroAoVivo> = {}
 }
 
 describe("a tela do simulador pela última leitura", () => {
+  const situacao = (q: QuadroAoVivo, noArAntesDas17h = true, lido = true) => situacaoDoSimulador(q, { noArAntesDas17h, lido });
+
   it("antes das 17h, simula sobre o arquivo do build com a chave de antes das 17h; sem ela, diz que abre às 17h", () => {
-    expect(faseDoSimulador(antesDaPrimeiraLeitura(LIGADAS), true)).toEqual({ tipo: "antes-das-17h" });
-    expect(faseDoSimulador(quadro("antes-das-17h"), true)).toEqual({ tipo: "antes-das-17h" });
-    expect(faseDoSimulador(quadro("antes-das-17h"), false)).toEqual({ tipo: "abre-as-17h" });
+    // Sem leitor (o build sem o coletor), a tela fica no quadro de antes da primeira leitura.
+    expect(situacao(antesDaPrimeiraLeitura(LIGADAS))).toEqual({ tipo: "antes-das-17h" });
+    expect(situacao(quadro("antes-das-17h"))).toEqual({ tipo: "antes-das-17h" });
+    expect(situacao(quadro("antes-das-17h"), false)).toEqual({ tipo: "abre-as-17h" });
+  });
+
+  it("espera antes da primeira leitura, e sem conexão nela, para não simular antes das 17h no meio da noite", () => {
+    expect(situacao(antesDaPrimeiraLeitura(LIGADAS), true, false)).toEqual({ tipo: "esperando" });
+    const semConexao: QuadroAoVivo = { ...antesDaPrimeiraLeitura(LIGADAS), indicador: { estado: "sem-conexao" } };
+    expect(situacao(semConexao)).toEqual({ tipo: "esperando" });
+    // Com uma rodada já lida, a conexão que cai depois não muda a fase.
+    expect(situacao({ ...quadro("ao-vivo"), indicador: { estado: "sem-conexao" } })).toEqual({ tipo: "ao-vivo", daNoite: SIMULADOR });
   });
 
   it("na fase ao vivo, simula sobre o arquivo do coletor, e espera enquanto ele não chega com a apuração", () => {
-    expect(faseDoSimulador(quadro("ao-vivo"), false)).toEqual({ tipo: "ao-vivo", daNoite: SIMULADOR });
-    expect(faseDoSimulador(quadro("ao-vivo", { simulador: null }), true)).toEqual({ tipo: "ao-vivo", daNoite: null });
-    expect(faseDoSimulador(quadro("ao-vivo", { simulador: { assinatura: "0badcafe" } }), true)).toEqual({ tipo: "ao-vivo", daNoite: null });
+    expect(situacao(quadro("ao-vivo"), false)).toEqual({ tipo: "ao-vivo", daNoite: SIMULADOR });
+    expect(situacao(quadro("ao-vivo", { simulador: null }))).toEqual({ tipo: "esperando" });
+    expect(situacao(quadro("ao-vivo", { simulador: { assinatura: "0badcafe" } }))).toEqual({ tipo: "esperando" });
   });
 
   it("desligada a chave do simulador, ou a da projeção, ou no plano zero, fica fora do ar", () => {
-    expect(faseDoSimulador(quadro("ao-vivo", {}, { simulador: false }), true)).toEqual({ tipo: "fora-do-ar" });
+    expect(situacao(quadro("ao-vivo", {}, { simulador: false }))).toEqual({ tipo: "fora-do-ar" });
     // Até a primeira rodada, valem as chaves do site, em que nada liga o simulador sem a projeção.
-    expect(faseDoSimulador(quadro("ao-vivo", {}, { projecao: false }), true)).toEqual({ tipo: "fora-do-ar" });
-    expect(faseDoSimulador(quadro("ao-vivo", {}, { nucleoMinimo: false }), true)).toEqual({ tipo: "fora-do-ar" });
+    expect(situacao(quadro("ao-vivo", {}, { projecao: false }))).toEqual({ tipo: "fora-do-ar" });
+    expect(situacao(quadro("ao-vivo", {}, { nucleoMinimo: false }))).toEqual({ tipo: "fora-do-ar" });
   });
 
   it("com a indicação do TSE, fecha com o eleito; na totalização final, com o fim da apuração", () => {
-    expect(faseDoSimulador(quadro("ao-vivo", { lugar: brasil([INDICACAO]) }), true)).toEqual({ tipo: "indicacao", eleito: "Lula" });
-    expect(faseDoSimulador(quadro("encerrada", { lugar: brasil([INDICACAO], true) }), true)).toEqual({ tipo: "encerrada" });
+    expect(situacao(quadro("ao-vivo", { lugar: brasil([INDICACAO]) }))).toEqual({ tipo: "indicacao", eleito: "Lula" });
+    expect(situacao(quadro("encerrada", { lugar: brasil([INDICACAO], true) }))).toEqual({ tipo: "encerrada" });
     // Com a chave desligada depois da indicação, a tela ainda diz por que o simulador parou.
-    expect(faseDoSimulador(quadro("ao-vivo", { lugar: brasil([INDICACAO]) }, { simulador: false }), true)).toEqual({ tipo: "indicacao", eleito: "Lula" });
+    expect(situacao(quadro("ao-vivo", { lugar: brasil([INDICACAO]) }, { simulador: false }))).toEqual({ tipo: "indicacao", eleito: "Lula" });
   });
 });
 
@@ -88,16 +99,16 @@ describe("a curva real do Brasil no simulador", () => {
     ];
     const comCurva = quadro("ao-vivo", { lugar: { ...brasil(), curva } });
     // 2026: Flávio é o 1º finalista da base e o 1º do arquivo de rodada, em ordem alfabética.
-    expect(curvaRealNoSimulador(comCurva, ["FLAVIO BOLSONARO", "LULA"])).toEqual([
+    expect(curvaRealNoSimulador(comCurva, "FLAVIO BOLSONARO")).toEqual([
       { x: 0.5, y: 0.6 },
       { x: 10.2, y: 0.525 },
     ]);
     // 2022, no ensaio: Lula é o 1º finalista da base e o 2º do arquivo de rodada.
-    expect(curvaRealNoSimulador(comCurva, ["LULA", "FLAVIO BOLSONARO"])).toEqual([
+    expect(curvaRealNoSimulador(comCurva, "LULA")).toEqual([
       { x: 0.5, y: 0.4 },
       { x: 10.2, y: 0.475 },
     ]);
-    expect(curvaRealNoSimulador(antesDaPrimeiraLeitura(LIGADAS), ["FLAVIO BOLSONARO", "LULA"])).toEqual([]);
+    expect(curvaRealNoSimulador(antesDaPrimeiraLeitura(LIGADAS), "FLAVIO BOLSONARO")).toEqual([]);
   });
 });
 

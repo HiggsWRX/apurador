@@ -1,12 +1,12 @@
 import type { ChavesDaNoite } from "@apurador/coletor";
 import type { TipoDeLugar } from "@apurador/pipeline";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { BASE_DA_NOITE, type IdDaBase } from "../lib/bases-da-projecao";
 import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import type { TurnoPassado } from "../lib/curva-de-comparacao";
 import type { EnderecoAoVivo } from "../lib/enderecos-ao-vivo";
 import { useLeiturasAoVivo, useMovimentoReduzido } from "../lib/leituras-ao-vivo";
-import { antesDaPrimeiraLeitura, criarLeitorAoVivo, type OpcaoDaTabelaDeProjecoes } from "../lib/leitor-ao-vivo";
+import type { OpcaoDaTabelaDeProjecoes } from "../lib/leitor-ao-vivo";
 import { publicarBase, publicarQuadro, useCartaoNaTela } from "../lib/quadro-da-pagina";
 import { useComparacao } from "./CurvaDeComparacao";
 import { VistaDoBlocoAoVivo } from "./VistaDoBlocoAoVivo";
@@ -44,15 +44,8 @@ interface Props {
 export default function BlocoAoVivo({ id, tipo, uf, em, fotos, enderecos, chaves, turnosPassados, pesquisasDoAgregado, tabelaDeProjecoes }: Props) {
   const comparacao = useComparacao(id, turnosPassados);
   const [base, setBase] = useState<IdDaBase>(BASE_DA_NOITE);
-  const leitor = useMemo(
-    () =>
-      enderecos.length > 0
-        ? criarLeitorAoVivo({ enderecos, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now(), chaves, tabelaDeProjecoes })
-        : null,
-    [enderecos, id, chaves, tabelaDeProjecoes],
-  );
   const cartaoNaTela = useCartaoNaTela();
-  const { quadro, lendo, proximaLeitura, lerAgora } = useLeiturasAoVivo(leitor, () => antesDaPrimeiraLeitura(chaves));
+  const { leitor, quadro, lendo, proximaLeitura, lerAgora } = useLeiturasAoVivo({ enderecos, lugar: id, chaves, tabelaDeProjecoes });
   const movimentoReduzido = useMovimentoReduzido();
   const [placarNaTela, setPlacarNaTela] = useState(true);
   const raiz = useRef<HTMLDivElement>(null);

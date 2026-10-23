@@ -783,15 +783,17 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
           ),
       });
       if (projecaoDaNoite) {
-        // O simulador vai ao ar com a projeção, depois das 17h, e com a chave dele, que só vale com a da projeção.
-        const doSimulador = controle.chaves.simulador ? noAr : undefined;
-        const agregado = doSimulador && comPesquisasNoAr() ? opcoes.projecao!.agregado : undefined;
+        // O simulador vai ao ar com a projeção, com a chave dele, que só vale com a da projeção, e na fase ao vivo até a
+        // indicação do TSE, quando ele para (spec, "Indicação do TSE").
+        const simuladorNoAr = controle.chaves.simulador && fase(d) === "ao-vivo" && !doBrasil.indicacao;
+        const projecaoDoSimulador = simuladorNoAr ? noAr : undefined;
+        const agregado = projecaoDoSimulador && comPesquisasNoAr() ? opcoes.projecao!.agregado : undefined;
         arquivos.push({
           caminho: "simulador.json",
           aCadaCincoMinutos: true,
           conteudo: (): ArquivoDoSimuladorAoVivo => ({
             assinatura: projecaoDaNoite.assinatura,
-            ...(doSimulador ? { apuracao: doSimulador.apuracao } : {}),
+            ...(projecaoDoSimulador ? { apuracao: projecaoDoSimulador.apuracao } : {}),
             ...(agregado ? { agregado: { valor: agregado.valor, incerteza: agregado.incerteza } } : {}),
           }),
         });

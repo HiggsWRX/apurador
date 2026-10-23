@@ -1,8 +1,9 @@
 import { BASE_DA_NOITE, type IdDaBase } from "../lib/bases-da-projecao";
 import { caminhoDoSimulador } from "../lib/caminho-do-simulador";
-import { comOSimulador, emPlanoZero } from "../lib/chaves-ao-vivo";
+import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import type { QuadroAoVivo } from "../lib/leitor-ao-vivo";
 import { eventosDoLugar } from "../lib/narracao";
+import { simuladorAberto } from "../lib/simulador-ao-vivo";
 import { curvaProjetadaAoVivo, projecaoNaPagina } from "../lib/projecao-ao-vivo";
 import { eleitoPelaIndicacao, manchete, type LugarDaManchete } from "../lib/textos-ao-vivo";
 import type { PropsDaComparacao } from "./CurvaDeComparacao";
@@ -83,8 +84,7 @@ export function VistaDoBlocoAoVivo({
   const projecao = dados ? projecaoNaPagina(quadro, base) : null;
   const frase = manchete(quadro, lugar, projecao);
   const eleito = eleitoPelaIndicacao(quadro);
-  // O simulador para com a indicação do TSE: a tela dele só diria que o voto que falta não muda mais o resultado.
-  const simulador = comOSimulador(quadro) && eleito === null ? caminhoDoSimulador(base, lugar) : null;
+  const simulador = simuladorAberto(quadro) ? caminhoDoSimulador(base, lugar) : null;
   return (
     <div class="bloco-ao-vivo">
       {dados && <LinhaFixa candidatos={dados.candidatos} tse={dados.tse} escondida={placarNaTela} indicador={indicador()} mudou={mudou} />}

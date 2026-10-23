@@ -1,5 +1,6 @@
 import { Z_95, type CurvaDoLugar, type PontoDaCurva, type ViradaProjetada } from "@apurador/modelo";
 import { formatarCalculo } from "../lib/formato";
+import type { PontoDaCurvaRealNoSimulador } from "../lib/simulador-ao-vivo";
 import type { FinalistaDaPagina } from "./ChanceDeVitoria";
 import { ALTURA, COMECO_INSTAVEL, EixosDaCurva, eixosDaCurva, escalaDaCurva, LARGURA, MARGEM, type Eixos } from "./EixosDaCurva";
 
@@ -26,8 +27,8 @@ interface Props {
   curva: CurvaDoLugar;
   /** No simulador: a curva projetada do site, que vai por baixo; a `curva` é então a da simulação. */
   doSite?: CurvaDoLugar;
-  /** No simulador, na noite: a curva real do Brasil, com a fatia do `primeiro` (`y`, de 0 a 1) em cada % de seções (`x`). */
-  real?: { x: number; y: number }[];
+  /** No simulador, na noite: a curva real do Brasil, com a fatia do `primeiro` em cada % de seções. */
+  real?: PontoDaCurvaRealNoSimulador[];
 }
 
 const pct = (fatia: number) => `${formatarCalculo(100 * fatia)}%`;
@@ -200,7 +201,7 @@ interface PropsDoGrafico {
   /** Os pontos da curva projetada do site, sem faixa, por baixo dos da simulação. */
   doSite?: PontoDaCurva[];
   /** A curva real, sólida, por baixo de todas. */
-  real?: { x: number; y: number }[];
+  real?: PontoDaCurvaRealNoSimulador[];
   /** O ponto e a faixa da virada projetada, cada um `null` quando a curva não o tem. */
   virada: ViradaDesenhada;
   descricao: string;
