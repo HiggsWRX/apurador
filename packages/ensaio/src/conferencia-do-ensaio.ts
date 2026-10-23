@@ -1,4 +1,4 @@
-import { ehPreditivo, type ArquivoDeRodada, type ArquivoDoLugar, type EventoDaNarracao, type RegistroDaRodada } from "@apurador/coletor";
+import { ehPreditivo, type ArquivoDeRodada, type ArquivoDoLugar, type EventoDaNarracao, type GravacoesDoMes, type RegistroDaRodada } from "@apurador/coletor";
 import { instanteDaNoite, type Cadastro, type Noite } from "@apurador/pipeline";
 import { conferirPlacar, type PlacarPublicado } from "./conferencia.ts";
 import { conferirPreditivos, type JsonPublico } from "./conferencia-dos-preditivos.ts";
@@ -13,7 +13,9 @@ import { momentoReal, relogioAcelerado, type PartidaDoRelogio } from "./relogio.
 // - **Atraso**: o tempo entre o TSE falso pôr no ar uma totalização do Brasil (`momentoReal`, pela partida e pelo
 //   ritmo do relógio dele) e ela aparecer para quem lê, contado em cada leitura que traz uma totalização mais nova que a
 //   última vista, no endereço que a trouxe. Inclui a espera da página entre as leituras, como a meta de 35 s.
-// - **Cache**: as respostas 200 e 304 do caminho principal; da borda são `HIT` e `REVALIDATED`.
+// - **Cache**: as respostas 200 e 304 do caminho principal aos arquivos da página do Brasil (o arquivo de rodada, o JSON
+//   do Brasil e o mapa.json); da borda são `HIT` e `REVALIDATED`. Os outros lugares que o leitor lê em rodízio para o
+//   placar ninguém mais pede, e a borda nunca teria cópia deles.
 // - **Dados por visitante**: o que a página do Brasil baixa (o arquivo de rodada e o JSON do Brasil, e o mapa.json com o
 //   cartão na tela) nas leituras feitas das 17h às 20h da noite, pelo relógio do TSE falso, e levado à noite real pela
 //   velocidade dele: a 3x, a janela dura 1 h, e a noite faz 3x mais leituras.
@@ -46,14 +48,18 @@ export interface NumerosDoEnsaio {
     quantidade: number;
     duracao: Distribuicao | null;
     /** A rodada com mais municípios baixados. */
+    /** A rodada com mais municípios baixados: o início (ISO, pelo relógio do coletor), a duração em segundos e os municípios. */
     noPico: { inicio: string; duracao: number; municipios: number } | null;
     gravacoes: { total: number; maximaPorRodada: number; maximaPorHora: number };
   } | null;
   /** As gravações do mês no bucket do ensaio, pelo contador do coletor e pelo painel da Cloudflare. */
-  contador: { coletor: number; painel: number } | null;
+  contador: { coletor: number; daCloudflare: number } | null;
   /** As diferenças da narração do Brasil com a do replay, ou `null` sem o replay. */
   narracao: string[] | null;
 }
+
+/** Os arquivos que a página do Brasil lê, com o cartão do mapa na tela. */
+const DA_PAGINA_DO_BRASIL = ["rodada.json", "lugares/BR.json", "mapa.json"];
 
 /** Até quanto a hora de um evento pode variar do replay, em segundos da noite: o coletor do ensaio lê o Brasil a cada ~1 min da noite. */
 const TOLERANCIA_DA_NARRACAO = 120;
@@ -80,7 +86,11 @@ export function conferirEnsaio(entrada: {
   rodadas: Pick<RegistroDaRodada, "inicio" | "duracao" | "gravacoes" | "baixados">[];
   /** As janelas (ms reais, início e fim) que ficam fora do atraso: as quedas provocadas. */
   excluir?: [number, number][];
-  contador?: { coletor: number; painel: number };
+  /**
+   * As gravações do mês do contador do coletor (`.cache/coletor/gravacoes.json`), o bucket do ensaio e as operações
+   * classe A dele no mês, pelo painel da Cloudflare. Sem o número do painel, nada é comparado.
+   */
+  contador?: { gravacoes: GravacoesDoMes | null; bucket: string; daCloudflare?: number };
   /** A narração final do Brasil no replay da mesma noite. */
   narracaoDoReplay?: EventoDaNarracao[];
 }): NumerosDoEnsaio {
@@ -114,8 +124,8 @@ export function conferirEnsaio(entrada: {
     atrasos[l.tipo].push(Math.round((l.quando - momentoReal(relogio, instante(totalizacao))) / 100) / 10);
   }
 
-  // O cache, no caminho principal.
-  const doPrincipal = leituras.filter((l) => l.tipo === "principal" && (l.status === 200 || l.status === 304));
+  // O cache, no caminho principal, nos arquivos da página do Brasil.
+  const doPrincipal = leituras.filter((l) => l.tipo === "principal" && DA_PAGINA_DO_BRASIL.includes(l.caminho) && (l.status === 200 || l.status === 304));
   const cache = { respostas: doPrincipal.length, daBorda: doPrincipal.filter((l) => l.cache === "HIT" || l.cache === "REVALIDATED").length };
 
   // Os dados da página do Brasil das 17h às 20h da noite.
@@ -139,7 +149,11 @@ export function conferirEnsaio(entrada: {
     cache,
     dadosPorVisitante,
     rodadas: resumirRodadas(entrada.rodadas),
-    contador: entrada.contador ?? null,
+    // O painel da Cloudflare conta cada bucket à parte: a comparação é com o do ensaio, nunca com a soma dos dois.
+    contador:
+      entrada.contador?.daCloudflare === undefined
+        ? null
+        : { coletor: entrada.contador.gravacoes?.buckets[entrada.contador.bucket] ?? 0, daCloudflare: entrada.contador.daCloudflare },
     narracao: entrada.narracaoDoReplay && ultimoBrasil ? compararNarracao(ultimoBrasil.narracao, entrada.narracaoDoReplay, instante) : null,
   };
 }

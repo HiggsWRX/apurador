@@ -1,3 +1,4 @@
+import { brotliCompressSync, gzipSync } from "node:zlib";
 import type { ArquivoDeRodada, Buscar } from "@apurador/coletor";
 
 // O leitor do ensaio geral (Ensaio geral, decisões 20 e 23): lê o endereço público do ensaio como a página lê, a cada
@@ -27,7 +28,7 @@ export interface LeituraDoEnsaio {
   status: number;
   /** O `CF-Cache-Status` da resposta, ou `null` sem ele. */
   cache: string | null;
-  /** Os bytes do corpo como vieram pela rede (o `Content-Length`, com a compressão) ou, sem ele, os do corpo lido. */
+  /** Os bytes do corpo como vieram pela rede: o `Content-Length`, com a compressão, ou, sem ele, a estimativa de `bytesSemTamanho`. */
   bytes: number;
   /** O JSON, numa resposta 200. */
   conteudo?: unknown;
@@ -37,6 +38,16 @@ export interface LeituraDoEnsaio {
 export interface LeitorDoEnsaio {
   /** Faz uma leitura, como a página a cada 30 s, e devolve as respostas dela, na ordem dos pedidos. */
   ler(): Promise<LeituraDoEnsaio[]>;
+}
+
+/**
+ * Os bytes de um corpo que veio sem `Content-Length`: o `fetch` o entrega descomprimido, então, com `Content-Encoding`,
+ * vale o corpo comprimido de novo com o mesmo algoritmo, que fica perto do que passou pela rede.
+ */
+function bytesSemTamanho(corpo: Uint8Array, codificacao: string | null): number {
+  if (codificacao === "gzip") return gzipSync(corpo).length;
+  if (codificacao === "br") return brotliCompressSync(corpo).length;
+  return corpo.length;
 }
 
 /** A rodada com mais de 2 min pelo `Date` da resposta faz a página tentar o outro endereço. */
@@ -87,7 +98,7 @@ export function criarLeitorDoEnsaio(opcoes: {
     registro.quando = opcoes.agora();
     registro.status = resposta.status;
     registro.cache = resposta.headers.get("cf-cache-status");
-    registro.bytes = tamanho === null ? corpo.length : Number(tamanho);
+    registro.bytes = tamanho === null ? bytesSemTamanho(corpo, resposta.headers.get("content-encoding")) : Number(tamanho);
     if (resposta.status === 304) registro.bytes = 0;
     if (resposta.status === 200) {
       try {
@@ -108,7 +119,8 @@ export function criarLeitorDoEnsaio(opcoes: {
     const nova = registro.conteudo as ArquivoDeRodada | undefined;
     if (nova && typeof nova.rodada === "string") rodadas.set(base, nova);
     const rodada = rodadas.get(base) ?? null;
-    const erro = registro.status !== 200 && registro.status !== 304;
+    // Como na página, um arquivo de rodada que não é JSON conta como erro do endereço.
+    const erro = (registro.status !== 200 && registro.status !== 304) || (registro.status === 200 && nova === undefined);
     const velha = rodada !== null && !Number.isNaN(data) && data - Date.parse(rodada.rodada) > RODADA_VELHA;
     return { i, registro, respondeu: registro.status !== 0, hora: rodada ? Date.parse(rodada.rodada) : -Infinity, emDia: !erro && rodada !== null && !velha };
   }

@@ -13,7 +13,7 @@ import NoitesPassadas from "./NoitesPassadas";
 // do sinal de virada, e nenhuma frase diz quem vence ou quando vira. Com a chave da projeção desligada, fica o texto
 // da ordem de chegada e, sem número de projeção, as curvas reais de noites passadas (Consulta a advogado eleitoral,
 // decisão 2). A base desenhada é a escolhida no controle da projeção, logo abaixo. No build do ensaio geral, o 1º turno
-// e o dia são os da noite do painel, os de 2022.
+// e o dia são os da noite do build, os de 2022.
 
 const [primeiro, segundo] = FINALISTAS.map((c) => ({ nomeUrna: c.nomeUrna, cor: corDoPartido(c.partido) }));
 const pct = (fracao: number) => `${Math.round(100 * fracao)}%`;

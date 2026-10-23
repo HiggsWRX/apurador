@@ -116,7 +116,7 @@ export function eleicoesPassadas(pesquisas: readonly PesquisaHistorica[], result
 
 /**
  * As pesquisas de uma noite passada como o agregado as lê, no primeiro dos finalistas dados, com a eleição delas: o dia
- * dela e a incerteza da noite de 2026. O agregado da noite e a tendência do painel do ensaio geral partem daqui.
+ * dela e a incerteza da noite de 2026. O agregado da noite e a tendência do painel de antes das 17h do ensaio geral partem daqui.
  */
 export function pesquisasDaNoitePassada(
   pesquisas: readonly PesquisaHistorica[],

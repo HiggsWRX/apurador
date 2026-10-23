@@ -45,7 +45,7 @@ Cole aqui a saída de `npm run conferir-ensaio` (`.cache/ensaio/conferencia-<hor
 | Margem | o resultado dentro da margem de 95% depois de 1% | | |
 | Sinal de virada | "sem sinal de virada" nunca aparece no Brasil antes das 18:44 | | |
 | Pesquisas | "as pesquisas deixaram de pesar" acontece uma vez só | | |
-| Antes das 17h | o painel mostra o agregado de 2022 (Lula 51,0%) e as curvas das duas bases | | |
+| Antes das 17h | o painel de antes das 17h mostra o agregado de 2022 (Lula 51,0%) e as curvas das duas bases | | |
 | Retirada de pesquisa | o agregado recalculado, a lista sem ela e as curvas aparecem em até 10 min, sem tocar no coletor | | |
 
 ### Simulador
@@ -76,7 +76,7 @@ Cole aqui a saída de `npm run conferir-ensaio` (`.cache/ensaio/conferencia-<hor
 | Medição | Referência | Medido |
 | --- | --- | --- |
 | Computador do dono | CPU, memória e rede durante o pico | |
-| Volume da noite | ~500 MB, somando o envio e o que vem do TSE: `Get-NetAdapterStatistics` no PowerShell antes e depois, levado à noite | |
+| Volume da noite | ~500 MB, somando o envio e o que vem do TSE. O envio é o `SentBytes` do `Get-NetAdapterStatistics`, no PowerShell, antes e depois. O TSE falso é local e não passa pelo adaptador, e o leitor recebe por ele: o que vem do TSE fica com a conta do ticket 24 | |
 | Gzip pela borda | `npm run conferir-entrega -- --destino ensaio` passa com gzip | |
 | Limites dos alertas | `LIMITES_DOS_ALERTAS`, em `packages/coletor/src/alertas.ts` | |
 

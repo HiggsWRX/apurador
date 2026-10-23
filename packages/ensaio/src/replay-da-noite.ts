@@ -1,5 +1,6 @@
 import { criarColetor, relogioSemEspera, type ArquivoDoLugar, type EntradaDaProjecao, type EventoDaNarracao } from "@apurador/coletor";
 import { dataHoraDoInstante, instanteDaNoite, type Cadastro, type Lugar, type Noite } from "@apurador/pipeline";
+import { ELEICAO } from "./divulgacao.ts";
 import { relogioDoReplay } from "./relogio.ts";
 import { buscarNoTseFalso } from "./servidor.ts";
 import { criarTseFalso } from "./tse-falso.ts";
@@ -30,7 +31,7 @@ export async function narracaoDoReplay(entrada: {
   let brasil: ArquivoDoLugar | null = null;
   const coletor = criarColetor({
     base: "http://tse-falso.local/oficial",
-    eleicao: "6258",
+    eleicao: ELEICAO,
     lugares: entrada.lugares,
     relogio,
     buscar: buscarNoTseFalso(tse),

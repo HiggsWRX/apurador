@@ -114,17 +114,18 @@ describe("a conferência do ensaio geral", () => {
     expect(n.atraso.principal).toEqual({ amostras: 1, mediana: 20, p95: 20, maximo: 20 });
   });
 
-  it("conta no cache só as respostas do principal, e da borda só HIT e REVALIDATED", () => {
+  it("conta no cache só as respostas do principal aos arquivos da página do Brasil, e da borda só HIT e REVALIDATED", () => {
     const n = conferir([
       lida("rodada.json", AS_18H44, { cache: "HIT" }),
       lida("lugares/BR.json", AS_18H44, { status: 304, cache: "REVALIDATED" }),
-      lida("lugares/SP.json", AS_18H44, { cache: "EXPIRED" }),
-      lida("mapa.json", AS_18H44, { cache: "MISS" }),
-      lida("lugares/RJ.json", AS_18H44, { status: 404, cache: "HIT" }),
+      // Um município do rodízio, que só o leitor pede.
+      lida("lugares/01120.json", AS_18H44, { cache: "MISS" }),
+      lida("mapa.json", AS_18H44, { cache: "EXPIRED" }),
+      lida("rodada.json", AS_18H44, { status: 404, cache: "HIT" }),
       lida("rodada.json", AS_18H44, { tipo: "plano B", endereco: PLANO_B, cache: null }),
     ]);
 
-    expect(n.cache).toEqual({ respostas: 4, daBorda: 2 });
+    expect(n.cache).toEqual({ respostas: 3, daBorda: 2 });
   });
 
   it("soma os dados da página do Brasil das 17h às 20h da noite, e os leva à noite pela velocidade do relógio", () => {
@@ -165,10 +166,14 @@ describe("a conferência do ensaio geral", () => {
     });
   });
 
-  it("compara o contador do coletor com o painel da Cloudflare", () => {
-    const n = conferir([], { contador: { coletor: 115_002, painel: 114_950 } });
+  it("compara com o painel da Cloudflare o contador do bucket do ensaio, não a soma dos dois buckets", () => {
+    const gravacoes = { mes: "2026-10", buckets: { "apurador-ensaio": 115_002, "apurador-ao-vivo": 5_900 } };
 
-    expect(n.contador).toEqual({ coletor: 115_002, painel: 114_950 });
+    expect(conferir([], { contador: { gravacoes, bucket: "apurador-ensaio", daCloudflare: 114_950 } }).contador).toEqual({
+      coletor: 115_002,
+      daCloudflare: 114_950,
+    });
+    expect(conferir([], { contador: { gravacoes, bucket: "apurador-ensaio" } }).contador).toBeNull();
   });
 
   it("compara a narração do Brasil com a do replay da mesma noite: o que falta, o que sobra e a hora fora da tolerância", () => {
@@ -198,6 +203,8 @@ describe("a conferência do ensaio geral", () => {
 
 describe("a narração do replay, a referência da narração factual", () => {
   it("dá a virada do Brasil às ~18:44, como a medição de 2022, num trecho da noite", async () => {
+    // A primeira troca para Lula depois de 3% é às 18:42:53, e a última, às 18:44:50. O coletor lê o Brasil uma vez por
+    // minuto: a virada sai na primeira leitura com Lula à frente, até 18:45:50 (a mesma conta do replay.test.ts).
     const narracao = await narracaoDoReplay({
       noite,
       cadastro,
@@ -209,7 +216,7 @@ describe("a narração do replay, a referência da narração factual", () => {
 
     const viradas = narracao.filter((e) => e.lugar === "BR" && e.tipo === "virada");
     expect(viradas).toHaveLength(1);
-    expect(viradas[0]!.quando >= "2022-10-30 18:44:00" && viradas[0]!.quando <= "2022-10-30 18:46:00").toBe(true);
+    expect(viradas[0]!.quando >= "2022-10-30 18:42:53" && viradas[0]!.quando <= "2022-10-30 18:45:50").toBe(true);
   }, 120_000);
 });
 
@@ -227,7 +234,7 @@ describe("o registro do ensaio", () => {
       noPico: { inicio: "2026-10-23T21:40:00.000Z", duracao: 13.1, municipios: 612 },
       gravacoes: { total: 112_345, maximaPorRodada: 1204, maximaPorHora: 40_120 },
     },
-    contador: { coletor: 115_002, painel: 114_950 },
+    contador: { coletor: 115_002, daCloudflare: 114_950 },
     narracao: null,
   };
 
@@ -251,7 +258,7 @@ describe("o registro do ensaio", () => {
     const texto = registroDoEnsaio({ ...numeros, atraso: { principal: null, "plano B": null }, contador: null, narracao: null });
 
     expect(texto).toContain("| Atraso no plano B | sem leitura | mediana até 75 s e p95 até 150 s | não medido |");
-    expect(texto).toContain("| Contador do coletor contra o painel da Cloudflare | sem o número do painel (--painel-da-cloudflare) | até 1% |");
+    expect(texto).toContain("| Contador do coletor contra o painel da Cloudflare | sem o número do painel da Cloudflare (--painel-da-cloudflare) | até 1% |");
     expect(texto).toContain("| Narração factual | sem o replay da mesma noite | igual à do replay, salvo o que as quedas explicam | não medido |");
   });
 });

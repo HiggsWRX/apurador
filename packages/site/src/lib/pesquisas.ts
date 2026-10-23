@@ -1,6 +1,5 @@
 import {
   agregadoDePesquisas,
-  agregadoDaVespera,
   DIA_DA_ELEICAO,
   diaDoAgregado,
   indicacaoDasPesquisas,
@@ -10,6 +9,7 @@ import {
   type Agregado,
 } from "@apurador/modelo";
 import {
+  agregadoDaNoite,
   finalistas,
   lerPesquisasHistoricas,
   listaDasPesquisas,
@@ -130,11 +130,11 @@ export const PESQUISAS_DE_2026 = pesquisasDaNoite(TURNO_DE_2026, agregadoDePesqu
   dia: DIA_DA_ELEICAO,
 });
 
-/** O dia seguinte ao 1º turno de 2022, que foi em 02/10: a tendência do painel do ensaio começa nele. */
+/** O dia seguinte ao 1º turno de 2022, que foi em 02/10: a tendência do painel de antes das 17h do ensaio começa nele. */
 const INICIO_DO_2O_TURNO_DE_2022 = "2022-10-03";
 
 /**
- * As pesquisas do painel do ensaio geral: as finais do 2º turno de 2022, sem as retiradas por deploy (pelo registro,
+ * As pesquisas do painel de antes das 17h do ensaio geral: as finais do 2º turno de 2022, sem as retiradas por deploy (pelo registro,
  * em `ensaio/pesquisas-retiradas.json`), e o agregado delas congelado na véspera, o mesmo que o coletor do ensaio usa
  * (`--noite 2022-2`) enquanto ninguém retira nada. Uma retirada que não é pesquisa de 2022 quebra o build.
  */
@@ -145,26 +145,28 @@ export function pesquisasDoEnsaio(retiradas: readonly string[]): { pesquisas: Pe
   if (desconhecidas.length > 0) throw new Error(`ensaio/pesquisas-retiradas.json: ${desconhecidas.join(", ")} não é pesquisa do 2º turno de 2022`);
   const pesquisas = de2022.filter((p) => p.registro === null || !retiradas.includes(p.registro));
   const resultados = (resultadosHistoricos as { eleicoes: ResultadoHistorico[] }).eleicoes;
-  const daNoite = pesquisasDaNoitePassada(pesquisas, resultados, { ano: 2022, turno: 2 }, finalistas(turno) as [number, number]);
-  const { dia: diaDe2022, incerteza } = daNoite.eleicao;
-  const agregado = agregadoDaVespera(daNoite.pesquisas, diaDe2022, incerteza);
-  const tendencia = tendenciaDoAgregado(daNoite.pesquisas, diaDe2022, daNoite.eleicao, INICIO_DO_2O_TURNO_DE_2022);
-  return { pesquisas, noite: pesquisasDaNoite(turno, agregado, tendencia, { inicio: INICIO_DO_2O_TURNO_DE_2022, dia: diaDe2022 }) };
+  const noite = { ano: 2022, turno: 2 };
+  const doisFinalistas = finalistas(turno) as [number, number];
+  // O agregado é o da mesma função que o coletor do ensaio usa; a tendência, a mesma regra dia a dia até ele.
+  const agregado = agregadoDaNoite(pesquisas, resultados, noite, doisFinalistas);
+  const { pesquisas: doAgregado, eleicao } = pesquisasDaNoitePassada(pesquisas, resultados, noite, doisFinalistas);
+  const tendencia = tendenciaDoAgregado(doAgregado, eleicao.dia, eleicao, INICIO_DO_2O_TURNO_DE_2022);
+  return { pesquisas, noite: pesquisasDaNoite(turno, agregado, tendencia, { inicio: INICIO_DO_2O_TURNO_DE_2022, dia: eleicao.dia }) };
 }
 
 const doEnsaio = ENSAIO ? pesquisasDoEnsaio(retiradasDoEnsaio) : undefined;
 const daNoite = doEnsaio?.noite ?? PESQUISAS_DE_2026;
 
-/** As pesquisas finais de 2022 que o painel do ensaio lista no lugar da lista conferida no TSE; nenhuma fora do ensaio. */
+/** As pesquisas finais de 2022 que o painel de antes das 17h do ensaio lista no lugar da lista conferida no TSE; nenhuma fora do ensaio. */
 export const PESQUISAS_DO_ENSAIO = doEnsaio?.pesquisas ?? [];
 
-/** O 1º turno da noite do painel: o de 2026 ou, no ensaio, o de 2022. */
+/** O 1º turno da noite do build: o de 2026 ou, no ensaio, o de 2022. */
 export const TURNO = daNoite.turno;
-/** O agregado de pesquisas da noite do painel, ou `undefined` sem pesquisa na janela. */
+/** O agregado de pesquisas da noite do build, ou `undefined` sem pesquisa na janela. */
 export const AGREGADO = daNoite.agregado;
-/** A tendência do agregado da noite do painel, dia a dia. */
+/** A tendência do agregado da noite do build, dia a dia. */
 export const TENDENCIA = daNoite.tendencia;
-/** O começo da tendência e o dia da eleição da noite do painel. */
+/** O começo da tendência e o dia da eleição da noite do build. */
 export const CALENDARIO = daNoite.calendario;
 /** Os dois finalistas na ordem do agregado: o primeiro é aquele cujo % o agregado dá. */
 export const FINALISTAS = daNoite.finalistas;

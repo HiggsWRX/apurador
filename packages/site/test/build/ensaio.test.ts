@@ -58,6 +58,12 @@ describe("o site do ensaio geral", () => {
     expect(texto(elemento(brasil, /<section[^>]*data-bloco="o-que-esperar-da-noite"/))).toContain("No 1º turno de 2022");
   });
 
+  it("dá as hipóteses prontas do simulador ao mesmo candidato que em 2026, pelo número: Lula é o 1º finalista de 2022", () => {
+    const viesNaIlha = (dist: URL) => Number(/viesDoPrimeiroTurno&quot;:\[0,(-?[\d.]+)\]/.exec(ler(dist, "simulador/index.html"))?.[1]);
+    expect(viesNaIlha(DIST)).toBeGreaterThan(0);
+    expect(viesNaIlha(DIST_ENSAIO)).toBe(-viesNaIlha(DIST));
+  });
+
   it("mantém a metodologia de 2026, igual à do build da noite", () => {
     const principal = (dist: URL) => texto(elemento(ler(dist, "metodologia/index.html"), /<main[^>]*>/));
     expect(principal(DIST_ENSAIO)).toBe(principal(DIST));

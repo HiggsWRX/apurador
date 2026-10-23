@@ -13,8 +13,9 @@ import { narracaoDoReplay } from "./replay-da-noite.ts";
 // partida do relógio do TSE falso, as rodadas que o coletor registrou nesse tempo e o contador de gravações, roda o
 // replay da noite para a narração e escreve o trecho do registro com os números contra os critérios. O trecho vai para
 // a tela e para .cache/ensaio/conferencia-<hora>.md; os números inteiros, com todas as divergências, para o .json ao lado.
-// Uso: npm run conferir-ensaio [-- --leituras <arquivo> --painel-da-cloudflare <gravações> --excluir 21:40-21:52 --sem-replay]
+// Uso: npm run conferir-ensaio [-- --leituras <arquivo> --relogio <arquivo> --painel-da-cloudflare <gravações> --excluir 21:40-21:52 --sem-replay]
 //   --leituras: o arquivo do leitor (padrão: o mais novo de .cache/ensaio/).
+//   --relogio: a partida do relógio do TSE falso no ensaio (padrão: .cache/tse-falso/relogio.json, o da última partida).
 //   --painel-da-cloudflare: as operações classe A do bucket do ensaio no mês, no painel (R2 → apurador-ensaio → Metrics).
 //   --excluir: uma janela de hora real (do computador) fora do atraso, como uma queda provocada; pode repetir.
 //   --sem-replay: sem a narração do replay (~1 min a menos).
@@ -66,11 +67,11 @@ const excluir = opcoes.excluir.map((janela): [number, number] => {
   return [as(m[1]!, m[2]!), as(m[3]!, m[4]!)];
 });
 
-let contador: { coletor: number; painel: number } | undefined;
-if (opcoes["painel-da-cloudflare"] !== undefined) {
-  const gravacoes = existsSync(ARQUIVO_DO_CONTADOR) ? await lerContadorDeGravacoes(ARQUIVO_DO_CONTADOR) : null;
-  contador = { coletor: gravacoes?.buckets[AMBIENTES.ensaio.bucket] ?? 0, painel: Number(opcoes["painel-da-cloudflare"]) };
-}
+const contador = {
+  gravacoes: existsSync(ARQUIVO_DO_CONTADOR) ? await lerContadorDeGravacoes(ARQUIVO_DO_CONTADOR) : null,
+  bucket: AMBIENTES.ensaio.bucket,
+  daCloudflare: opcoes["painel-da-cloudflare"] === undefined ? undefined : Number(opcoes["painel-da-cloudflare"]),
+};
 
 let narracaoDoReplayDaNoite: EventoDaNarracao[] | undefined;
 if (!opcoes["sem-replay"]) {

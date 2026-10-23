@@ -7,7 +7,7 @@ import { umaCasa } from "./formato";
 import type { FinalistasDoSimulador } from "./hipoteses";
 import { corDoPartido, nomeCurto } from "./identidade";
 import { CONSTANTES, VIES_DO_PRIMEIRO_TURNO } from "./metodologia";
-import { AGREGADO, FINALISTAS, PLACAR_ENTRE_FINALISTAS_DO_BRASIL, TURNO } from "./pesquisas";
+import { AGREGADO, FINALISTAS, PESQUISAS_DE_2026, PLACAR_ENTRE_FINALISTAS_DO_BRASIL, TURNO } from "./pesquisas";
 import { BASE_DO_MODELO, MODELO } from "./projecao-antes-das-17h";
 
 // O simulador "e se" antes das 17h no build (Simulador "e se", decisão 5; Consulta a advogado eleitoral, decisão 2):
@@ -45,9 +45,12 @@ export const FINALISTAS_DO_SIMULADOR: FinalistasDoSimulador = [doSimulador(FINAL
 
 /**
  * O voto das hipóteses prontas: quanto as pesquisas finais do 1º turno subestimaram Flávio, em pontos entre os dois
- * finalistas, com uma casa, o mesmo número que a metodologia escreve (decisão do dono, 20/10, ticket 24).
+ * finalistas, com uma casa, o mesmo número que a metodologia escreve (decisão do dono, 20/10, ticket 24). É do 1º
+ * finalista do simulador; no build do ensaio geral, ele é Lula, e o viés passa ao finalista de número 22, como em 2026.
  */
-export const VIES_DAS_HIPOTESES_PRONTAS = umaCasa(VIES_DO_PRIMEIRO_TURNO.diferenca);
+export const VIES_DAS_HIPOTESES_PRONTAS = umaCasa(
+  (FINALISTAS[0].numero === PESQUISAS_DE_2026.finalistas[0].numero ? 1 : -1) * VIES_DO_PRIMEIRO_TURNO.diferenca,
+);
 
 /** O 1º turno de 2026 em cada região, pelo arquivo oficial: o placar entre finalistas e o comparecimento. */
 function primeiroTurnoDasRegioes(): ArquivoDoSimulador["regioes"] {

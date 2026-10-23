@@ -21,6 +21,7 @@ function cdn() {
   const pedidos: { url: string; cabecalhos: Record<string, string> }[] = [];
   let data = AS_18H;
   const fora = new Set<string>();
+  const estragados = new Set<string>();
   return {
     pedidos,
     publicar(url: string, conteudo: unknown, etag: string) {
@@ -35,10 +36,15 @@ function cdn() {
     derrubar(endereco: string) {
       fora.add(endereco);
     },
+    /** O arquivo passa a vir com 200 e um corpo que não é JSON, como uma página de erro. */
+    estragar(url: string) {
+      estragados.add(url);
+    },
     buscar: async (url: string, init?: RequestInit) => {
       const cabecalhos = Object.fromEntries(Object.entries((init?.headers ?? {}) as Record<string, string>).map(([k, v]) => [k.toLowerCase(), v]));
       pedidos.push({ url, cabecalhos });
       if ([...fora].some((e) => url.startsWith(e))) return new Response("erro", { status: 503 });
+      if (estragados.has(url)) return new Response("<html>erro</html>", { status: 200, headers: { date: new Date(data).toUTCString() } });
       const arquivo = arquivos.get(url);
       const comuns = { date: new Date(data).toUTCString(), "cf-cache-status": "HIT" };
       if (!arquivo) return new Response("não há", { status: 404, headers: comuns });
@@ -123,6 +129,22 @@ describe("o leitor do ensaio geral", () => {
     expect((await l.ler()).every((r) => r.tipo === "plano B")).toBe(true);
   });
 
+  it("passa ao plano B quando o arquivo de rodada do principal deixa de ser JSON, como a página", async () => {
+    const borda = cdn();
+    borda.rodada(PRINCIPAL, AS_18H - 10_000, '"r1"');
+    borda.rodada(PLANO_B, AS_18H - 5_000, '"b1"');
+    const l = leitor(borda);
+    await l.ler();
+
+    // A rodada guardada do principal ainda tem 10 s, mas a resposta nova não é JSON.
+    borda.estragar(`${PRINCIPAL}rodada.json`);
+    const lidas = await l.ler();
+
+    expect(lidas[0]).toMatchObject({ tipo: "principal", caminho: "rodada.json", status: 200 });
+    expect(lidas[0]!.conteudo).toBeUndefined();
+    expect(lidas.slice(1).every((r) => r.tipo === "plano B")).toBe(true);
+  });
+
   it("passa ao plano B quando o principal dá erro", async () => {
     const borda = cdn();
     borda.rodada(PRINCIPAL, AS_18H - 10_000, '"r1"');
@@ -145,6 +167,25 @@ describe("o leitor do ensaio geral", () => {
     const lidas = await l.ler();
 
     expect(lidas.map((r) => `${r.tipo} ${r.caminho}`).slice(0, 3)).toEqual(["principal rodada.json", "plano B rodada.json", "principal lugares/BR.json"]);
+  });
+
+  it("sem Content-Length, conta os bytes comprimidos, e não o corpo que o fetch já descomprimiu", async () => {
+    const corpo = JSON.stringify({ rodada: new Date(AS_18H).toISOString(), narracao: "a".repeat(10_000) });
+    const l = criarLeitorDoEnsaio({
+      enderecos: { principal: PRINCIPAL },
+      origem: ORIGEM,
+      lugares: [],
+      municipios: [],
+      municipiosPorLeitura: 0,
+      buscar: async () => new Response(corpo, { status: 200, headers: { "content-encoding": "gzip", date: new Date(AS_18H).toUTCString() } }),
+      agora: () => AS_18H,
+    });
+
+    const [rodada] = await l.ler();
+
+    expect(rodada!.bytes).toBeGreaterThan(0);
+    // 10 mil letras iguais comprimem para algumas dezenas de bytes.
+    expect(rodada!.bytes).toBeLessThan(500);
   });
 
   it("registra um pedido sem resposta com o status 0", async () => {
