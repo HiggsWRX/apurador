@@ -519,14 +519,14 @@ Não há código de produção ainda. As referências são:
   - gravar os secrets `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` no GitHub;
   - criar as chaves de escrita só nos buckets de produção (`apurador-ao-vivo`) e do ensaio, e colá-las no `.env` do coletor;
   - preparar o computador até 21/10;
-  - instalar o ntfy, criar o tópico e colá-lo no `.env` do coletor, e ligar a sentinela (KV, deploy e segredo, em `packages/coletor/cloudflare/README.md`). Em 22/10, o tópico já está no `.env` e o alerta de teste foi aceito pelo ntfy. Faltam assinar o tópico no app do celular, criar o KV e colar o `id` no `sentinela.jsonc`, e publicar as duas sentinelas, a do ensaio e a da noite, cada uma com o tópico como segredo;
+  - instalar o ntfy, criar o tópico e colá-lo no `.env` do coletor, e ligar a sentinela (KV, deploy e segredo, em `packages/coletor/cloudflare/README.md`). Em 22/10, o tópico já está no `.env` e o alerta de teste foi aceito pelo ntfy. O KV `apurador-sentinela` foi criado em 22/10, com o `id` no `sentinela.jsonc`. Faltam assinar o tópico no app do celular e publicar as duas sentinelas, a do ensaio e a da noite, cada uma com o tópico como segredo; a do ensaio, só depois do domínio `ao-vivo-ensaio.apurador.org`;
   - medir o nobreak;
   - escolher o vigia;
   - confirmar 1 GB livre no celular.
 - **Em aberto**:
   - a [Confirmação dos textos preditivos](../apurador-2026/issues/22-confirmacao-dos-textos-preditivos.md) ainda não chegou. Tudo é construído com a chave desligada e pronto para ser ligado na noite;
   - o campo do EA20 da indicação do TSE precisa ser conferido;
-  - a entrega pela borda de objetos gravados com gzip no R2 é conferida no ensaio 1;
+  - a entrega pela borda de objetos gravados com gzip no R2 é conferida no ensaio 2 (em 22/10, o ensaio 1 passou ao `npm run noite-local`, sem o R2);
   - a zona entra ou não pela calibração.
 - **Protótipos de referência**: branches `prototipo/metodo-projecao` (o módulo `Projecao`), `prototipo/telas-pagina-lugar` (variante D, `componentes.js`, `mapa.js`) e `prototipo/pagina-metodologia` (variante A, objeto `T`, gráficos `svgSino`, `svgNoite`, `svgHist`). Nenhuma branch de protótipo entra na `main`.
   - A série de 2022 nas duas bases, com o agregado real e deslocado, é o `prototipos/pagina-metodologia/serie2022.js` da última. O ticket 08 a copiou para os testes do `modelo`. Diferença deliberada: a série soma as incertezas locais das pesquisas como independentes, e o modelo as anula no lugar de cima, por decisão do dono no [ticket 08](issues/08-base-apuracao-mais-pesquisas.md).
