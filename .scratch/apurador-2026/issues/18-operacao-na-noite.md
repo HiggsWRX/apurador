@@ -213,3 +213,6 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
   - **Fim da noite** (decisão 8 de lá, detalha a decisão 21 daqui):
     - **26/10, de manhã**: entram "Como a projeção se saiu" e o 2º turno de 2026, provisório, e a chave de escrita do R2 é revogada.
     - **À tarde**: o Worker e o bucket do ensaio são apagados, e o repositório fica público depois da varredura de segredos.
+- 23/10/2026, do [ticket 23](../../apurador-2026-construcao/issues/23-protecoes-e-fim-da-noite.md):
+  - **Decisão 12, a troca da conexão**: o coletor a percebe sozinho, sem comando, por uma sonda que lê o IP público a cada 3 s (no rastro da Cloudflare, pelo IPv4) e pela rota padrão do Windows: outro IP, outra rota ou a internet de volta depois de cair. O "pico acima de 50 req/s" que deixa a rodada em 40 s até o fim conta de qualquer rodada da noite, e não só do minuto que o painel mostra.
+  - **Decisão 21, o fim do coletor**: os 30 min contam da primeira rodada na fase encerrada. O coletor posto de volta depois deles, com o estado desta noite (até 6 h), para sem rodada nenhuma; mais tarde, parte a frio e para 30 min depois.
