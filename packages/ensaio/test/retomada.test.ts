@@ -1,4 +1,3 @@
-import { gzipSync } from "node:zlib";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   CONTROLE_INICIAL,
@@ -20,11 +19,21 @@ import { cadastro, instante, lugaresDoSite, noite, projecaoDe2022 } from "./noit
 // 11): o coletor da noite de 2022 é derrubado em rodadas escolhidas e volta, como pelo supervisor, retomando do estado
 // em disco ou, sem disco, do último objeto da noite. Ele não repete nem inventa eventos, não regrava o que não mudou, e
 // rodar o modelo de novo sobre os objetos da noite dá os números publicados. As referências são a mesma noite sem queda,
-// o TSE falso e a medição da narração de 2022 (.scratch/apurador-2026/research/14-narracao-noite-2t-2022.md).
+// o TSE falso e a medição da narração de 2022 (.scratch/apurador-2026/research/14-narracao-noite-2t-2022.md). Como no
+// ensaio geral, o relógio do coletor anda em 2026 e o do TSE falso na noite de 2022: o estado guarda horas dos dois.
 
 const BASE = "http://tse-falso.local/oficial";
 /** Uma data e hora de Brasília, `AAAA-MM-DD HH:MM:SS`, em milissegundos. */
 const ms = (dataHora: string) => Date.parse(`${dataHora.replace(" ", "T")}-03:00`);
+/** O relógio do coletor quando a noite começa, como no ensaio geral de 2026. */
+const COLETOR_NO_INICIO = ms("2026-10-25 19:00:00");
+/** O instante do relógio do coletor de uma hora da noite de 2022, numa noite que começa em `de`. */
+const noColetor = (de: string, dataHora: string) => COLETOR_NO_INICIO + ms(dataHora) - ms(de);
+
+/** Os lugares que o TSE falso de 2022 tem: o Brasil, as UFs, o Exterior e os municípios do cadastro. */
+const LUGARES_DO_TSE = 1 + cadastro.ufs.reduce((soma, uf) => soma + 1 + uf.municipios.length, 0);
+/** Os arquivos ao vivo: os lugares, as 28 tabelas de projeções e os municípios delas, o mapa.json e o arquivo de rodada. */
+const ARQUIVOS_AO_VIVO = LUGARES_DO_TSE + 2 * cadastro.ufs.length + 2;
 
 interface Gravacao {
   caminho: string;
@@ -33,16 +42,16 @@ interface Gravacao {
   quando: number;
 }
 
-/** Uma queda: o coletor cai depois da última rodada antes de `em` e volta `fora` segundos depois da seguinte. */
+/** Uma queda: o coletor cai depois da última rodada antes de `em` (hora da noite) e volta `fora` segundos depois da seguinte. */
 interface Queda {
   em: string;
   de: "disco" | "objeto da noite";
   fora?: number;
 }
 
-/** A noite de `de` a `ate`, com as quedas e, se dado, o arquivo de controle pelo relógio do coletor (ms). */
+/** A noite de `de` a `ate` (horas da noite de 2022), com as quedas e, se dado, o arquivo de controle pelo relógio do coletor. */
 async function noiteComQuedas(de: string, ate: string, quedas: Queda[] = [], controle?: (quando: number) => Controle) {
-  const relogio = relogioSemEspera(ms(de));
+  const relogio = relogioSemEspera(COLETOR_NO_INICIO);
   const tse = criarTseFalso({ noite, cadastro, relogio: relogioDoReplay(instante(de), relogio.agora) });
   const buscar = buscarNoTseFalso(tse);
   const gravacoes: Gravacao[] = [];
@@ -77,7 +86,7 @@ async function noiteComQuedas(de: string, ate: string, quedas: Queda[] = [], con
         },
       },
     });
-    await coletor.rodar({ ate: () => relogio.agora() >= ms(ateAQueda), aoRodar: (r) => rodadas.push(r) });
+    await coletor.rodar({ ate: () => relogio.agora() >= noColetor(de, ateAQueda), aoRodar: (r) => rodadas.push(r) });
     const queda = quedas[i];
     if (!queda) break;
     await relogio.esperar((queda.fora ?? 0) * 1000);
@@ -88,7 +97,12 @@ async function noiteComQuedas(de: string, ate: string, quedas: Queda[] = [], con
     gravacoes.slice(de, ate).filter((g) => g.caminho.startsWith("lugares/")) as (Gravacao & { conteudo: ArquivoDoLugar })[];
   /** O último JSON publicado de um lugar até a gravação `ate`. */
   const publicado = (id: string, ate = gravacoes.length) => lugares(0, ate).findLast((g) => g.caminho === `lugares/${id}.json`)?.conteudo;
-  return { tse, gravacoes, objetos, rodadas, voltas, lugares, publicado };
+  /** As gravações da rodada de número dado, entre o objeto da noite da anterior e o dela. */
+  const daRodada = (numero: number) => {
+    const i = objetos.findIndex((o) => o.numero === numero);
+    return gravacoes.slice(i === 0 ? 0 : objetos[i - 1]!.gravacoes, objetos[i]!.gravacoes);
+  };
+  return { gravacoes, objetos, rodadas, voltas, lugares, publicado, daRodada, noColetor: (dataHora: string) => noColetor(de, dataHora) };
 }
 
 type Noite = Awaited<ReturnType<typeof noiteComQuedas>>;
@@ -154,41 +168,41 @@ describe("o replay com quedas", () => {
     ).toEqual([]);
   }, 120_000);
 
-  it("do disco, volta com tudo: a primeira rodada só pede ao TSE e grava o que mudou, como a noite sem queda", () => {
-    const { rodada } = comQuedas.voltas[0]!;
-    const volta = comQuedas.rodadas[rodada]!;
-    const mesma = semQueda.rodadas.find((x) => x.inicio === volta.inicio)!;
-    const baixados = (x: RegistroDaRodada) => x.baixados.brasil + x.baixados.ufs + x.baixados.municipios + x.baixados.zonas;
-    expect(volta.numero).toBe(mesma.numero);
-    // A configuração da eleição, que todo coletor lê ao partir, empurra os pedidos da rodada em ~44 ms: o TSE falso pode
-    // ter um município a mais nesse tempo.
-    expect(Math.abs(baixados(volta) - baixados(mesma)), `${baixados(volta)} e ${baixados(mesma)} baixados`).toBeLessThanOrEqual(3);
-    expect(Math.abs(volta.gravacoes - mesma.gravacoes), `${volta.gravacoes} e ${mesma.gravacoes} gravações`).toBeLessThanOrEqual(5);
+  it("do disco, volta como se não tivesse caído: até a queda seguinte, as mesmas gravações, nos mesmos instantes, que a noite sem queda", () => {
+    const [disco, objeto] = comQuedas.voltas;
+    const depois = comQuedas.gravacoes.slice(disco!.gravacao, objeto!.gravacao);
+    const [de, ate] = [depois[0]!.quando, comQuedas.noColetor("2022-10-30 17:30:00")];
+    expect(depois.length).toBeGreaterThan(1_000);
+    expect(depois).toEqual(semQueda.gravacoes.filter((g) => g.quando >= de && g.quando < ate));
+    // A primeira rodada pede o mesmo que a da noite sem queda: nem a configuração da eleição, que veio do disco.
+    const volta = comQuedas.rodadas[disco!.rodada]!;
+    expect(volta.pedidos).toBe(semQueda.rodadas.find((x) => x.inicio === volta.inicio)!.pedidos);
   });
 
-  it("do objeto da noite, baixa de novo os lugares em poucos minutos, regravando só o que mudou, e segura o mapa.json e as tabelas até ter todos", () => {
-    const { rodada, gravacao } = comQuedas.voltas[1]!;
-    const depois = comQuedas.rodadas.slice(rodada);
-    const ate = depois.findIndex((x) => x.baixados.municipios < 100);
-    // ~5.700 lugares e zonas a ~630 pedidos por rodada.
-    expect(ate).toBeGreaterThan(5);
-    expect(ate).toBeLessThan(15);
-    const gravadas = comQuedas.gravacoes.slice(gravacao, comQuedas.objetos.find((o) => o.numero === depois[ate]!.numero)!.gravacoes);
-    expect(gravadas.length).toBeLessThan(1_500);
-    const lugaresDaVolta = gravadas.filter((g) => g.caminho.startsWith("lugares/")).length;
-    console.log(`Retomada do objeto da noite: ${ate} rodadas para baixar tudo de novo, ${gravadas.length} gravações (${lugaresDaVolta} de lugares).`);
-    // Até a última rodada da nova baixa, nem o mapa.json nem as tabelas.
-    const primeiraDoMapa = comQuedas.gravacoes.findIndex((g, i) => i >= gravacao && (g.caminho === "mapa.json" || g.caminho.startsWith("tabelas/")));
-    expect(primeiraDoMapa).toBeGreaterThan(gravacao + gravadas.length - 200);
+  it("do objeto da noite, baixa de novo os lugares em ~10 rodadas, só regrava os que mudaram, e segura o mapa.json e as tabelas até pedir todos", () => {
+    const depois = comQuedas.rodadas.slice(comQuedas.voltas[1]!.rodada).map((x) => comQuedas.daRodada(x.numero));
+    const comMapa = (gravacoes: Gravacao[]) => gravacoes.some((g) => g.caminho === "mapa.json" || g.caminho.startsWith("tabelas/"));
+    // Os ~6.300 arquivos de lugares e zonas, a ~600 pedidos por rodada (ticket 17: "São ~10 rodadas"): o mapa.json e as
+    // tabelas voltam na 10ª, a que termina de pedir.
+    const semMapa = depois.findIndex(comMapa);
+    expect(semMapa + 1).toBe(10);
+    // Nessas rodadas, ele grava menos lugares do que a noite sem queda grava no mesmo tempo, porque grava cada um uma vez.
+    const lugares = (gravacoes: Gravacao[]) => gravacoes.filter((g) => g.caminho.startsWith("lugares/")).length;
+    const [de, ate] = [depois[0]![0]!.quando, depois[semMapa]![0]!.quando];
+    expect(lugares(depois.slice(0, semMapa).flat())).toBeLessThanOrEqual(lugares(semQueda.gravacoes.filter((g) => g.quando >= de && g.quando < ate)));
   });
 
-  it("grava um objeto da noite por rodada, comprimido, com o estado e os arquivos do TSE que chegaram nela", () => {
+  it("grava um objeto da noite por rodada, com o estado de todos os lugares e arquivos ao vivo e os arquivos do TSE que chegaram nela", () => {
     expect(comQuedas.objetos.map((o) => o.numero)).toEqual(comQuedas.rodadas.map((x) => x.numero));
-    const tamanhos = comQuedas.objetos.map((o) => gzipSync(o.json).length);
     const ultimo = lerEstadoGuardado(comQuedas.objetos.at(-1)!.json);
-    expect(Object.keys(ultimo.estado.hashes).length).toBeGreaterThan(5_800);
-    const media = tamanhos.reduce((a, b) => a + b, 0) / tamanhos.length;
-    console.log(`Objeto da noite: ${Math.round(media / 1024)} KB em média, ${Math.round(Math.max(...tamanhos) / 1024)} KB no maior, comprimidos.`);
+    expect(Object.keys(ultimo.estado.hashes)).toHaveLength(ARQUIVOS_AO_VIVO);
+    expect(Object.keys(ultimo.estado.narracao.lugares)).toHaveLength(LUGARES_DO_TSE);
+    for (const [i, objeto] of comQuedas.objetos.entries()) {
+      const { baixados } = comQuedas.rodadas[i]!;
+      expect(lerEstadoGuardado(objeto.json).arquivos, `rodada ${objeto.numero}`).toHaveLength(
+        baixados.brasil + baixados.ufs + baixados.municipios + baixados.zonas,
+      );
+    }
   });
 
   it("é reprodutível: o modelo de novo sobre os objetos da noite dá os números publicados do Brasil, das UFs, do Exterior e das tabelas", () => {
@@ -202,7 +216,7 @@ describe("o replay com quedas", () => {
     const json = (x: unknown) => JSON.parse(JSON.stringify(x ?? null)) as unknown;
     comQuedas.objetos.forEach((objeto, i) => {
       const { projecao } = reproduzida[i]!;
-      for (const g of comQuedas.gravacoes.slice(i === 0 ? 0 : comQuedas.objetos[i - 1]!.gravacoes, objeto.gravacoes)) {
+      for (const g of comQuedas.daRodada(objeto.numero)) {
         if (g.caminho.startsWith("lugares/") && "projecao" in (g.conteudo as ArquivoDoLugar)) {
           const lugar = g.conteudo as ArquivoDoLugar;
           expect(json(lugar.projecao), `${lugar.lugar} na rodada ${objeto.numero}`).toEqual(json(projecao?.doLugar(lugar.lugar, true)));
@@ -228,19 +242,12 @@ describe("uma parada longa", () => {
     r = await noiteComQuedas("2022-10-30 17:30:00", "2022-10-30 19:45:00", [{ em: "2022-10-30 17:57:00", de: "objeto da noite", fora: 100 * 60 }]);
   }, 600_000);
 
-  it("parte a frio gravando cada arquivo ao vivo uma vez, ~5.900 gravações", () => {
-    // Os lugares que o TSE falso de 2022 tem: o Brasil, as UFs, o Exterior e os municípios do cadastro.
-    const doTse = 1 + cadastro.ufs.reduce((soma, uf) => soma + 1 + uf.municipios.length, 0);
-    // A partida vai até todo lugar ter sido gravado (~10 rodadas, ao ritmo dos pedidos ao TSE).
+  it("parte a frio gravando cada arquivo ao vivo uma vez, e de novo só os municípios com novidade do TSE", () => {
+    // A partida vai até todo lugar ter sido gravado, ao ritmo dos pedidos ao TSE.
     const vistos = new Set<string>();
-    const fim = r.gravacoes.findIndex((g) => g.caminho.startsWith("lugares/") && vistos.add(g.caminho).size === doTse);
+    const fim = r.gravacoes.findIndex((g) => g.caminho.startsWith("lugares/") && vistos.add(g.caminho).size === LUGARES_DO_TSE);
     expect(fim).toBeGreaterThan(0);
-    // Até a queda, cada arquivo ao vivo: os lugares, as 28 tabelas de projeções e os municípios delas, o mapa.json e o
-    // arquivo de rodada.
-    const arquivos = new Set(r.gravacoes.slice(0, r.voltas[0]!.gravacao).map((g) => g.caminho));
-    expect(arquivos.size).toBe(doTse + 2 * 28 + 2);
-    expect(fim + 1, "gravações da partida a frio").toBeGreaterThan(5_800);
-    expect(fim + 1, "gravações da partida a frio").toBeLessThan(6_200);
+    expect(new Set(r.gravacoes.slice(0, r.voltas[0]!.gravacao).map((g) => g.caminho)).size).toBe(ARQUIVOS_AO_VIVO);
     // Um município gravado de novo na partida é um que teve novidade do TSE nela: nenhum vai duas vezes com a mesma hora.
     const horas = new Map<string, Set<string | null>>();
     const municipios = r.gravacoes.slice(0, fim + 1).filter((g) => /^lugares\/\d+\.json$/.test(g.caminho)) as (Gravacao & { conteudo: ArquivoDoLugar })[];
@@ -268,18 +275,19 @@ describe("uma queda no plano zero", () => {
   // O dono liga o plano zero às 17:05; o coletor cai às 17:12 e volta do objeto da noite, sem o disco; o dono religa o
   // núcleo mínimo às 17:20. Os lugares que mudaram no plano zero estavam por gravar quando ele caiu, e esperam o coletor
   // baixá-los de novo.
+  const DE = "2022-10-30 16:50:00";
   let r: Noite;
   beforeAll(async () => {
     const planoZero = (quando: number): Controle =>
-      quando >= ms("2022-10-30 17:05:00") && quando < ms("2022-10-30 17:20:00")
+      quando >= noColetor(DE, "2022-10-30 17:05:00") && quando < noColetor(DE, "2022-10-30 17:20:00")
         ? { ...CONTROLE_INICIAL, chaves: { ...CONTROLE_INICIAL.chaves, nucleoMinimo: false } }
         : CONTROLE_INICIAL;
-    r = await noiteComQuedas("2022-10-30 16:50:00", "2022-10-30 17:25:00", [{ em: "2022-10-30 17:12:00", de: "objeto da noite" }], planoZero);
+    r = await noiteComQuedas(DE, "2022-10-30 17:25:00", [{ em: "2022-10-30 17:12:00", de: "objeto da noite" }], planoZero);
   }, 300_000);
 
   it("volta sem derrubar nenhuma rodada e, religado o núcleo mínimo, publica de novo os lugares com o placar do TSE falso", () => {
     expect(r.rodadas.flatMap((x) => x.falhas)).toEqual([]);
-    const depois = r.lugares().filter((g) => g.quando >= ms("2022-10-30 17:20:00"));
+    const depois = r.lugares().filter((g) => g.quando >= r.noColetor("2022-10-30 17:20:00"));
     expect(depois.length).toBeGreaterThan(1_000);
     expect(
       conferirPlacar(

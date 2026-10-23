@@ -255,9 +255,11 @@ export interface EstadoDaNarracao {
   lugares: Record<string, Omit<LugarNarrado, "virada"> & { virada: number | null }>;
   faltam: Record<string, number>;
   noBrasil: EventoGuardado[];
+  /** A hora da totalização final do Brasil, `AAAA-MM-DD HH:MM:SS`, em Brasília, ou `null` antes dela. */
   totalizacaoFinal: string | null;
   ultimoDoBrasil: ResultadoDoTse | null;
   pesquisasNarradas: boolean;
+  /** A última totalização mais nova de todos os arquivos vistos, `AAAA-MM-DD HH:MM:SS`, em Brasília. */
   maisNovo: string | null;
   visiveis: BaseDaProjecao[];
   /** A linha da projeção de cada marco, com o marco pelo lugar e pela ordem. */
@@ -273,11 +275,11 @@ export function criarNarracao(lugares: Lugar[], estado?: EstadoDaNarracao): Narr
   const narrados = new Map<string, LugarNarrado>(
     Object.entries(estado?.lugares ?? {}).map(([id, l]) => [id, { ...l, virada: l.virada === null ? null : l.eventos[l.virada]! }]),
   );
-  const guardado = ([lugar, indice]: EventoGuardado) => narrados.get(lugar)!.eventos[indice]!;
+  const eventoGuardado = ([lugar, indice]: EventoGuardado) => narrados.get(lugar)!.eventos[indice]!;
   /** As seções que faltam em cada UF e no Exterior, pelo último resultado visto. */
   const faltam = new Map<string, number>(Object.entries(estado?.faltam ?? {}));
   /** Os eventos do próprio Brasil e os das UFs que entram na narração dele, na ordem em que entraram. */
-  const noBrasil: EventoDaNarracao[] = (estado?.noBrasil ?? []).map(guardado);
+  const noBrasil: EventoDaNarracao[] = (estado?.noBrasil ?? []).map(eventoGuardado);
   /** A hora da totalização final do Brasil, depois da qual a narração não cresce mais (decisão 11). */
   let totalizacaoFinal = estado?.totalizacaoFinal ?? null;
   /** O último arquivo do Brasil que a narração viu: a hora e o ponto de "as pesquisas deixaram de pesar" numa rodada sem ele. */
@@ -295,7 +297,7 @@ export function criarNarracao(lugares: Lugar[], estado?: EstadoDaNarracao): Narr
   let visiveis: readonly BaseDaProjecao[] = estado?.visiveis ?? [];
   /** A linha da projeção de cada marco que entrou com a chave ligada, nas bases que estavam no ar. */
   const linhas = new Map<EventoDaNarracao, Partial<Record<BaseDaProjecao, string>>>(
-    (estado?.linhas ?? []).map(([lugar, indice, porBase]) => [guardado([lugar, indice]), porBase]),
+    (estado?.linhas ?? []).map(([lugar, indice, porBase]) => [eventoGuardado([lugar, indice]), porBase]),
   );
 
   /** "As pesquisas deixaram de pesar", na hora e com o % de seções do arquivo do Brasil. */
@@ -603,17 +605,17 @@ export function criarNarracao(lugares: Lugar[], estado?: EstadoDaNarracao): Narr
     },
     doBrasil: () => doMaisNovo(noBrasil.filter((e) => e.lugar === "BR" && DO_BRASIL_NAS_OUTRAS.includes(e.tipo))).map(deOutroLugar),
     estado() {
-      const guardar = (e: EventoDaNarracao): EventoGuardado => [e.lugar, narrados.get(e.lugar)!.eventos.indexOf(e)];
+      const ondeEsta = (e: EventoDaNarracao): EventoGuardado => [e.lugar, narrados.get(e.lugar)!.eventos.indexOf(e)];
       return {
         lugares: Object.fromEntries([...narrados].map(([id, n]) => [id, { ...n, virada: n.virada === null ? null : n.eventos.indexOf(n.virada) }])),
         faltam: Object.fromEntries(faltam),
-        noBrasil: noBrasil.map(guardar),
+        noBrasil: noBrasil.map(ondeEsta),
         totalizacaoFinal,
         ultimoDoBrasil,
         pesquisasNarradas,
         maisNovo,
         visiveis: [...visiveis],
-        linhas: [...linhas].map(([marco, porBase]) => [...guardar(marco), porBase]),
+        linhas: [...linhas].map(([marco, porBase]) => [...ondeEsta(marco), porBase]),
       };
     },
   };

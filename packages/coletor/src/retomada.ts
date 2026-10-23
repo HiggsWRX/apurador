@@ -1,7 +1,7 @@
-import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { gunzipSync, gzipSync } from "node:zlib";
+import { gunzipSync } from "node:zlib";
 import { lerResultado, type AbrangenciaDaDivulgacao, type ResultadoDoTse } from "@apurador/tse";
 import { emOrdem, type PontoDaCurvaReal } from "./arquivos.ts";
 import type { Controle } from "./chaves.ts";
@@ -24,7 +24,7 @@ const RAIZ = new URL("../../../", import.meta.url);
 /** O arquivo do estado em disco de cada destino, ao lado do arquivo de controle: o ensaio nunca retoma da pasta local. */
 export const arquivoDoEstado = (destino: string) => fileURLToPath(new URL(`.cache/coletor/estado-${destino}.json`, RAIZ));
 
-/** Um estado mais velho que isso é de outra noite: um ensaio, o 24/10. */
+/** Um estado mais velho que isso é de outra noite (um ensaio, o 24/10), e a pasta do plano B também (`plano-b.ts`). */
 export const OUTRA_NOITE = 6 * 3_600_000;
 
 /** Um arquivo de resultado do TSE como chegou, com a ETag e o lugar dele. */
@@ -55,12 +55,13 @@ export interface EstadoDeRetomada {
   controle: Controle;
   /** As gravações do mês nos buckets, ou `null` sem contador. */
   gravacoesDoMes: GravacoesDoMes | null;
-  /** A última totalização do Brasil e quando o coletor a viu, em ms. */
+  /** A última totalização do Brasil (`AAAA-MM-DD HH:MM:SS`, em Brasília) e quando o coletor a viu (ms do relógio do coletor). */
   novidade: { totalizacao: string | null; vista: number | null };
   /** A maior hora do cabeçalho `Date` do TSE, em ms, que muda a fase. */
   horaDoTse: number | null;
-  /** As zonas a pedir de novo, pela URL, com a hora em que o município mudou, e a hora do índice com que cada município as marcou. */
+  /** As zonas a pedir de novo, pela URL, com a hora (ms do relógio do coletor) em que o município mudou. */
   zonasPendentes: Record<string, number>;
+  /** A hora do índice (`AAAA-MM-DD HH:MM:SS`, em Brasília) com que cada município marcou as zonas dele, pela URL dele. */
   zonasMarcadas: Record<string, string | null>;
   /** Os arquivos pedidos ao TSE no último minuto, pela URL, com a hora do pedido em ms: a retomada não os pede de novo antes do minuto. */
   pedidosRecentes: Record<string, number>;
@@ -78,12 +79,17 @@ export interface EstadoGuardado {
   partida?: Partida;
   /** No disco, os arquivos que ainda não foram para um objeto da noite, porque a gravação dele falhou. */
   pendentes?: ArquivoDoTseGuardado[];
+  /** No disco, os dois arquivos de configuração do TSE (a eleição e os municípios), em texto: a retomada não os pede de novo. */
+  configuracao?: { eleicoes: string; municipios: string };
 }
 
-/** Onde ficam os objetos da noite: no R2 (`objetosDaNoiteNoR2`) ou numa pasta, com a pasta local. */
+/** A rodada que guardou um estado: o número e a hora (ISO, pelo relógio do coletor), que dão o nome do objeto da noite. */
+export type RodadaGuardada = Pick<EstadoDeRetomada, "numero" | "quando">;
+
+/** Onde ficam os objetos da noite (`objetosDaNoiteNoR2`). */
 export interface ObjetosDaNoite {
   /** Grava, comprimido com gzip, o objeto da noite de uma rodada (`EstadoGuardado` em JSON). Rejeita se falhar. */
-  gravar(json: string, rodada: { numero: number; quando: string }): Promise<void>;
+  gravar(json: string, rodada: RodadaGuardada): Promise<void>;
   /** O último objeto da noite gravado desde `desde` (ms, pelo relógio do coletor), ou `null`. */
   ultimo(desde: number): Promise<EstadoGuardado | null>;
 }
@@ -92,34 +98,27 @@ export interface ObjetosDaNoite {
 const horaNoNome = (quando: string) => quando.replace(/:/g, "-");
 
 /** O nome do objeto da noite de uma rodada: a hora e o número dela. */
-export const nomeDoObjetoDaNoite = (rodada: { numero: number; quando: string }) =>
-  `${horaNoNome(rodada.quando)}-r${String(rodada.numero).padStart(5, "0")}.json.gz`;
+export const nomeDoObjetoDaNoite = (rodada: RodadaGuardada) => `${horaNoNome(rodada.quando)}-r${String(rodada.numero).padStart(5, "0")}.json.gz`;
 
 /** O nome antes do qual ficam os objetos da noite gravados antes de `desde` (ms). */
 export const antesDosObjetos = (desde: number) => horaNoNome(new Date(desde).toISOString());
 
-/** Os objetos da noite numa pasta, com o mesmo nome que no R2: os da `--destino pasta`. */
-export function objetosDaNoiteNaPasta(pasta: string): ObjetosDaNoite {
-  return {
-    async gravar(json, rodada) {
-      await mkdir(pasta, { recursive: true });
-      await writeFile(join(pasta, nomeDoObjetoDaNoite(rodada)), gzipSync(json));
-    },
-    async ultimo(desde) {
-      const nomes = await readdir(pasta).catch(() => [] as string[]);
-      const ultimo = nomes
-        .filter((n) => n.endsWith(".json.gz") && n > antesDosObjetos(desde))
-        .sort()
-        .at(-1);
-      return ultimo === undefined ? null : lerEstadoGuardado(gunzipSync(await readFile(join(pasta, ultimo))).toString("utf8"));
-    },
-  };
+/** O estado guardado em JSON, com o estado já serializado: o do disco e o do objeto da noite levam o mesmo. */
+export function estadoGuardadoEmJson(
+  estado: string,
+  arquivos: ArquivoDoTseGuardado[],
+  extra: Pick<EstadoGuardado, "partida" | "pendentes" | "configuracao"> = {},
+): string {
+  const opcionais = [
+    extra.partida && `"partida":${JSON.stringify(extra.partida)}`,
+    extra.pendentes?.length && `"pendentes":${JSON.stringify(extra.pendentes)}`,
+    extra.configuracao && `"configuracao":${JSON.stringify(extra.configuracao)}`,
+  ].filter(Boolean);
+  return `{"estado":${estado},"arquivos":${JSON.stringify(arquivos)}${opcionais.map((o) => `,${o}`).join("")}}`;
 }
 
-/** O estado guardado em JSON, com o estado já serializado: o do disco e o do objeto da noite levam o mesmo. */
-export function estadoGuardadoEmJson(estado: string, arquivos: ArquivoDoTseGuardado[], extra: Pick<EstadoGuardado, "partida" | "pendentes"> = {}): string {
-  return `{"estado":${estado},"arquivos":${JSON.stringify(arquivos)}${extra.partida ? `,"partida":${JSON.stringify(extra.partida)}` : ""}${extra.pendentes?.length ? `,"pendentes":${JSON.stringify(extra.pendentes)}` : ""}}`;
-}
+/** Lê um objeto da noite, comprimido com gzip. */
+export const lerObjetoDaNoite = (bytes: Uint8Array) => lerEstadoGuardado(gunzipSync(bytes).toString("utf8"));
 
 /** Lê um estado guardado em JSON. Um estado de outra versão não serve. */
 export function lerEstadoGuardado(texto: string): EstadoGuardado {
@@ -151,10 +150,18 @@ export async function gravarEstadoNoDisco(caminho: string, json: string): Promis
   await rename(provisorio, caminho).catch(() => writeFile(caminho, json));
 }
 
+/** A chave de um lugar ou zona, nos arquivos do TSE guardados. */
+const chaveDaAbrangencia = ({ uf, municipio, zona }: AbrangenciaDaDivulgacao) => `${uf ?? "br"}/${municipio ?? ""}/${zona ?? ""}`;
+
+/** De onde o coletor retoma: a partida e o estado, sem estado na partida a frio. */
+export type Retomada = { partida: "a frio"; guardado: null } | { partida: Exclude<Partida, "a frio">; guardado: EstadoGuardado };
+
 /**
  * De onde o coletor retoma: do estado mais novo entre o do disco e o do último objeto da noite, desde que seja desta
- * eleição e desta noite. No empate, do disco, que tem todos os arquivos do TSE; o objeto da noite só é mais novo se a
- * gravação do disco falhou ou se outra máquina seguiu a noite. Sem nenhum, parte a frio.
+ * eleição e desta noite. No empate, do disco, que tem todos os arquivos do TSE. O objeto da noite é gravado antes do
+ * disco, então o coletor que cai entre os dois deixa o objeto uma rodada à frente: aí valem o estado do objeto e os
+ * arquivos do disco, com os da rodada do objeto por cima, que são todos os que o coletor tinha. Mais à frente que isso,
+ * outra máquina seguiu a noite, e vale o objeto. Sem nenhum, parte a frio.
  */
 export function escolherRetomada(opcoes: {
   disco: EstadoGuardado | null;
@@ -162,17 +169,18 @@ export function escolherRetomada(opcoes: {
   eleicao: string;
   /** A hora em ms, pelo relógio do coletor. */
   agora: number;
-}): { partida: Partida; guardado: EstadoGuardado | null } {
+}): Retomada {
   const serve = (g: EstadoGuardado | null) => g !== null && g.estado.eleicao === opcoes.eleicao && opcoes.agora - Date.parse(g.estado.quando) < OUTRA_NOITE;
   const disco = serve(opcoes.disco) ? opcoes.disco : null;
   const objeto = serve(opcoes.objetoDaNoite) ? opcoes.objetoDaNoite : null;
+  if (objeto && disco && objeto.estado.numero === disco.estado.numero + 1 && Date.parse(objeto.estado.quando) > Date.parse(disco.estado.quando)) {
+    const arquivos = new Map([...disco.arquivos, ...objeto.arquivos].map((a) => [chaveDaAbrangencia(a.abrangencia), a]));
+    return { partida: "disco", guardado: { estado: objeto.estado, arquivos: [...arquivos.values()], configuracao: disco.configuracao } };
+  }
   if (objeto && (!disco || Date.parse(objeto.estado.quando) > Date.parse(disco.estado.quando))) return { partida: "objeto da noite", guardado: objeto };
   if (disco) return { partida: "disco", guardado: disco };
   return { partida: "a frio", guardado: null };
 }
-
-/** A chave de um lugar ou zona nos resultados da reprodução. */
-const chaveDaAbrangencia = ({ uf, municipio, zona }: AbrangenciaDaDivulgacao) => `${uf ?? "br"}/${municipio ?? ""}/${zona ?? ""}`;
 
 /**
  * Roda o modelo de novo sobre os objetos da noite, em ordem, e dá a projeção de cada rodada, como o coletor a calculou:

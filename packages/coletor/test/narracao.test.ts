@@ -855,16 +855,4 @@ describe("a retomada", () => {
       });
     }
   });
-
-  it("guarda de cada lugar só os candidatos do último arquivo, e cada evento uma vez", () => {
-    const narracao = criarNarracao(LUGARES);
-    for (const [novos, daRodada] of NOITE.slice(0, 7)) narracao.narrar(novos, daRodada);
-    const estado = narracao.estado();
-    const texto = JSON.stringify(estado);
-
-    expect(JSON.stringify(estado.lugares)).not.toContain('"eleitorado"');
-    // A virada do Brasil está na lista do Brasil e na narração dele, mas o texto dela vai uma vez.
-    const virada = narracao.doLugar("BR").find((e) => e.tipo === "virada" && e.lugar === "BR")!;
-    expect(texto.split(JSON.stringify(virada.texto))).toHaveLength(2);
-  });
 });

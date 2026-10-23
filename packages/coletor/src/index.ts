@@ -50,17 +50,4 @@ export {
   type NomeDaChave,
 } from "./chaves.ts";
 export { ARQUIVO_DE_CONTROLE, controleDoArquivoDeChaves, gravarArquivoDeControle, lerArquivoDeControle, type ArquivoDeControle } from "./controle.ts";
-export {
-  arquivoDoEstado,
-  escolherRetomada,
-  estadoGuardadoEmJson,
-  gravarEstadoNoDisco,
-  lerEstadoDoDisco,
-  lerEstadoGuardado,
-  OUTRA_NOITE,
-  reproduzirAProjecao,
-  type ArquivoDoTseGuardado,
-  type EstadoDeRetomada,
-  type EstadoGuardado,
-  type Partida,
-} from "./retomada.ts";
+export { lerEstadoGuardado, reproduzirAProjecao, type ArquivoDoTseGuardado, type EstadoDeRetomada, type EstadoGuardado, type Partida } from "./retomada.ts";

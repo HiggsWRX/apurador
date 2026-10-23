@@ -1,9 +1,9 @@
 import { createHash, createHmac } from "node:crypto";
-import { gunzipSync, gzipSync } from "node:zlib";
+import { gzipSync } from "node:zlib";
 import type { Buscar } from "./coletor.ts";
 import type { ContadorDeGravacoes } from "./contador.ts";
 import type { Destino } from "./destino.ts";
-import { antesDosObjetos, lerEstadoGuardado, nomeDoObjetoDaNoite, type ObjetosDaNoite } from "./retomada.ts";
+import { antesDosObjetos, lerObjetoDaNoite, nomeDoObjetoDaNoite, type ObjetosDaNoite } from "./retomada.ts";
 
 // A gravação no R2 (Arquitetura e tecnologia, decisão 15): pela API S3, que aguenta as até 1.500 gravações de uma
 // rodada; a API REST da Cloudflare para o R2 tem limite de 1.200 pedidos a cada 5 min (pesquisa de limites, seção 5).
@@ -133,7 +133,7 @@ export function objetosDaNoiteNoR2(opcoes: {
       } while (continuacao);
       if (ultimo === undefined) return null;
       const resposta = await pedir("GET", `${raiz}/${ultimo}`);
-      return lerEstadoGuardado(gunzipSync(new Uint8Array(await resposta.arrayBuffer())).toString("utf8"));
+      return lerObjetoDaNoite(new Uint8Array(await resposta.arrayBuffer()));
     },
   };
 }

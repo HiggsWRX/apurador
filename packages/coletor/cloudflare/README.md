@@ -67,7 +67,7 @@ Se o CORS mudar depois de a borda já ter cópias, apague o cache do host: paine
 
 A cada rodada, o coletor grava o objeto da noite: o estado de retomada e os arquivos do TSE da rodada, comprimidos (`packages/coletor/src/retomada.ts`). Sem o disco, numa outra máquina, ele retoma do último. O estado leva as travas dos preditivos e os preditivos de uma base fora do ar, então o objeto fica num bucket sem endereço público, um por ambiente (`AMBIENTES.*.noite`, em `packages/coletor/src/ambientes.ts`). O dono:
 
-1. cria o bucket `apurador-noite`, sem domínio próprio e sem `r2.dev`:
+1. cria o bucket `apurador-noite`, sem domínio próprio e sem `r2.dev` (os dois foram criados em 22/10/2026):
 
    ```bash
    npx wrangler r2 bucket create apurador-noite
