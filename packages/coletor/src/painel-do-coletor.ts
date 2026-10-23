@@ -16,7 +16,7 @@ import type { ArquivoDeRodada, ArquivoDoLugar, Fase } from "./arquivos.ts";
 import { CHAVES_DA_NOITE, NOMES_DAS_CHAVES, type Controle } from "./chaves.ts";
 import type { RegistroDaRodada } from "./coletor.ts";
 import { somaDoMes } from "./contador.ts";
-import { comCasas, duracao, horaDeBrasilia, ROTULO_DAS_BASES, ROTULO_DO_NIVEL } from "./formatos.ts";
+import { comCasas, duracao, horaDeBrasilia, O_QUE_A_TRAVA_GRAVA, ROTULO_DAS_BASES, ROTULO_DO_NIVEL } from "./formatos.ts";
 import { divergenciasDoPlacar, type PlacarDoTse } from "./placar-conferido.ts";
 
 // O painel do coletor (Operação na noite, decisões 5 e 6; Volume de gravações na noite, decisões 5 e 8): uma página que
@@ -461,10 +461,7 @@ function secaoDaGravacao(d: DadosDaPagina): string {
     linha("Última republicação boa do plano B", quandoFoi(d.ultimaGravacaoBoa.planoB, d.agora)),
     linha("Falhas da última rodada", falhas),
     linha("Gravações do mês", mes),
-    linha(
-      "Trava de 90%",
-      r?.gravacoesTravadas ? marca("critico", "ligada: só o arquivo de rodada, o Brasil, as UFs e as tabelas, e cada município a cada 5 min") : "desligada",
-    ),
+    linha("Trava de 90%", r?.gravacoesTravadas ? marca("critico", `ligada: ${O_QUE_A_TRAVA_GRAVA}`) : "desligada"),
     linha("Teto por rodada", r?.adiadas ? marca("atencao", `atingido: ${comCasas(r.adiadas)} arquivos para a rodada seguinte`) : "não atingido"),
     linha("Objeto da noite", objetoDaNoite(r)),
     linha("Pelo celular desde a troca", peloCelular),

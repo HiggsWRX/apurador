@@ -9,7 +9,7 @@ import {
   type TabelaDeProjecoes,
 } from "@apurador/coletor";
 import { conferirPlacar } from "../src/index.ts";
-import { noColetor, noiteComQuedas, type Gravacao, type Noite } from "./noite-com-quedas.ts";
+import { noColetor, noiteComQuedas, type Gravacao, type NoiteComQuedas } from "./noite-com-quedas.ts";
 import { cadastro, noite, projecaoDe2022 } from "./noite-2022.ts";
 
 // O replay com quedas (Ensaio geral, decisões 20 e 21; Operação na noite, decisões 4 e 15; Narração da noite, decisão
@@ -31,7 +31,7 @@ const doLugar = (id: string, eventos: EventoDaNarracao[]) => eventos.filter((e) 
  * repetir um evento (um marco, o começo, o fim) ou publicar um evento com hora mais velha que um já publicado. Só a
  * virada aberta muda de texto, quando outra troca entra na janela dela.
  */
-function conferirNarracao(r: Noite): string[] {
+function conferirNarracao(r: NoiteComQuedas): string[] {
   const problemas: string[] = [];
   const antes = new Map<string, EventoDaNarracao[]>();
   for (const g of r.lugares()) {
@@ -59,8 +59,8 @@ function conferirNarracao(r: Noite): string[] {
 describe("o replay com quedas", () => {
   // Das 16:50 às 17:50, com ~10% das seções: o coletor cai às 17:15 e volta do disco na rodada seguinte, como pelo
   // supervisor; cai de novo às 17:30 e volta do último objeto da noite, sem o disco, como numa outra máquina.
-  let semQueda: Noite;
-  let comQuedas: Noite;
+  let semQueda: NoiteComQuedas;
+  let comQuedas: NoiteComQuedas;
   beforeAll(async () => {
     semQueda = await noiteComQuedas("2022-10-30 16:50:00", "2022-10-30 17:50:00");
     comQuedas = await noiteComQuedas("2022-10-30 16:50:00", "2022-10-30 17:50:00", [
@@ -71,7 +71,7 @@ describe("o replay com quedas", () => {
 
   it("não perde, não repete e não publica evento retroativo em nenhum lugar, e o Brasil termina com a mesma narração da noite sem queda", () => {
     expect(conferirNarracao(comQuedas)).toEqual([]);
-    const tipos = (r: Noite) => doLugar("BR", r.publicado("BR")!.narracao).map((e) => (e.tipo === "marco" ? `${e.marco}%` : e.tipo));
+    const tipos = (r: NoiteComQuedas) => doLugar("BR", r.publicado("BR")!.narracao).map((e) => (e.tipo === "marco" ? `${e.marco}%` : e.tipo));
     expect(tipos(comQuedas)).toEqual(tipos(semQueda));
     expect(tipos(comQuedas)).toContain("10%");
   });
@@ -155,7 +155,7 @@ describe("uma parada longa", () => {
   // O coletor parte a frio às 17:30, cai às 17:57, com o Brasil logo depois de 25%, e só volta às 19:37, do objeto da
   // noite. No meio, o Brasil passou de 50, 75, 90 e 95%, Lula passou à frente às 18:44 e Minas Gerais virou para
   // Bolsonaro às 17:58 e de volta para Lula às 19:35 (medição de 2022, seções 1 e 3).
-  let r: Noite;
+  let r: NoiteComQuedas;
   beforeAll(async () => {
     r = await noiteComQuedas("2022-10-30 17:30:00", "2022-10-30 19:45:00", [{ em: "2022-10-30 17:57:00", de: "objeto da noite", fora: 100 * 60 }]);
   }, 600_000);
@@ -194,13 +194,13 @@ describe("uma queda no plano zero", () => {
   // núcleo mínimo às 17:20. Os lugares que mudaram no plano zero estavam por gravar quando ele caiu, e esperam o coletor
   // baixá-los de novo.
   const DE = "2022-10-30 16:50:00";
-  let r: Noite;
+  let r: NoiteComQuedas;
   beforeAll(async () => {
     const planoZero = (quando: number): Controle =>
       quando >= noColetor(DE, "2022-10-30 17:05:00") && quando < noColetor(DE, "2022-10-30 17:20:00")
         ? { ...CONTROLE_INICIAL, chaves: { ...CONTROLE_INICIAL.chaves, nucleoMinimo: false } }
         : CONTROLE_INICIAL;
-    r = await noiteComQuedas(DE, "2022-10-30 17:25:00", [{ em: "2022-10-30 17:12:00", de: "objeto da noite" }], planoZero);
+    r = await noiteComQuedas(DE, "2022-10-30 17:25:00", [{ em: "2022-10-30 17:12:00", de: "objeto da noite" }], { controle: planoZero });
   }, 300_000);
 
   it("volta sem derrubar nenhuma rodada e, religado o núcleo mínimo, publica de novo os lugares com o placar do TSE falso", () => {

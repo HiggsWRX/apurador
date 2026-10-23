@@ -242,7 +242,7 @@ const GRAVACOES_EM_VOO = 32;
  * e até o fim da noite se alguma rodada passou do pico de pedidos que alerta o dono.
  */
 const RODADA_DEPOIS_DO_BLOQUEIO = 40_000;
-const QUINZE_MINUTOS = 15 * UM_MINUTO;
+const DEPOIS_DA_VOLTA = 15 * UM_MINUTO;
 /** Na totalização final do Brasil, o coletor roda mais isso e para sozinho (Operação na noite, decisão 21). */
 const DEPOIS_DA_FINAL = 30 * UM_MINUTO;
 
@@ -264,9 +264,9 @@ const FOLGA_DA_FILA = 4;
 /** No máximo isso de gravações de arquivos ao vivo numa rodada, para ela caber nos 20 s (Volume de gravações na noite, decisão 5). */
 const TETO_DE_GRAVACOES = 1_500;
 /** Com a trava de 90%, cada município e o mapa.json vão no máximo uma vez nesse tempo. */
-const CINCO_MINUTOS = 5 * UM_MINUTO;
+const INTERVALO_NA_TRAVA = 5 * UM_MINUTO;
 
-/** Um arquivo ao vivo que pode ir na rodada, montado só se couber no teto. */
+/** Um arquivo ao vivo que pode ir na rodada, se mudou e cabe no teto. */
 interface ArquivoAoVivo {
   caminho: string;
   conteudo: () => object;
@@ -349,6 +349,8 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   let partida: Partida | undefined = opcoes.retomada?.partida ?? "a frio";
   /** Onde o coletor grava: o principal até o comando do plano B, e o plano B depois dele. */
   let destino = opcoes.destino;
+  /** Na passagem ao plano B, até a primeira rodada que coube no teto: o Worker ainda não tem todos os arquivos. */
+  let planoBPorCompletar = false;
 
   // As proteções do coletor, as únicas ações automáticas dele (Operação na noite, decisões 12 e 21; Volume de gravações
   // na noite, decisão 5). O estado delas vai no estado de retomada: o coletor que volta de uma queda segue com elas.
@@ -358,7 +360,10 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   let retomouEm: number | null = estadoRetomado?.retomouEm ?? null;
   /** Alguma rodada da noite passou do pico de pedidos que alerta o dono. */
   let picoAcimaDoLimite = estadoRetomado?.picoAcimaDoLimite ?? false;
-  /** As gravações do mês, contadas nos buckets do R2, chegaram à trava. Sem contador, nunca. */
+  /**
+   * As gravações do mês, contadas nos buckets do R2, chegaram à trava. Sem contador, nunca. O objeto da noite segue um por
+   * rodada com ela: sem ele, a retomada numa outra máquina voltaria ao último objeto antes da trava.
+   */
   const gravacoesTravadas = () => opcoes.contador !== undefined && somaDoMes(opcoes.contador.doMes()) >= TRAVA_DAS_GRAVACOES;
   /** Com a trava, quando cada município e o mapa.json foram gravados pela última vez (ms), pelo caminho. */
   const gravadoNaTrava = new Map<string, number>(Object.entries(estadoRetomado?.gravadoNaTrava ?? {}));
@@ -729,7 +734,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     if (aPedirDeNovo?.size === 0) aPedirDeNovo = undefined;
     if (!controle.chaves.nucleoMinimo) return;
 
-    const doLugar = (a: Acompanhado): ArquivoAoVivo => ({
+    const aoVivoDoLugar = (a: Acompanhado): ArquivoAoVivo => ({
       caminho: `lugares/${a.id}.json`,
       lugar: a.id!,
       aCadaCincoMinutos: a.tipo === "municipio",
@@ -746,7 +751,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     const arquivos = lugares
       .filter((a) => a.tipo !== "municipio")
       .sort((a, b) => TIPOS[a.tipo].ordem - TIPOS[b.tipo].ordem)
-      .map(doLugar);
+      .map(aoVivoDoLugar);
     // A tabela de projeções de cada UF e do Exterior e o mapa.json são montados a cada rodada, e só os bytes que mudam vão
     // ao destino. Sem a projeção no ar, a tabela vai vazia. Os municípios da tabela, com as comparações, não mudam na
     // noite: com a projeção no ar, são gravados uma vez. Na retomada do objeto da noite, nada disso até o coletor pedir de
@@ -776,24 +781,24 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
           ),
       });
     }
-    arquivos.push(...lugares.filter((a) => a.tipo === "municipio").map(doLugar));
+    arquivos.push(...lugares.filter((a) => a.tipo === "municipio").map(aoVivoDoLugar));
 
     const travadas = gravacoesTravadas();
     const gravacoes: (() => Promise<void>)[] = [];
     for (const arquivo of arquivos) {
-      if (travadas && arquivo.aCadaCincoMinutos && agora - (gravadoNaTrava.get(arquivo.caminho) ?? -Infinity) < CINCO_MINUTOS) continue;
+      if (travadas && arquivo.aCadaCincoMinutos && agora - (gravadoNaTrava.get(arquivo.caminho) ?? -Infinity) < INTERVALO_NA_TRAVA) continue;
+      const porGravar = seMudou(arquivo.caminho, arquivo.conteudo());
+      if (!porGravar) {
+        if (arquivo.lugar) sujos.delete(arquivo.lugar);
+        continue;
+      }
       if (tentativas >= TETO_DE_GRAVACOES) {
         registro.adiadas++;
         continue;
       }
-      const mudou = seMudou(arquivo.caminho, arquivo.conteudo());
-      if (!mudou) {
-        if (arquivo.lugar) sujos.delete(arquivo.lugar);
-        continue;
-      }
       tentativas++;
       gravacoes.push(async () => {
-        if (!(await gravar(mudou))) return;
+        if (!(await gravar(porGravar))) return;
         if (arquivo.lugar) sujos.delete(arquivo.lugar);
         if (travadas && arquivo.aCadaCincoMinutos) gravadoNaTrava.set(arquivo.caminho, agora);
       });
@@ -839,6 +844,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     destino = opcoes.planoB;
     hashes.clear();
     gravadoNaTrava.clear();
+    planoBPorCompletar = true;
     for (const a of d?.acompanhados ?? []) if (a.id !== null && resultados.has(a.url)) sujos.add(a.id);
   }
 
@@ -898,7 +904,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   }
 
   /** A rodada de 40 s depois de um bloqueio: até 15 min depois da volta (ms), ou até o fim com o pico acima do limite. */
-  const rodadaDe40sAte = () => (retomouEm === null ? null : picoAcimaDoLimite ? Infinity : retomouEm + QUINZE_MINUTOS);
+  const rodadaDe40sAte = () => (retomouEm === null ? null : picoAcimaDoLimite ? Infinity : retomouEm + DEPOIS_DA_VOLTA);
   /** Do começo de uma rodada ao da seguinte. */
   const intervaloDepoisDe = (inicio: number) => (inicio < (rodadaDe40sAte() ?? -Infinity) ? RODADA_DEPOIS_DO_BLOQUEIO : intervalo);
 
@@ -1023,9 +1029,10 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
         if (brasil(divulgacao)) registro.fase = fase(divulgacao);
         if (registro.fase === "encerrada") encerradaEm ??= inicio;
       }
-      // O destino que publica em lote (o Worker do plano B) só publica a rodada que deixou nada para a seguinte: a primeira
-      // versão do Worker sai com todos os arquivos.
-      if (registro.adiadas === 0) registro.falhas.push(...((await destino.fimDaRodada?.()) ?? []));
+      // Na passagem ao plano B, o destino que publica em lote (o Worker) só publica quando o teto não deixou nada para a
+      // rodada seguinte: a primeira versão do Worker sai com todos os arquivos. Depois dela, publica toda rodada.
+      if (planoBPorCompletar && registro.adiadas === 0) planoBPorCompletar = false;
+      if (!planoBPorCompletar) registro.falhas.push(...((await destino.fimDaRodada?.()) ?? []));
     } catch (erro) {
       registro.falhas.push(`rodada: ${(erro as Error).message}`);
     }
@@ -1035,8 +1042,8 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     const ate = rodadaDe40sAte();
     if (ate !== null && inicio < ate) registro.rodadaDe40s = { ate: Number.isFinite(ate) ? new Date(ate).toISOString() : null };
     registro.encerraEm = encerradaEm === null ? null : new Date(encerradaEm + DEPOIS_DA_FINAL).toISOString();
-    // A última rodada da noite é a que termina depois dos 30 min da final: a seguinte não começa.
-    await guardarEstado(encerradaEm !== null && inicio + intervaloDepoisDe(inicio) >= encerradaEm + DEPOIS_DA_FINAL);
+    // A última rodada da noite é a que termina depois dos 30 min da final: a seguinte não começa, nem a que passou da hora.
+    await guardarEstado(encerradaEm !== null && Math.max(inicio + intervaloDepoisDe(inicio), relogio.agora()) >= encerradaEm + DEPOIS_DA_FINAL);
     registro.destinoAtivo = destino === opcoes.planoB ? "plano B" : "principal";
     registro.gravacoesDoMes = opcoes.contador?.doMes() ?? null;
     registro.gravacoesTravadas = gravacoesTravadas();

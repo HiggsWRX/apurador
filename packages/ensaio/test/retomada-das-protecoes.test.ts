@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { lerEstadoGuardado, type RegistroDaRodada } from "@apurador/coletor";
-import { chegaram, noColetor, noiteComQuedas, type Noite } from "./noite-com-quedas.ts";
+import { chegaram, noColetor, noiteComQuedas, type NoiteComQuedas } from "./noite-com-quedas.ts";
 
 // A noite com quedas (`noite-com-quedas.ts`) com as proteções do coletor (Operação na noite, decisão 12; Volume de
 // gravações na noite, decisão 8): o estado delas sobrevive à queda, e o objeto da noite fica no disco pelo celular.
@@ -11,7 +11,7 @@ describe("uma queda parada no bloqueio", () => {
   // e o coletor retoma com a rodada de 40 s; cai de novo às 17:14 e volta do disco, ainda com ela.
   const DE = "2022-10-30 17:00:00";
   const TROCA = "2022-10-30 17:10:00";
-  let r: Noite;
+  let r: NoiteComQuedas;
   beforeAll(async () => {
     r = await noiteComQuedas(
       DE,
@@ -20,7 +20,6 @@ describe("uma queda parada no bloqueio", () => {
         { em: "2022-10-30 17:07:00", de: "disco" },
         { em: "2022-10-30 17:14:00", de: "disco" },
       ],
-      undefined,
       {
         bloquearOTse: { em: "2022-10-30 17:05:00", segundos: 120 },
         conexao: (quando) =>
@@ -49,9 +48,9 @@ describe("o objeto da noite pelo celular", () => {
   // noite fica no disco, e o primeiro no cabo leva os arquivos do TSE que chegaram nesse tempo. O coletor cai às 17:08,
   // pelo celular, e volta do disco, com os arquivos que esperavam.
   const DE = "2022-10-30 17:00:00";
-  let r: Noite;
+  let r: NoiteComQuedas;
   beforeAll(async () => {
-    r = await noiteComQuedas(DE, "2022-10-30 17:16:00", [{ em: "2022-10-30 17:08:00", de: "disco" }], undefined, {
+    r = await noiteComQuedas(DE, "2022-10-30 17:16:00", [{ em: "2022-10-30 17:08:00", de: "disco" }], {
       conexao: (quando) => ({
         ip: "200.160.1.1",
         voltouEm: null,

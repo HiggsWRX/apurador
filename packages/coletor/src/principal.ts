@@ -228,7 +228,7 @@ async function lerDaPasta(destinoAtivo: RegistroDaRodada["destinoAtivo"]): Promi
   return { endereco: raiz, rodada: await ler<ArquivoDeRodada>("rodada.json"), brasil: await ler<ArquivoDoLugar>("lugares/BR.json"), data: Date.now() };
 }
 
-// A sonda da conexão (conexao.ts): o IP público a cada 5 s e a rota padrão da última medida do computador. Parado no
+// A sonda da conexão (conexao.ts): o IP público a cada 3 s e a rota padrão da última medida do computador. Parado no
 // bloqueio do TSE, o coletor volta a pedir quando ela muda; pelo celular, o objeto da noite fica no disco.
 const sonda = sondaDaConexao({ buscar: fetch, agora: relogioReal.agora, via: () => medida?.conexao ?? null });
 await sonda.sondar();

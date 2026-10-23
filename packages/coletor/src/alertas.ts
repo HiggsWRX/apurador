@@ -1,6 +1,6 @@
 import { somaDoMes, TRAVA_DAS_GRAVACOES } from "./contador.ts";
 import type { RegistroDaRodada } from "./coletor.ts";
-import { comCasas, duracao, ROTULO_DAS_BASES, TITULO_DO_ALERTA_CRITICO } from "./formatos.ts";
+import { comCasas, duracao, O_QUE_A_TRAVA_GRAVA, ROTULO_DAS_BASES, TITULO_DO_ALERTA_CRITICO } from "./formatos.ts";
 import type { MensagemDoNtfy } from "./ntfy.ts";
 
 // Os alertas da noite (Operação na noite, decisões 7 e 8; Volume de gravações na noite, decisão 5), em dois níveis. Os
@@ -175,7 +175,7 @@ export function avaliarAlertas(s: SituacaoDaNoite, limites: LimitesDosAlertas = 
   if (ultima?.registro.gravacoesTravadas)
     critico(
       "gravacoes-travadas",
-      `Gravações do mês em ${comCasas((100 * TRAVA_DAS_GRAVACOES) / PLANO_GRATUITO_DO_R2)}% do plano gratuito do R2: o coletor grava só o arquivo de rodada, o Brasil, as UFs e as tabelas, e cada município a cada 5 min`,
+      `Gravações do mês em ${comCasas((100 * TRAVA_DAS_GRAVACOES) / PLANO_GRATUITO_DO_R2)}% do plano gratuito do R2: o coletor grava ${O_QUE_A_TRAVA_GRAVA}`,
     );
 
   // De atenção. Parado no bloqueio, a falta de novidade é do coletor, e o crítico já a explica.

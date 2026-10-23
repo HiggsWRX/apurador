@@ -21,9 +21,10 @@ describe("a conexão mudou desde o bloqueio", () => {
     expect(conexaoMudou(bloqueio(NO_CABO), agora)).toBe(mudou);
   });
 
-  it("sem a conexão de então (o IP ainda não lido), qualquer IP lido conta como a internet de volta", () => {
-    expect(conexaoMudou(bloqueio({ ip: null, voltouEm: null, via: null }), NO_CABO)).toBe(true);
-    expect(conexaoMudou(bloqueio({ ip: null, voltouEm: null, via: null }), { ip: null, voltouEm: null, via: "cabo" })).toBe(false);
+  it("sem o IP de então (a leitura falhou na hora do 403), um IP lido não basta: insistir no mesmo IP renova o bloqueio", () => {
+    expect(conexaoMudou(bloqueio({ ip: null, voltouEm: null, via: "cabo" }), NO_CABO)).toBe(false);
+    expect(conexaoMudou(bloqueio({ ip: null, voltouEm: null, via: "cabo" }), { ...NO_CABO, voltouEm: 1_000_001 })).toBe(true);
+    expect(conexaoMudou(bloqueio({ ip: null, voltouEm: null, via: "cabo" }), { ...NO_CABO, via: "celular" })).toBe(true);
   });
 });
 
@@ -60,20 +61,38 @@ describe("a sonda da conexão", () => {
     await s.sondar();
     expect(pedidos).toEqual([ENDERECO_DO_IP]);
     expect(s.ler()).toEqual({ ip: "200.160.1.1", voltouEm: null, via: "cabo" });
+    // Pelo IPv4: os endereços IPv6 temporários do Windows mudam sozinhos, e pareceriam outra conexão.
+    expect(new URL(ENDERECO_DO_IP).hostname).toBe("1.1.1.1");
   });
 
-  it("sem internet, fica sem IP, e marca quando a internet voltou, mesmo com o mesmo IP", async () => {
+  it("sem internet em duas leituras seguidas, fica sem IP, e marca quando a internet voltou, mesmo com o mesmo IP", async () => {
     const { s, em, responder } = sonda();
     await s.sondar();
-    em(5_000);
     responder(semInternet);
+    em(3_000);
+    await s.sondar();
+    em(6_000);
     await s.sondar();
     expect(s.ler()).toEqual({ ip: null, voltouEm: null, via: "cabo" });
 
-    em(10_000);
+    em(9_000);
     responder(comIp("200.160.1.1"));
     await s.sondar();
-    expect(s.ler()).toEqual({ ip: "200.160.1.1", voltouEm: 10_000, via: "cabo" });
+    expect(s.ler()).toEqual({ ip: "200.160.1.1", voltouEm: 9_000, via: "cabo" });
+  });
+
+  it("uma leitura só que não sai é um soluço, e não a internet fora: o IP fica, e a seguinte não é uma volta", async () => {
+    const { s, em, responder } = sonda();
+    await s.sondar();
+    responder(semInternet);
+    em(3_000);
+    await s.sondar();
+    expect(s.ler()).toEqual({ ip: "200.160.1.1", voltouEm: null, via: "cabo" });
+
+    responder(comIp("200.160.1.1"));
+    em(6_000);
+    await s.sondar();
+    expect(s.ler()).toEqual({ ip: "200.160.1.1", voltouEm: null, via: "cabo" });
   });
 
   it("uma resposta de erro da Cloudflare não é a internet fora: fica a leitura anterior", async () => {

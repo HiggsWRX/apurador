@@ -4,16 +4,19 @@
 // conexão for o celular, o objeto da noite fica no disco.
 //
 // A rota padrão do Windows (`computador.ts`) diz se é o cabo ou o celular, mas não vê o modo avião: na ancoragem USB do
-// Android, o adaptador fica ligado, sem internet atrás dele. Por isso a sonda lê também o IP público, a cada 5 s, no
-// rastro da Cloudflare, que responde a quem pede o IP dele: um pedido que não sai é a internet fora, e o IP novo, a
-// conexão nova.
+// Android, o adaptador fica ligado, sem internet atrás dele. Por isso a sonda lê também o IP público, a cada 3 s, no
+// rastro da Cloudflare, que responde a quem pede o IP dele: duas leituras seguidas que não saem são a internet fora, e o
+// IP novo, a conexão nova. Uma leitura só que falha é um soluço: contá-la como queda faria o coletor pedir de novo no
+// mesmo IP, o que renova o bloqueio.
 
-/** O rastro da Cloudflare: um texto com `ip=<o IP de quem pediu>`. */
-export const ENDERECO_DO_IP = "https://www.cloudflare.com/cdn-cgi/trace";
-/** A cada quanto a sonda lê o IP: um modo avião de 10 s pega pelo menos uma leitura sem internet. */
-export const INTERVALO_DA_SONDA = 5_000;
-/** Uma leitura que demora mais que isso é a internet fora. */
-const TEMPO_DA_LEITURA = 5_000;
+/** O rastro da Cloudflare pelo IPv4: os endereços IPv6 temporários do Windows mudam sozinhos e pareceriam outra conexão. */
+export const ENDERECO_DO_IP = "https://1.1.1.1/cdn-cgi/trace";
+/** A cada quanto a sonda lê o IP: um modo avião de 10 s pega duas leituras seguidas sem internet. */
+export const INTERVALO_DA_SONDA = 3_000;
+/** Uma leitura que demora mais que isso não saiu. */
+const TEMPO_DA_LEITURA = 3_000;
+/** Quantas leituras seguidas que não saem fazem a internet fora. */
+const LEITURAS_DA_QUEDA = 2;
 
 /** A conexão do computador, como a sonda a viu por último. */
 export interface ConexaoDoComputador {
@@ -37,20 +40,20 @@ export interface BloqueioDoTse {
 /**
  * A conexão mudou, ou caiu e voltou, desde o bloqueio: outro IP, outra rota (o cabo pelo celular, mesmo sem a leitura do
  * IP), ou a internet de volta depois dele. Sem internet agora, só a troca da rota conta: os pedidos falham sem resposta,
- * e uma falha assim não renova o bloqueio.
+ * e uma falha assim não renova o bloqueio. Sem o IP de então, um IP lido não diz que mudou.
  */
 export function conexaoMudou(bloqueio: BloqueioDoTse, agora: ConexaoDoComputador): boolean {
   const antes = bloqueio.conexao;
   const voltou = agora.ip !== null && agora.voltouEm !== null && agora.voltouEm > bloqueio.desde;
-  const outroIp = agora.ip !== null && agora.ip !== (antes?.ip ?? null);
+  const outroIp = agora.ip !== null && (antes?.ip ?? null) !== null && agora.ip !== antes!.ip;
   const outraVia = agora.via !== null && (antes?.via ?? null) !== null && agora.via !== antes!.via;
   return voltou || outroIp || outraVia;
 }
 
-/** A sonda da conexão: a última leitura, e a leitura seguinte, que o `principal.ts` pede a cada 5 s. */
+/** A sonda da conexão: a última leitura, e a leitura seguinte, que o `principal.ts` pede a cada 3 s. */
 export interface SondaDaConexao {
   ler(): ConexaoDoComputador;
-  /** Lê o IP público. Uma leitura que não sai é a internet fora; uma resposta de erro não muda nada. */
+  /** Lê o IP público. Uma leitura que não sai conta para a queda; uma resposta de erro não muda nada. */
   sondar(): Promise<void>;
 }
 
@@ -62,8 +65,9 @@ export function sondaDaConexao(opcoes: {
 }): SondaDaConexao {
   let ip: string | null = null;
   let voltouEm: number | null = null;
-  /** A internet já respondeu alguma vez: só depois disso uma leitura boa depois de uma falha é a volta dela. */
+  /** A internet já respondeu alguma vez: só depois disso uma leitura boa depois de uma queda é a volta dela. */
   let respondeu = false;
+  let seguidasSemSair = 0;
   return {
     ler: () => ({ ip, voltouEm, via: opcoes.via() }),
     async sondar() {
@@ -73,9 +77,10 @@ export function sondaDaConexao(opcoes: {
         if (!resposta.ok) return void (await resposta.body?.cancel());
         texto = await resposta.text();
       } catch {
-        ip = null;
+        if (++seguidasSemSair >= LEITURAS_DA_QUEDA) ip = null;
         return;
       }
+      seguidasSemSair = 0;
       const lido = /^ip=(.+)$/m.exec(texto)?.[1]?.trim();
       if (!lido) return;
       if (ip === null && respondeu) voltouEm = opcoes.agora();

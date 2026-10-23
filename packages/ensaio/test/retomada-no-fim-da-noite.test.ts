@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { lerEstadoGuardado } from "@apurador/coletor";
-import { chegaram, noColetor, noiteComQuedas, type Noite } from "./noite-com-quedas.ts";
+import { chegaram, noColetor, noiteComQuedas, type NoiteComQuedas } from "./noite-com-quedas.ts";
 
 // A noite com quedas (`noite-com-quedas.ts`) no fim da noite (Operação na noite, decisão 21; Volume de gravações na
 // noite, decisão 8): 30 min depois da totalização final, o coletor para sozinho, também o que volta de uma queda, e a
@@ -10,7 +10,7 @@ describe("quedas depois da totalização final", () => {
   // O coletor parte a frio às 23:58, 20 min antes da totalização final de 2022 (00:18:04). Cai às 00:30, nos 30 min
   // depois dela, e volta do disco; para sozinho e, posto de volta às 01:00 (o supervisor não o põe, mas a tarefa do
   // Agendador, ligada, põe num reinício do computador), não roda nenhuma rodada.
-  let r: Noite;
+  let r: NoiteComQuedas;
   beforeAll(async () => {
     r = await noiteComQuedas("2022-10-30 23:58:00", "2022-10-31 01:10:00", [
       { em: "2022-10-31 00:30:00", de: "disco" },
@@ -35,9 +35,9 @@ describe("o fim da noite pelo celular", () => {
   // A conexão passa ao celular às 00:10, antes da totalização final, e não volta ao cabo: a última rodada grava o objeto
   // da noite mesmo assim, com os arquivos que esperavam, para a noite ficar inteira no R2.
   const DE = "2022-10-30 23:58:00";
-  let r: Noite;
+  let r: NoiteComQuedas;
   beforeAll(async () => {
-    r = await noiteComQuedas(DE, "2022-10-31 01:10:00", [], undefined, {
+    r = await noiteComQuedas(DE, "2022-10-31 01:10:00", [], {
       conexao: (quando) => ({ ip: "177.79.2.2", voltouEm: null, via: quando >= noColetor(DE, "2022-10-31 00:10:00") ? "celular" : "cabo" }),
     });
   }, 300_000);

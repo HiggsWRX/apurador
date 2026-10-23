@@ -26,6 +26,7 @@ const COLETOR_NO_INICIO = ms("2026-10-25 19:00:00");
 /** O instante do relógio do coletor de uma hora da noite de 2022, numa noite que começa em `de`. */
 export const noColetor = (de: string, dataHora: string) => COLETOR_NO_INICIO + ms(dataHora) - ms(de);
 
+/** Uma gravação no destino da noite com quedas: o arquivo ao vivo, o conteúdo lido de volta e quando. */
 export interface Gravacao {
   caminho: string;
   conteudo: unknown;
@@ -40,22 +41,22 @@ interface Queda {
   fora?: number;
 }
 
-/** O que mais acontece na noite com quedas: o TSE falso respondendo 403 e a conexão do computador, pelo relógio do coletor. */
-interface Provocacoes {
+/** O que mais acontece na noite com quedas, pelo relógio do coletor: os comandos do dono, o TSE falso respondendo 403 e a conexão. */
+interface OpcoesDaNoiteComQuedas {
+  /** O arquivo de controle, lido no começo de cada rodada. */
+  controle?: (quando: number) => Controle;
   /** O TSE falso responde 403 a todos por `segundos`, a partir do primeiro pedido feito em `em` (hora da noite) ou depois. */
   bloquearOTse?: { em: string; segundos: number };
   conexao?: (quando: number) => ConexaoDoComputador;
 }
 
-/**
- * A noite de `de` a `ate` (horas da noite de 2022), com as quedas e, se dados, o arquivo de controle pelo relógio do
- * coletor e as provocações.
- */
-export async function noiteComQuedas(de: string, ate: string, quedas: Queda[] = [], controle?: (quando: number) => Controle, provocacoes: Provocacoes = {}) {
+/** A noite de `de` a `ate` (horas da noite de 2022), com as quedas e as opções. */
+export async function noiteComQuedas(de: string, ate: string, quedas: Queda[] = [], opcoes: OpcoesDaNoiteComQuedas = {}) {
+  const { controle } = opcoes;
   const relogio = relogioSemEspera(COLETOR_NO_INICIO);
   const tse = criarTseFalso({ noite, cadastro, relogio: relogioDoReplay(instante(de), relogio.agora) });
   const doTse = buscarNoTseFalso(tse);
-  let bloquear = provocacoes.bloquearOTse;
+  let bloquear = opcoes.bloquearOTse;
   const buscar: Buscar = async (url, init) => {
     if (bloquear && relogio.agora() >= noColetor(de, bloquear.em)) {
       tse.bloquear(bloquear.segundos);
@@ -63,7 +64,7 @@ export async function noiteComQuedas(de: string, ate: string, quedas: Queda[] = 
     }
     return doTse(url, init);
   };
-  const lerConexao = provocacoes.conexao;
+  const lerConexao = opcoes.conexao;
   const gravacoes: Gravacao[] = [];
   /** O objeto da noite de cada rodada, com quantas gravações tinham sido feitas até ele. */
   const objetos: { json: string; numero: number; gravacoes: number }[] = [];
@@ -116,7 +117,8 @@ export async function noiteComQuedas(de: string, ate: string, quedas: Queda[] = 
   return { gravacoes, objetos, rodadas, voltas, lugares, publicado, daRodada, noColetor: (dataHora: string) => noColetor(de, dataHora) };
 }
 
-export type Noite = Awaited<ReturnType<typeof noiteComQuedas>>;
+/** O que a noite com quedas dá: as gravações, os objetos da noite, as rodadas, as voltas e as leituras delas. */
+export type NoiteComQuedas = Awaited<ReturnType<typeof noiteComQuedas>>;
 
 /** Os arquivos do TSE que chegaram nas rodadas: os que vão para os objetos da noite. */
 export const chegaram = (rodadas: RegistroDaRodada[]) =>
