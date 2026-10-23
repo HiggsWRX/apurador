@@ -14,13 +14,16 @@ import {
   type PartidaDaSimulacao,
   type ResultadoDoLugar,
 } from "@apurador/modelo";
-import { descompactarBase, type ArquivoDoSimulador } from "./arquivo-do-simulador";
+import type { ArquivoDoSimuladorAoVivo } from "@apurador/coletor";
+import { apuracaoDasColunas, descompactarBase, type ArquivoDoSimulador } from "./arquivo-do-simulador";
 import type { IdDaBase } from "./bases-da-projecao";
 
-// O simulador "e se" no navegador (Simulador "e se", decisões 4 a 7 e 10): a partir do arquivo que ele baixa ao abrir,
+// O simulador "e se" no navegador (Simulador "e se", decisões 4 a 7, 10 e 12): a partir do arquivo que ele baixa ao abrir,
 // a projeção do Apurador em cada base, uma vez, e, a cada hipótese, a simulação, a curva dela e "o que seria preciso".
-// É o mesmo `modelo` que o build roda na página do Brasil, sobre os mesmos dados: aberto, o simulador mostra ao lado a
-// mesma projeção da página. Sem DOM: a ilha (`components/Simulador.tsx`) guarda o estado e desenha.
+// É o mesmo `modelo` que o build roda na página do Brasil antes das 17h e o coletor roda na noite, sobre os mesmos dados:
+// aberto, o simulador mostra ao lado a mesma projeção da página. Na noite, cada arquivo novo do coletor refaz a
+// projeção, e as hipóteses, que a ilha guarda, ficam. Sem DOM: a ilha (`components/Simulador.tsx`) guarda o estado e
+// desenha.
 
 /** Uma base da projeção no simulador: de onde a simulação parte, a curva projetada e o resultado de cada região. */
 export interface BaseNoSimulador {
@@ -45,11 +48,20 @@ export interface DadosDoSimulador {
   regioes: ArquivoDoSimulador["regioes"];
 }
 
-/** Prepara o simulador com o arquivo baixado: a base do modelo e a projeção do Apurador em cada base. */
-export function prepararSimulador(arquivo: ArquivoDoSimulador): DadosDoSimulador {
+/**
+ * Prepara o simulador com o arquivo do build: a base do modelo e a projeção do Apurador em cada base. Antes das 17h, sobre
+ * a apuração de antes da primeira seção, com o agregado do build; na noite, sobre a apuração e o agregado do arquivo do
+ * coletor (`daNoite`), que precisa vir com a apuração e a mesma assinatura.
+ */
+export function prepararSimulador(arquivo: ArquivoDoSimulador, daNoite?: ArquivoDoSimuladorAoVivo): DadosDoSimulador {
+  if (daNoite?.assinatura !== undefined && daNoite.assinatura !== arquivo.assinatura) {
+    throw new Error(`o arquivo do simulador da noite (assinatura ${daNoite.assinatura}) não é da base do build (assinatura ${arquivo.assinatura})`);
+  }
+  if (daNoite && !daNoite.apuracao) throw new Error("o arquivo do simulador da noite veio sem a apuração: o simulador está fora do ar");
   const baseDoModelo = descompactarBase(arquivo.base);
   const modelo = prepararModelo(baseDoModelo);
-  const apuracao = antesDaPrimeiraSecao(baseDoModelo);
+  const apuracao = daNoite?.apuracao ? apuracaoDasColunas(daNoite.apuracao) : antesDaPrimeiraSecao(baseDoModelo);
+  const agregado = daNoite ? (daNoite.agregado ?? null) : arquivo.agregado;
   const { constantes } = arquivo;
   const comparecimentoEsperado = arquivo.regioes.map((r) => r.comparecimento);
   const naBase = (id: IdDaBase, agregado?: ArquivoDoSimulador["agregado"]): BaseNoSimulador => {
@@ -63,7 +75,7 @@ export function prepararSimulador(arquivo: ArquivoDoSimulador): DadosDoSimulador
     };
   };
   const soApuracao = naBase("so-apuracao");
-  const comPesquisas = arquivo.agregado ? naBase("com-pesquisas", arquivo.agregado) : null;
+  const comPesquisas = agregado ? naBase("com-pesquisas", agregado) : null;
   return {
     modelo,
     bases: comPesquisas ? [soApuracao, comPesquisas] : [soApuracao],

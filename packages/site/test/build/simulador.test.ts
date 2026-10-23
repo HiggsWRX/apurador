@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import { REGIOES, type BaseDoModelo } from "@apurador/modelo";
+import { assinaturaDosLugares, idDoMunicipio } from "@apurador/pipeline";
 import { describe, expect, it } from "vitest";
 import { descompactarBase, type ArquivoDoSimulador } from "../../src/lib/arquivo-do-simulador";
 import { prepararSimulador } from "../../src/lib/simulador";
@@ -46,7 +47,8 @@ describe("a tela do simulador", () => {
     expect(html).toMatch(/<astro-island[^>]*component-url="\/_astro\/Simulador\.[^"]+\.js"/);
     expect(html).toMatch(/<link rel="preload" href="\/dados\/simulador\.json" as="fetch" crossorigin="anonymous"/);
     // no build, a ilha sai carregando: a simulação é do navegador
-    expect(texto(elemento(html, /<astro-island[^>]*Simulador/))).toBe("Carregando o simulador…");
+    expect(texto(elemento(elemento(html, /<astro-island[^>]*Simulador/), /<p[^>]*aria-busy/))).toBe("Carregando o simulador…");
+    expect(texto(elemento(html, /<p class="sim-intro"/))).toContain("Mude quanto o voto que falta pende para cada candidato");
     expect(texto(elemento(html, /<noscript/))).toContain("precisa de JavaScript");
   });
 
@@ -81,9 +83,11 @@ describe("o arquivo do simulador", () => {
   const projecao = elemento(pagina("/"), BLOCO_DA_PROJECAO);
   const comUmaCasa = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-  it("leva a base do modelo de 25/10, como está no repositório", () => {
+  it("leva a base do modelo de 25/10, como está no repositório, com a assinatura que o coletor publica no arquivo da noite", () => {
     const base = JSON.parse(ler("bases/2026-2.json")) as BaseDoModelo;
     expect(descompactarBase(arquivo.base).municipios).toEqual(base.municipios);
+    // A mesma conta do coletor (o replay confere a do arquivo da noite): os municípios da base, na ordem dela.
+    expect(arquivo.assinatura).toBe(assinaturaDosLugares(base.municipios.map((m) => idDoMunicipio(m.municipio))));
   });
 
   it("leva o agregado do instante do build, inteiro, e as constantes congeladas", () => {
@@ -183,12 +187,13 @@ describe("chave do simulador antes das 17h", () => {
     expect(JSON.parse(ler("chaves.json"))).toMatchObject({ antesDas17h: { simulador: true } });
   });
 
-  it("desligada, a tela diz que o simulador abre às 17h, sem a ilha, e o arquivo não é gerado", () => {
+  it("desligada, a tela diz que o simulador abre às 17h, com a ilha, que passa sozinha ao ao vivo às 17h sobre o arquivo do build", () => {
     const h = desligada("/simulador/");
     expect(texto(elemento(h, /<section[^>]*data-simulador-fechado/))).toBe("O simulador abre às 17h, com a apuração. Voltar à página do Brasil");
-    expect(h).not.toContain("<astro-island");
-    expect(h).not.toContain("simulador.json");
-    expect(existsSync(new URL(ARQUIVO, DIST_CHAVES_DESLIGADAS))).toBe(false);
+    expect(h).not.toContain("sim-intro");
+    expect(h).toMatch(/<astro-island[^>]*component-url="\/_astro\/Simulador\.[^"]+\.js"/);
+    // Na noite, a base do modelo vem do arquivo do build, com a chave de antes das 17h ligada ou não.
+    expect(existsSync(new URL(ARQUIVO, DIST_CHAVES_DESLIGADAS))).toBe(true);
     expect(desligada("/")).not.toContain("/simulador/");
   });
 });

@@ -2,6 +2,7 @@ import type {
   ArquivoDeRodada,
   ArquivoDoLugar,
   ArquivoDoMapa,
+  ArquivoDoSimuladorAoVivo,
   AvisoPronto,
   Buscar,
   ChavesDaNoite,
@@ -23,7 +24,8 @@ import { horaDoTse } from "./formato";
 // que o cartão entra na tela; num município, a tabela da UF vem desde a primeira, porque é dela que sai a projeção dele.
 // Cada um só é pedido quando pode aparecer, pela última rodada: o mapa.json, da fase ao vivo em diante, fora do plano
 // zero; a tabela, também só na fase ao vivo com a chave da projeção (o coletor só grava os municípios dela das 17h em
-// diante).
+// diante). Na tela do simulador, que lê o Brasil, o arquivo do simulador vem nas mesmas leituras, na fase ao vivo e com a
+// chave dele: a tela tem um leitor só, como as páginas de lugar.
 
 /** O intervalo entre as leituras da página, em segundos (spec, "Entrega aos visitantes"). */
 export const INTERVALO_DAS_LEITURAS = 30;
@@ -74,6 +76,8 @@ export interface QuadroAoVivo {
   tabelaDeProjecoes: TabelaDeProjecoesLida | null;
   /** O mapa.json, depois que o cartão do mapa entra na tela. */
   mapa: ArquivoDoMapa | null;
+  /** O arquivo do simulador, na tela do simulador. */
+  simulador: ArquivoDoSimuladorAoVivo | null;
 }
 
 /**
@@ -106,6 +110,7 @@ export const antesDaPrimeiraLeitura = (chaves: ChavesDaNoite): QuadroAoVivo => (
   aviso: null,
   tabelaDeProjecoes: null,
   mapa: null,
+  simulador: null,
 });
 
 /** As chaves dos números do placar que piscam: o % e os votos de cada candidato, na ordem do arquivo de rodada, e o % de seções. */
@@ -159,12 +164,18 @@ export function criarLeitorAoVivo(opcoes: {
   chaves: ChavesDaNoite;
   /** A tabela de projeções que a página lê, se alguma (no Brasil, nenhuma). */
   tabelaDeProjecoes?: OpcaoDaTabelaDeProjecoes;
+  /**
+   * Na tela do simulador, o caminho do arquivo do simulador nos arquivos ao vivo, que o leitor lê também. Vem de fora para
+   * nenhuma página de lugar levar o nome dele no código.
+   */
+  simulador?: string;
 }): LeitorAoVivo {
   let rodada: ArquivoDeRodada | null = null;
   let lugar: ArquivoDoLugar | null = null;
   let tabelaDeProjecoes: TabelaDeProjecoes | null = null;
   let municipiosDaTabela: MunicipiosDaTabela | null = null;
   let mapa: ArquivoDoMapa | null = null;
+  let simulador: ArquivoDoSimuladorAoVivo | null = null;
   let comOCartao = false;
   /** O `Date` da última resposta do arquivo de rodada, em ms. */
   let horaDoOutroLado: number | null = null;
@@ -181,14 +192,18 @@ export function criarLeitorAoVivo(opcoes: {
   const noitePodeAparecer = () => rodada === null || (rodada.fase !== "antes-das-17h" && rodada.chaves.nucleoMinimo);
   /** Pela última rodada, a projeção pode aparecer: na fase ao vivo, com a chave dela. Antes da primeira, a página ainda não sabe, e pede. */
   const projecaoPodeAparecer = () => noitePodeAparecer() && (rodada === null || (rodada.fase === "ao-vivo" && rodada.chaves.projecao));
+  /** Pela última rodada, o simulador pode aparecer: com a projeção e com a chave dele, que o coletor só liga com a dela. */
+  const simuladorPodeAparecer = () => projecaoPodeAparecer() && (rodada === null || rodada.chaves.simulador);
   /**
-   * O que cada leitura pede além do arquivo de rodada: o JSON do lugar e os arquivos do cartão do mapa que a página lê. Os
-   * municípios da tabela não mudam na noite, e são pedidos de novo com a ETag, como os outros: o 304 não traz nada.
+   * O que cada leitura pede além do arquivo de rodada: o JSON do lugar, os arquivos do cartão do mapa que a página lê e,
+   * na tela do simulador, o arquivo dele. Os municípios da tabela não mudam na noite, e são pedidos de novo com a ETag,
+   * como os outros: o 304 não traz nada.
    */
   const caminhos = () => [
     caminhoDoLugar,
     ...(daTabela && (daTabela.desdeOInicio || comOCartao) && projecaoPodeAparecer() ? [caminhoDaTabela!, caminhoDosMunicipios!] : []),
     ...(comOCartao && noitePodeAparecer() ? [CAMINHO_DO_MAPA] : []),
+    ...(opcoes.simulador && simuladorPodeAparecer() ? [opcoes.simulador] : []),
   ];
   const lerTodos = (lista: string[]) => Promise.allSettled(lista.map((caminho) => arquivos.ler<unknown>(caminho)));
   const fase = (): Fase => rodada?.fase ?? "antes-das-17h";
@@ -265,6 +280,7 @@ export function criarLeitorAoVivo(opcoes: {
       tabelaDeProjecoes = novo<TabelaDeProjecoes>(caminhoDaTabela) ?? tabelaDeProjecoes;
       municipiosDaTabela = novo<MunicipiosDaTabela>(caminhoDosMunicipios) ?? municipiosDaTabela;
       mapa = novo<ArquivoDoMapa>(CAMINHO_DO_MAPA) ?? mapa;
+      simulador = novo<ArquivoDoSimuladorAoVivo>(opcoes.simulador) ?? simulador;
     },
     incluirOCartao() {
       comOCartao = true;
@@ -285,6 +301,7 @@ export function criarLeitorAoVivo(opcoes: {
           ...(tabelaDeProjecoes?.projecao?.assinatura === municipiosDaTabela.assinatura ? { projecao: tabelaDeProjecoes.projecao } : {}),
         },
         mapa,
+        simulador,
       };
     },
   };

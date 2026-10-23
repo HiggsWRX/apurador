@@ -1,4 +1,5 @@
 import { HIPOTESES_ZERADAS, REGIOES, type Hipoteses, type ResultadoDoLugar } from "@apurador/modelo";
+import type { ComponentChildren } from "preact";
 import { NOME_DA_BASE, type IdDaBase } from "../lib/bases-da-projecao";
 import { formatarCalculo, formatarChance, umaCasa } from "../lib/formato";
 import {
@@ -14,13 +15,15 @@ import {
   type FinalistasDoSimulador,
 } from "../lib/hipoteses";
 import type { TelaDoSimulador } from "../lib/simulador";
+import type { PontoDaCurvaRealNoSimulador } from "../lib/simulador-ao-vivo";
 import { CurvaProjetada } from "./CurvaProjetada";
 
 // O desenho do simulador "e se" (Simulador "e se", decisões 6 a 10 e 13): a simulação no terceiro nível visual, em
 // moldura pontilhada com fundo hachurado e o selo, sempre ao lado da projeção do Apurador; os controles das hipóteses,
 // cada um com a tradução em relação ao 1º turno; "o que seria preciso"; as hipóteses prontas; a tabela das regiões;
-// "Zerar" e "Copiar link". No celular, de cima para baixo, na ordem da decisão 13, com a barra da simulação fixa; no
-// computador, os controles à esquerda e o resultado fixo à direita (o CSS reordena). Sem estado e sem leitura: a ilha
+// "Zerar" e "Copiar link". No celular, de cima para baixo, na ordem da decisão 13, com a barra da simulação fixa e, na
+// noite, o indicador ao vivo nela (decisão 14); no computador, os controles à esquerda e o resultado fixo à direita (o
+// CSS reordena). Sem estado e sem leitura: a ilha
 // (`Simulador.tsx`) guarda as hipóteses e passa a tela, e os testes renderizam esta vista em HTML. Nenhuma frase diz
 // quem vence: os números, os rótulos curtos e a frase de "o que seria preciso", que fala da simulação.
 
@@ -51,6 +54,10 @@ export interface PropsDaVistaDoSimulador {
   regioesAbertas: number[];
   /** O que "Copiar link" deu: copiado, ou o endereço para copiar à mão, quando o navegador não deixa. */
   copia: { estado: "copiado" } | { estado: "manual"; endereco: string } | null;
+  /** Na noite, o indicador ao vivo da barra fixa (`IndicadorAoVivo`), o mesmo das páginas de lugar; antes das 17h, nenhum. */
+  indicador?: ComponentChildren;
+  /** Na noite, a curva real do Brasil, que a curva da simulação continua e que se estende a cada leitura. */
+  curvaReal?: PontoDaCurvaRealNoSimulador[];
   aoMudarHipoteses: (h: Hipoteses) => void;
   aoMudarBase: (base: IdDaBase) => void;
   aoCopiar: () => void;
@@ -85,7 +92,7 @@ export function VistaDoSimulador(props: PropsDaVistaDoSimulador) {
       )}
       <div class="simulador" data-simulador>
         <div class="sim-lado">
-          <BarraDaSimulacao finalistas={finalistas} naSimulacao={tela.brasilNaSimulacao} naProjecao={tela.brasilNaProjecao} />
+          <BarraDaSimulacao finalistas={finalistas} naSimulacao={tela.brasilNaSimulacao} naProjecao={tela.brasilNaProjecao} indicador={props.indicador} />
           <section class="cartao simulacao sim-curva" aria-labelledby="sim-curva-titulo">
             <p class="selo">{SELO_DA_SIMULACAO}</p>
             <h2 id="sim-curva-titulo" class="so-leitor">
@@ -98,6 +105,7 @@ export function VistaDoSimulador(props: PropsDaVistaDoSimulador) {
               segundo={finalistas[1]}
               curva={tela.curvaDaSimulacao}
               doSite={tela.curvaDoSite}
+              real={props.curvaReal}
             />
             <p class="nota">
               Resultado final estimado no Brasil, em votos válidos, com a margem de 95%, e <a href={`${METODOLOGIA}#chance`}>chance de vitória</a>. Estimativa
@@ -231,15 +239,18 @@ interface PropsDaBarra {
   finalistas: FinalistasDoSimulador;
   naSimulacao: ResultadoDoLugar;
   naProjecao: ResultadoDoLugar;
+  indicador?: ComponentChildren;
 }
 
 /**
  * A barra da simulação (decisão 13): a simulação e a projeção do Apurador no Brasil, uma linha cada, com o resultado ±
- * a margem de 95% e a chance de vitória. Fica fixa no alto, no celular, e no topo do resultado, no computador.
+ * a margem de 95% e a chance de vitória, e, na noite, o indicador ao vivo. Fica fixa no alto, no celular, e no topo do
+ * resultado, no computador.
  */
-function BarraDaSimulacao({ finalistas, naSimulacao, naProjecao }: PropsDaBarra) {
+function BarraDaSimulacao({ finalistas, naSimulacao, naProjecao, indicador }: PropsDaBarra) {
   return (
     <section class="sim-barra" aria-label="A simulação e a projeção do Apurador no Brasil" data-barra-da-simulacao>
+      {indicador}
       <LinhaDaBarra tipo="simulacao" rotulo="Simulação" finalistas={finalistas} resultado={naSimulacao} />
       <LinhaDaBarra tipo="projecao" rotulo="Projeção do Apurador" finalistas={finalistas} resultado={naProjecao} />
     </section>

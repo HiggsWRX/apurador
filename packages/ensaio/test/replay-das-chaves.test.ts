@@ -1,5 +1,13 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { CONTROLE_INICIAL, type ArquivoDeRodada, type ArquivoDoLugar, type ArquivoDoMapa, type Controle, type TabelaDeProjecoes } from "@apurador/coletor";
+import {
+  CONTROLE_INICIAL,
+  type ArquivoDeRodada,
+  type ArquivoDoLugar,
+  type ArquivoDoMapa,
+  type ArquivoDoSimuladorAoVivo,
+  type Controle,
+  type TabelaDeProjecoes,
+} from "@apurador/coletor";
 import { conferirPlacar, conferirPreditivos } from "../src/index.ts";
 import { cadastro, noite } from "./noite-2022.ts";
 import { ms, replay, lugares, TABELAS, BASES } from "./replay.ts";
@@ -95,6 +103,23 @@ describe("as chaves de publicação e os avisos prontos, pelo arquivo de control
     const pesos = entre("2022-10-30 17:05:40", "2022-10-30 17:26:00").map((x) => x.pesoDasPesquisas);
     expect(pesos.length).toBeGreaterThan(50);
     expect(pesos.filter((p) => p !== null)).toEqual([]);
+  });
+
+  it("o arquivo do simulador perde o agregado sem a base com pesquisas, e a apuração sem a projeção, em até 2 rodadas", () => {
+    const doSimulador = r.gravacoes
+      .filter((g) => g.caminho === "simulador.json")
+      .map((g) => ({ ...(g.conteudo as ArquivoDoSimuladorAoVivo), quando: g.quando }));
+    const entreAs = (de: number, ate: number) => doSimulador.filter((s) => s.quando >= de && s.quando < ate);
+    const comAsDuas = entreAs(ms("2022-10-30 17:00:21"), ms("2022-10-30 17:02:00"));
+    const semPesquisas = entreAs(ms("2022-10-30 17:02:00") + DUAS_RODADAS, ms("2022-10-30 17:05:00"));
+    const semProjecao = entreAs(ms("2022-10-30 17:05:00"), Infinity);
+    expect(comAsDuas.length).toBeGreaterThan(0);
+    expect(comAsDuas.filter((s) => !s.apuracao || !s.agregado)).toEqual([]);
+    expect(semPesquisas.length).toBeGreaterThan(0);
+    expect(semPesquisas.filter((s) => !s.apuracao || s.agregado)).toEqual([]);
+    // Regravado uma vez só com a assinatura, ele não muda mais até a projeção voltar.
+    expect(semProjecao.map((s) => Object.keys(s))).toEqual([["assinatura", "quando"]]);
+    expect(semProjecao[0]!.quando).toBeLessThan(ms("2022-10-30 17:05:00") + DUAS_RODADAS);
   });
 
   it("o aviso pronto entra e sai do arquivo de rodada nas rodadas escolhidas", () => {

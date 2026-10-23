@@ -21,6 +21,7 @@ import {
   emOrdem,
   pontoDaCurvaReal,
   type ArquivoDoMapa,
+  type ArquivoDoSimuladorAoVivo,
   type BaseDaProjecao,
   type Fase,
   type PontoDaCurvaReal,
@@ -272,7 +273,7 @@ interface ArquivoAoVivo {
   conteudo: () => object;
   /** O lugar que ele deixa de ter por gravar, quando vai ou não mudou. */
   lugar?: string;
-  /** Com a trava de 90%, vai no máximo a cada 5 min: os municípios e o mapa.json. */
+  /** Com a trava de 90%, vai no máximo a cada 5 min: os municípios, o mapa.json e o arquivo do simulador. */
   aCadaCincoMinutos?: boolean;
 }
 
@@ -694,12 +695,13 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   }
 
   /**
-   * Grava o que mudou, no teto de gravações por rodada e, com a trava de 90%, cada município e o mapa.json no máximo a
-   * cada 5 min (Volume de gravações na noite, decisão 5). O excedente fica para a rodada seguinte, nesta ordem: o arquivo
-   * de rodada, o Brasil, as UFs e o Exterior, as tabelas de projeções com os municípios delas, o mapa.json e os
-   * municípios, os que esperam há mais tempo primeiro (a ordem em que ficaram por gravar). O mapa.json e os municípios
-   * das tabelas, que a decisão não diz, vão com o que é de todo lugar: o mapa.json é um só arquivo, e sem os municípios
-   * das tabelas a página do município fica sem a projeção.
+   * Grava o que mudou, no teto de gravações por rodada e, com a trava de 90%, cada município, o mapa.json e o arquivo do
+   * simulador no máximo a cada 5 min (Volume de gravações na noite, decisão 5). O excedente fica para a rodada seguinte,
+   * nesta ordem: o arquivo de rodada, o Brasil, as UFs e o Exterior, as tabelas de projeções com os municípios delas, o
+   * mapa.json, o arquivo do simulador e os municípios, os que esperam há mais tempo primeiro (a ordem em que ficaram por
+   * gravar). O mapa.json, o arquivo do simulador e os municípios das tabelas, que a decisão não diz, vão com o que é de
+   * todo lugar: os dois primeiros são um arquivo só cada, e sem os municípios das tabelas a página do município fica sem
+   * a projeção.
    */
   async function publicar(d: Divulgacao) {
     const doBrasil = brasil(d);
@@ -752,10 +754,10 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
       .filter((a) => a.tipo !== "municipio")
       .sort((a, b) => TIPOS[a.tipo].ordem - TIPOS[b.tipo].ordem)
       .map(aoVivoDoLugar);
-    // A tabela de projeções de cada UF e do Exterior e o mapa.json são montados a cada rodada, e só os bytes que mudam vão
-    // ao destino. Sem a projeção no ar, a tabela vai vazia. Os municípios da tabela, com as comparações, não mudam na
-    // noite: com a projeção no ar, são gravados uma vez. Na retomada do objeto da noite, nada disso até o coletor pedir de
-    // novo todos os lugares.
+    // A tabela de projeções de cada UF e do Exterior, o mapa.json e o arquivo do simulador são montados a cada rodada, e só
+    // os bytes que mudam vão ao destino. Sem a projeção no ar, a tabela vai vazia, e o arquivo do simulador, só com a
+    // assinatura. Os municípios da tabela, com as comparações, não mudam na noite: com a projeção no ar, são gravados uma
+    // vez. Na retomada do objeto da noite, nada disso até o coletor pedir de novo todos os lugares.
     if (!aPedirDeNovo) {
       const comPesquisas = controle.chaves.baseComPesquisas;
       for (const uf of d.ufs) {
@@ -780,6 +782,20 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
             noAr && projecaoDasUfs(d, noAr, comPesquisas),
           ),
       });
+      if (projecaoDaNoite) {
+        // O simulador vai ao ar com a projeção, depois das 17h, e com a chave dele, que só vale com a da projeção.
+        const doSimulador = controle.chaves.simulador ? noAr : undefined;
+        const agregado = doSimulador && comPesquisasNoAr() ? opcoes.projecao!.agregado : undefined;
+        arquivos.push({
+          caminho: "simulador.json",
+          aCadaCincoMinutos: true,
+          conteudo: (): ArquivoDoSimuladorAoVivo => ({
+            assinatura: projecaoDaNoite.assinatura,
+            ...(doSimulador ? { apuracao: doSimulador.apuracao } : {}),
+            ...(agregado ? { agregado: { valor: agregado.valor, incerteza: agregado.incerteza } } : {}),
+          }),
+        });
+      }
     }
     arquivos.push(...lugares.filter((a) => a.tipo === "municipio").map(aoVivoDoLugar));
 

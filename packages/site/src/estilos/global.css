@@ -1718,6 +1718,12 @@ a {
   opacity: 0.5;
 }
 
+.amostra-solida {
+  height: 0;
+  border-top: 2px solid var(--texto-suave);
+  vertical-align: 3px;
+}
+
 .sim-botao,
 .sim-pronta {
   border: 1px solid var(--borda-forte);

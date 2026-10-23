@@ -39,6 +39,13 @@ describe("o site do ensaio geral", () => {
     expect(brasil).not.toContain(AMBIENTES.producao.planoB.endereco);
   });
 
+  it("a tela do simulador lê os mesmos arquivos ao vivo do ensaio, para passar ao ao vivo às 17h", () => {
+    const simulador = ler(DIST_ENSAIO, "simulador/index.html");
+    expect(simulador).toContain(AMBIENTES.ensaio.endereco);
+    expect(simulador).toContain(AMBIENTES.ensaio.planoB.endereco);
+    expect(simulador).not.toContain(AMBIENTES.producao.endereco);
+  });
+
   it("mostra antes das 17h o agregado de 2022, congelado na véspera de 30/10, com as 12 pesquisas finais", () => {
     const agregado = texto(elemento(brasil, /<section[^>]*data-bloco="agregado-de-pesquisas"/));
     expect(agregado).toContain("JAIR BOLSONARO 49,0%");

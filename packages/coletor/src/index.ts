@@ -13,9 +13,11 @@ export { placarDoArquivoDoTse, type PlacarDoTse } from "./placar-conferido.ts";
 export { type ConexaoDoComputador } from "./conexao.ts";
 export { enviarAoNtfy, type MensagemDoNtfy } from "./ntfy.ts";
 export {
+  type ApuracaoEmColunas,
   type ArquivoDeRodada,
   type ArquivoDoLugar,
   type ArquivoDoMapa,
+  type ArquivoDoSimuladorAoVivo,
   type BaseDaProjecao,
   type ColunasDaBase,
   type Fase,
