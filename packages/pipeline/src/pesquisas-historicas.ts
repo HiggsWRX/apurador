@@ -1,4 +1,4 @@
-import { agregadoDaVespera, ELEICAO_DE_2026, type Agregado, type EleicaoPassada, type PesquisaDoAgregado } from "@apurador/modelo";
+import { agregadoDaVespera, ELEICAO_DE_2026, type Agregado, type EleicaoDoAgregado, type EleicaoPassada, type PesquisaDoAgregado } from "@apurador/modelo";
 import { ehData, ehDecimal, lerTabela, naoVazio } from "./csv.ts";
 import type { ResultadoHistorico } from "./resultados-historicos.ts";
 
@@ -115,6 +115,22 @@ export function eleicoesPassadas(pesquisas: readonly PesquisaHistorica[], result
 }
 
 /**
+ * As pesquisas de uma noite passada como o agregado as lê, no primeiro dos finalistas dados, com a eleição delas: o dia
+ * dela e a incerteza da noite de 2026. O agregado da noite e a tendência do painel de antes das 17h do ensaio geral partem daqui.
+ */
+export function pesquisasDaNoitePassada(
+  pesquisas: readonly PesquisaHistorica[],
+  resultados: readonly ResultadoHistorico[],
+  noite: { ano: number; turno: number },
+  finalistas: readonly [number, number],
+): { pesquisas: PesquisaDoAgregado[]; eleicao: EleicaoDoAgregado } {
+  exigirResultados(pesquisas, resultados);
+  const resultado = resultados.find((r) => r.ano === noite.ano && r.turno === noite.turno);
+  if (!resultado) throw new Error(`${noite.ano}, ${noite.turno}º turno: sem resultado em resultados-historicos.json`);
+  return { pesquisas: pesquisasDaEleicao(pesquisas, resultado, finalistas), eleicao: { dia: resultado.dia, incerteza: ELEICAO_DE_2026.incerteza } };
+}
+
+/**
  * O agregado de uma noite passada, congelado na véspera (o do dia da eleição), no primeiro dos finalistas dados, que
  * são os da base da noite: o replay, a calibração e o ensaio geral partem dele. A incerteza é a da noite de 2026.
  */
@@ -124,10 +140,8 @@ export function agregadoDaNoite(
   noite: { ano: number; turno: number },
   finalistas: readonly [number, number],
 ): Agregado {
-  exigirResultados(pesquisas, resultados);
-  const resultado = resultados.find((r) => r.ano === noite.ano && r.turno === noite.turno);
-  if (!resultado) throw new Error(`${noite.ano}, ${noite.turno}º turno: sem resultado em resultados-historicos.json`);
-  return agregadoDaVespera(pesquisasDaEleicao(pesquisas, resultado, finalistas), resultado.dia, ELEICAO_DE_2026.incerteza);
+  const daNoite = pesquisasDaNoitePassada(pesquisas, resultados, noite, finalistas);
+  return agregadoDaVespera(daNoite.pesquisas, daNoite.eleicao.dia, daNoite.eleicao.incerteza);
 }
 
 /** Toda pesquisa tem de ser de uma eleição com resultado: um ano digitado errado não some da conta calado. */

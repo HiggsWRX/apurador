@@ -1,7 +1,7 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "dist-chaves-desligadas", "dist-projecao-desligada"],
+  "exclude": ["dist", "dist-chaves-desligadas", "dist-projecao-desligada", "dist-ensaio"],
   "compilerOptions": {
     "noUncheckedIndexedAccess": true,
     "jsx": "react-jsx",

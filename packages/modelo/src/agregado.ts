@@ -100,11 +100,14 @@ export function agregadoDePesquisas(pesquisas: readonly PesquisaDoAgregado[], di
   };
 }
 
-/** A tendência: o agregado de cada dia, desde 05/10 até o dia dado, com a mesma regra. Os dias sem pesquisa ficam de fora. */
-export function tendenciaDoAgregado(pesquisas: readonly PesquisaDoAgregado[], ate: string): Agregado[] {
+/**
+ * A tendência: o agregado de cada dia, do dia seguinte ao 1º turno (05/10, salvo outro) até o dia dado, com a mesma
+ * regra. Os dias sem pesquisa ficam de fora. A eleição é a de 2026, salvo outra, como a do ensaio geral, em 2022.
+ */
+export function tendenciaDoAgregado(pesquisas: readonly PesquisaDoAgregado[], ate: string, eleicao = ELEICAO_DE_2026, desde = INICIO_DO_2O_TURNO): Agregado[] {
   const tendencia: Agregado[] = [];
-  for (let dia = INICIO_DO_2O_TURNO; dia <= ate; dia = somarDias(dia, 1)) {
-    const agregado = agregadoDePesquisas(pesquisas, dia);
+  for (let dia = desde; dia <= ate; dia = somarDias(dia, 1)) {
+    const agregado = agregadoDePesquisas(pesquisas, dia, eleicao);
     if (agregado) tendencia.push(agregado);
   }
   return tendencia;

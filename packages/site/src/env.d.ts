@@ -8,4 +8,6 @@ interface ImportMetaEnv {
   readonly PUBLIC_AO_VIVO?: string;
   /** O endereço do Worker do plano B, com a barra no fim. Sem PUBLIC_AO_VIVO (sem domínio), é o único que a ilha lê. */
   readonly PUBLIC_AO_VIVO_PLANO_B?: string;
+  /** "1" no build do site do ensaio geral (`ensaio/astro.config.mjs`). */
+  readonly PUBLIC_ENSAIO?: string;
 }

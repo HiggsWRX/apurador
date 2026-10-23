@@ -1,7 +1,7 @@
 ---
 import { formatarPctComCasas } from "../lib/formato";
 import { corDoPartido, nomeCurto, type Cor } from "../lib/identidade";
-import { FINALISTAS } from "../lib/pesquisas";
+import { PESQUISAS_DE_2026 } from "../lib/pesquisas";
 
 // O diagrama da transferência de votos (Página de metodologia, decisão 2, gráfico extra): um exemplo com números
 // redondos, como o `svgTransf` do protótipo. Num município, o 1º turno deu 46% a cada finalista e 8% aos eliminados;
@@ -13,7 +13,7 @@ const ALTURA = 150;
 const BARRA = 26;
 const ELIMINADOS = 8;
 const PARA_O_PRIMEIRO = 0.6;
-const [primeiro, segundo] = FINALISTAS.map((c) => ({ nome: nomeCurto(c.nomeUrna), cor: corDoPartido(c.partido) })) as [
+const [primeiro, segundo] = PESQUISAS_DE_2026.finalistas.map((c) => ({ nome: nomeCurto(c.nomeUrna), cor: corDoPartido(c.partido) })) as [
   { nome: string; cor: Cor },
   { nome: string; cor: Cor },
 ];

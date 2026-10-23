@@ -1,6 +1,6 @@
 import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { criarTseFalso, relogioAcelerado, relogioDoReplay, relogioManual, ritmoDesde } from "../src/index.ts";
+import { criarTseFalso, momentoReal, relogioAcelerado, relogioDoReplay, relogioManual, ritmoDesde } from "../src/index.ts";
 import { cadastro, instante, noite } from "./noite-2022.ts";
 
 // O relógio do TSE falso: no ensaio geral, 3x das 16:50 às 20:30 de 2022 e 30x até a totalização final
@@ -46,6 +46,22 @@ describe("o relógio do ensaio geral", () => {
     expect(
       hora(relogioAcelerado({ partida, ritmo: ritmoDesde(instante("2022-10-30 22:00:00")), agoraReal: () => partida + minutos(1) }).agora().instante),
     ).toBe("22:30:00");
+  });
+
+  it("diz a hora real em que a noite chega a um instante, para o atraso medido de fora", () => {
+    const real = (dataHora: string, ritmo?: Parameters<typeof momentoReal>[0]["ritmo"]) => momentoReal({ partida, ritmo }, instante(dataHora));
+
+    expect(real("2022-10-30 16:50:00")).toBe(partida);
+    // 10 min da noite a 3x são 3 min 20 s.
+    expect(real("2022-10-30 17:00:00")).toBe(partida + minutos(3) + 20_000);
+    expect(real("2022-10-30 20:30:00")).toBe(partida + minutos(73) + 20_000);
+    // Depois das 20:30, 30 min da noite são 1 min.
+    expect(real("2022-10-30 21:00:00")).toBe(partida + minutos(74) + 20_000);
+    expect(real("2022-10-30 18:40:00", [{ desde: instante("2022-10-30 18:30:00"), velocidade: 1 }])).toBe(partida + minutos(10));
+  });
+
+  it("antes do começo do ritmo, a hora real é a partida: o arquivo já estava lá", () => {
+    expect(momentoReal({ partida }, instante("2022-10-30 08:00:00"))).toBe(partida);
   });
 
   it("aceita outro ritmo, como o trecho de 30 min a 1x das 18:30 às 19:00", () => {

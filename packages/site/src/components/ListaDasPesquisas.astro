@@ -1,17 +1,19 @@
 ---
 import { dataEmBrasilia } from "@apurador/modelo";
 import { finalistas, type Modo } from "@apurador/pipeline";
+import { ENSAIO } from "../lib/ensaio";
 import { formatarData, formatarNumero } from "../lib/formato";
-import { EXTRATO, PESQUISAS, TURNO } from "../lib/pesquisas";
+import { EXTRATO, PESQUISAS, PESQUISAS_DO_ENSAIO, TURNO } from "../lib/pesquisas";
 
 // A lista das pesquisas nacionais do 2º turno, cada uma com os seis dados do art. 10 da Res. 23.600 e o link
 // para a fonte. Uma linha do pesquisas.csv que não bata com o extrato do TSE quebra o build: nunca vai ao ar.
 // Recolhida abaixo do agregado; aberta quando o agregado está desligado (Consulta a advogado eleitoral, decisão 2).
+// No build do ensaio geral, a lista é a das pesquisas finais do 2º turno de 2022 que o agregado do ensaio usa, sem as
+// retiradas, com o que o histórico das pesquisas guarda de cada uma (Ensaio geral, decisões 3 e 12).
 interface Props {
   aberta?: boolean;
 }
 const { aberta = false } = Astro.props;
-const pesquisas = [...PESQUISAS].sort((a, b) => b.campoFim.localeCompare(a.campoFim) || b.divulgacao.localeCompare(a.divulgacao));
 // Sempre na mesma ordem, a alfabética.
 const candidatos = TURNO.candidatos.filter((c) => finalistas(TURNO).includes(c.numero)).sort((a, b) => a.nomeUrna.localeCompare(b.nomeUrna));
 
@@ -19,20 +21,76 @@ const pct = (n: number) => `${formatarNumero(n)}%`;
 const margem = (n: number) => `${formatarNumero(n)} ${n < 2 ? "ponto percentual" : "pontos percentuais"}`;
 const MODOS: Record<Modo, string> = { presencial: "presenciais", telefone: "por telefone", internet: "pela internet", misto: "por mais de um meio" };
 const conferidoEm = dataEmBrasilia(new Date(EXTRATO.fonte.conferidoEm));
+
+/** Uma pesquisa como a lista a mostra. */
+interface Linha {
+  chave: string;
+  instituto: string;
+  votos: Map<number, number>;
+  outros: string[];
+  ficha: string[];
+  divulgacao: string | null;
+  fonte: string;
+}
+const periodo = (p: { campoInicio: string; campoFim: string }) => `Período de coleta: ${formatarData(p.campoInicio)} a ${formatarData(p.campoFim)}`;
+const linhas: Linha[] = ENSAIO
+  ? [...PESQUISAS_DO_ENSAIO]
+      .sort((a, b) => b.campoFim.localeCompare(a.campoFim) || (b.divulgacao ?? "").localeCompare(a.divulgacao ?? ""))
+      .map((p) => ({
+        chave: p.registro ?? `${p.instituto}, campo até ${p.campoFim}`,
+        instituto: p.instituto,
+        votos: p.votos,
+        outros: [],
+        ficha: [
+          periodo(p),
+          ...(p.entrevistas === null ? [] : [`Entrevistas: ${formatarNumero(p.entrevistas)}`]),
+          ...(p.contratante === null ? [] : [`Contratante: ${p.contratante}`]),
+          ...(p.registro === null ? [] : [`Registro no TSE: ${p.registro}`]),
+        ],
+        divulgacao: p.divulgacao,
+        fonte: p.fonte,
+      }))
+  : [...PESQUISAS]
+      .sort((a, b) => b.campoFim.localeCompare(a.campoFim) || b.divulgacao.localeCompare(a.divulgacao))
+      .map((p) => ({
+        chave: p.registro,
+        instituto: p.instituto,
+        votos: p.votos,
+        outros: [
+          ...(p.brancosNulos === null ? [] : [`Brancos e nulos ${pct(p.brancosNulos)}`]),
+          ...(p.indecisos === null ? [] : [`Indecisos ${pct(p.indecisos)}`]),
+        ],
+        ficha: [
+          periodo(p),
+          `Entrevistas: ${formatarNumero(p.entrevistas)}, ${MODOS[p.modo]}`,
+          `Margem de erro: ${margem(p.margem)}, para mais ou para menos`,
+          `Nível de confiança: ${pct(p.confianca)}`,
+          `Contratante: ${p.contratante}`,
+          `Registro no TSE: ${p.registro}`,
+        ],
+        divulgacao: p.divulgacao,
+        fonte: p.fonte,
+      }));
 ---
 
 <section class="pesquisas" id="pesquisas-registradas" data-bloco="lista-das-pesquisas">
   <details open={aberta}>
     <summary>
-      <h2>Pesquisas registradas no TSE ({pesquisas.length})</h2>
+      <h2>
+        {ENSAIO ? "Pesquisas do 2º turno de 2022" : "Pesquisas registradas no TSE"} ({linhas.length})
+      </h2>
     </summary>
-    <p class="nota">
-      Pesquisas nacionais do 2º turno, de institutos que fizeram pesquisa final no 2º turno de 2018 ou de 2022, conferidas no registro do TSE em{" "}
-      {formatarData(conferidoEm)}. Votos totais, como a fonte divulgou.
-    </p>
+    {ENSAIO ? (
+      <p class="nota">As pesquisas finais do 2º turno de 2022 que o agregado do ensaio usa, como a fonte de cada uma divulgou.</p>
+    ) : (
+      <p class="nota">
+        Pesquisas nacionais do 2º turno, de institutos que fizeram pesquisa final no 2º turno de 2018 ou de 2022, conferidas no registro do TSE em{" "}
+        {formatarData(conferidoEm)}. Votos totais, como a fonte divulgou.
+      </p>
+    )}
     <ol>
-      {pesquisas.map((p) => (
-        <li data-pesquisa={p.registro}>
+      {linhas.map((p) => (
+        <li data-pesquisa={p.chave}>
           <h3>{p.instituto}</h3>
           <p class="votos">
             {candidatos.map((c) => (
@@ -40,23 +98,18 @@ const conferidoEm = dataEmBrasilia(new Date(EXTRATO.fonte.conferidoEm));
                 {c.nomeUrna} <strong>{pct(p.votos.get(c.numero)!)}</strong>
               </span>
             ))}
-            {p.brancosNulos !== null && <span>Brancos e nulos {pct(p.brancosNulos)}</span>}
-            {p.indecisos !== null && <span>Indecisos {pct(p.indecisos)}</span>}
+            {p.outros.map((o) => (
+              <span>{o}</span>
+            ))}
           </p>
           <ul class="ficha">
-            <li>
-              Período de coleta: {formatarData(p.campoInicio)} a {formatarData(p.campoFim)}
-            </li>
-            <li>
-              Entrevistas: {formatarNumero(p.entrevistas)}, {MODOS[p.modo]}
-            </li>
-            <li>Margem de erro: {margem(p.margem)}, para mais ou para menos</li>
-            <li>Nível de confiança: {pct(p.confianca)}</li>
-            <li>Contratante: {p.contratante}</li>
-            <li>Registro no TSE: {p.registro}</li>
+            {p.ficha.map((f) => (
+              <li>{f}</li>
+            ))}
           </ul>
           <p class="fonte">
-            Divulgada em {formatarData(p.divulgacao)}. <a href={p.fonte}>Fonte</a>
+            {p.divulgacao && `Divulgada em ${formatarData(p.divulgacao)}. `}
+            <a href={p.fonte}>Fonte</a>
           </p>
         </li>
       ))}

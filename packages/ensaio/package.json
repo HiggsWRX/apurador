@@ -9,7 +9,9 @@
   "scripts": {
     "tse-falso": "tsx src/servir.ts",
     "calibracao": "tsx src/calibrar.ts",
-    "noite-local": "tsx src/noite-local.ts"
+    "noite-local": "tsx src/noite-local.ts",
+    "ler-ensaio": "tsx src/ler-ensaio.ts",
+    "conferir-ensaio": "tsx src/conferir-ensaio.ts"
   },
   "dependencies": {
     "@apurador/coletor": "*",

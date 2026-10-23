@@ -5,12 +5,15 @@ import "../estilos/global.css";
 import BotaoDoTema from "../components/BotaoDoTema.astro";
 import Busca from "../components/Busca.astro";
 import Rodape from "../components/Rodape.astro";
+import { ENSAIO, TARJA_DO_ENSAIO } from "../lib/ensaio";
 import { TOKEN_DO_WEB_ANALYTICS } from "../lib/projeto";
 
 interface Props {
   titulo: string;
 }
 const { titulo } = Astro.props;
+// No build do ensaio geral (Ensaio geral, decisão 5): `noindex` em toda página, também no `_headers` do Worker dele, a
+// tarja dentro do topo, que fica sempre na tela e entra em qualquer print, e nenhuma visita contada na audiência do site.
 ---
 
 <!doctype html>
@@ -19,7 +22,8 @@ const { titulo } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <title>{titulo} · Apurador</title>
+    {ENSAIO && <meta name="robots" content="noindex, nofollow" />}
+    <title>{ENSAIO ? `Ensaio · ${titulo} · Apurador` : `${titulo} · Apurador`}</title>
     <script is:inline>
       // Antes de pintar: o tema escolhido no botão (se houver) e a marca de que há JavaScript.
       document.documentElement.classList.add("js");
@@ -35,6 +39,11 @@ const { titulo } = Astro.props;
       Pular para o conteúdo
     </a>
     <header class="topo">
+      {ENSAIO && (
+        <p class="tarja-do-ensaio" role="note" data-bloco="tarja-do-ensaio">
+          {TARJA_DO_ENSAIO}
+        </p>
+      )}
       <div class="topo-linha">
         <a class="marca" href="/">
           Apurador
@@ -48,11 +57,13 @@ const { titulo } = Astro.props;
     </main>
     <Rodape />
     <!-- A audiência, no Cloudflare Web Analytics: sem cookies, e nenhum outro rastreador. -->
-    <script
-      is:inline
-      defer
-      src="https://static.cloudflareinsights.com/beacon.min.js"
-      data-cf-beacon={JSON.stringify({ token: TOKEN_DO_WEB_ANALYTICS })}
-    ></script>
+    {!ENSAIO && (
+      <script
+        is:inline
+        defer
+        src="https://static.cloudflareinsights.com/beacon.min.js"
+        data-cf-beacon={JSON.stringify({ token: TOKEN_DO_WEB_ANALYTICS })}
+      ></script>
+    )}
   </body>
 </html>
