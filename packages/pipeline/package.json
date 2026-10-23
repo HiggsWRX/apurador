@@ -14,10 +14,12 @@
     "conferir": "tsx src/conferir.ts",
     "conferir-pesquisas": "tsx src/conferir-pesquisas.ts",
     "cadastros": "tsx src/gerar-cadastros.ts",
-    "fotos": "tsx src/gerar-fotos.ts"
+    "fotos": "tsx src/gerar-fotos.ts",
+    "malha": "tsx src/gerar-malha.ts"
   },
   "dependencies": {
     "@apurador/modelo": "*",
-    "@apurador/tse": "*"
+    "@apurador/tse": "*",
+    "mapshaper": "^0.7.98"
   }
 }

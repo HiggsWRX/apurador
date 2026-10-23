@@ -25,7 +25,10 @@ export interface LinhaDoBuild {
 
 /** A tabela de lugares de um lugar, como o build a escreve (`/tabela-de-lugares/<id>.json`): só o Brasil, as UFs e o Exterior têm. */
 export interface ArquivoDaTabelaDeLugares {
-  /** O lugar cujos lugares abaixo a tabela traz: `BR`, uma UF ou `ZZ`. */
+  /**
+   * O lugar cujos lugares abaixo a tabela traz: `BR`, uma UF ou `ZZ`; ou `TODOS_OS_MUNICIPIOS`, a junção das tabelas das
+   * UFs que o mapa do Brasil por municípios monta, sem tabela de projeções.
+   */
   lugar: string;
   /** A assinatura dos lugares do site com que o build foi feito: o mapa.json tem de ter a mesma. */
   assinatura: string;
@@ -33,6 +36,9 @@ export interface ArquivoDaTabelaDeLugares {
   candidatos: { nome: string; partido: string }[];
   linhas: LinhaDoBuild[];
 }
+
+/** O `lugar` da junção das tabelas das 27 UFs, com todos os municípios do Brasil: o build não tem uma tabela assim. */
+export const TODOS_OS_MUNICIPIOS = "municipios";
 
 /** O caminho da tabela de lugares do lugar no site. */
 export const caminhoDaTabelaDeLugares = (lugar: string) => `/tabela-de-lugares/${lugar}.json`;

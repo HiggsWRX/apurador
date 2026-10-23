@@ -159,7 +159,7 @@ describe("manifesto de origem", () => {
     for (const d of manifesto.derivados) expect(sha256(ler(d.arquivo)), d.arquivo).toBe(d.sha256);
   });
 
-  it("diz de que arquivo do TSE, de que data de geração e com que hash veio cada derivado", () => {
+  it("diz de que arquivo do TSE (ou do IBGE), de que data de geração e com que hash veio cada derivado", () => {
     for (const d of manifesto.derivados) {
       expect(d.fontes.length).toBeGreaterThan(0);
       for (const url of d.fontes) {
@@ -174,8 +174,10 @@ describe("manifesto de origem", () => {
         const fotoDaDivulgacao =
           /^https:\/\/resultados\.tse\.jus\.br\/oficial\/.+\/fotos\/br\/\d+\.jpeg$/.test(fonte!.url) && fonte!.url.endsWith(`/${fonte!.membro}`);
         const fotoDoPortal = /^https:\/\/cdn\.tse\.jus\.br\/.+\.zip#FBR\d+_div\.jpe?g$/.test(fonte!.url) && fonte!.url.endsWith(`#${fonte!.membro}`);
-        expect(doPortal || daDivulgacao || fotoDaDivulgacao || fotoDoPortal, url).toBe(true);
-        if (!d.arquivo.startsWith("fotos/")) expect(fonte!.geracao.length).toBeGreaterThan(0);
+        // A malha do mapa: o .shp de dentro do zip do IBGE, que não tem data de geração.
+        const daMalha = /^https:\/\/geoftp\.ibge\.gov\.br\/.+\.zip$/.test(fonte!.url) && /\.shp$/.test(fonte!.membro);
+        expect(doPortal || daDivulgacao || fotoDaDivulgacao || fotoDoPortal || daMalha, url).toBe(true);
+        if (!d.arquivo.startsWith("fotos/") && !d.arquivo.startsWith("malha/")) expect(fonte!.geracao.length).toBeGreaterThan(0);
         expect(fonte!.sha256).toMatch(/^[0-9a-f]{64}$/);
       }
     }
