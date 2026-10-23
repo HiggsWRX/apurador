@@ -657,6 +657,136 @@ a {
   font-weight: 700;
 }
 
+/* ---------- cartão do mapa: o mapa ---------- */
+
+/* Os controles do cartão (Mapa | Tabela, Estados | Municípios, Placar | Mudança): o escolhido, cheio. */
+.alternancia {
+  display: inline-flex;
+  margin: 0.5rem 0.5rem 0 0;
+  border: 1px solid var(--borda-forte);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.alternancia button {
+  border: 0;
+  background: none;
+  padding: 0.25rem 0.75rem;
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.alternancia button[aria-pressed="true"] {
+  background: var(--texto);
+  color: var(--cartao);
+}
+
+.mapa-dos-lugares {
+  margin-top: 0.5rem;
+}
+
+.mapa-dos-lugares svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 32rem;
+}
+
+/* O canvas guarda a proporção pelo `aspect-ratio` que a ilha põe: com altura máxima, ele esticaria. */
+.mapa-dos-lugares canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mapa-dos-lugares svg,
+.mapa-dos-lugares canvas {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mapa-dos-lugares .lugares path {
+  stroke: var(--cartao);
+  stroke-width: 0.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.mapa-dos-lugares .contorno,
+.mapa-dos-lugares .destaque {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.mapa-dos-lugares .contorno {
+  stroke: var(--texto-suave);
+  stroke-width: 1px;
+}
+
+.mapa-dos-lugares .destaque {
+  stroke: var(--texto);
+  stroke-width: 2px;
+}
+
+.legenda-do-mapa ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.legenda-do-mapa li::before {
+  content: "";
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.25rem;
+  border-radius: 2px;
+  vertical-align: -0.1em;
+  background: var(--trilho);
+}
+
+.legenda-do-mapa li[data-cor="flavio"]::before {
+  background: var(--cor-flavio);
+}
+.legenda-do-mapa li[data-cor="lula"]::before {
+  background: var(--cor-lula);
+}
+
+/* O cartão de um lugar tocado no mapa, embaixo dele. */
+.cartao-do-lugar {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borda);
+  border-radius: 0.5rem;
+  background: var(--fundo);
+  font-size: 0.875rem;
+}
+
+.cartao-do-lugar-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cartao-do-lugar p {
+  margin: 0.25rem 0;
+}
+
+.cartao-do-lugar button {
+  border: 0;
+  background: none;
+  color: var(--texto-suave);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
 /* ---------- painel de antes das 17h: o que esperar da noite e a projeção ---------- */
 
 /* Cada base da projeção tem a sua cópia dos blocos; o controle mostra uma. Sem JavaScript, as duas ficam à vista, cada

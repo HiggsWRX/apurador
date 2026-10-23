@@ -190,10 +190,11 @@ describe("comparação de dois turnos", () => {
 describe("rodapé", () => {
   const rodape = texto(elemento(pagina("/sp/campinas/"), /<footer/));
 
-  it("traz o responsável, a independência, a atribuição do TSE e o aviso sobre a projeção", () => {
+  it("traz o responsável, a independência, a atribuição do TSE e a da malha e o aviso sobre a projeção", () => {
     expect(rodape).toContain("Responsável: Hiago de Oliveira · contato@apurador.org");
     expect(rodape).toContain("independente do TSE, dos candidatos e dos partidos");
     expect(rodape).toMatch(/Fonte: TSE.*CC-BY/);
+    expect(rodape).toContain("Malha: IBGE, Malha Municipal Digital 2024, CC BY 4.0, simplificada pelo Apurador");
     expect(rodape).toContain("Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.");
   });
 

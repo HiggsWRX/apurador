@@ -20,6 +20,7 @@
     "historico": "npm run historico -w @apurador/pipeline --",
     "cadastros": "npm run cadastros -w @apurador/pipeline --",
     "fotos": "npm run fotos -w @apurador/pipeline --",
+    "malha": "npm run malha -w @apurador/pipeline --",
     "tse-falso": "npm run tse-falso -w @apurador/ensaio --",
     "noite-local": "npm run noite-local -w @apurador/ensaio --",
     "ler-ensaio": "npm run ler-ensaio -w @apurador/ensaio --",

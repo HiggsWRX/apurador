@@ -76,6 +76,23 @@ export async function arquivoComCache(url: string, opcoes: { atualizar: boolean 
   return doCache(url, arquivo, meta);
 }
 
+/** O cache da malha do IBGE (`.cache/ibge/`), ao lado do do TSE, dividido pelos worktrees do mesmo jeito. */
+const CACHE_DO_IBGE = new URL("../ibge/", CACHE);
+
+/** O membro `nome` de um zip do IBGE (a malha), do cache ou, se não estiver lá (ou com `atualizar`), da rede. */
+export async function membroDoIbgeComCache(url: string, nome: string, opcoes: { atualizar: boolean }): Promise<FonteBaixada> {
+  const arquivo = new URL(nome, CACHE_DO_IBGE);
+  const meta = new URL(`${nome}.meta.json`, CACHE_DO_IBGE);
+
+  if (opcoes.atualizar || !existsSync(arquivo) || !existsSync(meta)) {
+    const membro = await lerMembroRemoto({ url, membro: (n) => n === nome });
+    mkdirSync(CACHE_DO_IBGE, { recursive: true });
+    writeFileSync(arquivo, membro.dados);
+    writeFileSync(meta, JSON.stringify({ url, membro: membro.nome, baixadoEm: new Date().toISOString() }, null, 2));
+  }
+  return doCache(url, arquivo, meta);
+}
+
 function doCache(url: string, arquivo: URL, meta: URL): FonteBaixada {
   // Uma vista sobre o mesmo buffer, sem cópia: os arquivos por seção têm centenas de MB.
   const lido = readFileSync(arquivo);
