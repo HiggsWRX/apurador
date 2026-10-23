@@ -518,6 +518,7 @@ Não há código de produção ainda. As referências são:
   - criar o e-mail do projeto antes de 22/10;
   - gravar os secrets `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` no GitHub;
   - criar as chaves de escrita só nos buckets de produção (`apurador-ao-vivo`) e do ensaio, e colá-las no `.env` do coletor;
+  - antes do ensaio 2 (23/10), as chaves dos buckets privados dos objetos da noite: os buckets `apurador-noite` (produção) e `apurador-ensaio-noite` (ensaio), sem domínio, foram criados em 22/10; faltam as chaves, uma "Object Read & Write" só em cada um, coladas no `.env` do coletor (`R2_NOITE_*` e `R2_ENSAIO_NOITE_*`; passos em `packages/coletor/cloudflare/README.md`, "Os objetos da noite");
   - preparar o computador até 21/10;
   - instalar o ntfy, criar o tópico e colá-lo no `.env` do coletor, e ligar a sentinela (KV, deploy e segredo, em `packages/coletor/cloudflare/README.md`). Em 22/10, o tópico já está no `.env` e o alerta de teste foi aceito pelo ntfy. Faltam assinar o tópico no app do celular, criar o KV e colar o `id` no `sentinela.jsonc`, e publicar as duas sentinelas, a do ensaio e a da noite, cada uma com o tópico como segredo;
   - medir o nobreak;
