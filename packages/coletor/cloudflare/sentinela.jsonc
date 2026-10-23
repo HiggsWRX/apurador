@@ -16,14 +16,14 @@
   "triggers": { "crons": ["* * * * *"] },
   // A raiz principal e a do plano B (AMBIENTES, em packages/coletor/src/ambientes.ts), separadas por espaço.
   "vars": { "ENDERECOS": "https://ao-vivo.apurador.org/ https://apurador-plano-b.hicampos93.workers.dev/" },
-  "kv_namespaces": [{ "binding": "ESTADO", "id": "COLE-AQUI-O-ID-DO-KV" }],
+  "kv_namespaces": [{ "binding": "ESTADO", "id": "2a57d7c6aac94cd093b0ca54e3bb305f" }],
   "env": {
     "ensaio": {
       "name": "apurador-sentinela-ensaio",
       "triggers": { "crons": ["* * * * *"] },
       "vars": { "ENDERECOS": "https://ao-vivo-ensaio.apurador.org/ https://apurador-ensaio-plano-b.hicampos93.workers.dev/" },
       // O mesmo KV: a chave guarda a hora da rodada alertada, que nunca é a mesma no ensaio e na noite.
-      "kv_namespaces": [{ "binding": "ESTADO", "id": "COLE-AQUI-O-ID-DO-KV" }],
+      "kv_namespaces": [{ "binding": "ESTADO", "id": "2a57d7c6aac94cd093b0ca54e3bb305f" }],
     },
   },
 }
