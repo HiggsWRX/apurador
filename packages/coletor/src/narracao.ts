@@ -110,6 +110,8 @@ export interface Narracao {
   doLugar(id: string): EventoDaNarracao[];
   /** Os eventos do Brasil que entram, intercalados, nas narrações das UFs, do Exterior e dos municípios. */
   doBrasil(): EventoDaNarracao[];
+  /** O estado da narração, para retomá-la depois de uma queda (`criarNarracao(lugares, estado)`). É para serializar já: os eventos são os dela. */
+  estado(): EstadoDaNarracao;
 }
 
 /** Os marcos do Brasil, das UFs e do Exterior; nos municípios, só 50% (decisão 2). */
@@ -183,8 +185,8 @@ const doMaisNovo = (eventos: EventoDaNarracao[]) => [...eventos].reverse().sort(
 const pontoNaCurva = (r: ResultadoDoTse): PontoDaCurvaReal => [r.secoes.percentual, ...emOrdem(r.candidatos).map((c) => c.percentual)];
 
 /** Quem lidera o placar parcial, pelos votos, ou `undefined` num empate ou sem votos. */
-function lider(r: ResultadoDoTse): CandidatoDoResultado | undefined {
-  const [primeiro, segundo] = [...r.candidatos].sort((a, b) => b.votos - a.votos);
+function lider(candidatos: CandidatoDoResultado[]): CandidatoDoResultado | undefined {
+  const [primeiro, segundo] = [...candidatos].sort((a, b) => b.votos - a.votos);
   return primeiro && primeiro.votos > (segundo?.votos ?? 0) ? primeiro : undefined;
 }
 
@@ -221,8 +223,8 @@ interface LugarNarrado {
   nivel: number;
   /** A última totalização do arquivo mais novo visto. */
   visto: string | null;
-  /** O arquivo mais novo visto: o placar parcial de que os preditivos falam. */
-  ultimo: ResultadoDoTse | null;
+  /** Os candidatos do arquivo mais novo visto: o placar parcial de que os preditivos falam. */
+  placar: CandidatoDoResultado[] | null;
   /** As travas dos preditivos em cada base, a partir da primeira rodada com projeção: antes do começo do lugar, só andam. */
   travas: Partial<Record<BaseDaProjecao, Travas>>;
   /** Os eventos preditivos que entraram com a chave ligada e a base deles no ar, na ordem em que entraram. Sem número na curva. */
@@ -239,31 +241,62 @@ interface LugarNarrado {
   eventos: EventoDaNarracao[];
 }
 
-/** A narração de uma noite, com os nomes dos lugares do site. */
-export function criarNarracao(lugares: Lugar[]): Narracao {
+/** Um evento pelo lugar dele e pela ordem dele nos eventos do lugar. */
+type EventoGuardado = [lugar: string, indice: number];
+
+/**
+ * O estado da narração (decisão 11), em JSON: o que o coletor guarda a cada rodada, no disco e no objeto da noite, para
+ * retomar depois de uma queda sem repetir nem inventar eventos. Cada evento vai uma vez, nos eventos do lugar dele, e o
+ * que aponta para ele (a virada aberta, a narração do Brasil, a linha da projeção de um marco) vai pela ordem dele ali:
+ * uma virada reescrita depois da retomada muda também a narração do Brasil.
+ */
+export interface EstadoDaNarracao {
+  /** O que a narração guarda de cada lugar, com a virada aberta pela ordem dela nos eventos do lugar. */
+  lugares: Record<string, Omit<LugarNarrado, "virada"> & { virada: number | null }>;
+  faltam: Record<string, number>;
+  noBrasil: EventoGuardado[];
+  totalizacaoFinal: string | null;
+  ultimoDoBrasil: ResultadoDoTse | null;
+  pesquisasNarradas: boolean;
+  maisNovo: string | null;
+  visiveis: BaseDaProjecao[];
+  /** A linha da projeção de cada marco, com o marco pelo lugar e pela ordem. */
+  linhas: [...EventoGuardado, Partial<Record<BaseDaProjecao, string>>][];
+}
+
+/**
+ * A narração de uma noite, com os nomes dos lugares do site. Com o estado de uma narração (`estado()`), ela continua
+ * dali: nada do que já entrou entra de novo, e o que aconteceu durante a parada não é reconstruído (decisão 11).
+ */
+export function criarNarracao(lugares: Lugar[], estado?: EstadoDaNarracao): Narracao {
   const porId = new Map(lugares.map((l) => [l.id, l]));
-  const narrados = new Map<string, LugarNarrado>();
+  const narrados = new Map<string, LugarNarrado>(
+    Object.entries(estado?.lugares ?? {}).map(([id, l]) => [id, { ...l, virada: l.virada === null ? null : l.eventos[l.virada]! }]),
+  );
+  const guardado = ([lugar, indice]: EventoGuardado) => narrados.get(lugar)!.eventos[indice]!;
   /** As seções que faltam em cada UF e no Exterior, pelo último resultado visto. */
-  const faltam = new Map<string, number>();
+  const faltam = new Map<string, number>(Object.entries(estado?.faltam ?? {}));
   /** Os eventos do próprio Brasil e os das UFs que entram na narração dele, na ordem em que entraram. */
-  const noBrasil: EventoDaNarracao[] = [];
+  const noBrasil: EventoDaNarracao[] = (estado?.noBrasil ?? []).map(guardado);
   /** A hora da totalização final do Brasil, depois da qual a narração não cresce mais (decisão 11). */
-  let totalizacaoFinal: string | null = null;
+  let totalizacaoFinal = estado?.totalizacaoFinal ?? null;
   /** O último arquivo do Brasil que a narração viu: a hora e o ponto de "as pesquisas deixaram de pesar" numa rodada sem ele. */
-  let ultimoDoBrasil: ResultadoDoTse | null = null;
+  let ultimoDoBrasil = estado?.ultimoDoBrasil ?? null;
   /** "As pesquisas deixaram de pesar" entra uma vez na noite (decisão 2), mesmo que as bases deixem de coincidir e voltem. */
-  let pesquisasNarradas = false;
+  let pesquisasNarradas = estado?.pesquisasNarradas ?? false;
   /**
    * A última totalização mais nova de todos os arquivos vistos: a hora de um preditivo numa rodada sem arquivo novo do
    * lugar, quando o que o mudou foi a projeção, que chega dos outros lugares.
    */
-  let maisNovo: string | null = null;
+  let maisNovo = estado?.maisNovo ?? null;
   /** Os lugares com arquivo novo na rodada: um preditivo deles leva a hora desse arquivo, a dos factuais da mesma rodada. */
   const vistosNaRodada = new Set<string>();
   /** As bases cujos preditivos vão ao ar, pela última rodada: nenhuma com a chave desligada. */
-  let visiveis: readonly BaseDaProjecao[] = [];
+  let visiveis: readonly BaseDaProjecao[] = estado?.visiveis ?? [];
   /** A linha da projeção de cada marco que entrou com a chave ligada, nas bases que estavam no ar. */
-  const linhas = new Map<EventoDaNarracao, Partial<Record<BaseDaProjecao, string>>>();
+  const linhas = new Map<EventoDaNarracao, Partial<Record<BaseDaProjecao, string>>>(
+    (estado?.linhas ?? []).map(([lugar, indice, porBase]) => [guardado([lugar, indice]), porBase]),
+  );
 
   /** "As pesquisas deixaram de pesar", na hora e com o % de seções do arquivo do Brasil. */
   const eventoDasPesquisas = (r: ResultadoDoTse): EventoDaNarracao => ({
@@ -326,7 +359,7 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
       );
     }
     if (nivel === FIM && lugar.tipo === "brasil") {
-      const eleito = lider(r);
+      const eleito = lider(r.candidatos);
       return evento(
         "totalizacao-final",
         `Totalização final: ${eleito ? `${nomeCurto(eleito.nomeUrna)} eleito com ${pct(eleito.percentual)} dos votos válidos` : placar(r.candidatos)}.`,
@@ -343,7 +376,7 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
     const narrado: LugarNarrado = narrados.get(id) ?? {
       nivel: SEM_SECOES,
       visto: null,
-      ultimo: null,
+      placar: null,
       travas: {},
       preditivos: [],
       indicacao: false,
@@ -358,7 +391,7 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
     // totalização final, a narração fica como registro.
     if (quando === null || (narrado.visto !== null && quando < narrado.visto) || (totalizacaoFinal !== null && quando > totalizacaoFinal)) return [];
     narrado.visto = quando;
-    narrado.ultimo = r;
+    narrado.placar = r.candidatos;
     vistosNaRodada.add(id);
     if (maisNovo === null || quando > maisNovo) maisNovo = quando;
     if (daUf(lugar)) faltam.set(id, r.secoes.total - r.secoes.totalizadas);
@@ -380,7 +413,7 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
       novos.push(evento);
       if (evento.tipo === "marco") guardarLinha(evento, r, rodada.numeros);
     }
-    const eleito = lider(r);
+    const eleito = lider(r.candidatos);
     if (lugar.tipo === "brasil" && r.indicacao && !narrado.indicacao && eleito) {
       narrado.indicacao = true;
       const texto = `O TSE indica ${nomeCurto(eleito.nomeUrna)} eleito: eleição matematicamente definida, com ${pct(r.secoes.percentual)} das seções totalizadas.`;
@@ -450,8 +483,8 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
     if (travas.durando.rodadas < DURACAO_DO_SINAL) return undefined;
     travas.sinal = sinal;
     travas.durando = null;
-    const frente = narrado.ultimo && lider(narrado.ultimo);
-    const atras = narrado.ultimo?.candidatos.find((c) => c !== frente);
+    const frente = narrado.placar && lider(narrado.placar);
+    const atras = narrado.placar?.find((c) => c !== frente);
     if (!frente || !atras || chanceDeVirada === null) return undefined;
     return `${PROJECAO_DO_APURADOR} ${sinal}. ${nomeCurto(frente.nomeUrna)} à frente no placar parcial; chance de virada de ${nomeCurto(atras.nomeUrna)} ${chanceNoTexto(chanceDeVirada)}.`;
   }
@@ -514,7 +547,7 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
     const comIndicacao = narrados.get("BR")?.indicacao ?? false;
     for (const [id, narrado] of narrados) {
       // Antes do arquivo com hora do lugar, os candidatos são os do Brasil, os mesmos em todo arquivo que o coletor aceita.
-      const candidatos = (narrado.ultimo ?? ultimoDoBrasil)?.candidatos;
+      const candidatos = narrado.placar ?? ultimoDoBrasil?.candidatos;
       if (narrado.nivel === FIM || !candidatos) continue;
       for (const base of BASES) {
         const numeros = daRodada(id, base);
@@ -569,5 +602,19 @@ export function criarNarracao(lugares: Lugar[]): Narracao {
       return doMaisNovo([...(narrados.get(id)?.eventos ?? []), ...preditivos]).map(comLinha);
     },
     doBrasil: () => doMaisNovo(noBrasil.filter((e) => e.lugar === "BR" && DO_BRASIL_NAS_OUTRAS.includes(e.tipo))).map(deOutroLugar),
+    estado() {
+      const guardar = (e: EventoDaNarracao): EventoGuardado => [e.lugar, narrados.get(e.lugar)!.eventos.indexOf(e)];
+      return {
+        lugares: Object.fromEntries([...narrados].map(([id, n]) => [id, { ...n, virada: n.virada === null ? null : n.eventos.indexOf(n.virada) }])),
+        faltam: Object.fromEntries(faltam),
+        noBrasil: noBrasil.map(guardar),
+        totalizacaoFinal,
+        ultimoDoBrasil,
+        pesquisasNarradas,
+        maisNovo,
+        visiveis: [...visiveis],
+        linhas: [...linhas].map(([marco, porBase]) => [...guardar(marco), porBase]),
+      };
+    },
   };
 }

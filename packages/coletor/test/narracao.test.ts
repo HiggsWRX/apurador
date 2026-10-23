@@ -749,3 +749,122 @@ describe("os eventos preditivos", () => {
     expect(textos(preditivos(narracao, "SP"))).toEqual(["19:56 · Projeção do Apurador: chance de vitória de Flávio passa de 90%."]);
   });
 });
+
+describe("a retomada", () => {
+  // Operação na noite, decisão 4, e Narração da noite, decisão 11: o coletor guarda o estado da narração a cada rodada e,
+  // depois de uma queda, cria a narração de novo a partir dele, em JSON, do disco ou do objeto da noite. A noite abaixo
+  // passa por tudo o que a narração guarda: o nível e o líder de cada lugar, a virada aberta reescrita depois da parada,
+  // os eventos das UFs na narração do Brasil, a linha da projeção dos marcos, as travas no meio de um sinal que dura,
+  // os preditivos de uma base fora do ar, "as pesquisas deixaram de pesar", a indicação e a totalização final.
+  const numeros = (sinalDeVirada: SinalDeVirada | null, chanceDeVirada: number | null, chance = 100 - (chanceDeVirada ?? 0)): NumerosDaProjecao => ({
+    projecao: 50.9,
+    margem: 0.6,
+    chance,
+    chanceDeVirada,
+    sinalDeVirada,
+  });
+  const comProjecao = (porLugar: Record<string, NumerosDaProjecao>, chaves: Partial<RodadaDaNarracao> = {}): RodadaDaNarracao => ({
+    coincidemNoBrasil: false,
+    numeros: (id) => porLugar[id],
+    textosPreditivos: true,
+    basesNoAr: ["soApuracao", "comPesquisas"],
+    ...chaves,
+  });
+  const TOTAL = 472027;
+  /** O Brasil num instante, com quem lidera pelos votos (Flávio ou Lula) e o % de Lula. */
+  const brasil = (quando: string, secoes: number, lider: "flavio" | "lula", lula: number, parte: Partial<Parte> = {}): [string, Parte] => [
+    "BR",
+    {
+      quando: `2022-10-30 ${quando}`,
+      secoes: [Math.round((secoes * TOTAL) / 100), TOTAL, secoes],
+      flavio: [lider === "flavio" ? 60_001_000 : 60_000_000, Number((100 - lula).toFixed(2))],
+      lula: [lider === "lula" ? 60_001_000 : 60_000_000, lula],
+      ...parte,
+    },
+  ];
+  const NOITE: [ReturnType<typeof rodada>, RodadaDaNarracao?][] = [
+    [rodada(brasil("17:00:51", 0.02, "flavio", 48.8), ["SP", { quando: "2022-10-30 17:00:40", secoes: [100, 101073, 0.1], flavio: [60, 60], lula: [40, 40] }])],
+    [
+      rodada(
+        brasil("18:10:00", 40.04, "flavio", 48.8),
+        ["SP", { quando: "2022-10-30 18:09:00", secoes: [40000, 101073, 39.58], flavio: [5_540_000, 55.4], lula: [4_460_000, 44.6] }],
+        ["BA", { quando: "2022-10-30 18:09:30", secoes: [600, 1000, 60], flavio: [300, 30], lula: [700, 70] }],
+        ["38490", { quando: "2022-10-30 18:05:00", secoes: [1000, 4370, 22.88], flavio: [60_000, 30.1], lula: [139_000, 69.9] }],
+      ),
+      comProjecao({ BR: numeros("sem sinal de virada", 3), SP: numeros("sem sinal de virada", 10), "38490": numeros("virada possível", 15, 15) }),
+    ],
+    [new Map(), comProjecao({ BR: numeros("virada possível", 22), SP: numeros("sem sinal de virada", 10) })],
+    [
+      rodada(["SP", { quando: "2022-10-30 18:20:10", secoes: [45000, 101073, 44.52], flavio: [6_000_000, 55.1], lula: [4_900_000, 44.9] }]),
+      comProjecao({ BR: numeros("virada possível", 24), SP: numeros("sem sinal de virada", 8) }),
+    ],
+    [rodada(brasil("18:26:53", 50.34, "flavio", 49.57)), comProjecao({ BR: numeros("virada possível", 25), SP: numeros("sem sinal de virada", 5) })],
+    [
+      rodada(
+        brasil("18:42:53", 66.78, "lula", 50.01),
+        ["BA", { quando: "2022-10-30 18:42:00", secoes: [700, 1000, 70], flavio: [800, 53], lula: [710, 47] }],
+        ["38490", { quando: "2022-10-30 18:40:00", secoes: [2200, 4370, 50.34], flavio: [130_000, 30.2], lula: [300_000, 69.8] }],
+      ),
+      comProjecao({ BR: numeros("virada possível", 40), SP: numeros("sem sinal de virada", 5) }),
+    ],
+    [rodada(brasil("18:42:58", 66.85, "flavio", 49.99)), comProjecao({ BR: numeros("virada possível", 41) }, { coincidemNoBrasil: true })],
+    [new Map(), comProjecao({ BR: numeros("virada projetada", 60, 9) }, { basesNoAr: ["soApuracao"] })],
+    [rodada(brasil("18:44:50", 68.32, "lula", 50.0)), comProjecao({ BR: numeros("virada projetada", 61, 9) }, { basesNoAr: ["soApuracao"] })],
+    [new Map(), comProjecao({ BR: numeros("virada projetada", 62, 9) })],
+    [
+      rodada(brasil("19:56:23", 98.2, "lula", 50.8, { indicacao: true }), [
+        "ZZ",
+        { quando: "2022-10-30 19:56:00", secoes: [500, 500, 100], flavio: [400, 40], lula: [600, 60] },
+      ]),
+      comProjecao({ BR: numeros("virada projetada", 99, 1), SP: numeros("sem sinal de virada", 1) }),
+    ],
+    [new Map(), comProjecao({ BR: numeros("virada projetada", 99, 1) }, { textosPreditivos: false })],
+    [rodada(brasil("00:18:04", 100, "lula", 50.9, { quando: "2022-10-31 00:18:04", final: true }))],
+    [rodada(brasil("00:20:00", 100, "flavio", 49.0, { quando: "2022-10-31 00:20:00", final: true }))],
+  ];
+  /** O que sai da narração: a de cada lugar e os eventos do Brasil nas outras páginas. */
+  const retrato = (narracao: ReturnType<typeof criarNarracao>) => ({
+    lugares: Object.fromEntries(LUGARES.map((l) => [l.id, narracao.doLugar(l.id)])),
+    doBrasil: narracao.doBrasil(),
+  });
+
+  it("parada em qualquer rodada e retomada do estado em JSON, narra o resto da noite como a que não parou", () => {
+    const semParar = criarNarracao(LUGARES);
+    // Uma cópia a cada rodada: a virada aberta é reescrita depois, no mesmo evento.
+    const esperado = NOITE.map(([novos, daRodada]) => structuredClone({ mudaram: semParar.narrar(novos, daRodada), ...retrato(semParar) }));
+    // A noite tem de tudo: a virada do Brasil com 3 trocas, a da Bahia, os preditivos nas duas bases e a linha dos marcos.
+    const brasilNoMeio = esperado[9]!.lugares.BR!;
+    expect(brasilNoMeio.filter((e) => e.tipo === "virada").map((e) => [e.lugar, e.trocas])).toEqual([
+      ["BR", 3],
+      ["BA", 1],
+    ]);
+    expect(brasilNoMeio.filter((e) => e.base).map((e) => [e.tipo, e.base])).toContainEqual(["sinal-de-virada", "comPesquisas"]);
+    // Os marcos de 25% e de 50% do Brasil.
+    expect(brasilNoMeio.filter((e) => e.linhaDaProjecao)).toHaveLength(2);
+
+    for (let parada = 1; parada < NOITE.length; parada++) {
+      const antes = criarNarracao(LUGARES);
+      for (const [novos, daRodada] of NOITE.slice(0, parada)) antes.narrar(novos, daRodada);
+      const retomada = criarNarracao(LUGARES, JSON.parse(JSON.stringify(antes.estado())));
+
+      expect(retrato(retomada), `retomada depois da rodada ${parada}`).toEqual(retrato(antes));
+      NOITE.slice(parada).forEach(([novos, daRodada], i) => {
+        expect({ mudaram: retomada.narrar(novos, daRodada), ...retrato(retomada) }, `rodada ${parada + i}, retomada depois da ${parada}`).toEqual(
+          esperado[parada + i],
+        );
+      });
+    }
+  });
+
+  it("guarda de cada lugar só os candidatos do último arquivo, e cada evento uma vez", () => {
+    const narracao = criarNarracao(LUGARES);
+    for (const [novos, daRodada] of NOITE.slice(0, 7)) narracao.narrar(novos, daRodada);
+    const estado = narracao.estado();
+    const texto = JSON.stringify(estado);
+
+    expect(JSON.stringify(estado.lugares)).not.toContain('"eleitorado"');
+    // A virada do Brasil está na lista do Brasil e na narração dele, mas o texto dela vai uma vez.
+    const virada = narracao.doLugar("BR").find((e) => e.tipo === "virada" && e.lugar === "BR")!;
+    expect(texto.split(JSON.stringify(virada.texto))).toHaveLength(2);
+  });
+});

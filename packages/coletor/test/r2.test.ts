@@ -2,7 +2,8 @@ import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import type { Buscar } from "../src/coletor.ts";
 import { criarContadorDeGravacoes } from "../src/contador.ts";
-import { assinarPedidoS3, destinoR2 } from "../src/r2.ts";
+import { assinarPedidoS3, destinoR2, objetosDaNoiteNoR2 } from "../src/r2.ts";
+import { estadoGuardadoEmJson } from "../src/retomada.ts";
 
 // A gravação no R2 vai pela API S3, assinada com a AWS Signature Version 4. A referência da assinatura são os dois
 // exemplos da documentação do S3 ("Signature Calculations for the Authorization Header: Transferring Payload in a
@@ -122,5 +123,87 @@ describe("o destino R2", () => {
       "R2 respondeu 403 em rodada.json: <Error><Code>AccessDenied</Code></Error>",
     );
     expect(recusado.contador.doMes()).toEqual({ mes: "2026-10", buckets: {} });
+  });
+});
+
+describe("os objetos da noite no R2", () => {
+  // Volume de gravações na noite, decisão 3: um objeto comprimido por rodada, e a retomada numa outra máquina lê só o
+  // último. O R2 de mentira guarda os objetos e lista as chaves em ordem, duas por página, como a API S3 com `max-keys`.
+  const montar = () => {
+    const objetos = new Map<string, Uint8Array<ArrayBuffer>>();
+    const pedidos: { metodo: string; url: URL; cabecalhos: Headers }[] = [];
+    const buscar: Buscar = async (endereco, init) => {
+      const url = new URL(endereco);
+      const metodo = init?.method ?? "GET";
+      pedidos.push({ metodo, url, cabecalhos: new Headers(init?.headers) });
+      const chave = decodeURIComponent(url.pathname.replace(/^\/apurador-noite\/?/, ""));
+      if (metodo === "PUT") {
+        objetos.set(chave, new Uint8Array(init?.body as Uint8Array));
+        return new Response(null, { status: 200 });
+      }
+      if (url.searchParams.get("list-type") === "2") {
+        const depoisDe = url.searchParams.get("continuation-token") ?? url.searchParams.get("start-after") ?? "";
+        const chaves = [...objetos.keys()].filter((k) => k.startsWith(url.searchParams.get("prefix") ?? "") && k > depoisDe).sort();
+        const pagina = chaves.slice(0, 2);
+        const mais = chaves.length > 2;
+        const xml = `<ListBucketResult>${pagina.map((k) => `<Contents><Key>${k}</Key></Contents>`).join("")}<IsTruncated>${mais}</IsTruncated>${mais ? `<NextContinuationToken>${pagina.at(-1)}</NextContinuationToken>` : ""}</ListBucketResult>`;
+        return new Response(xml, { status: 200 });
+      }
+      const corpo = objetos.get(chave);
+      return corpo ? new Response(new Uint8Array(corpo), { status: 200 }) : new Response("<Error><Code>NoSuchKey</Code></Error>", { status: 404 });
+    };
+    const contador = criarContadorDeGravacoes(null, () => Date.parse("2026-10-25T20:00:00-03:00"));
+    const noite = objetosDaNoiteNoR2({
+      conta: CONTA,
+      bucket: "apurador-noite",
+      prefixo: "2026-2/",
+      credenciais: { chave: "chave-de-teste", segredo: "segredo-de-teste" },
+      buscar,
+      contador,
+      agora: () => new Date("2026-10-25T23:00:00Z"),
+    });
+    return { noite, objetos, pedidos, contador };
+  };
+  const estado = (numero: number, quando: string) => estadoGuardadoEmJson(JSON.stringify({ versao: 1, eleicao: "6258", numero, quando }), []);
+
+  it("grava o objeto de cada rodada comprimido, com o nome na ordem das rodadas, sem cache, e conta a gravação", async () => {
+    const { noite, objetos, pedidos, contador } = montar();
+    await noite.gravar(estado(7, "2026-10-25T20:00:03.120Z"), { numero: 7, quando: "2026-10-25T20:00:03.120Z" });
+
+    expect([...objetos.keys()]).toEqual(["2026-2/2026-10-25T20-00-03.120Z-r00007.json.gz"]);
+    expect(JSON.parse(gunzipSync(objetos.get("2026-2/2026-10-25T20-00-03.120Z-r00007.json.gz")!).toString("utf8"))).toMatchObject({ estado: { numero: 7 } });
+    expect(Object.fromEntries(["content-type", "content-encoding", "cache-control"].map((n) => [n, pedidos[0]!.cabecalhos.get(n)]))).toEqual({
+      "content-type": "application/gzip",
+      "content-encoding": null,
+      "cache-control": "private, no-store",
+    });
+    expect(contador.doMes()).toEqual({ mes: "2026-10", buckets: { "apurador-noite": 1 } });
+  });
+
+  it("lê o último objeto gravado desde a hora dada, passando pelas páginas da lista, e nada se não há nenhum", async () => {
+    const { noite, pedidos, contador } = montar();
+    expect(await noite.ultimo(Date.parse("2026-10-25T14:00:00Z"))).toBeNull();
+    const rodadas = [
+      "2026-10-25T13:59:00.000Z",
+      "2026-10-25T20:00:00.000Z",
+      "2026-10-25T20:00:20.000Z",
+      "2026-10-25T20:00:40.000Z",
+      "2026-10-25T20:01:00.000Z",
+    ];
+    for (const [i, quando] of rodadas.entries()) await noite.gravar(estado(i + 1, quando), { numero: i + 1, quando });
+    pedidos.length = 0;
+
+    const ultimo = await noite.ultimo(Date.parse("2026-10-25T14:00:00Z"));
+    expect(ultimo?.estado.numero).toBe(5);
+    // A lista começa depois da hora dada: duas páginas para os quatro objetos desta noite, e o GET do último.
+    expect(pedidos.map((p) => [p.metodo, p.url.searchParams.get("start-after"), p.url.searchParams.get("continuation-token")])).toEqual([
+      ["GET", "2026-2/2026-10-25T14-00-00.000Z", null],
+      ["GET", null, "2026-2/2026-10-25T20-00-20.000Z-r00003.json.gz"],
+      ["GET", null, null],
+    ]);
+    expect(pedidos[2]!.url.pathname).toBe("/apurador-noite/2026-2/2026-10-25T20-01-00.000Z-r00005.json.gz");
+    expect(pedidos.every((p) => p.cabecalhos.get("authorization")?.startsWith("AWS4-HMAC-SHA256 Credential=chave-de-teste/"))).toBe(true);
+    // A lista é uma operação classe A, como a gravação; a leitura, classe B, não conta.
+    expect(contador.doMes().buckets["apurador-noite"]).toBe(5 + 1 + 2);
   });
 });

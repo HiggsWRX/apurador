@@ -63,6 +63,21 @@ Os passos 1, 2 e 6 são comandos, rodados na raiz do repositório com o login do
 
 Se o CORS mudar depois de a borda já ter cópias, apague o cache do host: painel → Caching → Configuration → "Purge Cache" → "Custom Purge" → "Hostname" `ao-vivo.apurador.org`.
 
+## Os objetos da noite
+
+A cada rodada, o coletor grava o objeto da noite: o estado de retomada e os arquivos do TSE da rodada, comprimidos (`packages/coletor/src/retomada.ts`). Sem o disco, numa outra máquina, ele retoma do último. O estado leva as travas dos preditivos e os preditivos de uma base fora do ar, então o objeto fica num bucket sem endereço público, um por ambiente (`AMBIENTES.*.noite`, em `packages/coletor/src/ambientes.ts`). O dono:
+
+1. cria o bucket `apurador-noite`, sem domínio próprio e sem `r2.dev`:
+
+   ```bash
+   npx wrangler r2 bucket create apurador-noite
+   ```
+
+2. cria a chave (painel → R2 → "Manage API tokens" → "Create API token"), "Object Read & Write", "Apply to specific buckets only": `apurador-noite`. A leitura é a da retomada;
+3. cola os dois valores em `R2_NOITE_ACCESS_KEY_ID` e `R2_NOITE_SECRET_ACCESS_KEY`, no `packages/coletor/.env`.
+
+O ensaio faz o mesmo com o bucket `apurador-ensaio-noite` e as variáveis `R2_ENSAIO_NOITE_*`. Sem a chave, o coletor avisa ao começar, não grava o objeto da noite e só retoma do disco. Cada objeto tem ~1,2 MB no fim da noite (~1,7 GB na noite de 2022 inteira), e o contador soma as gravações nele às do bucket dos arquivos ao vivo.
+
 ## Os alertas e a sentinela
 
 Tudo aqui é do dono, e nada roda sozinho. Os comandos são na raiz do repositório, com o login do wrangler.

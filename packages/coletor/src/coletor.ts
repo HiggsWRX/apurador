@@ -33,6 +33,7 @@ import { criarNarracao } from "./narracao.ts";
 import { placarDoArquivoDoTse, type PlacarDoTse } from "./placar-conferido.ts";
 import { criarProjecaoDaNoite, type EntradaDaProjecao, type ProjecaoDaRodada } from "./projecao.ts";
 import type { RelogioDoColetor } from "./relogio.ts";
+import { estadoGuardadoEmJson, type ArquivoDoTseGuardado, type EstadoDeRetomada, type EstadoGuardado, type Partida } from "./retomada.ts";
 
 // O coletor da noite. A cada rodada ele lê os índices do TSE (`-ab.json` do Brasil e de cada UF), baixa o
 // resultado de cada lugar cuja última totalização no índice é mais nova que a que ele tem, roda o modelo nas duas
@@ -76,6 +77,18 @@ export interface OpcoesDoColetor {
   controle?: () => Promise<Controle>;
   /** A base do modelo da noite, as constantes e o agregado congelado. Sem ela, o coletor publica só o núcleo mínimo. */
   projecao?: EntradaDaProjecao;
+  /**
+   * O estado de que o coletor retoma (`escolherRetomada`): o do disco, com todos os arquivos do TSE, ou o do último
+   * objeto da noite, com os da rodada dele; os outros ele baixa de novo. Sem ele, parte a frio e regrava tudo uma vez.
+   */
+  retomada?: { partida: "disco" | "objeto da noite"; guardado: EstadoGuardado };
+  /** Onde guardar o estado no fim de cada rodada, depois de publicar, em JSON (`EstadoGuardado`). */
+  guardar?: {
+    /** O objeto da noite (no R2): o estado de retomada e os arquivos do TSE que chegaram na rodada. Rejeita se falhar. */
+    objetoDaNoite?(json: string, rodada: { numero: number; quando: string }): Promise<void>;
+    /** O estado em disco: o estado de retomada e todos os arquivos do TSE que o coletor tem. Rejeita se falhar. */
+    disco?(json: string): Promise<void>;
+  };
 }
 
 /** O que uma rodada fez: uma linha do registro do coletor (`.cache/coletor/rodadas-*.jsonl`). */
@@ -220,10 +233,12 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
   const intervalo = (opcoes.intervalo ?? 20) * 1000;
 
   let divulgacao: Divulgacao | undefined;
+  /** O estado de que o coletor retoma, se retoma. */
+  const retomado: EstadoDeRetomada | undefined = opcoes.retomada?.guardado.estado;
 
   // O que o coletor sabe do TSE.
   const etags = new Map<string, string>();
-  const pedidoEm = new Map<string, number>();
+  const pedidoEm = new Map<string, number>(Object.entries(retomado?.pedidosRecentes ?? {}));
   const resultados = new Map<string, ResultadoDoTse>();
   const indices = new Map<string, AcompanhamentoDoTse>();
   /** A última totalização de cada lugar nos índices, pela chave do índice. */
@@ -233,30 +248,43 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
    * daqui só com um pedido feito um minuto depois disso: antes, o CDN pode ainda ter a cópia velha dela, e a zona
    * não aparece em índice nenhum.
    */
-  const zonasPendentes = new Map<string, number>();
+  const zonasPendentes = new Map<string, number>(Object.entries(retomado?.zonasPendentes ?? {}));
   /** A hora do índice com que as zonas de cada município foram marcadas, para marcar uma vez por mudança. */
-  const zonasMarcadas = new Map<string, string | null>();
+  const zonasMarcadas = new Map<string, string | null>(Object.entries(retomado?.zonasMarcadas ?? {}));
   /** A maior hora do cabeçalho `Date` do TSE, em ms: o relógio da fonte, que muda a fase. */
-  let horaDoTse = -Infinity;
+  let horaDoTse = retomado?.horaDoTse ?? -Infinity;
+  /** Os arquivos de resultado que o coletor tem, como o TSE os mandou: vão inteiros para o estado em disco. */
+  const arquivosDoTse = new Map<string, ArquivoDoTseGuardado>();
+  /** Os arquivos da retomada, lidos quando a configuração da eleição der as URLs deles. */
+  let daRetomada = opcoes.retomada?.guardado.arquivos;
+  /**
+   * Na retomada do objeto da noite, os lugares que o coletor ainda não pediu de novo ao TSE. Até ele pedir todos, o
+   * mapa.json e as tabelas de projeções não são gravados: sairiam com buracos no lugar do que já estava publicado.
+   */
+  let faltamDaRetomada: Set<string> | undefined;
 
   // O que o coletor publicou.
   /** Os lugares do site na ordem do `mapa.json`, que a página também conhece, e a assinatura dela. */
   const doMapa = ordemDoMapa(opcoes.lugares);
-  const hashes = new Map<string, string>();
-  const curvas = new Map<string, PontoDaCurvaReal[]>();
+  const hashes = new Map<string, string>(Object.entries(retomado?.hashes ?? {}));
+  const curvas = new Map<string, PontoDaCurvaReal[]>(Object.entries(retomado?.curvas ?? {}));
   /** Os lugares cujo resultado ou narração mudou e ainda não foram gravados. */
-  const sujos = new Set<string>();
-  const narracao = criarNarracao(opcoes.lugares);
+  const sujos = new Set<string>(retomado?.sujos);
+  const narracao = criarNarracao(opcoes.lugares, retomado?.narracao);
   /** Os lugares com resultado novo que a narração ainda não viu. */
   const porNarrar = new Set<string>();
   const projecaoDaNoite = opcoes.projecao && criarProjecaoDaNoite(opcoes.projecao);
   /** A projeção da última rodada com resultado novo; a seguinte só projeta de novo se chegar outro. */
   let projecao: ProjecaoDaRodada | undefined;
   let projetarDeNovo = true;
-  let novidade: { totalizacao: string | null; vista: number | null } = { totalizacao: null, vista: null };
-  let numero = 0;
+  let novidade: { totalizacao: string | null; vista: number | null } = retomado?.novidade ?? { totalizacao: null, vista: null };
+  let numero = retomado?.numero ?? 0;
   /** O que o dono mandou: lido no começo de cada rodada e aplicado nela inteira. */
-  let controle: Controle = CONTROLE_INICIAL;
+  let controle: Controle = retomado?.controle ?? CONTROLE_INICIAL;
+  /** Os arquivos que chegaram e ainda não foram para um objeto da noite: os da rodada e os de uma gravação que falhou. */
+  let porGuardarNaNoite: ArquivoDoTseGuardado[] = opcoes.retomada?.guardado.pendentes ?? [];
+  /** De onde o coletor partiu, até o primeiro objeto da noite gravado o dizer. */
+  let partida: Partida | undefined = opcoes.retomada?.partida ?? "a frio";
   /** Onde o coletor grava: o principal até o comando do plano B, e o plano B depois dele. */
   let destino = opcoes.destino;
 
@@ -320,13 +348,16 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
    * Pede um arquivo e o lê: `lido` num 200, só o status num 304 e `null` se falhou. A ETag só fica quando o
    * arquivo é bom, para um arquivo ruim ser pedido de novo.
    */
-  async function pedirELer<T>(url: string, ler: (bytes: Uint8Array) => T): Promise<{ status: 200; lido: T } | { status: 304 } | null> {
+  async function pedirELer<T>(
+    url: string,
+    ler: (bytes: Uint8Array) => T,
+  ): Promise<{ status: 200; lido: T; corpo: Uint8Array; etag: string | null } | { status: 304 } | null> {
     const r = await pedir(url);
     if (r === null || r.status === 304) return r;
     try {
       const lido = ler(r.corpo);
       if (r.etag) etags.set(url, r.etag);
-      return { status: 200, lido };
+      return { status: 200, lido, corpo: r.corpo, etag: r.etag };
     } catch (erro) {
       registro.falhas.push(`${url}: ${(erro as Error).message}`);
       registro.ilegiveis.push({ tipo: tipoDoArquivo(url), url });
@@ -453,10 +484,14 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     await emFila(atrasados.slice(0, vagas), async (a) => {
       const pedidoNo = relogio.agora();
       const resposta = await pedirELer(a.url, a.tipo === "brasil" ? lerOBrasil : ler);
+      faltamDaRetomada?.delete(a.url);
       const pendenteDesde = zonasPendentes.get(a.url);
       if (resposta !== null && pendenteDesde !== undefined && pedidoNo - pendenteDesde >= UM_MINUTO) zonasPendentes.delete(a.url);
       if (resposta?.status !== 200) return;
       resultados.set(a.url, resposta.lido);
+      const arquivo: ArquivoDoTseGuardado = { abrangencia: a.abrangencia, etag: resposta.etag, corpo: new TextDecoder().decode(resposta.corpo) };
+      arquivosDoTse.set(a.url, arquivo);
+      porGuardarNaNoite.push(arquivo);
       projetarDeNovo = true;
       registro.baixados[TIPOS[a.tipo].contador]++;
       if (a.id === null) return;
@@ -527,7 +562,8 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
 
   async function gravarSeMudou(caminho: string, conteudo: object): Promise<boolean> {
     const bytes = new TextEncoder().encode(JSON.stringify(conteudo));
-    const hash = createHash("sha256").update(bytes).digest("hex");
+    // 96 bits do SHA-256 bastam para saber se o arquivo mudou, e os ~5.850 hashes vão em todo objeto da noite.
+    const hash = createHash("sha256").update(bytes).digest("base64url").slice(0, 16);
     if (hashes.get(caminho) === hash) return true;
     try {
       await destino.gravar(caminho, bytes);
@@ -554,7 +590,9 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     const gravacoes: (() => Promise<void>)[] = [];
     for (const a of d.acompanhados) {
       if (a.id === null || !sujos.has(a.id)) continue;
-      const resultado = resultados.get(a.url)!;
+      // Na retomada do objeto da noite, um lugar que estava por gravar espera o coletor baixá-lo de novo.
+      const resultado = resultados.get(a.url);
+      if (!resultado) continue;
       const curva = curvas.get(a.id) ?? [];
       const ponto = pontoDaCurvaReal(resultado, ordem);
       if (resultado.secoes.totalizadas > 0 && JSON.stringify(ponto) !== JSON.stringify(curva.at(-1))) curva.push(ponto);
@@ -570,8 +608,10 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     }
     // A tabela de projeções de cada UF e do Exterior e o mapa.json são montados a cada rodada, e só os bytes que mudam vão
     // ao destino. Sem a projeção no ar, a tabela vai vazia. Os municípios da tabela, com as comparações, não mudam na
-    // noite: com a projeção no ar, são gravados uma vez. No plano zero, nada disso.
-    if (controle.chaves.nucleoMinimo) {
+    // noite: com a projeção no ar, são gravados uma vez. No plano zero, nada disso, nem na retomada do objeto da noite
+    // até o coletor pedir de novo todos os lugares.
+    if (faltamDaRetomada?.size === 0) faltamDaRetomada = undefined;
+    if (controle.chaves.nucleoMinimo && !faltamDaRetomada) {
       const comPesquisas = controle.chaves.baseComPesquisas;
       for (const uf of d.ufs) {
         const projecao = noAr?.dosMunicipios(uf, comPesquisas);
@@ -629,6 +669,80 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     destino = opcoes.planoB;
     hashes.clear();
     for (const a of d?.acompanhados ?? []) if (a.id !== null && resultados.has(a.url)) sujos.add(a.id);
+  }
+
+  /**
+   * Põe de volta os arquivos do TSE da retomada, como se o coletor os tivesse baixado, com a ETag: ele só pede de novo o
+   * que mudou. Eles já passaram pela narração antes da queda. Na retomada do objeto da noite, que traz só os da rodada
+   * dele, os outros lugares ficam para baixar de novo.
+   */
+  function restaurar(d: Divulgacao, arquivos: ArquivoDoTseGuardado[]) {
+    for (const arquivo of arquivos) {
+      const url = d.urls.resultado(arquivo.abrangencia);
+      const bytes = new TextEncoder().encode(arquivo.corpo);
+      try {
+        resultados.set(url, lerResultado(bytes));
+      } catch (erro) {
+        registro.falhas.push(`retomada: ${url}: ${(erro as Error).message}`);
+        continue;
+      }
+      if (arquivo.etag) etags.set(url, arquivo.etag);
+      arquivosDoTse.set(url, arquivo);
+      if (url === d.urls.resultado({})) brasilEmBytes = bytes;
+    }
+    if (opcoes.retomada?.partida === "objeto da noite")
+      faltamDaRetomada = new Set(d.acompanhados.filter((a) => a.id !== null && !resultados.has(a.url)).map((a) => a.url));
+  }
+
+  /** O estado de retomada, no fim da rodada. */
+  function estadoDeRetomada(quando: string): EstadoDeRetomada {
+    return {
+      versao: 1,
+      eleicao: opcoes.eleicao,
+      numero,
+      quando,
+      narracao: narracao.estado(),
+      hashes: Object.fromEntries(hashes),
+      curvas: Object.fromEntries(curvas),
+      sujos: [...sujos],
+      controle,
+      gravacoesDoMes: opcoes.contador?.doMes() ?? null,
+      novidade,
+      horaDoTse: Number.isFinite(horaDoTse) ? horaDoTse : null,
+      zonasPendentes: Object.fromEntries(zonasPendentes),
+      zonasMarcadas: Object.fromEntries(zonasMarcadas),
+      pedidosRecentes: Object.fromEntries([...pedidoEm].filter(([, em]) => relogio.agora() - em < UM_MINUTO)),
+    };
+  }
+
+  /**
+   * Guarda o estado da rodada (Operação na noite, decisão 4; Volume de gravações na noite, decisão 3): o objeto da noite,
+   * com os arquivos que chegaram, e depois o disco, com todos. O estado vai a JSON uma vez para os dois. Um objeto da
+   * noite que falha deixa os arquivos dele para o da rodada seguinte, e o disco os guarda até lá. Antes de a
+   * configuração da eleição chegar, os arquivos do disco são os da retomada.
+   */
+  async function guardarEstado() {
+    const { guardar } = opcoes;
+    if (!guardar?.objetoDaNoite) porGuardarNaNoite = [];
+    if (!guardar) return;
+    const quando = new Date(relogio.agora()).toISOString();
+    const estado = JSON.stringify(estadoDeRetomada(quando));
+    if (guardar.objetoDaNoite) {
+      try {
+        await guardar.objetoDaNoite(estadoGuardadoEmJson(estado, porGuardarNaNoite, { partida }), { numero, quando });
+        porGuardarNaNoite = [];
+        partida = undefined;
+      } catch (erro) {
+        registro.falhas.push(`objeto da noite: ${(erro as Error).message}`);
+      }
+    }
+    if (guardar.disco) {
+      try {
+        await guardar.disco(estadoGuardadoEmJson(estado, daRetomada ?? [...arquivosDoTse.values()], { pendentes: porGuardarNaNoite }));
+      } catch (erro) {
+        registro.falhas.push(`estado em disco: ${(erro as Error).message}`);
+      }
+    }
   }
 
   /**
@@ -693,6 +807,10 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     try {
       await lerControleDaRodada();
       divulgacao ??= await configurar();
+      if (divulgacao && daRetomada) {
+        restaurar(divulgacao, daRetomada);
+        daRetomada = undefined;
+      }
       passarAoPlanoB(divulgacao);
       if (divulgacao) {
         await lerIndices(divulgacao);
@@ -706,6 +824,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     } catch (erro) {
       registro.falhas.push(`rodada: ${(erro as Error).message}`);
     }
+    await guardarEstado();
     registro.destinoAtivo = destino === opcoes.planoB ? "plano B" : "principal";
     registro.gravacoesDoMes = opcoes.contador?.doMes() ?? null;
     paraOPainelDoColetor(divulgacao);
