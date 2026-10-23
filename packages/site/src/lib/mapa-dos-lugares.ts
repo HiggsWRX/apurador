@@ -1,14 +1,18 @@
-import { corDoPartido, PARTIDO_DE_BOLSONARO, type Cor } from "./identidade";
+import type { IdDaBase } from "./bases-da-projecao";
+import { oQueFaltaPara100 } from "./formato";
+import { corDoPartido, type Cor } from "./identidade";
 import type { QuadroAoVivo } from "./leitor-ao-vivo";
-import { mudancaEntre } from "./projecao-ao-vivo";
-import type { ConteudoDaTabela, LinhaDaTabela } from "./tabela-dos-lugares";
+import { decimosEntre, mudancaEntre } from "./projecao-ao-vivo";
+import { tabelaDosLugares, type ArquivoDaTabelaDeLugares, type ConteudoDaTabela, type LinhaDaTabela } from "./tabela-dos-lugares";
 
 // O que o mapa do cartão pinta num quadro (Telas da página de lugar, decisão 8; ticket 26), a partir da tabela de
 // lugares do mesmo quadro, que já escolhe os números de cada fase: antes das 17h (e no plano zero, ou enquanto o mapa.json
 // não chega), o placar entre finalistas do 1º turno de 2026; na noite, o % de seções e o placar do TSE e, com a chave
 // dela, a projeção da base escolhida. A cor é a de quem lidera, mais forte com vantagem maior e mais transparente com
-// menos seções; cinza sem seções. No modo "Mudança desde o 1º turno", a cor é a de quem ganhou terreno desde o 1º turno,
-// com a conta de "A projeção, comparada" da caixa: a projeção enquanto o lugar apura, o resultado quando ele termina.
+// menos seções; cinza sem seções. No modo "Mudança desde o 1º turno", a cor é a de quem ganhou terreno, com a conta de
+// "A projeção, comparada" da caixa: o 1º turno com que o coletor compara cada lugar (o do mapa.json, para as UFs, e o da
+// tabela de projeções, para os municípios de uma UF), contra a projeção enquanto a noite corre (num lugar que terminou,
+// ela já é o resultado) e contra o resultado depois do fim.
 
 /** O que o visitante escolhe ver na noite: o placar ou a mudança desde o 1º turno. */
 export type ModoDoMapa = "placar" | "mudanca";
@@ -46,10 +50,21 @@ const PASSOS_DA_VANTAGEM = [5, 10, 20, 30, 40];
 /** A partir de quantos pontos de mudança desde o 1º turno a cor fica mais forte. */
 const PASSOS_DA_MUDANCA = [0.5, 1, 2, 4, 8];
 const forca = (pontos: number, passos: number[]) => passos.filter((p) => pontos >= p).length;
-const CINZA: Pintura = { cor: null, forca: 0, opacidade: 1 };
+const SEM_SECOES: Pintura = { cor: null, forca: 0, opacidade: 1 };
 
-/** O mapa dos lugares da tabela no quadro, no modo pedido, se ele está disponível. */
-export function mapaDosLugares({ tabela, quadro, modo }: { tabela: ConteudoDaTabela; quadro: QuadroAoVivo; modo: ModoDoMapa }): ConteudoDoMapa {
+/** O mapa dos lugares de uma tabela de lugares no quadro, na base escolhida e no modo pedido, se ele está disponível. */
+export function mapaDosLugares({
+  arquivo,
+  quadro,
+  base,
+  modo,
+}: {
+  arquivo: ArquivoDaTabelaDeLugares;
+  quadro: QuadroAoVivo;
+  base: IdDaBase;
+  modo: ModoDoMapa;
+}): ConteudoDoMapa {
+  const tabela = tabelaDosLugares({ arquivo, quadro, base });
   const { candidatos } = tabela;
   /** A cor de quem está à frente em dois %, mais forte com mais vantagem. */
   const aFrente = ([a, b]: [number, number], opacidade: number): Pintura => {
@@ -60,25 +75,25 @@ export function mapaDosLugares({ tabela, quadro, modo }: { tabela: ConteudoDaTab
   if (tabela.colunas.includes("primeiroTurno")) {
     const lugares = tabela.linhas.map((l) => {
       const pt = l.primeiroTurno;
-      return { ...l, mudanca: null, pintura: pt === null ? CINZA : aFrente([pt, Math.round(10 * (100 - pt)) / 10], 1) };
+      return { ...l, mudanca: null, pintura: pt === null ? SEM_SECOES : aFrente([pt, oQueFaltaPara100(pt)], 1) };
     });
     return { mostra: "primeiroTurno", modos: [], candidatos, lugares };
   }
 
-  // A mudança precisa da projeção enquanto os lugares apuram; depois do fim da noite, todos têm o resultado.
-  const modos: ModoDoMapa[] = tabela.colunas.includes("projecao") || quadro.fase === "encerrada" ? ["placar", "mudanca"] : [];
+  const encerrada = quadro.fase === "encerrada";
+  const doPrimeiroTurno = primeiroTurnoDoColetor(arquivo, quadro);
+  // A mudança precisa do 1º turno do coletor e, enquanto a noite corre, da projeção; depois do fim, do resultado.
+  const modos: ModoDoMapa[] = doPrimeiroTurno && (encerrada || tabela.colunas.includes("projecao")) ? ["placar", "mudanca"] : [];
   const mostra = modos.includes(modo) ? modo : "placar";
-  // O 1º turno da tabela é o % do partido de Bolsonaro; a mudança, como a caixa, conta no do 1º candidato da rodada.
-  const doPrimeiro = (pt: number) => (PARTIDO_DE_BOLSONARO.includes(candidatos[0]!.partido) ? pt : Math.round(10 * (100 - pt)) / 10);
 
   const lugares = tabela.linhas.map((l): LugarDoMapa => {
     const opacidade = 0.4 + (0.6 * (l.secoes ?? 0)) / 100;
-    if (!l.secoes || !l.placar) return { ...l, mudanca: null, pintura: CINZA };
+    if (!l.secoes || !l.placar) return { ...l, mudanca: null, pintura: SEM_SECOES };
     if (mostra === "placar") return { ...l, mudanca: null, pintura: aFrente(l.placar, opacidade) };
-    const para = l.secoes === 100 ? l.placar[0] : l.projecao;
-    if (para === null || l.primeiroTurno === null) return { ...l, mudanca: null, pintura: CINZA };
-    const de = doPrimeiro(l.primeiroTurno);
-    const decimos = Math.round(10 * para) - Math.round(10 * de);
+    const de = doPrimeiroTurno!.get(l.id);
+    const para = encerrada ? l.placar[0] : l.projecao;
+    if (de === undefined || para === null) return { ...l, mudanca: null, pintura: SEM_SECOES };
+    const decimos = decimosEntre(de, para);
     const pintura: Pintura =
       decimos === 0
         ? { cor: "empate", forca: 0, opacidade }
@@ -86,4 +101,19 @@ export function mapaDosLugares({ tabela, quadro, modo }: { tabela: ConteudoDaTab
     return { ...l, mudanca: mudancaEntre(candidatos, de, para), pintura };
   });
   return { mostra, modos, candidatos, lugares };
+}
+
+/**
+ * O 1º turno com que o coletor compara cada lugar da tabela, em % do 1º candidato da rodada com uma casa: no Brasil, o
+ * das UFs e do Exterior no mapa.json; numa UF, o dos municípios na tabela de projeções dela. O Brasil por municípios não
+ * tem: precisaria das 28 tabelas de projeções.
+ */
+function primeiroTurnoDoColetor(arquivo: ArquivoDaTabelaDeLugares, quadro: QuadroAoVivo): Map<string, number> | null {
+  if (arquivo.lugar === "BR") {
+    const mapa = quadro.mapa?.assinatura === arquivo.assinatura ? quadro.mapa : null;
+    // Um mapa.json de um coletor de antes do ticket 26 não traz o 1º turno: o modo fica de fora, e o mapa segue.
+    return mapa?.projecao?.primeiroTurno ? new Map(Object.entries(mapa.projecao.primeiroTurno)) : null;
+  }
+  const tabela = quadro.tabelaDeProjecoes?.uf === arquivo.lugar ? quadro.tabelaDeProjecoes : null;
+  return tabela && new Map(tabela.municipios.map((id, i) => [id, tabela.comparacoes.primeiroTurno[i]!]));
 }

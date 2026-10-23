@@ -246,6 +246,13 @@ describe("a primeira meia hora da apuração", () => {
         );
       }
     });
+
+    it("traz o 1º turno com que a projeção de cada UF e do Exterior se compara, o mesmo do JSON dela: o modo de mudança do mapa", () => {
+      const { projecao } = r.publicado<ArquivoDoMapa>("mapa.json");
+      expect(projecao!.primeiroTurno).toEqual(
+        Object.fromEntries(cadastro.ufs.map((uf) => [uf.sigla, r.publicado(`lugares/${uf.sigla}.json`).projecao!.comparacoes.primeiroTurno])),
+      );
+    });
   });
 });
 

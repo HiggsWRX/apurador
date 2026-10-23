@@ -3,26 +3,43 @@ import type { Feature, FeatureCollection, MultiLineString } from "geojson";
 import type { Pintura } from "./mapa-dos-lugares";
 
 // O desenho do mapa do cartão (ticket 26; Arquitetura e tecnologia, decisão 4): d3-geo projeta a malha em caminhos de
-// SVG, numa caixa de largura fixa que o CSS estica, e os mesmos caminhos servem ao canvas (`Path2D`). A conta sai em
-// fatias, com uma pausa entre elas, para a rolagem não travar no celular enquanto os 5.571 municípios do Brasil saem.
-// Se o SVG levar mais de 2 s para aparecer, o mapa passa para o canvas neste aparelho; se o canvas também falhar no
-// ensaio, o dono desliga a chave do mapa (Ensaio geral, decisões 19 e 22).
+// SVG, numa caixa de largura fixa que o CSS estica, e os mesmos caminhos servem ao canvas (`Path2D`). A conta e a
+// entrada dos caminhos no SVG saem em fatias, com uma pausa entre elas, para a rolagem não travar no celular enquanto os
+// 5.571 municípios do Brasil saem. Se o SVG levar mais de 2 s para aparecer, o mapa passa para o canvas neste aparelho:
+// a decisão 4 da arquitetura deixava a troca para depois do ensaio, mas, feita pelo próprio mapa, ela vale já na noite,
+// sem um deploy. Se o canvas também falhar no ensaio, o dono desliga a chave do mapa (Ensaio geral, decisões 19 e 22).
 
 /** A largura da caixa dos caminhos: a altura sai da forma do lugar. */
 const LARGURA = 1000;
-/** Quantos lugares cada fatia projeta antes de devolver a vez à página. */
-const FATIA = 400;
+/** Quantos lugares cada fatia projeta, ou põe no SVG, antes de devolver a vez à página. */
+export const FATIA = 400;
 
 /** O mapa projetado: um caminho por feição, na ordem delas, e o contorno por cima. */
 export interface Desenho {
+  /** A largura da caixa dos caminhos (o `viewBox` do SVG), que o CSS estica até a do cartão. */
   largura: number;
+  /** A altura da caixa, na mesma unidade: a da forma do lugar com essa largura. */
   altura: number;
+  /** O id do site de cada feição, na ordem dos caminhos. */
   ids: string[];
   caminhos: string[];
   contorno: string | null;
 }
 
-const pausa = () => new Promise<void>((pronto) => setTimeout(pronto, 0));
+/**
+ * Devolve a vez à página, entre uma fatia e outra, para o toque e a rolagem passarem na frente. Sem o `setTimeout`, que
+ * depois de algumas chamadas seguidas espera pelo menos 4 ms cada uma: pelo `scheduler.yield()`, onde há, ou por uma
+ * mensagem a si mesmo.
+ */
+export function pausa(): Promise<void> {
+  const agendador = (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler;
+  if (agendador?.yield) return agendador.yield();
+  return new Promise((pronto) => {
+    const canal = new MessageChannel();
+    canal.port1.onmessage = () => pronto();
+    canal.port2.postMessage(null);
+  });
+}
 
 /** Projeta as feições (e o contorno, como as fronteiras das UFs) em caminhos de SVG, em fatias. */
 export async function desenharCaminhos(feicoes: Feature[], contorno: MultiLineString | null): Promise<Desenho> {
@@ -80,10 +97,12 @@ export function lembrarDoCanvas(): void {
 export interface Paleta {
   flavio: string;
   lula: string;
+  /** A dos outros partidos, que também pinta o empate. */
   cinza: string;
-  vazio: string;
+  /** A do lugar sem seções: a do trilho das barras. */
+  semSecoes: string;
+  /** A do cartão: a mistura parte dela, e as divisas entre os lugares são dela. */
   fundo: string;
-  borda: string;
   contorno: string;
   destaque: string;
 }
@@ -96,9 +115,8 @@ export function paletaDe(el: Element): Paleta {
     flavio: v("--cor-flavio"),
     lula: v("--cor-lula"),
     cinza: v("--cor-cinza"),
-    vazio: v("--trilho"),
+    semSecoes: v("--trilho"),
     fundo: v("--cartao"),
-    borda: v("--cartao"),
     contorno: v("--texto-suave"),
     destaque: v("--texto"),
   };
@@ -116,7 +134,7 @@ function canais(hex: string): [number, number, number] {
 
 /** A cor de preenchimento de uma pintura: a do candidato misturada ao fundo pela força, ou o cinza. */
 export function preenchimento(pintura: Pintura, paleta: Paleta): string {
-  if (pintura.cor === null) return paleta.vazio;
+  if (pintura.cor === null) return paleta.semSecoes;
   if (pintura.cor === "empate") return paleta.cinza;
   const t = MISTURA[pintura.forca] ?? 1;
   const [a, b] = [canais(paleta[pintura.cor]), canais(paleta.fundo)];

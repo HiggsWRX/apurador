@@ -12,12 +12,12 @@ export const getStaticPaths = (() =>
 
 const DO_BRASIL = JSON.parse(municipios) as MalhaDosMunicipios;
 
-/** A malha pelo nome. */
+/** O TopoJSON de uma malha: as do Brasil byte a byte como o pipeline as gravou; a de uma UF, recortada da dos municípios. */
 function malha(nome: string): string {
   if (nome === "ufs") return ufs;
   if (nome === "municipios") return municipios;
   return JSON.stringify(recortarMalha(DO_BRASIL, new Set(lugaresAbaixo(lugar(nome)).map((l) => l.id))));
 }
 
-/** A malha pelo nome, em JSON. */
+/** A resposta de `/malha/<nome>.json`. */
 export const GET: APIRoute = ({ params }) => new Response(malha(params.nome!), { headers: { "Content-Type": "application/json; charset=utf-8" } });

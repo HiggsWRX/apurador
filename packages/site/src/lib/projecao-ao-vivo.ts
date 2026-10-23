@@ -147,12 +147,15 @@ export function curvaProjetadaAoVivo(projecao: ProjecaoNaPagina): CurvaProjetada
   };
 }
 
+/** A mudança entre dois % do 1º candidato, ambos com uma casa, em décimos: positiva, ele ganhou terreno. */
+export const decimosEntre = (de: number, para: number) => Math.round(10 * para) - Math.round(10 * de);
+
 /**
  * Quem ganhou terreno entre dois % do 1º candidato do arquivo de rodada, ambos com uma casa, no formato "LULA +1,8"
  * da decisão 3, ou "sem mudança". A conta é em décimos, para fechar com os números da página.
  */
 export function mudancaEntre(candidatos: Pick<ArquivoDeRodada["candidatos"][number], "nome">[], de: number, para: number): string {
-  const decimos = Math.round(10 * para) - Math.round(10 * de);
+  const decimos = decimosEntre(de, para);
   if (decimos === 0) return "sem mudança";
   return `${candidatos[decimos > 0 ? 0 : 1]!.nome} +${formatarCalculo(Math.abs(decimos) / 10)}`;
 }

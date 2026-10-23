@@ -59,10 +59,10 @@ describe("malha do mapa", () => {
 
   it("dissolve as UFs a partir dos municípios, com a sigla como id", async () => {
     const { ufs } = await malhaDaWeb(entrada(IBGE), "malha.json", LUGARES);
-    const doMt = feature(ufs, ufs.objects.ufs!).features;
-    expect(doMt.map((f) => f.id).sort()).toEqual(["MS", "MT"]);
+    const dissolvidas = feature(ufs, ufs.objects.ufs!).features;
+    expect(dissolvidas.map((f) => f.id).sort()).toEqual(["MS", "MT"]);
     // Os dois quadrados do MT viram um retângulo de 2 por 1 grau.
-    const mt = doMt.find((f) => f.id === "MT")!.geometry as Polygon;
+    const mt = dissolvidas.find((f) => f.id === "MT")!.geometry as Polygon;
     const xs = mt.coordinates[0]!.map(([x]) => x!);
     expect([Math.min(...xs), Math.max(...xs)].map((x) => Math.round(x))).toEqual([-56, -54]);
   });

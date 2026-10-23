@@ -2,12 +2,13 @@ import type { ArquivoDeRodada, ArquivoDoMapa, ChavesDaNoite } from "@apurador/co
 import { describe, expect, it } from "vitest";
 import { antesDaPrimeiraLeitura, type QuadroAoVivo, type TabelaDeProjecoesLida } from "../src/lib/leitor-ao-vivo";
 import { mapaDosLugares, type ModoDoMapa } from "../src/lib/mapa-dos-lugares";
-import { tabelaDosLugares, type ArquivoDaTabelaDeLugares } from "../src/lib/tabela-dos-lugares";
+import { TODOS_OS_MUNICIPIOS, type ArquivoDaTabelaDeLugares } from "../src/lib/tabela-dos-lugares";
 
 // O que o mapa do cartão pinta num quadro (Telas da página de lugar, decisão 8; ticket 26): a cor de quem lidera, mais
 // forte com vantagem maior e mais transparente com menos seções, e cinza sem seções. Antes das 17h, o 1º turno de 2026
-// pelo placar entre finalistas. No modo "Mudança desde o 1º turno", quem ganhou terreno: pela projeção enquanto o lugar
-// apura e pelo resultado quando ele termina. Os números são os da tabela de lugares, do mesmo quadro.
+// pelo placar entre finalistas. No modo "Mudança desde o 1º turno", quem ganhou terreno desde o 1º turno com que a
+// caixa da projeção compara (o do coletor, que no ensaio é o de 2022): pela projeção enquanto a noite corre e pelo
+// resultado depois do fim. Os números são os da tabela de lugares, do mesmo quadro.
 
 const CANDIDATOS: ArquivoDeRodada["candidatos"] = [
   { numero: 22, nome: "FLAVIO BOLSONARO", partido: "PL", sequencial: "280002551544" },
@@ -40,13 +41,17 @@ const colunas = (projecao: number[]) => ({
   sinalDeVirada: projecao.map(() => null),
   virada: projecao.map((): [null, null, null] => [null, null, null]),
 });
-/** A projeção de Minas: Abadia 60,5 e Uberlândia 48,4 na "Só apuração"; Empatópolis, 50,0, como no 1º turno. */
+/**
+ * A tabela de projeções de Minas na "Só apuração": Abadia, que terminou, 60,1; Uberlândia, 48,4; Empatópolis, 50,0. O 1º
+ * turno com que a caixa compara é o do coletor: o de Uberlândia (47,6) não é o da tabela de lugares (48,1), como no
+ * ensaio, em que o coletor roda sobre a base de 2022.
+ */
 const TABELA: TabelaDeProjecoesLida = {
   uf: "MG",
   assinatura: "cafe0001",
   municipios: ["41000", "41238", "41500"],
-  comparacoes: { primeiroTurno: [62.3, 48.1, 50], pesquisas: [62.3, 48.1, 50] },
-  projecao: { assinatura: "cafe0001", validos: [4000, 380000, 900], soApuracao: colunas([60.5, 48.4, 50]) },
+  comparacoes: { primeiroTurno: [62.3, 47.6, 50], pesquisas: [62.3, 48.1, 50] },
+  projecao: { assinatura: "cafe0001", validos: [4000, 380000, 900], soApuracao: colunas([60.1, 48.4, 50]) },
 };
 
 const aoVivo = (parte: Partial<QuadroAoVivo> = {}): QuadroAoVivo => ({
@@ -68,8 +73,8 @@ const aoVivo = (parte: Partial<QuadroAoVivo> = {}): QuadroAoVivo => ({
   ...parte,
 });
 
-const pintar = (quadro: QuadroAoVivo, modo: ModoDoMapa = "placar") => {
-  const conteudo = mapaDosLugares({ tabela: tabelaDosLugares({ arquivo: DE_MINAS, quadro, base: "so-apuracao" }), quadro, modo });
+const pintar = (quadro: QuadroAoVivo, modo: ModoDoMapa = "placar", arquivo = DE_MINAS) => {
+  const conteudo = mapaDosLugares({ arquivo, quadro, base: "so-apuracao", modo });
   return { ...conteudo, de: (id: string) => conteudo.lugares.find((l) => l.id === id)! };
 };
 
@@ -126,14 +131,14 @@ describe("mapa dos lugares na noite, pelo placar", () => {
 describe('mapa dos lugares no modo "Mudança desde o 1º turno"', () => {
   const mapa = pintar(aoVivo(), "mudanca");
 
-  it("compara a projeção com o 1º turno enquanto o lugar apura, na cor de quem ganhou terreno", () => {
+  it("compara a projeção com o 1º turno com que a caixa compara, na cor de quem ganhou terreno", () => {
     expect(mapa.mostra).toBe("mudanca");
-    // Uberlândia: Lula lidera o placar, mas a projeção de Flávio (48,4) passa a do 1º turno (48,1).
-    expect(mapa.de("41238")).toMatchObject({ mudanca: "FLAVIO BOLSONARO +0,3", pintura: { cor: "flavio" } });
+    // Uberlândia: Lula lidera o placar, mas a projeção de Flávio (48,4) passa a do 1º turno do coletor (47,6).
+    expect(mapa.de("41238")).toMatchObject({ mudanca: "FLAVIO BOLSONARO +0,8", pintura: { cor: "flavio" } });
   });
 
-  it("compara o resultado com o 1º turno quando o lugar termina", () => {
-    // Abadia: o resultado, 60,12, contra 62,3: Lula ganhou 2,2 pontos, e não os 1,8 da projeção (60,5).
+  it("compara a projeção também num lugar que terminou, em que ela já é o resultado, como na caixa", () => {
+    // Abadia: 60,1 contra 62,3.
     expect(mapa.de("41000")).toMatchObject({ mudanca: "LULA +2,2", pintura: { cor: "lula", opacidade: 1 } });
     expect(mapa.de("41000").pintura.forca).toBeGreaterThan(mapa.de("41238").pintura.forca);
   });
@@ -144,8 +149,31 @@ describe('mapa dos lugares no modo "Mudança desde o 1º turno"', () => {
   });
 
   it("depois do fim da noite, compara o resultado de cada lugar, sem a projeção", () => {
-    const encerrada = pintar(aoVivo({ fase: "encerrada", mapa: { ...MAPA, tse: [[100, 60.12], null, [100, 47.9], null, [0, 0, 0], [100, 50]] } }), "mudanca");
+    const tse: ArquivoDoMapa["tse"] = [[100, 60.12], null, [100, 47.9], null, [0, 0, 0], [100, 50]];
+    const encerrada = pintar(aoVivo({ fase: "encerrada", mapa: { ...MAPA, tse } }), "mudanca");
     expect(encerrada.modos).toEqual(["placar", "mudanca"]);
-    expect(encerrada.de("41238")).toMatchObject({ mudanca: "LULA +0,2", pintura: { cor: "lula" } });
+    // Uberlândia: 47,9 contra 47,6.
+    expect(encerrada.de("41238")).toMatchObject({ mudanca: "FLAVIO BOLSONARO +0,3", pintura: { cor: "flavio" } });
+  });
+
+  it("no Brasil por estados, compara com o 1º turno de cada UF que o mapa.json traz", () => {
+    const doBrasil: ArquivoDaTabelaDeLugares = {
+      ...DE_MINAS,
+      lugar: "BR",
+      linhas: [{ id: "MG", nome: "Minas Gerais", caminho: "/mg/", indice: 1, primeiroTurno: 52.7 }],
+    };
+    const mapaJson: ArquivoDoMapa = { ...MAPA, tse: [null, [40, 49.2]], projecao: { soApuracao: { MG: 49.6 }, primeiroTurno: { MG: 50.5 } } };
+    const brasil = pintar(aoVivo({ mapa: mapaJson }), "mudanca", doBrasil);
+    expect(brasil.modos).toEqual(["placar", "mudanca"]);
+    expect(brasil.de("MG")).toMatchObject({ mudanca: "LULA +0,9", pintura: { cor: "lula" } });
+    // Um coletor de antes deste ticket, ainda no ar com o site novo, grava o mapa.json sem o 1º turno: o mapa segue no placar.
+    const deAntes: ArquivoDoMapa = { ...mapaJson, projecao: { soApuracao: { MG: 49.6 } } };
+    expect(pintar(aoVivo({ mapa: deAntes }), "mudanca", doBrasil)).toMatchObject({ modos: [], mostra: "placar" });
+  });
+
+  it("não é oferecido no Brasil por municípios, que não baixa as tabelas de projeções, nem depois do fim", () => {
+    const todos: ArquivoDaTabelaDeLugares = { ...DE_MINAS, lugar: TODOS_OS_MUNICIPIOS };
+    expect(pintar(aoVivo(), "mudanca", todos)).toMatchObject({ modos: [], mostra: "placar" });
+    expect(pintar(aoVivo({ fase: "encerrada" }), "mudanca", todos)).toMatchObject({ modos: [], mostra: "placar" });
   });
 });

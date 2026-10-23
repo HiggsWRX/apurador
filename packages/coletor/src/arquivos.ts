@@ -155,8 +155,13 @@ export interface ArquivoDoMapa {
    * 100,00: o TSE arredonda cada um à parte, e numa seção sem votos válidos os dois são 0. `null` sem arquivo do TSE.
    */
   tse: ([secoes: number, primeiro: number, segundo?: number] | null)[];
-  /** A projeção de cada UF e do Exterior, em % do 1º candidato com uma casa, nas bases no ar: a coluna da tabela do Brasil. */
-  projecao?: { soApuracao: Record<string, number>; comPesquisas?: Record<string, number> };
+  /**
+   * A projeção de cada UF e do Exterior, em % do 1º candidato com uma casa, nas bases no ar: a coluna da tabela do Brasil.
+   * `primeiroTurno` é com o que "A projeção, comparada" de cada uma compara (`comparacoes.primeiroTurno` do JSON dela):
+   * o modo "Mudança desde o 1º turno" do mapa do Brasil, que não baixa os JSONs das UFs. O coletor o grava desde o
+   * ticket 26; um coletor de antes, ainda no ar quando o site novo vai ao ar, grava sem ele.
+   */
+  projecao?: { soApuracao: Record<string, number>; comPesquisas?: Record<string, number>; primeiroTurno?: Record<string, number> };
 }
 
 /** Um ponto da curva real: o % de seções totalizadas e o % de cada candidato, como o TSE os publica. */

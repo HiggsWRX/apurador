@@ -1,13 +1,12 @@
 import type { ChavesDaNoite } from "@apurador/coletor";
-import type { Feature, MultiLineString } from "geojson";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { feature, mesh } from "topojson-client";
 import type { IdDaBase } from "../lib/bases-da-projecao";
 import { antesDaPrimeiraLeitura, type QuadroAoVivo } from "../lib/leitor-ao-vivo";
-import { caminhoDaMalha, type MalhaDasUfs, type MalhaDosMunicipios } from "../lib/malha";
+import { baixarDoBuild, baixarVista, type VistaDoMapa } from "../lib/malha";
 import { mapaDosLugares, type ModoDoMapa } from "../lib/mapa-dos-lugares";
 import { mostrarOCartao, useBaseDaPagina, useQuadroDaPagina } from "../lib/quadro-da-pagina";
 import { caminhoDaTabelaDeLugares, ORDEM_INICIAL, tabelaDosLugares, type ArquivoDaTabelaDeLugares } from "../lib/tabela-dos-lugares";
+import { Alternancia } from "./Alternancia";
 import { MapaDosLugares } from "./MapaDosLugares";
 import { TabelaDosLugares } from "./TabelaDosLugares";
 
@@ -17,9 +16,9 @@ import { TabelaDosLugares } from "./TabelaDosLugares";
 // mapa e avisa o bloco, que passa a ler o mapa.json e a tabela de projeções: antes disso, nada disso é baixado. No
 // build, sai só o título, com a nota de que os lugares vêm a seguir.
 // - O mapa (ticket 26): no Brasil, por estados, com a troca para municípios, que baixa a malha deles e as tabelas de
-//   lugares das 27 UFs (a posição de cada município no mapa.json e o 1º turno dele); numa UF, os municípios dela; num
-//   município, os da UF, com ele destacado. O Exterior não tem mapa, só a tabela das cidades. Com a chave do mapa
-//   desligada, o cartão mostra só a Tabela, que não olha a chave: ela é a alternativa ao mapa, sempre no ar.
+//   lugares das 27 UFs; numa UF, os municípios dela; num município, os da UF, com ele destacado. O Exterior não tem
+//   mapa, só a tabela das cidades. Com a chave do mapa desligada, o cartão mostra só a Tabela, que não olha a chave: ela
+//   é a alternativa ao mapa, sempre no ar.
 // - A tabela: numa página de município, abre rolada até ele.
 
 interface Props {
@@ -35,19 +34,6 @@ interface Props {
 /** Quanto antes de entrar na tela o cartão começa a baixar o que mostra. */
 const ANTES_DA_TELA = "300px";
 
-/** Os arquivos do build que o cartão baixa, cada um uma vez por página. */
-const baixados = new Map<string, Promise<unknown>>();
-function baixar<T>(caminho: string): Promise<T> {
-  let pedido = baixados.get(caminho);
-  if (!pedido) {
-    pedido = fetch(caminho).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))));
-    baixados.set(caminho, pedido);
-    // Um pedido que falhou não fica guardado: a próxima troca de vista tenta de novo.
-    pedido.catch(() => baixados.delete(caminho));
-  }
-  return pedido as Promise<T>;
-}
-
 /** A ilha do cartão do mapa de um lugar. */
 export default function CartaoDoMapa({ id, lugarDaTabela, titulo, chaves }: Props) {
   const quadro = useQuadroDaPagina(antesDaPrimeiraLeitura(chaves));
@@ -55,13 +41,13 @@ export default function CartaoDoMapa({ id, lugarDaTabela, titulo, chaves }: Prop
   const [arquivo, setArquivo] = useState<ArquivoDaTabelaDeLugares | null>(null);
   const [falhou, setFalhou] = useState(false);
   const [ordem, setOrdem] = useState(ORDEM_INICIAL);
-  const [vista, setVista] = useState<"mapa" | "tabela">("mapa");
+  const [aba, setAba] = useState<"mapa" | "tabela">("mapa");
   const [nivel, setNivel] = useState<"estados" | "municipios">("estados");
   const [modo, setModo] = useState<ModoDoMapa>("placar");
   const raiz = useRef<HTMLElement>(null);
   const atual = id === lugarDaTabela ? undefined : id;
   const comMapa = lugarDaTabela !== "ZZ" && quadro.chaves.mapa;
-  const naTabela = !comMapa || vista === "tabela";
+  const naTabela = !comMapa || aba === "tabela";
 
   useEffect(() => {
     const cartao = raiz.current;
@@ -71,7 +57,7 @@ export default function CartaoDoMapa({ id, lugarDaTabela, titulo, chaves }: Prop
         if (!e?.isIntersecting) return;
         observador.disconnect();
         mostrarOCartao();
-        baixar<ArquivoDaTabelaDeLugares>(caminhoDaTabelaDeLugares(lugarDaTabela)).then(setArquivo, () => setFalhou(true));
+        baixarDoBuild<ArquivoDaTabelaDeLugares>(caminhoDaTabelaDeLugares(lugarDaTabela)).then(setArquivo, () => setFalhou(true));
       },
       { rootMargin: ANTES_DA_TELA },
     );
@@ -98,8 +84,8 @@ export default function CartaoDoMapa({ id, lugarDaTabela, titulo, chaves }: Prop
             ["mapa", "Mapa"],
             ["tabela", "Tabela"],
           ]}
-          escolhida={vista}
-          aoEscolher={setVista}
+          escolhida={aba}
+          aoEscolher={setAba}
         />
       )}
       {!arquivo ? (
@@ -120,7 +106,7 @@ export default function CartaoDoMapa({ id, lugarDaTabela, titulo, chaves }: Prop
             />
           )}
           <MapaDoCartao
-            chave={lugarDaTabela === "BR" ? (nivel === "estados" ? "ufs" : "municipios") : lugarDaTabela}
+            malha={lugarDaTabela === "BR" ? (nivel === "estados" ? "ufs" : "municipios") : lugarDaTabela}
             arquivo={arquivo}
             quadro={quadro}
             base={base}
@@ -135,66 +121,16 @@ export default function CartaoDoMapa({ id, lugarDaTabela, titulo, chaves }: Prop
   );
 }
 
-/** Um controle de duas opções, com o estado no `aria-pressed`, como o da base da projeção. */
-function Alternancia<T extends string>({
-  rotulo,
-  opcoes,
-  escolhida,
-  aoEscolher,
-}: {
-  rotulo: string;
-  opcoes: [T, string][];
-  escolhida: T;
-  aoEscolher: (o: T) => void;
-}) {
-  return (
-    <div class="alternancia" role="group" aria-label={rotulo}>
-      {opcoes.map(([valor, texto]) => (
-        <button key={valor} type="button" data-opcao={valor} aria-pressed={valor === escolhida ? "true" : "false"} onClick={() => aoEscolher(valor)}>
-          {texto}
-        </button>
-      ))}
-    </div>
-  );
+/** A vista montada de uma malha, com a hora (do relógio da página) em que a decodificação começou. */
+interface Montada {
+  malha: string;
+  vista: VistaDoMapa;
+  desde: number;
 }
 
-/** O que o mapa de uma vista desenha: as feições, o contorno por cima e os lugares da tabela deles. */
-interface Vista {
-  feicoes: Feature[];
-  contorno: MultiLineString | null;
-  tabela: ArquivoDaTabelaDeLugares;
-}
-
-/**
- * A vista do mapa: `ufs` (o Brasil por estados), `municipios` (o Brasil por municípios, com as fronteiras das UFs e os
- * lugares das tabelas das 27 UFs) ou a sigla de uma UF (os municípios dela, com o contorno dela).
- */
-async function baixarVista(chave: string, arquivo: ArquivoDaTabelaDeLugares): Promise<Vista> {
-  if (chave === "ufs") {
-    const ufs = await baixar<MalhaDasUfs>(caminhoDaMalha("ufs"));
-    return { feicoes: feature(ufs, ufs.objects.ufs).features, contorno: null, tabela: arquivo };
-  }
-  if (chave === "municipios") {
-    const daUf = arquivo.linhas.filter((l) => l.id !== "ZZ").map((l) => baixar<ArquivoDaTabelaDeLugares>(caminhoDaTabelaDeLugares(l.id)));
-    const [municipios, ufs, tabelas] = await Promise.all([
-      baixar<MalhaDosMunicipios>(caminhoDaMalha("municipios")),
-      baixar<MalhaDasUfs>(caminhoDaMalha("ufs")),
-      Promise.all(daUf),
-    ]);
-    return {
-      feicoes: feature(municipios, municipios.objects.municipios).features,
-      contorno: mesh(ufs, ufs.objects.ufs, (a, b) => a !== b),
-      // O Brasil por municípios não tem tabela de projeções: o modo de mudança fica para o fim da noite.
-      tabela: { ...arquivo, lugar: "municipios", linhas: tabelas.flatMap((t) => t.linhas) },
-    };
-  }
-  const daUf = await baixar<MalhaDosMunicipios>(caminhoDaMalha(chave));
-  return { feicoes: feature(daUf, daUf.objects.municipios).features, contorno: mesh(daUf, daUf.objects.municipios, (a, b) => a === b), tabela: arquivo };
-}
-
-/** O mapa de uma vista no quadro, com a escolha do modo quando a noite a oferece. */
+/** O mapa de uma malha (`ufs`, `municipios` ou a sigla de uma UF) no quadro, com a escolha do modo quando a noite a oferece. */
 function MapaDoCartao(props: {
-  chave: string;
+  malha: string;
   arquivo: ArquivoDaTabelaDeLugares;
   quadro: QuadroAoVivo;
   base: IdDaBase;
@@ -203,27 +139,28 @@ function MapaDoCartao(props: {
   destaque?: string;
   rotulo: string;
 }) {
-  const { chave, arquivo, quadro, base, modo } = props;
-  const [vista, setVista] = useState<{ chave: string; vista: Vista } | null>(null);
+  const { malha, arquivo, quadro, base, modo } = props;
+  const [montada, setMontada] = useState<Montada | null>(null);
   const [falhou, setFalhou] = useState(false);
 
   useEffect(() => {
     let vivo = true;
     setFalhou(false);
-    baixarVista(chave, arquivo).then(
-      (v) => vivo && setVista({ chave, vista: v }),
+    baixarVista(malha, arquivo).then(
+      (montar) => {
+        if (!vivo) return;
+        const desde = performance.now();
+        setMontada({ malha, vista: montar(), desde });
+      },
       () => vivo && setFalhou(true),
     );
     return () => void (vivo = false);
-  }, [chave, arquivo]);
+  }, [malha, arquivo]);
 
-  const atual = vista?.chave === chave ? vista.vista : null;
-  const conteudo = useMemo(
-    () => (atual ? mapaDosLugares({ tabela: tabelaDosLugares({ arquivo: atual.tabela, quadro, base }), quadro, modo }) : null),
-    [atual, quadro, base, modo],
-  );
+  const daMalha = montada?.malha === malha ? montada : null;
+  const conteudo = useMemo(() => daMalha && mapaDosLugares({ arquivo: daMalha.vista.tabela, quadro, base, modo }), [daMalha, quadro, base, modo]);
   if (falhou) return <p class="nota">O mapa não carregou. A Tabela tem os mesmos números.</p>;
-  if (!atual || !conteudo) return <p class="nota">Baixando o mapa…</p>;
+  if (!daMalha || !conteudo) return <p class="nota">Baixando o mapa…</p>;
   return (
     <>
       {conteudo.modos.length > 0 && (
@@ -237,7 +174,14 @@ function MapaDoCartao(props: {
           aoEscolher={props.aoEscolherModo}
         />
       )}
-      <MapaDosLugares feicoes={atual.feicoes} contorno={atual.contorno} conteudo={conteudo} destaque={props.destaque} rotulo={`Mapa: ${props.rotulo}`} />
+      <MapaDosLugares
+        feicoes={daMalha.vista.feicoes}
+        contorno={daMalha.vista.contorno}
+        desde={daMalha.desde}
+        conteudo={conteudo}
+        destaque={props.destaque}
+        rotulo={`Mapa: ${props.rotulo}`}
+      />
       <p class="fonte">Cálculo do Apurador com dados do TSE</p>
     </>
   );

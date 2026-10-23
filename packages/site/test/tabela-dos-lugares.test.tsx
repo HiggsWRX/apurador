@@ -133,7 +133,10 @@ describe("tabela de lugares na noite", () => {
         { id: "ZZ", nome: "Exterior", caminho: "/exterior/", indice: 2, primeiroTurno: 41.3 },
       ],
     };
-    const mapa: ArquivoDoMapa = { ...MAPA, projecao: { soApuracao: { MG: 49.6, ZZ: 40.2 }, comPesquisas: { MG: 49.8, ZZ: 40.2 } } };
+    const mapa: ArquivoDoMapa = {
+      ...MAPA,
+      projecao: { soApuracao: { MG: 49.6, ZZ: 40.2 }, comPesquisas: { MG: 49.8, ZZ: 40.2 }, primeiroTurno: { MG: 48.1, ZZ: 40 } },
+    };
     const html = desenhar(aoVivo({ mapa, tabelaDeProjecoes: null }), { arquivo: doBrasil });
     expect(cabecalho(html)).toEqual(["Estado", "Seções", "Placar", "Projeção"]);
     expect(linhas(html)).toEqual([

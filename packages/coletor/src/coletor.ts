@@ -649,7 +649,7 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
     await emParalelo(gravacoes, GRAVACOES_EM_VOO);
   }
 
-  /** A projeção de cada UF e do Exterior, para o mapa.json: só o resultado final estimado, nas bases no ar. */
+  /** A projeção de cada UF e do Exterior, para o mapa.json: só o resultado final estimado, nas bases no ar, e o 1º turno com que ela se compara. */
   function projecaoDasUfs(d: Divulgacao, noAr: ProjecaoDaRodada, comPesquisas: boolean): ArquivoDoMapa["projecao"] {
     const naBase = (qual: "soApuracao" | "comPesquisas") =>
       Object.fromEntries(
@@ -658,7 +658,13 @@ export function criarColetor(opcoes: OpcoesDoColetor): Coletor {
           return p ? [[uf, p.projecao]] : [];
         }),
       );
-    return { soApuracao: naBase("soApuracao"), ...(comPesquisas ? { comPesquisas: naBase("comPesquisas") } : {}) };
+    const primeiroTurno = Object.fromEntries(
+      d.ufs.flatMap((uf) => {
+        const p = noAr.doLugar(uf, comPesquisas);
+        return p ? [[uf, p.comparacoes.primeiroTurno]] : [];
+      }),
+    );
+    return { soApuracao: naBase("soApuracao"), ...(comPesquisas ? { comPesquisas: naBase("comPesquisas") } : {}), primeiroTurno };
   }
 
   /** Lê o controle do dono para esta rodada. Uma leitura que falha não derruba nada: fica o controle anterior. */

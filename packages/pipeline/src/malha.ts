@@ -9,7 +9,7 @@ import type { Lugar } from "./lugares.ts";
 // as duas têm as mesmas fronteiras simplificadas.
 
 /** As duas áreas operacionais das lagoas do RS, que a malha traz como municípios e o TSE não tem. */
-export const LAGOAS_DO_RS = ["4300001", "4300002"];
+const LAGOAS_DO_RS = ["4300001", "4300002"];
 
 /**
  * Quanto dos vértices fica, com cada município mantido (`keep-shapes`). Com 1% e a quantização abaixo, a malha dos

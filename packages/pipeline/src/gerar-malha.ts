@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { membroDoIbgeComCache, RAIZ } from "./fontes.ts";
+import { CACHE_DO_IBGE, membroComCache, RAIZ } from "./fontes.ts";
 import type { Lugar } from "./lugares.ts";
 import { malhaDaWeb } from "./malha.ts";
 import { atualizarManifesto, gravarManifesto, lerManifesto } from "./manifesto.ts";
@@ -15,7 +15,9 @@ const URL_DA_MALHA = "https://geoftp.ibge.gov.br/organizacao_do_territorio/malha
 const SHAPEFILE = "BR_Municipios_2024";
 
 // Só os membros do shapefile que o mapshaper lê: o zip inteiro tem 199 MB.
-const membros = await Promise.all(["shp", "dbf", "prj", "cpg"].map((ext) => membroDoIbgeComCache(URL_DA_MALHA, `${SHAPEFILE}.${ext}`, { atualizar })));
+const membros = await Promise.all(
+  ["shp", "dbf", "prj", "cpg"].map((ext) => membroComCache(URL_DA_MALHA, `${SHAPEFILE}.${ext}`, { atualizar, cache: CACHE_DO_IBGE })),
+);
 const lugares = JSON.parse(readFileSync(new URL("lugares.json", DADOS), "utf8")) as Lugar[];
 const malha = await malhaDaWeb(Object.fromEntries(membros.map((m) => [m.membro, m.dados])), `${SHAPEFILE}.shp`, lugares);
 
