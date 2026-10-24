@@ -1,6 +1,6 @@
 # 31: Roteiro da noite
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 16, 21, 23
 Spec: [Apurador 2026: especificação da construção](../spec.md)
 
@@ -18,8 +18,8 @@ Decisões: [Operação na noite](../../apurador-2026/issues/18-operacao-na-noite
 
 ## Critérios de aceite
 
-- [ ] **Papéis**: operador (o dono), vigia (de fora, no 4G, das 16h30 até a indicação do TSE) e o Claude de prontidão, que só roda comandos quando o dono manda.
-- [ ] **Preparo até 21/10**:
+- [x] **Papéis**: operador (o dono), vigia (de fora, no 4G, das 16h30 até a indicação do TSE) e o Claude de prontidão, que só roda comandos quando o dono manda.
+- [x] **Preparo até 21/10**:
   - pausar as atualizações até 28/10;
   - tirar a manutenção e o Defender da faixa das 16h às 2h;
   - ligar a hora automática;
@@ -27,8 +27,8 @@ Decisões: [Operação na noite](../../apurador-2026/issues/18-operacao-na-noite
   - criar a tarefa do Agendador;
   - na BIOS, "ligar quando a energia voltar";
   - medir o nobreak (5 min fora da tomada).
-- [ ] **Preparo em 25/10, antes das 15h**: fechar os programas da inicialização, deixar 20 GB livres, ligar tudo no nobreak e plugar o celular da reserva por USB. O roteiro diz o que fica aberto.
-- [ ] **Linha do tempo**:
+- [x] **Preparo em 25/10, antes das 15h**: fechar os programas da inicialização, deixar 20 GB livres, ligar tudo no nobreak e plugar o celular da reserva por USB. O roteiro diz o que fica aberto.
+- [x] **Linha do tempo**:
   - **24/10**: 18h, congelamento; das 19h às 19h30, o coletor contra o TSE zerado publicando na produção; até as 23h, as pesquisas e a conferência no celular.
   - **25/10**:
     - 8h e 14h, suspensões de pesquisas, com retirada até as 16h;
@@ -38,8 +38,8 @@ Decisões: [Operação na noite](../../apurador-2026/issues/18-operacao-na-noite
     - 16h55, a contagem regressiva;
     - 17h, a fase muda;
     - até 99%, a conferência contra o app do TSE a cada 30 min.
-- [ ] **De 21 a 24/10**: o coletor roda 15 min por dia contra o TSE real zerado, publicando só na pasta local.
-- [ ] **Um cartão por falha**:
+- [x] **De 21 a 24/10**: o coletor roda 15 min por dia contra o TSE real zerado, publicando só na pasta local.
+- [x] **Um cartão por falha**:
   - bloqueio pelo TSE;
   - queda da internet;
   - falha do R2 e plano B;
@@ -50,10 +50,10 @@ Decisões: [Operação na noite](../../apurador-2026/issues/18-operacao-na-noite
   - formato novo do TSE, a única exceção ao congelamento, só no módulo `tse`.
 
   Cada cartão traz sintoma, como confirmar, o que fazer, como voltar e o comando exato.
-- [ ] **Ligar os textos preditivos na noite**: só com a resposta por escrito registrada no ticket 22, valendo dali em diante.
-- [ ] **Fim da noite**: dormir depois da indicação do TSE e de 99%; o coletor encerrado e parado; a sentinela e a tarefa desligadas.
-- [ ] **No dia seguinte**: conferir os objetos da noite, revogar a chave de escrita do R2 e fazer o registro da noite.
-- [ ] O roteiro tem versão para imprimir e para o celular.
+- [x] **Ligar os textos preditivos na noite**: só com a resposta por escrito registrada no ticket 22, valendo dali em diante.
+- [x] **Fim da noite**: dormir depois da indicação do TSE e de 99%; o coletor encerrado e parado; a sentinela e a tarefa desligadas.
+- [x] **No dia seguinte**: conferir os objetos da noite, revogar a chave de escrita do R2 e fazer o registro da noite.
+- [x] O roteiro tem versão para imprimir e para o celular.
 
 ## Comments
 
@@ -124,3 +124,47 @@ Decisões: [Operação na noite](../../apurador-2026/issues/18-operacao-na-noite
   - **Teto por rodada**: no painel, "Teto por rodada: atingido: N arquivos para a rodada seguinte"; no log, `teto: N para a rodada seguinte`. Só a passagem ao plano B chega a ele: ela leva 4 rodadas (~80 s), e a primeira republicação do Worker sai depois delas, ~1 min depois do comando. O tempo do ensaio 1, 2 min 31 s do comando à página no plano B, ganha esse minuto.
   - **Fim da noite** (linha do tempo): na primeira rodada na fase encerrada, a linha da fase no painel diz "o coletor para sozinho às 00:48:20, 30 min depois da totalização final" (o log, `para às 00:48:20`). Na hora, ele para com código 0, o log diz "Fim da noite: o coletor parou sozinho, 30 min depois da totalização final (00:48:20)", e o supervisor não o põe de volta. Depois, desligar a tarefa do Agendador e a sentinela. Se a tarefa ainda estiver ligada num reinício até 6 h depois da última rodada, o coletor posto de volta para sem rodada nenhuma ("com a noite já encerrada"). Mais tarde que isso, o estado é de outra noite, e ele parte a frio: regrava os ~5.900 arquivos ao vivo, já com a fase encerrada, e para 30 min depois. Por isso a tarefa sai desligada.
   - **Pelo celular**: o objeto da noite fica no disco (painel, "Objeto da noite: no disco enquanto a conexão for o celular"; log, `objeto da noite no disco (celular)`). O primeiro com o cabo leva os arquivos do TSE que esperavam, e a última rodada da noite grava um mesmo pelo celular. Nada a fazer no dia seguinte. A máquina reserva, se a noite for pelo celular, retoma do último objeto antes da troca.
+
+- 23/10/2026, registro do ticket 31 (branch `ticket/31-roteiro-da-noite`):
+  - **O roteiro**: `docs/roteiro-da-noite.md`, o caminho da decisão 22. Ele traz as regras de sempre, os papéis, o que fica aberto, os comandos da noite (com a palavra de cada confirmação), o preparo do computador, a linha do tempo (sábado, domingo, fim da noite e segunda), "Retirar uma pesquisa", nove cartões de falha, "No ensaio 2" e "Imprimir e levar ao celular". Os cartões são os oito deste ticket mais "Um deploy quebrou a página", do ticket 13. O nome do vigia e a autonomia do nobreak ficaram em branco para o dono.
+  - **As versões de imprimir e de celular**: `npm run roteiro` (`packages/ensaio/src/imprimir-roteiro.ts`, com `roteiroEmHtml` em `roteiro.ts` e a dependência nova `marked` no `ensaio`) grava `.cache/roteiro/roteiro-da-noite.html` e, com o Chrome ou o Edge, o `.pdf` ao lado.
+    - O PDF sai em A4, com 15 páginas. Cada cartão, "Deploy pelo computador" e "Retirar uma pesquisa" começam no alto de uma folha e não se partem, porque cada título de terceiro nível abre uma seção com `break-inside: avoid`.
+    - No celular (375 px), nada passa da largura, e todos os links internos acham o título: os ids são os do GitHub.
+    - Abaixo do título vai a versão, com a hora e o commit, para conferir que a folha impressa é a última.
+  - **Os testes**:
+    - `packages/coletor/test/roteiro-da-noite.test.ts` confere cada `npm run noite -- …` (`lerComando`) e a palavra de confirmação da tabela e de cada cartão (`aplicarComando`).
+    - `test/roteiro-da-noite.test.ts` confere os scripts da raiz, os `--project` e os caminhos do repositório.
+    - `packages/ensaio/test/roteiro.test.ts` confere os links internos, as seções dos cartões e a versão.
+  - **O que entrou além dos critérios**:
+    - **O ensaio 2 no sábado de manhã**, porque o dono atrasou. Daí, depois do veredito, o `dados/chaves.json` e o push da `main` aprovada até as 18h.
+    - **O passo das 19h40 de 24/10**: os endereços ao vivo no job `deploy` do CI, com o YAML exato. É a nota "Os endereços no build" do ticket 13, que pedia o passo "no roteiro".
+    - **"Deploy pelo computador"**, para o CI vermelho, com e sem os endereços. Um `npm run deploy` local sem `PUBLIC_AO_VIVO` tira a noite do ar.
+    - **Os deploys agendados** das 23h05 de 24/10 (`5 2 25 10 *`, o agregado congelado) e das 0h05.
+    - **O `node` do coletor** é filtrado pela linha de comando (`Win32_Process`). A sessão do Claude também roda `node`, então o `Get-Process node` da nota do ticket 22 mostraria processos que não são do coletor.
+    - **O log de outro dia**: o nome usa o dia de Greenwich em que o supervisor começa, então um supervisor reiniciado depois das 21h escreve no `coletor-2026-10-26.log`.
+    - **O som**: pela tarefa do Agendador, o computador não toca som. O alerta no computador é o painel.
+  - **Revisão** (`/code-review` contra a `main`).
+    - **Na spec, corrigido no roteiro**:
+      - o `controle.json` do ensaio, com o plano B ligado, faria o teste das 19h de 24/10 começar no plano B. O aviso de "outro dia" não pega um arquivo do mesmo dia, então o "Logo depois do ensaio" passou a vir antes de qualquer coletor na produção;
+      - o CI agendado rodou ~5 h atrasado todos os dias de 20 a 23/10 (cron das 03:05 UTC, rodado por volta das 08:20). O agregado congelado agora sai por `gh workflow run ci.yml --ref main` às 23h01, e não pelo agendado das 23h05;
+      - no plano zero, o coletor não publica os lugares, e o Placar conferido não tem o que conferir. A volta do cartão F é religar e conferir as duas primeiras rodadas;
+      - a sentinela sem `rodada.json` no endereço manda "sem leitura": cada uma é publicada só depois da primeira rodada no seu destino;
+      - o botão de reiniciar derruba o TSE falso, que regrava o relógio da conferência ao partir de novo, e virou um teste à parte, antes do ensaio;
+      - o `· desligadas: textos preditivos` de toda rodada;
+      - o som que a tarefa não toca, no cartão E;
+      - as duas "únicas" exceções ao congelamento;
+      - a volta do coletor rodado à mão para a tarefa;
+      - o `hasInstallScript` do lock, que não era deste ticket.
+    - **Nos padrões**:
+      - o teste dos cartões com as âncoras literais, e não com o `idDoTitulo`;
+      - `secao`/`inteira` no lugar de "bloco", que no roteiro é o bloco da página;
+      - a versão emitida pelo renderer do título;
+      - o tipo `ChavesDaNoite`;
+      - a palavra de cada cartão pareada com o comando que vem depois dela;
+      - os scripts, os projetos e os caminhos movidos para `test/roteiro-da-noite.test.ts`, com as conferências do repositório.
+    - **Ficou, por julgamento**: "o painel" para o painel do coletor, agora dito uma vez no roteiro, e "painel de antes das 17h", como o ticket 09 o chama.
+  - **Conferido**: no PowerShell do dono (npm 11, `npm.ps1`), `npm run x -- --destino producao --partida a-frio` chega inteiro ao script.
+  - **Achados fora do ticket, para o dono**:
+    - **O CI da `main` no GitHub está vermelho**: o job `replay` ficou sem memória em 22/10 e em 23/10 (`replay.test.ts`), e o `conferir` falhou uma vez com `Z_DATA_ERROR` num arquivo do TSE. O deploy pulou nas duas vezes.
+    - **O `apurador.org` está no deploy de 22/10, 15:44 UTC** (o CI da `9f3444b`, ticket 18). Os tickets 19, 21, 22, 23, 25, 26, 29 e 30 não estão no ar.
+    - **No `packages/coletor/.env`**, em 23/10 à noite: `R2_ENSAIO_*` e `CLOUDFLARE_API_TOKEN` vazios; `R2_NOITE_*` e `R2_ENSAIO_NOITE_*` ausentes.
