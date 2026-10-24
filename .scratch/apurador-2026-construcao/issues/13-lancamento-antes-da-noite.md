@@ -88,3 +88,4 @@ O endereço só abre com os nove itens verdadeiros, registrados com o de acordo 
   - **Celular**: a medição foi emulada (Slow 4G e CPU 4× mais lenta), de 1,4 a 2,5 s; a do aparelho fica para o ensaio geral.
   - **Voltar**: a versão anterior ao lançamento, ainda com `noindex` e os marcadores no rodapé, é a `8033d7e5`. O caminho está em "Voltar à versão anterior", no registro.
   - **Fica de fora**: o site não tem `favicon.ico` (404 no console).
+- 23/10/2026, do [ticket 25](25-simulador-ao-vivo.md): com a chave `antesDas17h.simulador` desligada, `/simulador/` continua dizendo "O simulador abre às 17h, com a apuração.", mas agora pela ilha, que fica na página para passar sozinha ao ao vivo às 17h, e o `/dados/simulador.json` é gerado com qualquer chave, mas só vem com o HTML com ela ligada: na noite, ele é a base do modelo que a ilha junta ao arquivo do coletor. O link da caixa de antes das 17h continua saindo com a chave.

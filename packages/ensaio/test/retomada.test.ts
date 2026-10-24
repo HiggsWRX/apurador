@@ -21,8 +21,11 @@ import { cadastro, noite, projecaoDe2022 } from "./noite-2022.ts";
 
 /** Os lugares que o TSE falso de 2022 tem: o Brasil, as UFs, o Exterior e os municípios do cadastro. */
 const LUGARES_DO_TSE = 1 + cadastro.ufs.reduce((soma, uf) => soma + 1 + uf.municipios.length, 0);
-/** Os arquivos ao vivo: os lugares, as 28 tabelas de projeções e os municípios delas, o mapa.json e o arquivo de rodada. */
-const ARQUIVOS_AO_VIVO = LUGARES_DO_TSE + 2 * cadastro.ufs.length + 2;
+/**
+ * Os arquivos ao vivo: os lugares, as 28 tabelas de projeções e os municípios delas, o mapa.json, o arquivo do simulador
+ * e o arquivo de rodada.
+ */
+const ARQUIVOS_AO_VIVO = LUGARES_DO_TSE + 2 * cadastro.ufs.length + 3;
 
 const doLugar = (id: string, eventos: EventoDaNarracao[]) => eventos.filter((e) => e.lugar === id);
 
@@ -97,11 +100,12 @@ describe("o replay com quedas", () => {
     expect(volta.pedidos).toBe(semQueda.rodadas.find((x) => x.inicio === volta.inicio)!.pedidos);
   });
 
-  it("do objeto da noite, baixa de novo os lugares em ~10 rodadas, só regrava os que mudaram, e segura o mapa.json e as tabelas até pedir todos", () => {
+  it("do objeto da noite, baixa de novo os lugares em ~10 rodadas, só regrava os que mudaram, e segura o mapa.json, o arquivo do simulador e as tabelas até pedir todos", () => {
     const depois = comQuedas.rodadas.slice(comQuedas.voltas[1]!.rodada).map((x) => comQuedas.daRodada(x.numero));
-    const comMapa = (gravacoes: Gravacao[]) => gravacoes.some((g) => g.caminho === "mapa.json" || g.caminho.startsWith("tabelas/"));
-    // Os ~6.300 arquivos de lugares e zonas, a ~600 pedidos por rodada (ticket 17: "São ~10 rodadas"): o mapa.json e as
-    // tabelas voltam na 10ª, a que termina de pedir.
+    const comMapa = (gravacoes: Gravacao[]) =>
+      gravacoes.some((g) => g.caminho === "mapa.json" || g.caminho === "simulador.json" || g.caminho.startsWith("tabelas/"));
+    // Os ~6.300 arquivos de lugares e zonas, a ~600 pedidos por rodada (ticket 17: "São ~10 rodadas"): o mapa.json, o
+    // arquivo do simulador e as tabelas voltam na 10ª, a que termina de pedir.
     const semMapa = depois.findIndex(comMapa);
     expect(semMapa + 1).toBe(10);
     // Nessas rodadas, ele grava menos lugares do que a noite sem queda grava no mesmo tempo, porque grava cada um uma vez.

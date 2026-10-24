@@ -1,11 +1,12 @@
 import type { ChavesDaNoite } from "@apurador/coletor";
 import type { TipoDeLugar } from "@apurador/pipeline";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { BASE_DA_NOITE, type IdDaBase } from "../lib/bases-da-projecao";
 import { emPlanoZero } from "../lib/chaves-ao-vivo";
 import type { TurnoPassado } from "../lib/curva-de-comparacao";
 import type { EnderecoAoVivo } from "../lib/enderecos-ao-vivo";
-import { antesDaPrimeiraLeitura, criarLeitorAoVivo, INTERVALO_DAS_LEITURAS, type OpcaoDaTabelaDeProjecoes } from "../lib/leitor-ao-vivo";
+import { useLeiturasAoVivo, useMovimentoReduzido } from "../lib/leituras-ao-vivo";
+import type { OpcaoDaTabelaDeProjecoes } from "../lib/leitor-ao-vivo";
 import { publicarBase, publicarQuadro, useCartaoNaTela } from "../lib/quadro-da-pagina";
 import { useComparacao } from "./CurvaDeComparacao";
 import { VistaDoBlocoAoVivo } from "./VistaDoBlocoAoVivo";
@@ -43,20 +44,9 @@ interface Props {
 export default function BlocoAoVivo({ id, tipo, uf, em, fotos, enderecos, chaves, turnosPassados, pesquisasDoAgregado, tabelaDeProjecoes }: Props) {
   const comparacao = useComparacao(id, turnosPassados);
   const [base, setBase] = useState<IdDaBase>(BASE_DA_NOITE);
-  const leitor = useMemo(
-    () =>
-      enderecos.length > 0
-        ? criarLeitorAoVivo({ enderecos, lugar: id, buscar: (url, init) => fetch(url, init), relogio: () => performance.now(), chaves, tabelaDeProjecoes })
-        : null,
-    [enderecos, id, chaves, tabelaDeProjecoes],
-  );
   const cartaoNaTela = useCartaoNaTela();
-  /** Uma leitura fora do ritmo dos 30 s, como a do cartão do mapa que acabou de entrar na tela. */
-  const lerAgora = useRef<(() => void) | null>(null);
-  const [quadro, setQuadro] = useState(() => antesDaPrimeiraLeitura(chaves));
-  const [lendo, setLendo] = useState(false);
-  const [proximaLeitura, setProximaLeitura] = useState<number | null>(null);
-  const [movimentoReduzido, setMovimentoReduzido] = useState(false);
+  const { leitor, quadro, lendo, proximaLeitura, lerAgora } = useLeiturasAoVivo({ enderecos, lugar: id, chaves, tabelaDeProjecoes });
+  const movimentoReduzido = useMovimentoReduzido();
   const [placarNaTela, setPlacarNaTela] = useState(true);
   const raiz = useRef<HTMLDivElement>(null);
 
@@ -65,68 +55,12 @@ export default function BlocoAoVivo({ id, tipo, uf, em, fotos, enderecos, chaves
   useEffect(() => publicarBase(base), [base]);
   useEffect(() => void (document.documentElement.dataset.fase = quadro.fase), [quadro.fase]);
 
-  // As leituras: a primeira logo ao abrir, as outras 30 s depois do começo da anterior, sem duas ao mesmo tempo. A
-  // página volta a ler na hora quando a aba volta a aparecer ou a internet volta; pedida no meio de outra, a leitura
-  // vem logo depois dela.
-  useEffect(() => {
-    if (!leitor) return;
-    let proxima = 0;
-    let espera: ReturnType<typeof setTimeout> | undefined;
-    let emAndamento = false;
-    let outraPedida = false;
-    const ler = async () => {
-      if (emAndamento) {
-        outraPedida = true;
-        return;
-      }
-      emAndamento = true;
-      outraPedida = false;
-      clearTimeout(espera);
-      const inicio = performance.now();
-      proxima = inicio + INTERVALO_DAS_LEITURAS * 1000;
-      setLendo(true);
-      try {
-        await leitor.ler();
-      } finally {
-        emAndamento = false;
-        setLendo(false);
-        setQuadro(leitor.quadro());
-        espera = setTimeout(ler, outraPedida ? 0 : Math.max(0, proxima - performance.now()));
-      }
-    };
-    lerAgora.current = () => void ler();
-    // A cada segundo: a contagem regressiva, "há N s" e o anel andam, sem ler nada.
-    const segundos = setInterval(() => {
-      setQuadro(leitor.quadro());
-      setProximaLeitura(Math.max(0, Math.ceil((proxima - performance.now()) / 1000)));
-    }, 1000);
-    const aoAparecer = () => document.visibilityState === "visible" && ler();
-    document.addEventListener("visibilitychange", aoAparecer);
-    window.addEventListener("online", ler);
-    void ler();
-    return () => {
-      lerAgora.current = null;
-      clearTimeout(espera);
-      clearInterval(segundos);
-      document.removeEventListener("visibilitychange", aoAparecer);
-      window.removeEventListener("online", ler);
-    };
-  }, [leitor]);
-
   // O cartão do mapa entrou na tela: os arquivos dele vêm na hora, e depois a cada leitura.
   useEffect(() => {
     if (!leitor || !cartaoNaTela) return;
     leitor.incluirOCartao();
-    lerAgora.current?.();
+    lerAgora();
   }, [leitor, cartaoNaTela]);
-
-  useEffect(() => {
-    const consulta = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const mudar = () => setMovimentoReduzido(consulta.matches);
-    mudar();
-    consulta.addEventListener("change", mudar);
-    return () => consulta.removeEventListener("change", mudar);
-  }, []);
 
   // A linha fixa fica logo abaixo do topo, que leva a busca e não pode ser coberto; a altura dele muda com a largura.
   useEffect(() => {

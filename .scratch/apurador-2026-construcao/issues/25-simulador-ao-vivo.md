@@ -1,6 +1,6 @@
 # 25: Simulador "e se" ao vivo
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 17, 24
 Spec: [Apurador 2026: especificação da construção](../spec.md)
 
@@ -14,15 +14,15 @@ Decisões: [Simulador "e se"](../../apurador-2026/issues/13-simulador-e-se.md) (
 
 ## Critérios de aceite
 
-- [ ] **Arquivo do simulador**: o coletor o publica com os dados por município na precisão do modelo, gravado só quando muda. Ele só é baixado quando o simulador abre.
-- [ ] **Releitura**: o simulador relê o arquivo a cada 30 s. As hipóteses ficam paradas, o resultado se move, e a curva se estende.
-- [ ] **Indicador ao vivo**: aparece na barra fixa do simulador, com os mesmos estados da página.
-- [ ] **Depois da primeira seção**: as hipóteses prontas somem, e as hipóteses mexem só no voto que falta. O que já foi totalizado não muda.
-- [ ] **Indicação do TSE**: o simulador fecha com "O TSE indica X eleito. O voto que falta não muda mais o resultado".
-- [ ] **Totalização final**: fecha com "A apuração terminou". Nos dois casos, há link de volta.
-- [ ] **Chaves**: desligar a chave do simulador, ou a da projeção, tira o simulador do ar e o link da caixa da projeção.
-- [ ] **Link compartilhado**: com os mesmos dados, reproduz a mesma simulação em outro celular.
-- [ ] **Replay de 2022**: com as hipóteses paradas, a simulação se atualiza a cada rodada.
+- [x] **Arquivo do simulador**: o coletor o publica com os dados por município na precisão do modelo, gravado só quando muda. Ele só é baixado quando o simulador abre.
+- [x] **Releitura**: o simulador relê o arquivo a cada 30 s. As hipóteses ficam paradas, o resultado se move, e a curva se estende.
+- [x] **Indicador ao vivo**: aparece na barra fixa do simulador, com os mesmos estados da página.
+- [x] **Depois da primeira seção**: as hipóteses prontas somem, e as hipóteses mexem só no voto que falta. O que já foi totalizado não muda.
+- [x] **Indicação do TSE**: o simulador fecha com "O TSE indica X eleito. O voto que falta não muda mais o resultado".
+- [x] **Totalização final**: fecha com "A apuração terminou". Nos dois casos, há link de volta.
+- [x] **Chaves**: desligar a chave do simulador, ou a da projeção, tira o simulador do ar e o link da caixa da projeção.
+- [x] **Link compartilhado**: com os mesmos dados, reproduz a mesma simulação em outro celular.
+- [x] **Replay de 2022**: com as hipóteses paradas, a simulação se atualiza a cada rodada.
 
 ## Comments
 
@@ -45,3 +45,16 @@ Decisões: [Simulador "e se"](../../apurador-2026/issues/13-simulador-e-se.md) (
   - **`ProjecaoDaRodada.numeros(id, base)`** (`projecao.ts`) dá os números de qualquer lugar numa base, municípios inclusive, sem a curva: projeção, margem, chance, chance de virada e sinal de virada, como vão nos arquivos.
   - **Os arquivos**: o `EventoDaNarracao` ganhou `base` (num preditivo) e `linhaDaProjecao` (num marco), e o `TipoDeEvento`, `sinal-de-virada` e `chance`. Nada disso entra no arquivo do simulador.
   - **A simulação** nunca entra na narração nem na manchete (Narração da noite, decisão 4): as duas leem só a projeção da rodada que o coletor publica. O arquivo do simulador não deve levar a narração.
+- 23/10/2026, registro do ticket 25 (branch `ticket/25-simulador-ao-vivo`):
+  - **O arquivo do simulador** (`simulador.json`; `ArquivoDoSimuladorAoVivo`, em `packages/coletor/src/arquivos.ts`): o `publicar` o monta a cada rodada e grava só quando os bytes mudam. Leva a `assinatura` dos municípios da base (`ProjecaoDaNoite.assinatura`), a apuração de cada município com que a rodada projetou (`ProjecaoDaRodada.apuracao`, em colunas: `secoes`, `secoesTotais`, `aptos`, `aptosTotais` e os `votos` dos dois finalistas, na ordem da base) e, com a base com pesquisas no ar, o agregado da noite inteiro. Sem o simulador no ar (antes das 17h, com a chave dele ou a da projeção desligada, depois da indicação do TSE e na fase encerrada), vai só com a assinatura. A base do modelo não vai: ela não muda na noite e vem do `/dados/simulador.json` do build, que agora é gerado com qualquer chave e leva a mesma `assinatura`. Na noite de 2022 inteira: 755 gravações em 1.335 rodadas, até 58,3 KB com gzip (152 KB sem) e ~36 MB enviados.
+  - **No teto e na trava**, que a decisão 5 do Volume de gravações não lista: vai com o que é de todo lugar, depois do mapa.json e antes dos municípios, e, com a trava de 90%, no máximo a cada 5 min, como o mapa.json. Na retomada do objeto da noite, espera o coletor pedir de novo todos os lugares, como as tabelas.
+  - **Na tela** (`components/Simulador.tsx`): a ilha tem o leitor da página, criado por `useLeiturasAoVivo` (`lib/leituras-ao-vivo.ts`), o mesmo hook do bloco ao vivo, com `lugar: "BR"` e `simulador: "simulador.json"`. O leitor só pede o arquivo na fase ao vivo, com a projeção e a chave do simulador, fora do plano zero; o caminho vem da ilha para nenhuma página de lugar levar o nome dele no código. `situacaoDoSimulador` (`lib/simulador-ao-vivo.ts`) diz o que a tela mostra: antes das 17h, a simulação sobre o arquivo do build (com `antesDas17h.simulador`) ou "abre às 17h"; na fase ao vivo, sobre o arquivo do coletor; "esperando" antes da primeira leitura, sem conexão nela e até o arquivo do coletor chegar com a apuração; fora do ar; e os dois fechamentos. `prepararSimulador(arquivo, daNoite)` junta os dois arquivos e projeta nas duas bases, com o agregado do arquivo do coletor, e recusa outra assinatura: aí a tela diz "Não conseguimos carregar o simulador". Cada arquivo novo do coletor refaz a projeção, ~45 a 60 ms no computador; as hipóteses ficam no estado da ilha. O arquivo do build só é baixado quando a tela vai simular, e vem com o HTML só com a chave de antes das 17h.
+  - **Na barra fixa**, o `IndicadorAoVivo` com o quadro do leitor, também antes das 17h. **Na curva**, a curva real do Brasil, sólida, por baixo da curva da simulação (`real` na `CurvaProjetada`, de `curvaRealNoSimulador`): é ela que se estende a cada leitura.
+  - **O link** "Simular "e se" →" entra na caixa da projeção (`ProjecaoAoVivo`), antes de "Como calculamos →", com `caminhoDoSimulador(base, lugar)`, que saiu para `lib/caminho-do-simulador.ts`, sem dados do build. Vai ao ar com `simuladorAberto(quadro)`: as chaves do simulador e da projeção, fora do plano zero, e antes da indicação do TSE, pela narração do Brasil ou pelos eventos do Brasil do arquivo de rodada, que toda página recebe.
+  - **Fechamento** (`components/SimuladorFechado.tsx`): "O simulador abre às 17h, com a apuração.", "O simulador está fora do ar agora.", "O TSE indica X eleito. O voto que falta não muda mais o resultado." e "A apuração terminou.", sempre com "Voltar à página do Brasil". A introdução da tela sai com ela.
+  - **Escolhas deste ticket**: a frase de fora do ar, que a spec não escreve; o link e o arquivo pararem com a indicação do TSE ("o sinal de virada e o simulador param"); a curva real na tela do simulador, para "a curva se estende"; o plano zero tirar o simulador do ar; o arquivo do build gerado com qualquer chave, e a ilha na tela também com a chave de antes das 17h desligada, para passar sozinha ao ao vivo.
+  - **Ficou de fora**: os números da barra não piscam a cada leitura (o pisca da decisão 14 é o do placar). O módulo `lib/simulador-antes-das-17h.ts` monta também o arquivo do build da noite e ficou com o nome. O replay de 2022 confere a simulação com o `modelo` direto, porque o `ensaio` não importa o site; a junção dos dois arquivos fica nos testes do site, e a assinatura do build contra a do coletor, nos testes do build (2026 e o ensaio de 2022).
+  - **No `noite-local`** (`astro dev` com `PUBLIC_ENSAIO=1`, a base de 2022, a entrada `site-dev-25` do `.claude/launch.json` do checkout principal): a tela passou sozinha ao ao vivo às 17h; logo depois de uma leitura, a projeção ao lado era a do `lugares/BR.json` publicado (48,0 ± 3,2, chance de 12%), e a simulação andou de 46,7 para 46,1 com Lula +2 parado; `desligar simulador` tirou o link da caixa da Bahia e fechou a tela em 34 s; o `astro dev` com a base de 2026 contra o coletor de 2022 deu "Não conseguimos carregar o simulador" a partir das 17h. A indicação e o fim ficaram só nos testes: a noite local não foi até eles.
+  - **Revisão** (`/code-review` contra a `main`): na spec, o link que ficava nas UFs e nos municípios depois da indicação; a primeira leitura sem conexão, que simulava antes das 17h no meio da noite; o arquivo do build baixado com a tela fechada; o coletor gravando o arquivo depois da indicação; o indicador ausente antes das 17h; e a assinatura do build contra a do coletor, que nenhum teste juntava. Nos padrões: `SituacaoDoSimulador` no lugar de `FaseDoSimulador` (Fase é do glossário), o plano zero por `emPlanoZero`, o leitor dentro do hook das leituras, os endereços do build num módulo só (`lib/enderecos-do-build.ts`), os nomes `noArAntesDas17h` e `CAMINHO_DO_ARQUIVO_DA_NOITE`, e o tipo do ponto da curva real. Ficaram, por julgamento: o `IndicadorAoVivo` montado com os mesmos seis props nas duas ilhas e a conversão das colunas repetida no replay.
+  - **Checagem inteira**: antes da revisão, 115 arquivos e 1.147 testes, com 3 falhas de contagem dos arquivos ao vivo no plano B e na retomada (o `simulador.json` a mais), corrigidas e conferidas nesses dois arquivos e, depois de a introdução entrar na ilha, no site (33 arquivos, 394 testes); depois das correções da revisão, 115 arquivos e 1.149 testes, em 358 s.
+  - As notas para os tickets 13, 24, 32 e para o Volume de gravações na noite estão nos comentários deles.

@@ -7,3 +7,9 @@ import type { QuadroAoVivo } from "./leitor-ao-vivo";
 
 /** O plano zero (Ensaio geral, decisão 24): a partir da fase ao vivo, com o núcleo mínimo desligado, nenhum dado ao vivo aparece. */
 export const emPlanoZero = (quadro: QuadroAoVivo): boolean => quadro.fase !== "antes-das-17h" && !quadro.chaves.nucleoMinimo;
+
+/**
+ * O simulador "e se" no ar: com a chave dele e com a da projeção, que fica sempre ao lado da simulação, fora do plano
+ * zero. O coletor já desliga o simulador com a projeção (`chavesEfetivas`); o arquivo de chaves do site, não.
+ */
+export const comOSimulador = (quadro: QuadroAoVivo): boolean => !emPlanoZero(quadro) && quadro.chaves.projecao && quadro.chaves.simulador;

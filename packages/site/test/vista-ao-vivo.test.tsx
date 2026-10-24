@@ -30,6 +30,7 @@ function quadro(parte: Partial<QuadroAoVivo> = {}): QuadroAoVivo {
     aviso: null,
     tabelaDeProjecoes: null,
     mapa: null,
+    simulador: null,
     ...parte,
   };
 }
@@ -497,6 +498,32 @@ describe("projeção ao vivo", () => {
     expect(html).toMatch(/<a href="\/metodologia\/#chance">Chance de vitória<\/a>/);
     expect(html).toMatch(/<a href="\/#pesquisas-registradas">as 8 pesquisas do agregado<\/a>/);
     expect(caixa(comProjecao(PROJECAO, {}, { pesquisasDoAgregado: null }))).not.toContain("pesquisas do agregado");
+  });
+
+  it('leva ao simulador por "Simular "e se" →", antes de "Como calculamos →", com a base escolhida e, numa UF ou num município, a UF', () => {
+    const links = (html: string) => [...elemento(caixa(html), /<p[^>]*class="links"/).matchAll(/<a\b[^>]*>[^<]*<\/a>/g)].map((m) => m[0]);
+    expect(links(comProjecao()).map(texto)).toEqual(['Simular "e se" →', "Como calculamos →", "as 8 pesquisas do agregado"]);
+    expect(links(comProjecao())[0]).toMatch(/href="\/simulador\/\?base=com-pesquisas"/);
+    expect(links(comProjecao(PROJECAO, {}, { base: "so-apuracao" }))[0]).toMatch(/href="\/simulador\/\?base=so-apuracao"/);
+    const naBahia = comProjecao(PROJECAO, {}, { lugar: { tipo: "uf", uf: "BA", em: "na Bahia" } });
+    expect(links(naBahia)[0]).toMatch(/href="\/simulador\/\?base=com-pesquisas&amp;de=ba"/);
+    const emCampinas = comProjecao(PROJECAO, {}, { lugar: { tipo: "municipio", uf: "SP", em: "em Campinas" } });
+    expect(links(emCampinas)[0]).toMatch(/href="\/simulador\/\?base=com-pesquisas&amp;de=sp"/);
+  });
+
+  it("sem o simulador no ar (a chave dele desligada), ou com a indicação do TSE, que o para, a caixa fica sem o link", () => {
+    expect(texto(caixa(comProjecao(PROJECAO, { chaves: { ...LIGADAS, simulador: false } })))).not.toContain("Simular");
+    const indicado = comProjecao(PROJECAO, {}, {}, { ...TSE, votos: [57000000, 58920000], percentuais: [49.17, 50.83] }, [INDICACAO]);
+    expect(texto(caixa(indicado))).not.toContain("Simular");
+    expect(texto(caixa(indicado))).toContain("Como calculamos →");
+    // Numa UF, a indicação chega pelos eventos do Brasil do arquivo de rodada.
+    const bahia: ArquivoDoLugar = { ...dadosDoLugar(TSE, [[50.34, 50.43, 49.57]]), lugar: "BA", projecao: PROJECAO };
+    const naBahia = (eventosDoBrasil: EventoDaNarracao[]) =>
+      vista(quadro({ fase: "ao-vivo", indicador: { estado: "ao-vivo" }, rodada: { ...rodada("ao-vivo"), eventosDoBrasil }, lugar: bahia }), {
+        lugar: { tipo: "uf", uf: "BA", em: "na Bahia" },
+      });
+    expect(texto(caixa(naBahia([])))).toContain("Simular");
+    expect(texto(caixa(naBahia([INDICACAO])))).not.toContain("Simular");
   });
 
   it("desenha por cima da curva real a curva projetada tracejada, com a faixa de 95% e a legenda, e a escala conta a faixa", () => {

@@ -1,5 +1,6 @@
 import { Z_95, type CurvaDoLugar, type PontoDaCurva, type ViradaProjetada } from "@apurador/modelo";
 import { formatarCalculo } from "../lib/formato";
+import type { PontoDaCurvaRealNoSimulador } from "../lib/simulador-ao-vivo";
 import type { FinalistaDaPagina } from "./ChanceDeVitoria";
 import { ALTURA, COMECO_INSTAVEL, EixosDaCurva, eixosDaCurva, escalaDaCurva, LARGURA, MARGEM, type Eixos } from "./EixosDaCurva";
 
@@ -10,7 +11,7 @@ import { ALTURA, COMECO_INSTAVEL, EixosDaCurva, eixosDaCurva, escalaDaCurva, LAR
 // bloco ao vivo. Sem estado e sem leitura: o painel de antes das 17h a desenha no build de 0% a 100% das seções, e o
 // bloco ao vivo desenha as camadas dela (as linhas e as faixas, a faixa da virada e o losango) por cima da curva real,
 // do ponto atual em diante. No simulador "e se" (decisão 8 de lá), a curva é a da simulação, pontilhada, sobre a curva
-// projetada do site, tracejada e mais clara.
+// projetada do site, tracejada e mais clara, e, na noite, sobre a curva real do Brasil, sólida, até o ponto atual.
 
 /** A margem da direita cabe os rótulos do fim ("51,1%"). */
 const MARGEM_DIREITA = 44;
@@ -26,6 +27,8 @@ interface Props {
   curva: CurvaDoLugar;
   /** No simulador: a curva projetada do site, que vai por baixo; a `curva` é então a da simulação. */
   doSite?: CurvaDoLugar;
+  /** No simulador, na noite: a curva real do Brasil, com a fatia do `primeiro` em cada % de seções. */
+  real?: PontoDaCurvaRealNoSimulador[];
 }
 
 const pct = (fatia: number) => `${formatarCalculo(100 * fatia)}%`;
@@ -51,7 +54,7 @@ export function descricaoDaCurvaProjetada(
 }
 
 /** A curva projetada de um lugar, de onde ela começa até 100% das seções, com a virada projetada. */
-export function CurvaProjetada({ id, base, primeiro, segundo, curva, doSite }: Props) {
+export function CurvaProjetada({ id, base, primeiro, segundo, curva, doSite, real = [] }: Props) {
   const { pontos, virada } = curva;
   if (pontos.length === 0) return null;
   const x = virada?.x ?? null;
@@ -72,16 +75,30 @@ export function CurvaProjetada({ id, base, primeiro, segundo, curva, doSite }: P
       {...(cedo === null ? {} : { "data-virada-cedo": Math.round(cedo) })}
       {...(tarde === null ? {} : { "data-virada-tarde": Math.round(tarde) })}
     >
-      <Grafico id={id} primeiro={primeiro} segundo={segundo} pontos={pontos} doSite={doSite?.pontos} virada={{ x, cedo, tarde }} descricao={descricao} />
-      <LegendaDaCurvaProjetada virada={{ x, cedo, tarde }} simulacao={doSite !== undefined} />
+      <Grafico
+        id={id}
+        primeiro={primeiro}
+        segundo={segundo}
+        pontos={pontos}
+        doSite={doSite?.pontos}
+        real={real}
+        virada={{ x, cedo, tarde }}
+        descricao={descricao}
+      />
+      <LegendaDaCurvaProjetada virada={{ x, cedo, tarde }} simulacao={doSite !== undefined} real={real.length > 0} />
     </figure>
   );
 }
 
 /** A legenda da curva projetada: as linhas, a faixa de 95% e, quando o gráfico os desenha, o losango e a faixa da virada. */
-export function LegendaDaCurvaProjetada({ virada, simulacao = false }: { virada: ViradaDesenhada; simulacao?: boolean }) {
+export function LegendaDaCurvaProjetada({ virada, simulacao = false, real = false }: { virada: ViradaDesenhada; simulacao?: boolean; real?: boolean }) {
   return (
     <figcaption class="legenda">
+      {real && (
+        <span>
+          <i class="amostra amostra-solida" /> Curva real
+        </span>
+      )}
       {simulacao ? (
         <>
           <span>
@@ -183,15 +200,17 @@ interface PropsDoGrafico {
   pontos: PontoDaCurva[];
   /** Os pontos da curva projetada do site, sem faixa, por baixo dos da simulação. */
   doSite?: PontoDaCurva[];
+  /** A curva real, sólida, por baixo de todas. */
+  real?: PontoDaCurvaRealNoSimulador[];
   /** O ponto e a faixa da virada projetada, cada um `null` quando a curva não o tem. */
   virada: ViradaDesenhada;
   descricao: string;
 }
 
-function Grafico({ id, primeiro, segundo, pontos, doSite = [], virada, descricao }: PropsDoGrafico) {
+function Grafico({ id, primeiro, segundo, pontos, doSite = [], real = [], virada, descricao }: PropsDoGrafico) {
   // A meia altura da escala, como na curva real, aqui contando a faixa de 95% de cada ponto depois do começo instável.
   let distancia = distanciaDaCurvaProjetada(pontos);
-  for (const p of doSite) if (p.x > COMECO_INSTAVEL) distancia = Math.max(distancia, Math.abs(100 * p.y - 50));
+  for (const p of [...doSite, ...real]) if (p.x > COMECO_INSTAVEL) distancia = Math.max(distancia, Math.abs(100 * p.y - 50));
   const escala = escalaDaCurva(distancia);
   const eixos = eixosDaCurva(escala, MARGEM_DIREITA);
   const { y, largura } = eixos;
@@ -212,6 +231,16 @@ function Grafico({ id, primeiro, segundo, pontos, doSite = [], virada, descricao
       <EixosDaCurva eixos={eixos} escala={escala} recorte={recorte} />
       {virada.cedo !== null && <FaixaDaVirada eixos={eixos} cedo={virada.cedo} tarde={virada.tarde} />}
       <g clip-path={`url(#${recorte})`}>
+        {real.length > 0 &&
+          [primeiro, segundo].map((f, i) => (
+            <path
+              key={f.cor}
+              class="linha-real"
+              data-linha-real
+              data-cor={f.cor}
+              d={real.map((p, j) => `${j ? "L" : "M"}${eixos.x(p.x).toFixed(1)},${y(100 * (i === 0 ? p.y : 1 - p.y)).toFixed(1)}`).join("")}
+            />
+          ))}
         {doSite.length > 0 && (
           <LinhasProjetadas eixos={eixos} primeiro={primeiro} segundo={segundo} pontos={doSite} classe="linha-projetada linha-do-site" semFaixa />
         )}

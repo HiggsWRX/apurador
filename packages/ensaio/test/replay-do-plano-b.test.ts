@@ -99,7 +99,7 @@ describe("plano B", () => {
   });
 
   it("da rodada do comando, regrava todos os arquivos ao vivo no plano B em 4 rodadas, no teto de 1.500 gravações, e só republica depois delas, já com todos", () => {
-    const todos = ["_headers", "rodada.json", "mapa.json", ...TABELAS, ...MUNICIPIOS_DAS_TABELAS, ...lugares.map((l) => l.caminho)].sort();
+    const todos = ["_headers", "rodada.json", "mapa.json", "simulador.json", ...TABELAS, ...MUNICIPIOS_DAS_TABELAS, ...lugares.map((l) => l.caminho)].sort();
     const passagem = r.rodadas.slice(r.rodadas.indexOf(troca()), r.rodadas.indexOf(troca()) + 4);
 
     expect(passagem.map((x) => x.gravacoes)).toEqual([1_500, 1_500, 1_500, expect.any(Number)]);
@@ -111,7 +111,7 @@ describe("plano B", () => {
     expect(todos.length).toBeLessThan(20_000);
   });
 
-  it("no teto, grava nesta ordem: o arquivo de rodada, o Brasil, as UFs, as tabelas, o mapa.json e os municípios, os que esperam há mais tempo primeiro", () => {
+  it("no teto, grava nesta ordem: o arquivo de rodada, o Brasil, as UFs, as tabelas, o mapa.json, o arquivo do simulador e os municípios, os que esperam há mais tempo primeiro", () => {
     const daTroca = noPlanoB.filter((g) => g.quando < Date.parse(troca().inicio) + 20_000).map((g) => g.caminho);
     const tipo = (caminho: string) =>
       caminho === "rodada.json"
@@ -124,9 +124,11 @@ describe("plano B", () => {
               ? 3
               : caminho === "mapa.json"
                 ? 4
-                : 5;
+                : caminho === "simulador.json"
+                  ? 5
+                  : 6;
     expect(daTroca.map(tipo)).toEqual(daTroca.map(tipo).sort((a, b) => a - b));
-    expect(new Set(daTroca.map(tipo))).toEqual(new Set([0, 1, 2, 3, 4, 5]));
+    expect(new Set(daTroca.map(tipo))).toEqual(new Set([0, 1, 2, 3, 4, 5, 6]));
     // Nenhum município vai duas vezes antes de todos irem uma: o que mudou depois de gravado espera os que nunca foram.
     const municipios = noPlanoB.map((g) => g.caminho).filter((c) => /^lugares\/\d+\.json$/.test(c));
     const primeiraVolta = municipios.slice(0, new Set(municipios).size);

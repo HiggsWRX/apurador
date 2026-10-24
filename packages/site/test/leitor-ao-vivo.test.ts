@@ -2,6 +2,7 @@ import type {
   ArquivoDeRodada,
   ArquivoDoLugar,
   ArquivoDoMapa,
+  ArquivoDoSimuladorAoVivo,
   Buscar,
   ChavesDaNoite,
   MunicipiosDaTabela,
@@ -88,7 +89,7 @@ function cdn() {
   };
 }
 
-function montar(pagina: Pick<Parameters<typeof criarLeitorAoVivo>[0], "lugar" | "tabelaDeProjecoes"> = { lugar: "BR" }) {
+function montar(pagina: Pick<Parameters<typeof criarLeitorAoVivo>[0], "lugar" | "tabelaDeProjecoes" | "simulador"> = { lugar: "BR" }) {
   const borda = cdn();
   let agora = 0;
   const leitor = criarLeitorAoVivo({ enderecos: enderecosDoBuild(BASE, null), buscar: borda.buscar, relogio: () => agora, chaves: DO_SITE, ...pagina });
@@ -440,5 +441,73 @@ describe("a tabela de projeções e o mapa.json", () => {
     await leitor.ler();
     await leitor.ler();
     expect(caminhos(pedidos.slice(-2))).toEqual(["lugares/41238.json", "rodada.json"]);
+  });
+});
+
+describe("o arquivo do simulador", () => {
+  // Simulador "e se", decisão 12: a tela do simulador relê o arquivo completo no ritmo da página de lugar, pelo mesmo leitor
+  // que lê o arquivo de rodada e o Brasil. Só ela o pede, e só quando ele pode estar no ar.
+  const DATE = "2026-10-25T19:00:00-03:00";
+  const SIMULADOR: ArquivoDoSimuladorAoVivo = {
+    assinatura: "0badcafe",
+    apuracao: { secoes: [3], secoesTotais: [40], aptos: [900], aptosTotais: [12000], votos: [[400], [380]] },
+    agregado: { valor: 51.1, incerteza: 1.5 },
+  };
+  const caminhos = (pedidos: { caminho: string }[]) => pedidos.map((p) => p.caminho).sort();
+  function responderTudo(responder: ReturnType<typeof montar>["responder"], corpoDaRodada: ArquivoDeRodada, date = DATE, simulador = SIMULADOR) {
+    responder("rodada.json", { status: 200, date, etag: `"${corpoDaRodada.rodada}"`, corpo: corpoDaRodada });
+    responder("lugares/BR.json", { status: 200, date, etag: '"b1"', corpo: lugar(12.34, "2022-10-30 18:00:00") });
+    responder("simulador.json", { status: 200, date, etag: `"${JSON.stringify(simulador).length}"`, corpo: simulador });
+  }
+
+  it("na tela do simulador, lê o arquivo do simulador com o arquivo de rodada e o Brasil, a cada leitura; a página do Brasil, não", async () => {
+    const naTela = montar({ lugar: "BR", simulador: "simulador.json" });
+    responderTudo(naTela.responder, rodada("2026-10-25T18:59:50-03:00", "ao-vivo"));
+    await naTela.leitor.ler();
+    expect(caminhos(naTela.pedidos)).toEqual(["lugares/BR.json", "rodada.json", "simulador.json"]);
+    expect(naTela.leitor.quadro().simulador).toEqual(SIMULADOR);
+
+    // A leitura seguinte traz a apuração nova; um 304 depois dela mantém a que a tela tem.
+    const novo = { ...SIMULADOR, apuracao: { ...SIMULADOR.apuracao!, secoes: [4] } };
+    naTela.responder("simulador.json", { status: 200, date: DATE, etag: '"s2"', corpo: novo });
+    await naTela.leitor.ler();
+    expect(naTela.leitor.quadro().simulador).toEqual(novo);
+    naTela.responder("simulador.json", { status: 304, date: DATE, etag: '"s2"' });
+    await naTela.leitor.ler();
+    expect(naTela.pedidos.at(-1)).toMatchObject({ ifNoneMatch: '"s2"' });
+    expect(naTela.leitor.quadro().simulador).toEqual(novo);
+
+    const naPagina = montar();
+    responderTudo(naPagina.responder, rodada("2026-10-25T18:59:50-03:00", "ao-vivo"));
+    await naPagina.leitor.ler();
+    expect(caminhos(naPagina.pedidos)).toEqual(["lugares/BR.json", "rodada.json"]);
+    expect(naPagina.leitor.quadro().simulador).toBeNull();
+  });
+
+  it("antes das 17h, só a primeira leitura pede o arquivo do simulador; a que passa ao ao vivo o pede nela mesma", async () => {
+    const { leitor, responder, pedidos } = montar({ lugar: "BR", simulador: "simulador.json" });
+    responderTudo(responder, rodada("2026-10-25T15:59:50-03:00", "antes-das-17h"), "2026-10-25T16:00:00-03:00", { assinatura: "0badcafe" });
+    await leitor.ler();
+    expect(caminhos(pedidos)).toEqual(["lugares/BR.json", "rodada.json", "simulador.json"]);
+    await leitor.ler();
+    expect(caminhos(pedidos.slice(3))).toEqual(["lugares/BR.json", "rodada.json"]);
+
+    responderTudo(responder, rodada("2026-10-25T17:00:10-03:00", "ao-vivo"), "2026-10-25T17:00:20-03:00");
+    await leitor.ler();
+    expect(caminhos(pedidos.slice(5))).toEqual(["lugares/BR.json", "rodada.json", "simulador.json"]);
+    expect(leitor.quadro()).toMatchObject({ fase: "ao-vivo", simulador: SIMULADOR });
+  });
+
+  it("com a chave do simulador desligada (ou a da projeção, que a leva junto), não pede o arquivo; no plano zero, também não", async () => {
+    const { leitor, responder, pedidos } = montar({ lugar: "BR", simulador: "simulador.json" });
+    responderTudo(responder, rodada("2026-10-25T18:59:50-03:00", "ao-vivo", {}, { chaves: { ...LIGADAS, simulador: false } }));
+    await leitor.ler();
+    await leitor.ler();
+    expect(caminhos(pedidos.slice(3))).toEqual(["lugares/BR.json", "rodada.json"]);
+
+    responderTudo(responder, rodada("2026-10-25T19:00:10-03:00", "ao-vivo", {}, { chaves: { ...LIGADAS, nucleoMinimo: false } }), "2026-10-25T19:00:20-03:00");
+    await leitor.ler();
+    await leitor.ler();
+    expect(caminhos(pedidos.slice(-2))).toEqual(["lugares/BR.json", "rodada.json"]);
   });
 });

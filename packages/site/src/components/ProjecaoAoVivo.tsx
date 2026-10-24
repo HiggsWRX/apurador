@@ -10,9 +10,10 @@ import { ValoresDosFinalistas } from "./ValoresDosFinalistas";
 // A caixa da projeção durante a apuração (Telas da página de lugar, decisões 3 e 6), depois da curva: numa moldura
 // tracejada com fundo próprio e o aviso, o resultado final estimado de cada candidato ± a margem de 95%, a chance de
 // vitória, "A projeção, comparada" com o 1º turno e com a indicação das pesquisas (depois do fim do lugar, o resultado)
-// e o controle Base da projeção, com o peso das pesquisas ao lado (Combinação de pesquisas e apuração, decisão 5). Os
-// números vêm prontos do coletor, nos % do 1º candidato do arquivo de rodada; o do 2º é o que falta para 100. Nenhuma
-// frase diz quem vence. A base escolhida fica na ilha, que a passa também à curva.
+// e o controle Base da projeção, com o peso das pesquisas ao lado (Combinação de pesquisas e apuração, decisão 5), e o
+// link do simulador "e se", com o simulador no ar. Os números vêm prontos do coletor, nos % do 1º candidato do arquivo de
+// rodada; o do 2º é o que falta para 100. Nenhuma frase diz quem vence. A base escolhida fica na ilha, que a passa também
+// à curva.
 
 const METODOLOGIA = "/metodologia/";
 /** A lista das pesquisas, na página do Brasil (`ListaDasPesquisas`). */
@@ -26,11 +27,13 @@ interface Props {
   eleito: string | null;
   /** Quantas pesquisas o agregado de pesquisas tem, ou `null` sem ele no ar. */
   pesquisasDoAgregado: number | null;
+  /** O link "Simular 'e se' →", com a base escolhida e a UF do lugar (`caminhoDoSimulador`), ou `null` sem o simulador no ar. */
+  simulador: string | null;
   aoEscolherBase: (base: IdDaBase) => void;
 }
 
 /** A projeção do lugar na base escolhida, com o controle das bases. */
-export function ProjecaoAoVivo({ projecao, candidatos, tse, eleito, pesquisasDoAgregado, aoEscolherBase }: Props) {
+export function ProjecaoAoVivo({ projecao, candidatos, tse, eleito, pesquisasDoAgregado, simulador, aoEscolherBase }: Props) {
   const { bases, base, naBase, doLugar } = projecao;
   const [primeiro, segundo] = candidatos as [ArquivoDeRodada["candidatos"][number], ArquivoDeRodada["candidatos"][number]];
   /** Um % do 1º candidato repartido entre os dois, como a página escreve um cálculo do Apurador. */
@@ -87,6 +90,7 @@ export function ProjecaoAoVivo({ projecao, candidatos, tse, eleito, pesquisasDoA
         </>
       )}
       <p class="links">
+        {simulador !== null && <a href={simulador}>Simular "e se" →</a>}
         <a href={METODOLOGIA}>Como calculamos →</a>
         {pesquisasDoAgregado !== null && <a href={PESQUISAS_DO_AGREGADO}>as {pesquisasDoAgregado} pesquisas do agregado</a>}
       </p>

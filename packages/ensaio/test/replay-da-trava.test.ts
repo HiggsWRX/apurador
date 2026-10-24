@@ -30,14 +30,15 @@ describe("a trava de 90% das gravações do mês", () => {
     expect(r.rodadas[0]!.gravacoesDoMes!.buckets["apurador-ao-vivo"]! + 900).toBeLessThan(900_000);
   });
 
-  it("depois dela, grava cada município e o mapa.json no máximo a cada 5 min", () => {
+  it("depois dela, grava cada município, o mapa.json e o arquivo do simulador no máximo a cada 5 min", () => {
     const ultima = new Map<string, number>();
     const cedo: string[] = [];
-    for (const g of daTrava().filter((g) => ehMunicipio(g.caminho) || g.caminho === "mapa.json")) {
+    for (const g of daTrava().filter((g) => ehMunicipio(g.caminho) || g.caminho === "mapa.json" || g.caminho === "simulador.json")) {
       if (g.quando - (ultima.get(g.caminho) ?? -Infinity) < CINCO_MINUTOS) cedo.push(g.caminho);
       ultima.set(g.caminho, g.quando);
     }
     expect(daTrava().filter((g) => ehMunicipio(g.caminho)).length).toBeGreaterThan(5_000);
+    expect(daTrava().filter((g) => g.caminho === "simulador.json").length).toBeGreaterThan(3);
     expect(cedo).toEqual([]);
   });
 
