@@ -3,8 +3,8 @@ import { Marked, type Token, type TokensList } from "marked";
 // O roteiro da noite em HTML, para imprimir ao lado do computador e salvar no celular (Operação na noite, decisão 22):
 // com o computador travado, o dono não lê o roteiro na tela. A fonte é o Markdown de `docs/roteiro-da-noite.md`, e aqui
 // ele vira uma página só, sem nada de fora, que o Chrome imprime em A4 e o celular abre sem internet. Cada título de
-// terceiro nível abre uma `<section>` que a impressão não parte: um cartão de falha nunca começa numa folha e termina
-// na outra. Os ids dos títulos são os que o GitHub dá, para os links internos (`#f-placar-divergente`) valerem nos dois.
+// terceiro nível abre uma `<section class="inteira">`, que a impressão não parte: um cartão de falha nunca começa numa
+// folha e termina na outra. Os ids dos títulos são os que o GitHub dá, para os links internos (`#f-placar-divergente`) valerem nos dois.
 
 /** O id que o GitHub dá a um título: em minúsculas, sem pontuação, com um hífen no lugar de cada espaço. */
 export const idDoTitulo = (titulo: string) =>
@@ -25,7 +25,7 @@ h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
 h2 { font-size: 1.25rem; margin: 1.75rem 0 0.5rem; padding-top: 0.5rem; border-top: 2px solid var(--texto); }
 h3 { font-size: 1.05rem; margin: 1.25rem 0 0.25rem; }
 h2, h3 { break-after: avoid; }
-section.bloco { break-inside: avoid; }
+section.inteira { break-inside: avoid; }
 p, ul, ol { margin: 0.4rem 0; }
 li { margin: 0.15rem 0; }
 code { font: 0.9em/1.35 ui-monospace, Consolas, monospace; background: var(--fundo-do-codigo); padding: 0 0.2em; border-radius: 3px; overflow-wrap: anywhere; }
@@ -43,14 +43,20 @@ a { color: inherit; }
 @media print { body { max-width: none; padding: 0; font-size: 10.5pt; } a { text-decoration: none; } }
 `;
 
-/** Os tokens do roteiro em blocos: um a cada título de segundo ou terceiro nível, e o que vem antes do primeiro. */
-function emBlocos(tokens: TokensList): { nivel: number; tokens: Token[] }[] {
-  const blocos: { nivel: number; tokens: Token[] }[] = [{ nivel: 1, tokens: [] }];
+/** Um trecho do roteiro: o que vem depois de um título de segundo ou terceiro nível, ou antes do primeiro (`null`). */
+interface Secao {
+  nivel: 2 | 3 | null;
+  tokens: Token[];
+}
+
+/** Os tokens do roteiro em seções: uma a cada título de segundo ou terceiro nível, e a do que vem antes do primeiro. */
+function emSecoes(tokens: TokensList): Secao[] {
+  const secoes: Secao[] = [{ nivel: null, tokens: [] }];
   for (const token of tokens) {
-    if (token.type === "heading" && (token.depth === 2 || token.depth === 3)) blocos.push({ nivel: token.depth, tokens: [] });
-    blocos.at(-1)!.tokens.push(token);
+    if (token.type === "heading" && (token.depth === 2 || token.depth === 3)) secoes.push({ nivel: token.depth, tokens: [] });
+    secoes.at(-1)!.tokens.push(token);
   }
-  return blocos.filter((bloco) => bloco.tokens.length > 0);
+  return secoes.filter((secao) => secao.tokens.length > 0);
 }
 
 /**
@@ -62,18 +68,19 @@ export function roteiroEmHtml(markdown: string, versao: string): string {
   marked.use({
     renderer: {
       heading({ tokens, depth, text }) {
-        return `<h${depth} id="${idDoTitulo(text)}">${this.parser.parseInline(tokens)}</h${depth}>\n`;
+        const titulo = `<h${depth} id="${idDoTitulo(text)}">${this.parser.parseInline(tokens)}</h${depth}>\n`;
+        return depth === 1 ? `${titulo}<p class="versao">${versao}</p>\n` : titulo;
       },
     },
   });
   const tokens = marked.lexer(markdown);
   const titulo =
     tokens.find((token): token is Extract<Token, { type: "heading" }> => token.type === "heading" && token.depth === 1)?.text ?? "Roteiro da noite";
-  const corpo = emBlocos(tokens)
+  const corpo = emSecoes(tokens)
     .map(({ nivel, tokens }) => {
       const html = marked.parser(tokens);
-      if (nivel === 1) return html.replace(/(<\/h1>\n)/, `$1<p class="versao">${versao}</p>\n`);
-      return nivel === 3 ? `<section class="bloco">\n${html}</section>\n` : `<section>\n${html}</section>\n`;
+      if (nivel === null) return html;
+      return nivel === 3 ? `<section class="inteira">\n${html}</section>\n` : `<section>\n${html}</section>\n`;
     })
     .join("");
   return `<!doctype html>

@@ -25,7 +25,7 @@ O passo a passo do dono para a noite do 2º turno ([Operação na noite](../.scr
   ```
 
   O dia do nome é o de Greenwich, contado quando o supervisor começa. Se ele recomeçar depois das 21h (num reinício do computador ou num `Start-ScheduledTask`), o log novo é o `coletor-2026-10-26.log`.
-- **O painel do coletor**: `.cache\coletor\painel.html`, no navegador. Ele se recarrega a cada 5 s, e o título da aba diz quantos alertas críticos há. A ordem do painel é Estado, Visto de fora, TSE, Placar conferido, Projeção do Brasil, Gravação e Computador. Rodando pela tarefa do Agendador, o coletor não toca som nem mostra notificação do Windows. O alerta no computador é o painel, e o crítico vai também ao celular.
+- **O painel do coletor** (daqui em diante, só "o painel"): `.cache\coletor\painel.html`, no navegador. Ele se recarrega a cada 5 s, e o título da aba diz quantos alertas críticos há. A ordem do painel é Estado, Visto de fora, TSE, Placar conferido, Projeção do Brasil, Gravação e Computador. Rodando pela tarefa do Agendador, o coletor não toca som nem mostra notificação do Windows. O alerta no computador é o painel, e o crítico vai também ao celular.
 - **Um navegador como visitante** em `https://apurador.org`.
 - **O app do TSE** no celular, pelo 4G.
 - **A sessão do Claude.**
@@ -54,7 +54,7 @@ Cada comando mostra o que vai mudar e pede para digitar o nome do bloco. Qualque
   3. "A projeção do Apurador está suspensa. O placar oficial do TSE continua atualizado."
 
   Um aviso novo entra no lugar do anterior.
-- **No log**, cada linha de rodada mostra o controle: `· desligadas: projeção, simulador`, `· aviso 2`, `· plano B`. Sem nada disso, está tudo ligado e sem aviso.
+- **No log**, cada linha de rodada mostra o que foge do tudo ligado: `· desligadas: textos preditivos` (o normal da noite, com os textos preditivos desligados), `· desligadas: projeção, simulador, textos preditivos`, `· aviso 2`, `· plano B`.
 
 **A tarefa do Agendador** (o coletor sem login, pelo supervisor):
 
@@ -118,7 +118,7 @@ Era para estar pronto em 21/10. Marque o que já foi feito: tudo precisa estar p
   - `NTFY_TOPICO`;
   - `CLOUDFLARE_API_TOKEN`: sem ele, o plano B republica pelo `wrangler login`, que pode cair;
   - para o ensaio, `R2_ENSAIO_*` e `R2_ENSAIO_NOITE_*`.
-- [ ] **As duas sentinelas** publicadas, a da noite e a do ensaio, pelo passo 3 de "Os alertas e a sentinela" do README. Com um arquivo de rodada de outra noite, a da noite fica quieta.
+- [ ] **As duas sentinelas**, pelo passo 3 de "Os alertas e a sentinela" do README, cada uma só depois da primeira rodada do coletor no seu destino. Sem `rodada.json` no endereço, a sentinela manda "Sentinela: arquivo de rodada público sem leitura há …". A do ensaio vai no começo do ensaio 2; a da noite, no teste das 19h de 24/10. Depois, com o arquivo de rodada de outra noite, ela fica quieta.
 - [ ] **`npx wrangler whoami`** mostra o login.
 - [ ] **Máquina reserva**, só se houver notebook: `git clone`, a `main` do dia, o Node 24, `npm ci` e o `packages/coletor/.env` com `R2_PRODUCAO_*`, `R2_NOITE_*`, `NTFY_TOPICO` e `CLOUDFLARE_API_TOKEN`. Teste no ensaio 2.
 
@@ -128,7 +128,7 @@ Era para estar pronto em 21/10. Marque o que já foi feito: tudo precisa estar p
 
 O ensaio 2 passou de 23/10 para esta manhã.
 
-- **De manhã, antes do ensaio**: o coletor por 15 min contra o TSE real zerado, publicando só na pasta local. Isso confere o formato, os cabeçalhos e o ritmo do TSE:
+- **De manhã, antes do ensaio**: o coletor por 15 min contra o TSE real zerado, publicando só na pasta local. Isso confere o formato, os cabeçalhos e o ritmo do TSE. Pela decisão, ele rodaria 15 min por dia de 21 a 24/10, e este é o último:
 
   ```powershell
   npm run coletor -- --minutos 15
@@ -139,10 +139,19 @@ O ensaio 2 passou de 23/10 para esta manhã.
 - **Depois do veredito**:
   - **Núcleo mínimo reprovado**: correção e um trecho de 30 min a 1x, das 18:30 às 19:00 de 2022 (`npm run tse-falso -- --partida 18:30 --velocidade 1`). Se falhar de novo, vale o plano zero na noite.
   - **Outro bloco reprovado**: vai para a noite com a chave desligada, em `dados/chaves.json`, seção `noite`. Ele pode ser aprovado até as 18h, se a correção passar no replay e num trecho de 30 min.
+- **Logo depois do ensaio**, antes de qualquer coletor na produção:
+  - apague o arquivo de controle do ensaio. O teste das 19h o leria, e o aviso de "outro dia" não pega um arquivo do mesmo dia: com o plano B do ensaio ligado, o teste iria direto ao plano B.
+
+    ```powershell
+    Remove-Item .cache\coletor\controle.json
+    ```
+
+  - crie de novo a tarefa com `-Destino producao` (em "Preparo do computador");
+  - ponha `packages/site/ensaio/pesquisas-retiradas.json` de volta em `[]`.
 - **Até 18h**:
   - o `dados/chaves.json` (seção `noite`) igual ao veredito;
   - o push da `main` aprovada, que o CI testa e põe no ar (GitHub → Actions; em 22/10, de 4,5 a 13 min). Conferir no celular que o `apurador.org` está no build novo: o cartão do mapa aparece no Brasil, antes do histórico.
-  - Com o CI vermelho, use "Deploy pelo computador", abaixo, **sem** os endereços ao vivo.
+  - Com o CI vermelho, use o [Deploy pelo computador](#deploy-pelo-computador), abaixo, **sem** os endereços ao vivo.
 - **18h**: congelamento do código. Daí em diante, só os dados das pesquisas, até 23h, e o passo das 19h40.
 - **Das 19h às 19h30**: o coletor contra o TSE real zerado, publicando na produção. É a primeira rodada do coletor na produção:
 
@@ -150,8 +159,8 @@ O ensaio 2 passou de 23/10 para esta manhã.
   npm run coletor -- --destino producao --minutos 30
   ```
 
-  No painel: a Gravação no destino principal dando certo, o Visto de fora lendo `ao-vivo.apurador.org` e nenhum alerta crítico. Se a sentinela da noite já estiver publicada, ~3 min depois de o coletor parar chega ao celular "Sentinela: arquivo de rodada público parado há …". É o teste dela, e não há nada a fazer.
-- **19h40**: os endereços ao vivo no deploy ([ticket 13](../.scratch/apurador-2026-construcao/issues/13-lancamento-antes-da-noite.md)). Sem eles, a página da noite não lê nada. Esta é a única mudança depois do congelamento, e ela estava prevista: no `.github/workflows/ci.yml`, job `deploy`, o último passo passa a ser
+  No painel: a Gravação no destino principal dando certo, o Visto de fora lendo `ao-vivo.apurador.org` e nenhum alerta crítico. Com a primeira rodada publicada, publique a sentinela da noite (passo 3 de "Os alertas e a sentinela", no README). ~3 min depois de o coletor parar, chega ao celular "Sentinela: arquivo de rodada público parado há …". É o teste dela, e não há nada a fazer.
+- **19h40**: os endereços ao vivo no deploy ([ticket 13](../.scratch/apurador-2026-construcao/issues/13-lancamento-antes-da-noite.md)). Sem eles, a página da noite não lê nada. É a mudança de código prevista depois do congelamento; na noite, só o [cartão H](#h-formato-novo-do-tse) abre outra. No `.github/workflows/ci.yml`, job `deploy`, o último passo passa a ser
 
   ```yaml
         - if: steps.secrets.outputs.ok == 'true'
@@ -164,9 +173,17 @@ O ensaio 2 passou de 23/10 para esta manhã.
   Depois, commit e push. Quando o deploy terminar, conferir pelo 4G que o Brasil abre normal, no painel de antes das 17h, sem aviso nem "interrompida". No computador, F12 → Rede: o `rodada.json` vem de `ao-vivo.apurador.org` com 200 ou 304.
 - **Até 23h**: o último deploy das pesquisas (`dados/pesquisas.csv`, commit e push).
 - **23h**: o roteiro congela.
-- **23h05**: o deploy agendado do CI põe no ar o agregado da noite, congelado às 23h. Quando ele terminar (GitHub → Actions), conferir pelo celular no 4G a lista das pesquisas, o agregado e as curvas das duas bases. Com o CI vermelho, rode depois das 23h o "Deploy pelo computador", **com** os endereços.
+- **23h01**: rode o CI à mão para pôr no ar o agregado da noite, congelado às 23h. O agendado das 23h05 não serve: de 20 a 23/10, o agendado do CI rodou ~5 h depois da hora marcada. Também dá pelo GitHub → Actions → CI → "Run workflow".
 
-**Deploy pelo computador**, só se o CI estiver vermelho. Ele pula os testes do CI. Sem os endereços (antes das 19h40):
+  ```powershell
+  gh workflow run ci.yml --ref main
+  ```
+
+  Quando ele terminar, confira pelo celular no 4G a lista das pesquisas, o agregado e as curvas das duas bases. Com o CI vermelho, rode o [Deploy pelo computador](#deploy-pelo-computador) **com** os endereços.
+
+### Deploy pelo computador
+
+Só se o CI estiver vermelho, porque ele pula os testes do CI. Sem os endereços (antes das 19h40):
 
 ```powershell
 npm run deploy
@@ -180,8 +197,8 @@ $env:PUBLIC_AO_VIVO="https://ao-vivo.apurador.org/"; $env:PUBLIC_AO_VIVO_PLANO_B
 
 ### Domingo, 25/10
 
-- **0h05**: o deploy agendado de todo dia. Não há nada a fazer.
-- **8h e 14h**: as notícias e as decisões do TSE sobre pesquisas suspensas. Se uma do agregado for suspensa, siga "Retirar uma pesquisa", abaixo. A última retirada é às 16h.
+- **De madrugada**: os dois deploys agendados do CI (o das 23h05 e o de todo dia), que nesta semana rodaram ~5 h atrasados, por volta das 4h e das 5h. Não há nada a fazer. Se a página quebrar depois deles, use o [cartão I](#i-um-deploy-quebrou-a-página).
+- **8h e 14h**: as notícias e as decisões do TSE sobre pesquisas suspensas. Se uma do agregado for suspensa, siga [Retirar uma pesquisa](#retirar-uma-pesquisa). A última retirada é às 16h.
 - **Antes das 15h**, o preparo do dia:
   - [ ] Steam, Discord, OneDrive e parecidos fechados e fora da inicialização (Gerenciador de Tarefas → Aplicativos de inicialização). Nada de jogo, download ou chamada de vídeo no computador.
   - [ ] pelo menos 20 GB livres no disco;
@@ -211,10 +228,12 @@ $env:PUBLIC_AO_VIVO="https://ao-vivo.apurador.org/"; $env:PUBLIC_AO_VIVO_PLANO_B
   npm run noite -- ligar textos-preditivos
   ```
 
-**Retirar uma pesquisa** (até as 16h de 25/10; meta de 10 min):
+### Retirar uma pesquisa
+
+Até as 16h de 25/10, com meta de 10 min:
 
 1. Apague a linha da pesquisa (o registro `BR-NNNNN/2026`) em `dados/pesquisas.csv`.
-2. Faça commit e push. O CI põe no ar (de 4,5 a 13 min em 22/10). Com o CI vermelho, use "Deploy pelo computador", com os endereços:
+2. Faça commit e push. O CI põe no ar (de 4,5 a 13 min em 22/10). Com o CI vermelho, use o [Deploy pelo computador](#deploy-pelo-computador), com os endereços:
 
    ```powershell
    git commit -am "Retira a pesquisa BR-NNNNN/2026, suspensa"; git push
@@ -299,6 +318,8 @@ Cada cartão segue a ordem sintoma → como confirmar → o que fazer → como v
      npm run coletor -- --destino producao --partida a-frio
      ```
 
+     Assim, o log fica só neste terminal, e nada põe o coletor de volta se ele cair. Depois de duas rodadas boas, aperte Ctrl+C (ele para no fim da rodada) e ligue a tarefa de novo ("Ligar"), que retoma do disco.
+
   4. **Computador sem resposta**: aperte o botão de reiniciar. A tarefa traz o coletor de volta sem login, do estado em disco. A meta é ter os dados de volta em 5 min. Depois do login, abra de novo o log (depois das 21h, o do dia 26) e o painel.
   5. **Computador que não liga**: passe ao notebook, se houver. Ele retoma do último objeto da noite (no log, `Retoma do objeto da noite da rodada N`) e leva ~10 rodadas (3 a 4 min). Nesse tempo, o placar segue, mas a projeção sai dos JSONs do Brasil e das UFs, e o mapa e as tabelas não mudam. Deixe o computador principal desligado ou sem cabo até o fim da noite: se ele voltar com a tarefa ligada, sobe outro coletor.
 
@@ -311,7 +332,7 @@ Cada cartão segue a ordem sintoma → como confirmar → o que fazer → como v
 
 ### E. TSE lento ou sem novidade
 
-- **Sintoma**: o alerta de atenção "TSE sem novidade há …, com …% das seções" (só no painel, com um som curto), e a página em "TSE sem novidade".
+- **Sintoma**: o alerta de atenção "TSE sem novidade há …, com …% das seções" (só no painel, sem ir ao celular), e a página em "TSE sem novidade".
 - **Como confirmar**: o app do TSE no celular, pelo 4G.
 - **O que fazer**:
   - **O app também está parado**: o problema é do TSE. Depois de 10 min, publique o aviso pronto 1, confirmando com `aviso-1`:
@@ -342,21 +363,25 @@ Cada cartão segue a ordem sintoma → como confirmar → o que fazer → como v
   npm run noite -- desligar nucleo-minimo
   ```
 
-- **Como voltar**: só se a causa for o leitor do TSE ([cartão H](#h-formato-novo-do-tse)) e o Placar conferido voltar a "igual":
+- **Como voltar**: só se a causa for o leitor do TSE, corrigido pelo [cartão H](#h-formato-novo-do-tse). No plano zero, o coletor não publica os lugares, então o Placar conferido não tem o que conferir: só dá para ver o placar de novo religando.
 
   ```powershell
   npm run noite -- ligar nucleo-minimo
   ```
 
+  Nas duas primeiras rodadas depois de religar, confira o Placar conferido ("igual") e o placar do site contra o app do TSE. Se divergir de novo, plano zero outra vez, até o fim da noite.
+
 ### G. Projeção que salta
 
 - **Sintoma**: o alerta de atenção "Projeção do Brasil mudou numa rodada: …". Ele aparece quando a projeção muda mais de 1 ponto, ou a chance de vitória mais de 20 pontos, depois de 5% das seções.
 - **Como confirmar**: veja se a chegada de um lugar grande explica o salto. Por exemplo, o % de seções de SP ou de MG pulou na mesma rodada, na página da UF. Se explica, não há nada a fazer.
-- **O que fazer**, quando o salto não tem explicação (um número inválido, um vai e volta): desligue a projeção, o que desliga também o simulador (confirme com `projecao`), e publique o aviso pronto 3 (confirme com `aviso-3`):
+- **O que fazer**, quando o salto não tem explicação (um número inválido, um vai e volta): desligue a projeção, o que desliga também o simulador (confirme com `projecao`):
 
   ```powershell
   npm run noite -- desligar projecao
   ```
+
+  Depois, publique o aviso pronto 3 (confirme com `aviso-3`):
 
   ```powershell
   npm run noite -- aviso 3
@@ -366,7 +391,7 @@ Cada cartão segue a ordem sintoma → como confirmar → o que fazer → como v
 
 ### H. Formato novo do TSE
 
-É a única exceção ao congelamento.
+É a única exceção ao congelamento na noite.
 
 - **Sintoma**: o alerta crítico "Arquivo do TSE que o leitor não entende: …" (Brasil ou UF), ou o de atenção "Arquivo de município que o leitor não entende (N): fica o último bom".
 - **Como confirmar**: o nome do arquivo no alerta e no log, que o Claude abre.
@@ -383,7 +408,7 @@ Cada cartão segue a ordem sintoma → como confirmar → o que fazer → como v
      ```
 
   3. Commit na `main` e reinício do coletor ("Reiniciar", em "Os comandos da noite"). O site não é republicado.
-  4. Se o placar do Brasil não voltar em 30 min a partir do primeiro alerta, plano zero ([cartão F](#f-placar-divergente)) até ele voltar.
+  4. Se o placar do Brasil não voltar em 30 min a partir do primeiro alerta, plano zero ([cartão F](#f-placar-divergente)). A volta é a do cartão F, depois da correção.
 - **Como voltar**: o alerta termina sozinho quando o leitor volta a entender o arquivo. Nenhuma outra mudança de código entra na noite.
 
 ### I. Um deploy quebrou a página
@@ -400,7 +425,7 @@ Cada cartão segue a ordem sintoma → como confirmar → o que fazer → como v
   npx wrangler rollback <id-da-versão-boa> -m "volta: <o que quebrou>" -y; cd ../..
   ```
 
-- **Como voltar**: o deploy seguinte da `main` (um push ou o agendado das 0h05) substitui a versão voltada, então a correção precisa estar na `main` antes dele.
+- **Como voltar**: o deploy seguinte da `main` (um push, uma execução à mão ou o agendado, que roda de madrugada) substitui a versão voltada, então a correção precisa estar na `main` antes dele.
 
 ## No ensaio 2
 
@@ -412,7 +437,7 @@ O ensaio 2 segue este roteiro com estas trocas:
 | os arquivos ao vivo em `ao-vivo.apurador.org` | `ao-vivo-ensaio.apurador.org`, e o plano B em `apurador-ensaio-plano-b.hicampos93.workers.dev` |
 | o TSE real | o TSE falso, num terminal à parte: `npm run tse-falso -- --partida 16:50`, a 3x até as 20:30 da noite e a 30x depois |
 | a tarefa com `-Destino producao` | `-Destino ensaio -Argumentos "--tse http://127.0.0.1:8022/oficial --noite 2022-2"` |
-| `npm run coletor -- --destino producao` | `npm run coletor -- --destino ensaio --tse http://127.0.0.1:8022/oficial --noite 2022-2`, com `--partida a-frio` se outro teste no destino do ensaio rodou há menos de 6 h |
+| `npm run coletor -- --destino producao` | `npm run coletor -- --destino ensaio --tse http://127.0.0.1:8022/oficial --noite 2022-2`, com `--partida a-frio` se o coletor já rodou no destino do ensaio há menos de 6 h |
 | o bloqueio do TSE | no terminal do TSE falso, `403 120`, e a troca de conexão depois de 2 min |
 | a sentinela com `--env=""` | `--env ensaio` |
 | retirar uma pesquisa: `dados/pesquisas.csv` e push | o registro em `packages/site/ensaio/pesquisas-retiradas.json` e `npm run deploy-ensaio`. Depois do ensaio, o arquivo volta a `[]` |
@@ -420,18 +445,30 @@ O ensaio 2 segue este roteiro com estas trocas:
 
 **Antes**: a chave do ensaio no `.env`, `npm run conferir-entrega -- --destino ensaio --plano-b` (o gzip pela borda) e `npm run deploy-ensaio`, com a `main` que vai ao ar. Os comandos do registro estão em `docs/ensaios/modelo.md`.
 
+**O botão de reiniciar, num teste à parte, antes do ensaio.** O reinício derruba também o TSE falso e o `ler-ensaio`, e um TSE falso partido de novo regrava o relógio que a conferência do ensaio usa. Por isso esse teste fica fora do ensaio:
+
+1. suba o TSE falso e ligue a tarefa do ensaio;
+2. depois de algumas rodadas publicadas, anote a hora da noite do TSE (a linha do TSE no painel) e aperte o botão de reiniciar;
+3. depois do login, rode `npm run tse-falso -- --partida <a hora anotada>`. A meta de 5 min conta até a primeira rodada publicada depois disso;
+4. no fim, pare tudo, desligue a tarefa e apague o `.cache\coletor\estado-ensaio.json`, para o ensaio partir a frio.
+
 **O que o ensaio provoca, nesta ordem** (o plano B por último, porque não volta):
 
 1. o 403 do TSE falso ([cartão A](#a-bloqueio-pelo-tse));
 2. os três avisos e as chaves (cartões [E](#e-tse-lento-ou-sem-novidade) e [G](#g-projeção-que-salta));
 3. o cabo puxado ([cartão B](#b-queda-da-internet));
-4. o coletor derrubado e o botão de reiniciar ([cartão D](#d-coletor-caído-computador-travado-ou-falta-de-luz));
-5. o coletor parado por mais de 14 min, para a página mostrar o link do app do TSE depois de 10 min de "interrompida";
+4. o coletor derrubado ([cartão D](#d-coletor-caído-computador-travado-ou-falta-de-luz)). Ache o processo e derrube-o com `Stop-Process -Id <ProcessId> -Force`; o supervisor o põe de volta:
+
+   ```powershell
+   Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object CommandLine -match 'principal\.ts' | Select-Object ProcessId, CommandLine
+   ```
+
+5. a tarefa desligada por mais de 14 min, para a página mostrar o link do app do TSE depois de 10 min de "interrompida". Depois, ligue-a de novo;
 6. o plano B ([cartão C](#c-falha-do-r2-e-plano-b)).
 
-Os alertas precisam chegar ao computador, ao celular e pela sentinela.
+Os alertas precisam chegar ao celular e pela sentinela, e aparecer no painel. A sentinela do ensaio é publicada depois da primeira rodada.
 
-**Depois do ensaio**: crie de novo a tarefa com `-Destino producao` ("Preparo do computador"), apague o `.cache\coletor\controle.json` do ensaio e ponha `packages/site/ensaio/pesquisas-retiradas.json` de volta em `[]`.
+**Depois do ensaio**: o que está em "Logo depois do ensaio", no sábado.
 
 ## Imprimir e levar ao celular
 
@@ -439,4 +476,4 @@ Os alertas precisam chegar ao computador, ao celular e pela sentinela.
 npm run roteiro
 ```
 
-O comando gera `.cache/roteiro/roteiro-da-noite.html` e, com o Chrome instalado, o `.pdf` ao lado. Imprima o PDF e salve-o no celular, no próprio aparelho, para ler sem internet. Depois de cada correção, gere e imprima de novo.
+O comando gera `.cache/roteiro/roteiro-da-noite.html` e, com o Chrome ou o Edge instalado, o `.pdf` ao lado. Imprima o PDF e salve-o no celular, no próprio aparelho, para ler sem internet. Depois de cada correção, gere e imprima de novo.

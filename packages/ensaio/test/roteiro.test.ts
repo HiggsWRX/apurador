@@ -22,10 +22,19 @@ describe("o roteiro em HTML", () => {
   });
 
   it("põe cada cartão de falha numa seção que a impressão não parte", () => {
-    const cartoes = [...markdown.matchAll(/^### ([A-I])\. (.+)$/gm)].map(([, letra, nome]) => `${letra}. ${nome}`);
+    const cartoes = [
+      "a-bloqueio-pelo-tse",
+      "b-queda-da-internet",
+      "c-falha-do-r2-e-plano-b",
+      "d-coletor-caído-computador-travado-ou-falta-de-luz",
+      "e-tse-lento-ou-sem-novidade",
+      "f-placar-divergente",
+      "g-projeção-que-salta",
+      "h-formato-novo-do-tse",
+      "i-um-deploy-quebrou-a-página",
+    ];
 
-    expect(cartoes).toHaveLength(9);
-    for (const cartao of cartoes) expect(html).toContain(`<section class="bloco">\n<h3 id="${idDoTitulo(cartao)}">`);
+    for (const id of cartoes) expect(html).toContain(`<section class="inteira">\n<h3 id="${id}">`);
   });
 
   it("mostra a versão logo abaixo do título", () => {
