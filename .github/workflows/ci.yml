@@ -76,3 +76,6 @@ jobs:
         run: npm ci
       - if: steps.secrets.outputs.ok == 'true'
         run: npm run deploy
+        env:
+          PUBLIC_AO_VIVO: https://ao-vivo.apurador.org/
+          PUBLIC_AO_VIVO_PLANO_B: https://apurador-plano-b.hicampos93.workers.dev/
