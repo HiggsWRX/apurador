@@ -92,3 +92,6 @@ Resolvido em 18/10/2026 em conversa com o dono do projeto, que aceitou todas as 
 ## Comments
 
 - 18/10/2026, de [Página de metodologia](20-pagina-de-metodologia.md) (decisões 2 e 4 de lá): na etapa "Antes da noite" (22/10) entram as seções 1 a 5, 8 e 9 da metodologia, com o sino, o que cobre a exigência dos advogados. As seções 6 (histórico de acerto em 2022 e 2018) e 7 (calibração) entram no build do ensaio 2. Os gráficos extras da decisão 3 daqui, os primeiros a sair se atrasar, são o peso das pesquisas, o diagrama da transferência de votos e o erro com as pesquisas deslocadas.
+- 26/10/2026, do [ticket 35](../../apurador-2026-construcao/issues/35-etapa-depois.md) (decisão 8 daqui):
+  - **"Como a projeção se saiu"**: não sai do arquivo da noite guardado no R2, que ficou vazio na noite de 25/10. Sai do registro das rodadas do coletor: a projeção publicada, com uma casa, só no Brasil.
+  - **O repositório público**: o `*.workers.dev` da produção e o do plano B (decisão 6, "nunca divulgado") estão no código e ficam públicos com ele. O dono decide antes de abrir.
