@@ -1,14 +1,14 @@
 ---
 import { DIA_DA_ELEICAO, diasEntre, INCERTEZA_POR_DIA, Z_95, type OrdemDeChegada } from "@apurador/modelo";
 import AgregadoContraResultado from "../components/AgregadoContraResultado.astro";
-import NoitesReproduzidas from "../components/NoitesReproduzidas.astro";
+import GraficosDaNoite from "../components/GraficosDaNoite.astro";
 import PesoDasPesquisas from "../components/PesoDasPesquisas.astro";
 import PesquisasDeslocadas from "../components/PesquisasDeslocadas.astro";
 import Secao from "../components/Secao.astro";
 import Sino from "../components/Sino.astro";
 import TransferenciaDeVotos from "../components/TransferenciaDeVotos.astro";
 import Base from "../layouts/Base.astro";
-import { NOME_DA_BASE } from "../lib/bases-da-projecao";
+import { BASE_DA_NOITE, NOME_DA_BASE } from "../lib/bases-da-projecao";
 import { CHAVES } from "../lib/chaves";
 import { duasCasas, formatarCalculo, formatarDia, formatarNumero, formatarPctComCasas, formatarPontos, formatarVotos, umaCasa } from "../lib/formato";
 import { nomeCurto } from "../lib/identidade";
@@ -105,6 +105,15 @@ const deslocadas = deslocadasDaNoite(noite2022)!;
 const [nome1, nome2] = noite2022.finalistas.map((f) => f.nome) as [string, string];
 const antesDaApuracao = noite2022.momentos[0]!.deslocadas!.map((d) => formatarPontos(Math.abs(d.projecao - noite2022.resultado)));
 const resultadoDe = (n: typeof noite2022) => `${n.finalistas[0].nome} ${formatarPctComCasas(n.resultado, 2)}`;
+// O gráfico das noites, na base que a caixa da projeção abre na noite.
+const graficosDasNoites = NOITES_REPRODUZIDAS.map((noite) => ({
+  id: String(noite.ano),
+  botao: String(noite.ano),
+  noite,
+  base: BASE_DA_NOITE,
+  titulo: `2º turno de ${noite.ano}, ${noite.finalistas[0].nome} × ${noite.finalistas[1].nome}`,
+  oQue: `Noite do 2º turno de ${noite.ano} reproduzida`,
+}));
 const erroDasPesquisas2018 = formatarPontos(noite2018.agregado - noite2018.resultado);
 const anoDoAgregado = (ano: number) => AGREGADO_CONTRA_RESULTADO.find((a) => a.ano === ano)!;
 const [agregado2018, agregado2022] = [anoDoAgregado(2018), anoDoAgregado(2022)];
@@ -433,7 +442,7 @@ const p1 = CALIBRACAO.passo1;
         totalizou: o 2º turno de 2022 e o de 2018, uma noite em que as pesquisas erraram {erroDasPesquisas2018}.
       </p>
       <figure data-bloco="noite-reproduzida">
-        <NoitesReproduzidas noites={NOITES_REPRODUZIDAS} />
+        <GraficosDaNoite graficos={graficosDasNoites} escolha="Noite" />
         <figcaption class="nota">Cálculo do Apurador com dados do TSE.</figcaption>
       </figure>
       <div class="tabela">

@@ -10,7 +10,7 @@ const DADOS = new URL("../../../dados/", import.meta.url);
 const ler = (arquivo: string) => readFileSync(new URL(arquivo, DADOS));
 const lerTurno = (arquivo: string) => JSON.parse(ler(`turnos/${arquivo}.json`).toString("utf8")) as Turno;
 const lugares = JSON.parse(ler("lugares.json").toString("utf8")) as Lugar[];
-const TURNOS = ["2018-1", "2018-2", "2022-1", "2022-2", "2026-1"];
+const TURNOS = ["2018-1", "2018-2", "2022-1", "2022-2", "2026-1", "2026-2"];
 
 describe("dados derivados de cada turno", () => {
   // O resultado oficial do Brasil, com o Exterior, como o TSE o divulgou.
@@ -86,6 +86,40 @@ describe("dados derivados de cada turno", () => {
       const [nomeUrna, votos, pct] = primeiros[i]!;
       expect([c.nomeUrna, br.votos[i], ((100 * br.votos[i]!) / br.validos).toFixed(2)]).toEqual([nomeUrna, votos, pct]);
     });
+  });
+
+  // O 2º turno de 2026, até os arquivos oficiais: o último estado da noite, com a totalização final do TSE que o
+  // registro da noite anotou (docs/noite/2026-10-25.md, "Resultado"). Com os oficiais, ele passa para a lista acima.
+  it("2026-2 é provisório, do último estado da noite, com a totalização final do TSE no Brasil", () => {
+    const turno = lerTurno("2026-2");
+    const br = turno.lugares.BR!;
+
+    expect(turno.provisorio).toBe(true);
+    expect(turno.candidatos.map((c, i) => [c.nomeUrna, br.votos[i], ((100 * br.votos[i]!) / br.validos).toFixed(2)])).toEqual([
+      ["LULA", 64_256_232, "51.79"],
+      ["FLAVIO BOLSONARO", 59_826_041, "48.21"],
+    ]);
+    expect(br.secoes).toBe(499_248);
+  });
+
+  it("2026-2 tem, em cada UF e no Exterior, a soma dos arquivos dos municípios dele, e no Brasil a deles", () => {
+    const { lugares: resultados } = lerTurno("2026-2");
+    const soma = (ids: string[]) => {
+      const s = { aptos: 0, votantes: 0, abstencoes: 0, validos: 0, brancos: 0, nulos: 0, votos: [0, 0] };
+      for (const id of ids) {
+        const r = resultados[id]!;
+        for (const t of ["aptos", "votantes", "abstencoes", "validos", "brancos", "nulos"] as const) s[t] += r[t];
+        r.votos.forEach((v, i) => (s.votos[i]! += v));
+      }
+      return s;
+    };
+    const semSecoes = ({ secoes: _, ...r }: Turno["lugares"][string]) => r;
+    const acima = new Map<string, string[]>();
+    for (const l of lugares) if (l.tipo === "municipio" && resultados[l.id]) acima.set(l.uf!, [...(acima.get(l.uf!) ?? []), l.id]);
+
+    expect(acima.size).toBe(28);
+    for (const [uf, municipios] of acima) expect([uf, soma(municipios)]).toEqual([uf, semSecoes(resultados[uf]!)]);
+    expect(soma([...acima.keys()])).toEqual(semSecoes(resultados.BR!));
   });
 
   // Os votos dados fora do país, medidos nos arquivos do TSE pela pesquisa dos dados históricos
@@ -176,7 +210,10 @@ describe("manifesto de origem", () => {
         const fotoDoPortal = /^https:\/\/cdn\.tse\.jus\.br\/.+\.zip#FBR\d+_div\.jpe?g$/.test(fonte!.url) && fonte!.url.endsWith(`#${fonte!.membro}`);
         // A malha do mapa: o .shp de dentro do zip do IBGE, que não tem data de geração.
         const daMalha = /^https:\/\/geoftp\.ibge\.gov\.br\/.+\.zip$/.test(fonte!.url) && /\.shp$/.test(fonte!.membro);
-        expect(doPortal || daDivulgacao || fotoDaDivulgacao || fotoDoPortal || daMalha, url).toBe(true);
+        // O turno provisório: os arquivos ao vivo da divulgação, como o coletor da produção os guardou na última rodada.
+        const doUltimoEstado =
+          /^https:\/\/resultados\.tse\.jus\.br\/oficial\/.+\/dados\/$/.test(fonte!.url) && /^estado-producao\.json, rodada \d+$/.test(fonte!.membro);
+        expect(doPortal || daDivulgacao || fotoDaDivulgacao || fotoDoPortal || daMalha || doUltimoEstado, url).toBe(true);
         if (!d.arquivo.startsWith("fotos/") && !d.arquivo.startsWith("malha/")) expect(fonte!.geracao.length).toBeGreaterThan(0);
         expect(fonte!.sha256).toMatch(/^[0-9a-f]{64}$/);
       }

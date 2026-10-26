@@ -1,3 +1,4 @@
+import { BASE_DA_NOITE, BASE_NOS_ARQUIVOS, type IdDaBase } from "./bases-da-projecao";
 import type { AnoDoAgregado, MomentoReproduzido, NoiteReproduzida, ProjecaoReproduzida } from "./metodologia";
 
 // Os gráficos das seções 4 e 6 da página de metodologia (Página de metodologia, decisão 2): a noite reproduzida, o erro
@@ -64,9 +65,9 @@ export interface GraficoDaNoite {
 
 const MARGEM_DA_NOITE = { esquerda: 78, direita: 10, topo: 12, base: 30 };
 
-/** A noite reproduzida, com a projeção da base que a caixa da projeção abre na noite, a Apuração + pesquisas. */
-export function graficoDaNoite(noite: NoiteReproduzida, { largura, altura }: Tamanho): GraficoDaNoite {
-  const base = (m: MomentoReproduzido) => m.comPesquisas;
+/** A noite reproduzida, com a projeção de uma base: de partida, a que a caixa da projeção abre na noite. */
+export function graficoDaNoite(noite: NoiteReproduzida, { largura, altura }: Tamanho, qual: IdDaBase = BASE_DA_NOITE): GraficoDaNoite {
+  const base = (m: MomentoReproduzido) => m[BASE_NOS_ARQUIVOS[qual]];
   const area = {
     esquerda: MARGEM_DA_NOITE.esquerda,
     direita: largura - MARGEM_DA_NOITE.direita,

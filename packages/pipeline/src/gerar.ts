@@ -9,13 +9,15 @@ import {
   urlDadosAbertos,
   type DetalheMunzona,
 } from "@apurador/tse";
-import { membroComCache, membroDePresidenteComCache, RAIZ } from "./fontes.ts";
+import { membroComCache, membroDePresidenteComCache, RAIZ, ultimoEstadoDaNoite } from "./fontes.ts";
 import { compararIds, indiceDeLugares, type Lugar } from "./lugares.ts";
 import { atualizarManifesto, gravarManifesto, lerManifesto } from "./manifesto.ts";
-import { doTurno, idDoTurno, resultadoDoTurno, type Turno } from "./turno.ts";
+import { doTurno, idDoTurno, resultadoDoTurno, turnoDoUltimoEstado, type Turno } from "./turno.ts";
 
 // Gera os dados derivados no repositório a partir dos arquivos do TSE.
 // Uso: npm run dados [-- --atualizar]   (--atualizar baixa de novo, em vez de usar o cache)
+// O 2º turno de 2026, enquanto os arquivos oficiais não o trazem, sai do último estado da noite de 25/10 (o estado em
+// disco do coletor da produção), provisório. Quando o TSE os publicar, `--atualizar` os baixa e o turno passa a eles.
 
 const atualizar = process.argv.includes("--atualizar");
 const DADOS = new URL("dados/", RAIZ);
@@ -26,13 +28,14 @@ const TURNOS = [
   { ano: 2022, turno: 1 },
   { ano: 2022, turno: 2 },
   { ano: 2026, turno: 1 },
+  { ano: 2026, turno: 2, daNoite: true },
 ];
 
 const fontes = new Map<string, { url: string; membro: string; geracao: string[]; sha256: string; bytes: number; baixadoEm: string }>();
 const derivados: { arquivo: string; sha256: string; fontes: string[] }[] = [];
 const detalhesDosTurnos: DetalheMunzona[] = [];
 
-for (const { ano, turno } of TURNOS) {
+for (const { ano, turno, daNoite } of TURNOS) {
   const urlCandidatos = urlDadosAbertos("votacao_candidato_munzona", ano);
   const urlDetalhes = urlDadosAbertos("detalhe_votacao_munzona", ano);
   const [arqCandidatos, arqDetalhes] = await Promise.all([
@@ -50,14 +53,27 @@ for (const { ano, turno } of TURNOS) {
     fontes.set(arq.url, { ...fonte, geracao: [...new Set(linhas.map((l) => l.geracao))].sort() });
   }
 
-  detalhesDosTurnos.push(...detalhes.filter(doTurno(ano, turno)));
-  const resultado = resultadoDoTurno({ ano, turno, candidatos, detalhes });
+  let resultado: Turno;
+  let fontesDoTurno = [urlCandidatos, urlDetalhes];
+  if (daNoite && !candidatos.some(doTurno(ano, turno))) {
+    const noite = ultimoEstadoDaNoite(ano);
+    resultado = turnoDoUltimoEstado({ ano, turno, resultados: noite.resultados });
+    if (!resultado.geracao[0]!.startsWith("25/10/2026 "))
+      throw new Error(`O estado em disco da produção é de outra noite: a totalização final do Brasil é de ${resultado.geracao[0]}`);
+    fontes.set(noite.fonte.url, { ...noite.fonte, geracao: resultado.geracao });
+    fontesDoTurno = [noite.fonte.url];
+  } else {
+    detalhesDosTurnos.push(...detalhes.filter(doTurno(ano, turno)));
+    resultado = resultadoDoTurno({ ano, turno, candidatos, detalhes });
+  }
   const arquivo = `turnos/${idDoTurno({ ano, turno })}.json`;
   const conteudo = serializarTurno(resultado);
   mkdirSync(new URL("turnos/", DADOS), { recursive: true });
   writeFileSync(new URL(arquivo, DADOS), conteudo);
-  derivados.push({ arquivo, sha256: createHash("sha256").update(conteudo).digest("hex"), fontes: [urlCandidatos, urlDetalhes] });
-  console.log(`${arquivo}: ${resultado.candidatos.length} candidatos, ${Object.keys(resultado.lugares).length} lugar(es)`);
+  derivados.push({ arquivo, sha256: createHash("sha256").update(conteudo).digest("hex"), fontes: fontesDoTurno });
+  console.log(
+    `${arquivo}: ${resultado.candidatos.length} candidatos, ${Object.keys(resultado.lugares).length} lugar(es)${resultado.provisorio ? ", provisório, do último estado da noite" : ""}`,
+  );
 }
 
 // O índice dos lugares: os que votaram em algum turno, com os municípios casados com o IBGE.
@@ -96,6 +112,7 @@ function serializarTurno(t: Turno): string {
     `  "turno": ${t.turno},`,
     `  "cargo": ${JSON.stringify(t.cargo)},`,
     `  "geracao": ${JSON.stringify(t.geracao)},`,
+    ...(t.provisorio ? [`  "provisorio": true,`] : []),
     `  "candidatos": [`,
     linhas(t.candidatos.map((c) => JSON.stringify(c))),
     "  ],",

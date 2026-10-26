@@ -68,12 +68,23 @@ describe("páginas de lugar", () => {
 });
 
 describe("histórico do lugar", () => {
-  it("tem um botão por turno, do mais recente ao mais antigo, com o 2026 1T aberto", () => {
+  it("tem um botão por turno, do mais recente ao mais antigo, com o 2026 2T aberto", () => {
     const botoes = elementos(pagina("/sp/campinas/"), /<button[^>]*data-turno-botao/);
 
-    expect(botoes.map(texto)).toEqual(["2026 1T", "2022 2T", "2022 1T", "2018 2T", "2018 1T"]);
+    expect(botoes.map(texto)).toEqual(["2026 2T", "2026 1T", "2022 2T", "2022 1T", "2018 2T", "2018 1T"]);
     expect(botoes[0]).toContain('aria-pressed="true"');
-    expect(turno(pagina("/sp/campinas/"), "2026-1")).toContain("data-ativo");
+    expect(turno(pagina("/sp/campinas/"), "2026-2")).toContain("data-ativo");
+  });
+
+  it("mostra o 2026 2T do último estado da noite, com o aviso de provisório só nele", () => {
+    // A totalização final do TSE na noite de 25/10 (docs/noite/2026-10-25.md, "Resultado").
+    const brasil = turno(pagina("/"), "2026-2");
+    expect(texto(brasil)).toContain("LULA PT 51,79% 64.256.232 votos");
+    expect(texto(brasil)).toContain("FLAVIO BOLSONARO PL 48,21% 59.826.041 votos");
+    expect(texto(elemento(brasil, /<p[^>]*data-provisorio/))).toBe("Provisório, até os arquivos oficiais do TSE. Vem da totalização final divulgada na noite.");
+
+    expect(turno(pagina("/"), "2026-1")).not.toContain("data-provisorio");
+    expect(turno(pagina("/sp/campinas/"), "2026-2")).toContain("data-provisorio");
   });
 
   it('mostra nos 1º turnos os 5 maiores e "demais", e nos 2º turnos os dois candidatos', () => {
@@ -129,17 +140,26 @@ describe("comparação de dois turnos", () => {
   const mudou = (html: string) =>
     elementos(html, /<li[^>]*data-mudou/).map((m) => [texto(m), /href="([^"]+)"/.exec(m)?.[1], /data-cor="([a-z]+)"/.exec(m)?.[1]]);
 
-  it("deixa escolher quaisquer dois dos cinco turnos, com 2022 2T e 2026 1T de partida", () => {
+  it("deixa escolher quaisquer dois dos seis turnos, com 2026 1T e 2026 2T de partida", () => {
     const html = pagina("/sp/campinas/");
     const escolhas = elementos(comparacao(html), /<select[^>]*data-comparar/);
 
     expect(escolhas).toHaveLength(2);
-    for (const escolha of escolhas) expect(elementos(escolha, /<option/).map(texto)).toEqual(["2026 1T", "2022 2T", "2022 1T", "2018 2T", "2018 1T"]);
-    expect(escolhas.map((e) => /<option[^>]*value="([^"]+)"[^>]*selected/.exec(e)?.[1])).toEqual(["2022-2", "2026-1"]);
-    // Os 10 pares de turnos já estão no HTML, e o de partida aparece.
-    expect(elementos(comparacao(html), /<div[^>]*data-par=/)).toHaveLength(10);
-    expect(par(html, "2022-2_2026-1")).toMatch(/^<div[^>]*data-ativo/);
+    for (const escolha of escolhas)
+      expect(elementos(escolha, /<option/).map(texto)).toEqual(["2026 2T", "2026 1T", "2022 2T", "2022 1T", "2018 2T", "2018 1T"]);
+    expect(escolhas.map((e) => /<option[^>]*value="([^"]+)"[^>]*selected/.exec(e)?.[1])).toEqual(["2026-1", "2026-2"]);
+    // Os 15 pares de turnos já estão no HTML, e o de partida aparece.
+    expect(elementos(comparacao(html), /<div[^>]*data-par=/)).toHaveLength(15);
+    expect(par(html, "2026-1_2026-2")).toMatch(/^<div[^>]*data-ativo/);
     expect(par(html, "2018-1_2018-2")).not.toMatch(/^<div[^>]*data-ativo/);
+  });
+
+  it("avisa que o 2026 2T é provisório em todo par que o tem, e só neles", () => {
+    const html = pagina("/");
+
+    expect(texto(elemento(par(html, "2026-1_2026-2"), /<p[^>]*data-provisorio/))).toBe("2026 2T: provisório, até os arquivos oficiais do TSE.");
+    expect(par(html, "2018-2_2026-2")).toContain("data-provisorio");
+    expect(par(html, "2022-2_2026-1")).not.toContain("data-provisorio");
   });
 
   it("compara só o PT, na cor de Lula, e o partido de Bolsonaro, na de Flávio, rotulados pelo partido", () => {

@@ -4,8 +4,8 @@ import type { ArquivoDeRodada, Buscar } from "@apurador/coletor";
 // R2 em `ao-vivo.apurador.org`, e o do plano B, o Worker em `*.workers.dev`. Ela lê o arquivo de rodada no endereço em
 // que está; se ele der erro, ou se a rodada dele tiver mais de 2 min pelo `Date` da resposta, lê o do outro e fica com a
 // rodada mais nova, de onde lê também o JSON do lugar. A página fica nesse endereço nas leituras seguintes: depois do
-// comando do dono, o coletor não volta ao principal, e o principal parado não custa um pedido a mais a cada 30 s. Sem
-// domínio, só existe o endereço do Worker.
+// comando do dono, o coletor não volta ao principal, e o principal parado não custa um pedido a mais a cada 30 s. Na
+// fase encerrada, a rodada parada não manda ao outro endereço. Sem domínio, só existe o endereço do Worker.
 //
 // Os dois não se leem igual. O R2 atende o preflight do CORS (pela regra do bucket), e a página manda a ETag à mão, com
 // `cache: "no-store"`, para o 304 chegar ao código. Os static assets do Worker respondem 405 a todo `OPTIONS` (medido em
@@ -89,8 +89,9 @@ export function criarArquivosAoVivo(opcoes: { enderecos: EnderecoAoVivo[]; busca
     }
     const rodada = rodadas.get(endereco.base) ?? null;
     const data = Date.parse(resposta.headers.get("Date") ?? "");
-    // Sem o `Date` (o CORS que não o expõe), não há como saber a idade: a rodada vale.
-    const velha = rodada !== null && !Number.isNaN(data) && data - Date.parse(rodada.rodada) > RODADA_VELHA;
+    // Sem o `Date` (o CORS que não o expõe), não há como saber a idade: a rodada vale. Na fase encerrada, o coletor
+    // para de vez, e a rodada parada não é atraso.
+    const velha = rodada !== null && rodada.fase !== "encerrada" && !Number.isNaN(data) && data - Date.parse(rodada.rodada) > RODADA_VELHA;
     return { i, resposta, rodada, emDia: !erro && rodada !== null && !velha };
   }
 

@@ -44,12 +44,12 @@ function resultado(id: string, parte: Parte): ResultadoDoTse {
     totalizacaoFinal: parte.final ?? false,
     indicacao: parte.indicacao ?? false,
     secoes: { totalizadas, total, percentual },
-    eleitorado: { total: 0, totalizado: 0, comparecimento: 0 },
+    eleitorado: { total: 0, totalizado: 0, comparecimento: 0, abstencao: 0 },
     votos: { validos: vf + vl, brancos: 0, nulos: 0 },
     // Na ordem do arquivo do TSE, que não é a do site.
     candidatos: [
-      { numero: 13, sequencial: "280002542548", nomeUrna: "LULA", partido: "PT", votos: vl, percentual: pl },
-      { numero: 22, sequencial: "280002551544", nomeUrna: "FLAVIO BOLSONARO", partido: "PL", votos: vf, percentual: pf },
+      { numero: 13, sequencial: "280002542548", nome: "LUIZ INÁCIO LULA DA SILVA", nomeUrna: "LULA", partido: "PT", votos: vl, percentual: pl },
+      { numero: 22, sequencial: "280002551544", nome: "FLAVIO NANTES BOLSONARO", nomeUrna: "FLAVIO BOLSONARO", partido: "PL", votos: vf, percentual: pf },
     ],
   };
 }

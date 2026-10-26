@@ -146,7 +146,8 @@ export interface FinalistaPassado {
   partido: string;
 }
 
-const finalistaPassado = (f: FinalistaDoResultado): FinalistaPassado => ({
+/** O finalista como a página o escreve. */
+export const finalistaPassado = (f: Pick<FinalistaDoResultado, "numero" | "nomeUrna" | "partido">): FinalistaPassado => ({
   numero: f.numero,
   nome: NOMES_PASSADOS[f.nomeUrna] ?? nomeCurto(f.nomeUrna),
   partido: f.partido,
@@ -191,12 +192,19 @@ export interface NoiteReproduzida {
   agregado: number;
 }
 
-/** Lê o CSV momento a momento de uma noite (`docs/calibracao/noite-<ano>-2.csv`), conferindo o finalista das colunas. */
-function lerNoiteReproduzida(ano: number, csv: string): NoiteReproduzida {
-  const [primeiro, segundo] = resultadoDo2oTurno(ano).finalistas.map(finalistaPassado) as [FinalistaPassado, FinalistaPassado];
+/**
+ * Lê o CSV momento a momento de uma noite, conferindo o finalista das colunas: o da calibração
+ * (`docs/calibracao/noite-<ano>-2.csv`), nos finalistas do 2º turno daquele ano, ou o da noite publicada
+ * (`docs/noite/<dia>.csv`), nos finalistas dados.
+ */
+export function lerNoiteReproduzida(
+  ano: number,
+  csv: string,
+  [primeiro, segundo] = resultadoDo2oTurno(ano).finalistas.map(finalistaPassado) as [FinalistaPassado, FinalistaPassado],
+): NoiteReproduzida {
   const linhas = linhasDoCsv(csv);
   const placar = `placar_${primeiro.numero}`;
-  if (!(placar in linhas[0]!)) throw new Error(`noite-${ano}-2.csv: o placar não é do 1º finalista (${primeiro.numero})`);
+  if (!(placar in linhas[0]!)) throw new Error(`O CSV da noite de ${ano}: o placar não é do 1º finalista (${primeiro.numero})`);
   const base = (l: Record<string, string>, b: string): ProjecaoReproduzida => ({
     projecao: Number(l[`${b}_projecao_${primeiro.numero}`]),
     margem: Number(l[`${b}_margem`]),
@@ -213,14 +221,17 @@ function lerNoiteReproduzida(ano: number, csv: string): NoiteReproduzida {
     }),
   }));
   const ultimo = momentos[momentos.length - 1]!;
-  if (ultimo.secoes !== 100 || ultimo.placar === null) throw new Error(`noite-${ano}-2.csv: a noite não termina com 100% das seções`);
+  if (ultimo.secoes !== 100 || ultimo.placar === null) throw new Error(`O CSV da noite de ${ano}: a noite não termina com 100% das seções`);
   return { ano, finalistas: [primeiro, segundo], momentos, resultado: ultimo.placar, agregado: momentos[0]!.comPesquisas.projecao };
 }
 
 /** As noites que a seção 6 mostra (Página de metodologia, decisão 3): o 2º turno de 2022 e o de 2018, em que as pesquisas erraram. */
 export const NOITES_REPRODUZIDAS: NoiteReproduzida[] = [lerNoiteReproduzida(2022, noite2022Csv), lerNoiteReproduzida(2018, noite2018Csv)];
 
-/** O momento mais perto de um % de seções: a fotografia daquele ponto, que pode ficar até meia seção abaixo dele. */
+/**
+ * O momento mais perto de um % de seções: a fotografia daquele ponto, que pode ficar até meia seção abaixo dele. Numa
+ * noite publicada, o primeiro com o arquivo do Brasil mais perto, que pode ficar longe do ponto.
+ */
 const momentoEm = (noite: NoiteReproduzida, secoes: number) =>
   noite.momentos.reduce((melhor, m) => (Math.abs(m.secoes - secoes) < Math.abs(melhor.secoes - secoes) ? m : melhor));
 
@@ -231,6 +242,8 @@ const SECOES_DO_ERRO = [5, 25, 50] as const;
 export interface ErroDaNoite {
   /** O % de seções totalizadas: 5, 25 ou 50. */
   secoes: number;
+  /** O % de seções do momento medido, o mais perto do ponto: na noite de 25/10, 4,80% no de 5%. */
+  momento: number;
   placar: number;
   soApuracao: number;
   comPesquisas: number;
@@ -241,7 +254,7 @@ export function errosDaNoite(noite: NoiteReproduzida): ErroDaNoite[] {
   const erro = (v: number) => Math.abs(v - noite.resultado);
   return SECOES_DO_ERRO.map((secoes) => {
     const m = momentoEm(noite, secoes);
-    return { secoes, placar: erro(m.placar!), soApuracao: erro(m.soApuracao.projecao), comPesquisas: erro(m.comPesquisas.projecao) };
+    return { secoes, momento: m.secoes, placar: erro(m.placar!), soApuracao: erro(m.soApuracao.projecao), comPesquisas: erro(m.comPesquisas.projecao) };
   });
 }
 

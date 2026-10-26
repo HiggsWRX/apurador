@@ -793,6 +793,16 @@
       "bytes": 286858448,
       "baixadoEm": "2026-10-23T15:01:34.817Z",
       "geracao": []
+    },
+    {
+      "url": "https://resultados.tse.jus.br/oficial/ele2026/6258/dados/",
+      "membro": "estado-producao.json, rodada 1593",
+      "sha256": "b4183b4d984b79484b8f9336c5cb9976e306fdc801766e563cf0253b26f6480e",
+      "bytes": 35924451,
+      "baixadoEm": "2026-10-26T02:59:05.910Z",
+      "geracao": [
+        "25/10/2026 23:26:38"
+      ]
     }
   ],
   "derivados": [
@@ -1186,6 +1196,13 @@
       "sha256": "7a449cb2930c919c95968d1df2be2a017f6df1b7dc41bb3a33d70031258b029f",
       "fontes": [
         "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2024/Brasil/BR_Municipios_2024.zip"
+      ]
+    },
+    {
+      "arquivo": "turnos/2026-2.json",
+      "sha256": "36235ef09868742fd7860e1cdd761b524c580f1d072fe40822bc022ea4c35f1e",
+      "fontes": [
+        "https://resultados.tse.jus.br/oficial/ele2026/6258/dados/"
       ]
     }
   ]

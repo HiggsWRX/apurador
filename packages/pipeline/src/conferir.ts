@@ -7,14 +7,14 @@ import {
   urlDadosAbertos,
   type ArquivoHistorico,
 } from "@apurador/tse";
-import { conferirTotais } from "./conferencia.ts";
+import { conferenciaDoTurno } from "./conferencia.ts";
 import { RAIZ } from "./fontes.ts";
 import { conferirResultadosHistoricos, type ResultadoHistorico } from "./resultados-historicos.ts";
 import type { Turno } from "./turno.ts";
 
 // A conferência automática do CI: os totais de cada turno do repositório, no Brasil e em cada UF, e o resultado
 // nacional das eleições do histórico das pesquisas, contra os arquivos do TSE baixados agora, sem o cache. Falha se
-// algo não bater.
+// algo não bater, e também quando os arquivos oficiais trazem o turno provisório: é o aviso para gerá-lo de novo.
 // Uso: npm run conferir
 
 const TURNOS = new URL("dados/turnos/", RAIZ);
@@ -40,16 +40,13 @@ const [oficiais, soDoHistorico] = await Promise.all([
   Promise.all(anosSoDoHistorico.map(async (ano) => [ano, lerVotacaoCandidatoMunzona(await baixar("votacao_candidato_munzona", ano))] as const)),
 ]);
 
-let divergencias = 0;
+let passam = true;
 for (const turno of turnos) {
-  const doTurno = conferirTotais(turno, oficiais.get(turno.ano)!);
-  divergencias += doTurno.length;
-  console.log(
-    `${turno.ano} ${turno.turno}º turno: ${doTurno.length === 0 ? "o Brasil, as 27 UFs e o Exterior batem com o TSE" : `${doTurno.length} divergência(s)`}`,
-  );
-  for (const d of doTurno) console.log(`  ${d.lugar}, ${d.total}: repositório ${d.repositorio ?? "sem o lugar"}, TSE ${d.tse ?? "sem o lugar"}`);
+  const { passa, linhas } = conferenciaDoTurno(turno, oficiais.get(turno.ano)!);
+  passam &&= passa;
+  for (const linha of linhas) console.log(linha);
 }
-if (divergencias > 0) {
+if (!passam) {
   console.error("Os dados derivados não batem com os arquivos do TSE. Gere de novo com `npm run dados -- --atualizar` e confira a diferença.");
   process.exitCode = 1;
 }

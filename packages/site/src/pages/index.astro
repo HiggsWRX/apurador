@@ -1,14 +1,20 @@
 ---
 import AgregadoDePesquisas from "../components/AgregadoDePesquisas.astro";
+import ComoAProjecaoSeSaiu from "../components/ComoAProjecaoSeSaiu.astro";
 import ListaDasPesquisas from "../components/ListaDasPesquisas.astro";
 import OQueEsperarDaNoite from "../components/OQueEsperarDaNoite.astro";
 import ProjecaoAntesDas17h from "../components/ProjecaoAntesDas17h.astro";
 import PaginaDeLugar from "../layouts/PaginaDeLugar.astro";
 import { CHAVES } from "../lib/chaves";
+import { ENSAIO } from "../lib/ensaio";
 import { lugar } from "../lib/lugares";
+
+// Depois da noite (etapa "Depois"), "Como a projeção se saiu" abre os blocos abaixo do bloco ao vivo. O build do
+// ensaio, que reproduz a noite de 2022, não o tem.
 ---
 
 <PaginaDeLugar lugar={lugar("BR")}>
+  {CHAVES.noite.projecao && !ENSAIO && <ComoAProjecaoSeSaiu />}
   {CHAVES.antesDas17h.agregado && <AgregadoDePesquisas />}
   <OQueEsperarDaNoite />
   <ProjecaoAntesDas17h />

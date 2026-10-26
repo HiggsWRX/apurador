@@ -55,6 +55,13 @@ const abaixo = lugar.tipo === "exterior" ? "as cidades" : lugar.tipo === "uf" ? 
       <h4 class="par-titulo">
         {curto(c.antes)} e {curto(c.depois)}
       </h4>
+      {[c.antes, c.depois]
+        .filter((t) => t.provisorio)
+        .map((t) => (
+          <p class="nota" data-provisorio>
+            {curto(t)}: provisório, até os arquivos oficiais do TSE.
+          </p>
+        ))}
       {c.tipo !== "comparacao" ? (
         <p>
           {c.tipo === "sem-votacao"

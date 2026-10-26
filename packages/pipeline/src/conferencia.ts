@@ -4,7 +4,37 @@ import { doTurno, TOTAIS, type Turno } from "./turno.ts";
 
 // A conferência automática: os totais de um turno que o repositório guarda, no Brasil e em cada UF
 // (com o Exterior), contra os arquivos do TSE. A soma aqui é feita à parte, linha a linha, sem passar
-// pelo código que gerou os dados.
+// pelo código que gerou os dados. O turno provisório, do último estado da noite, só é conferido quando os
+// arquivos oficiais o trazem, e aí a conferência falha até ele ser gerado de novo a partir deles.
+
+type ArquivosOficiais = { candidatos: VotoCandidatoMunzona[]; detalhes: DetalheMunzona[] };
+
+/** O resultado da conferência de um turno, como o `npm run conferir` o mostra: se passa, e as linhas do relatório. */
+export function conferenciaDoTurno(turno: Turno, oficial: ArquivosOficiais): { passa: boolean; linhas: string[] } {
+  const rotulo = `${turno.ano} ${turno.turno}º turno`;
+  const divergencias = (lista: Divergencia[]) =>
+    lista.map((d) => `  ${d.lugar}, ${d.total}: repositório ${d.repositorio ?? "sem o lugar"}, TSE ${d.tse ?? "sem o lugar"}`);
+  if (turno.provisorio) {
+    if (!oficial.candidatos.some(doTurno(turno.ano, turno.turno))) {
+      return { passa: true, linhas: [`${rotulo}: provisório, do último estado da noite; os arquivos oficiais do TSE ainda não têm o turno`] };
+    }
+    return {
+      passa: false,
+      linhas: [
+        `${rotulo}: os arquivos oficiais do TSE já têm o turno. Gere de novo com \`npm run dados -- --atualizar\`, para ele passar a eles e o aviso de provisório sair`,
+        ...divergencias(conferirTotais(turno, oficial)),
+      ],
+    };
+  }
+  const doTurnoConferido = conferirTotais(turno, oficial);
+  return {
+    passa: doTurnoConferido.length === 0,
+    linhas: [
+      `${rotulo}: ${doTurnoConferido.length === 0 ? "o Brasil, as 27 UFs e o Exterior batem com o TSE" : `${doTurnoConferido.length} divergência(s)`}`,
+      ...divergencias(doTurnoConferido),
+    ],
+  };
+}
 
 /** Um total do repositório que não bate com o do TSE, num lugar. */
 export interface Divergencia {

@@ -14,7 +14,8 @@
     "noite": "tsx src/noite.ts",
     "conferir-entrega": "tsx src/conferir-entrega.ts",
     "alerta-de-teste": "tsx src/alerta-de-teste.ts",
-    "supervisor": "tsx src/supervisionar.ts"
+    "supervisor": "tsx src/supervisionar.ts",
+    "varredura": "tsx src/varredura.ts"
   },
   "dependencies": {
     "@apurador/modelo": "*",

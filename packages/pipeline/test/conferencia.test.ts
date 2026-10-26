@@ -1,6 +1,6 @@
 import type { DetalheMunzona, VotoCandidatoMunzona } from "@apurador/tse";
 import { describe, expect, it } from "vitest";
-import { conferirTotais, type Turno } from "../src/index.ts";
+import { conferenciaDoTurno, conferirTotais, type Turno } from "../src/index.ts";
 
 const base = { geracao: "18/10/2026 19:31:39", ano: 2022, turno: 2, cargo: 1, nomeMunicipio: "", nome: "", dia: "2022-10-30" };
 
@@ -98,5 +98,44 @@ describe("conferirTotais", () => {
     delete turno.lugares.AL;
 
     expect(conferirTotais(turno, oficial)).toContainEqual({ lugar: "AL", total: "aptos", repositorio: undefined, tse: 1400 });
+  });
+});
+
+describe("conferenciaDoTurno", () => {
+  // Os arquivos do TSE antes de o 2º turno sair neles: só a linha do 1º.
+  const semO2oTurno = { candidatos: oficial.candidatos.filter((v) => v.turno === 1), detalhes: [] };
+  const provisorio = (): Turno => ({ ...repositorio(), provisorio: true });
+
+  it("passa um turno oficial que bate com os arquivos do TSE", () => {
+    expect(conferenciaDoTurno(repositorio(), oficial)).toEqual({ passa: true, linhas: ["2022 2º turno: o Brasil, as 27 UFs e o Exterior batem com o TSE"] });
+  });
+
+  it("falha um turno oficial com um total que não bate, e diz qual", () => {
+    const turno = repositorio();
+    turno.lugares.AC!.nulos = 13;
+
+    expect(conferenciaDoTurno(turno, oficial)).toEqual({ passa: false, linhas: ["2022 2º turno: 1 divergência(s)", "  AC, nulos: repositório 13, TSE 12"] });
+  });
+
+  it("passa o turno provisório enquanto os arquivos oficiais não têm o turno", () => {
+    expect(conferenciaDoTurno(provisorio(), semO2oTurno)).toEqual({
+      passa: true,
+      linhas: ["2022 2º turno: provisório, do último estado da noite; os arquivos oficiais do TSE ainda não têm o turno"],
+    });
+  });
+
+  it("falha o turno provisório quando os arquivos oficiais saem, pedindo para gerar de novo", () => {
+    const { passa, linhas } = conferenciaDoTurno(provisorio(), oficial);
+
+    expect(passa).toBe(false);
+    expect(linhas[0]).toContain("os arquivos oficiais do TSE já têm o turno");
+    expect(linhas[0]).toContain("npm run dados -- --atualizar");
+  });
+
+  it("mostra, quando os arquivos oficiais saem, onde o último estado da noite não bate com eles", () => {
+    const turno = provisorio();
+    turno.lugares.BR!.aptos = 3281;
+
+    expect(conferenciaDoTurno(turno, oficial).linhas.slice(1)).toEqual(["  BR, aptos: repositório 3281, TSE 3280"]);
   });
 });
