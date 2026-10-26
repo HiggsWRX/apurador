@@ -88,3 +88,11 @@ Decisões: [Plano de lançamento em fases](../../apurador-2026/issues/19-plano-d
       - o `erroDe` pelo `BASE_NOS_ARQUIVOS`.
       - O `NoiteReproduzida` ficou com o nome, com o doc dizendo que serve também à noite publicada.
   - **Checagem inteira**: no computador, 122 arquivos e 1.193 testes, mais typecheck, lint e prettier, antes e depois das correções da revisão. O `npm run conferir`, contra os arquivos do TSE de 26/10, passou com o 2026 2T provisório.
+- 26/10/2026, depois do merge (`2f40e76`, no ar às 12:31):
+  - **Apagados pelo `wrangler`**, com o de acordo do dono: o Worker da sentinela da noite (`apurador-sentinela`), o domínio `ao-vivo-ensaio.apurador.org` do bucket `apurador-ensaio` e o bucket `apurador-ensaio-noite`, que estava vazio.
+  - **Já não existiam**: os Workers `apurador-ensaio`, `apurador-ensaio-plano-b` e `apurador-sentinela-ensaio`.
+  - **Ficaram, para o dono**:
+    - o bucket `apurador-ensaio`, com 1 objeto de 187 B (a conferência de 23/10), que ele esvazia antes de apagar;
+    - o KV `apurador-sentinela`, com o estado da sentinela;
+    - as chaves do R2, que ele revoga no painel.
+  - **No ar**: o `apurador.org` mostra o bloco, o 2026 2T provisório e a comparação, e em 70 s leu o `rodada.json` três vezes, sem pedido ao plano B.
