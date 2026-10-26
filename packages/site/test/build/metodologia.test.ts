@@ -217,7 +217,7 @@ describe("seção 6, como o modelo teria se saído", () => {
   const s = secao("acerto");
   const t = texto(s);
   const figura = elemento(s, /<figure[^>]*data-bloco="noite-reproduzida"/);
-  const noite = (ano: number) => elemento(figura, new RegExp(`<div[^>]*data-noite="${ano}"`));
+  const noite = (ano: number) => elemento(figura, new RegExp(`<div[^>]*data-grafico="${ano}"`));
 
   it("mostra a noite reproduzida com os botões 2022 | 2018, cada uma com o placar parcial, a projeção, a faixa de 95% e o resultado", () => {
     expect(botoes(figura).map(([rotulo, apertado]) => [rotulo!.trim(), apertado])).toEqual([

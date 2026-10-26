@@ -37,7 +37,7 @@ describe("como a projeção se saiu, depois da noite", () => {
   // e o arquivo do Brasil de 50,76%, às 20:27:24, com 49,85 e as duas bases em 48,5.
   it('diz o erro com 5% das seções nas duas bases: "com 5% das seções, a projeção errava X"', () => {
     expect(textoDe(bloco)).toContain("Na totalização final do TSE, Flávio teve 48,21% dos votos válidos, e Lula, 51,79%.");
-    expect(textoDe(bloco)).toContain("Com 5% das seções, a projeção errava 0,1 ponto na base Apuração + pesquisas e 0,2 ponto na base Só apuração");
+    expect(textoDe(bloco)).toContain("Com 5% das seções, a projeção errava 0,2 ponto na base Só apuração e 0,1 ponto na base Apuração + pesquisas");
     expect(textoDe(bloco)).toContain("O placar parcial errava 0,6 ponto.");
   });
 
@@ -53,12 +53,13 @@ describe("como a projeção se saiu, depois da noite", () => {
     expect(textoDe(bloco)).toContain("o primeiro momento publicado mais perto do ponto: 4,80%, 25,19% e 50,76% das seções");
   });
 
-  it("mostra a noite em cada base, com um botão para cada: o placar parcial, a projeção com a faixa de 95% e o resultado", () => {
-    const botoes = elementos(bloco, /<button[^>]*data-noite-botao/);
-    expect(botoes.map(textoDe)).toEqual(["Apuração + pesquisas", "Só apuração"]);
-    expect(botoes[0]).toContain('aria-pressed="true"');
-    for (const base of ["com-pesquisas", "so-apuracao"]) {
-      const grafico = elemento(bloco, new RegExp(`<div[^>]*data-noite="${base}"`));
+  it("mostra a noite em cada base, com um botão para cada e a base da noite aberta: o placar parcial, a projeção com a faixa de 95% e o resultado", () => {
+    const botoes = elementos(bloco, /<button[^>]*data-grafico-botao/);
+    expect(botoes.map(textoDe)).toEqual(["Só apuração", "Apuração + pesquisas"]);
+    expect(botoes.map((b) => /aria-pressed="(true|false)"/.exec(b)?.[1])).toEqual(["false", "true"]);
+    expect(elemento(bloco, /<div[^>]*data-grafico="com-pesquisas"/)).toMatch(/^<div[^>]*data-ativo/);
+    for (const base of ["so-apuracao", "com-pesquisas"]) {
+      const grafico = elemento(bloco, new RegExp(`<div[^>]*data-grafico="${base}"`));
       for (const classe of ["placar", "linha-da-projecao", "faixa"]) expect(grafico, `${base} ${classe}`).toMatch(new RegExp(`<path[^>]*class="${classe}"`));
       expect(textoDe(grafico), base).toContain("resultado: Flávio 48,21%");
     }

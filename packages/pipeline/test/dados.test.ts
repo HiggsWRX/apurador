@@ -88,21 +88,19 @@ describe("dados derivados de cada turno", () => {
     });
   });
 
-  // O 2º turno de 2026, até os arquivos oficiais: o último estado da noite, com a totalização final do TSE que o
-  // registro da noite anotou (docs/noite/2026-10-25.md, "Resultado"). Com os oficiais, ele passa para a lista acima.
-  it("2026-2 é provisório, do último estado da noite, com a totalização final do TSE no Brasil", () => {
+  // O 2º turno de 2026: até os arquivos oficiais, o último estado da noite, provisório; depois, os oficiais. Nos dois, a
+  // totalização final do TSE que o registro da noite anotou (docs/noite/2026-10-25.md, "Resultado").
+  it("2026-2 tem a totalização final do TSE no Brasil", () => {
     const turno = lerTurno("2026-2");
     const br = turno.lugares.BR!;
 
-    expect(turno.provisorio).toBe(true);
     expect(turno.candidatos.map((c, i) => [c.nomeUrna, br.votos[i], ((100 * br.votos[i]!) / br.validos).toFixed(2)])).toEqual([
       ["LULA", 64_256_232, "51.79"],
       ["FLAVIO BOLSONARO", 59_826_041, "48.21"],
     ]);
-    expect(br.secoes).toBe(499_248);
   });
 
-  it("2026-2 tem, em cada UF e no Exterior, a soma dos arquivos dos municípios dele, e no Brasil a deles", () => {
+  it("2026-2 tem, em cada UF e no Exterior, a soma dos municípios dele, e no Brasil a deles", () => {
     const { lugares: resultados } = lerTurno("2026-2");
     const soma = (ids: string[]) => {
       const s = { aptos: 0, votantes: 0, abstencoes: 0, validos: 0, brancos: 0, nulos: 0, votos: [0, 0] };

@@ -1,5 +1,5 @@
 ---
-import { NOME_DA_BASE, type IdDaBase } from "../lib/bases-da-projecao";
+import { BASE_DA_NOITE, BASE_NOS_ARQUIVOS, BASES_DA_PROJECAO, NOME_DA_BASE, type IdDaBase } from "../lib/bases-da-projecao";
 import { CHAVES } from "../lib/chaves";
 import { NOITE_PUBLICADA } from "../lib/como-a-projecao-se-saiu";
 import { formatarCalculo, formatarPct, formatarPctComCasas, formatarPontos, umaCasa } from "../lib/formato";
@@ -14,10 +14,12 @@ import GraficosDaNoite from "./GraficosDaNoite.astro";
 // a da base com pesquisas fica só a Só apuração.
 
 const noite = NOITE_PUBLICADA;
-const bases: IdDaBase[] = CHAVES.noite.baseComPesquisas ? ["com-pesquisas", "so-apuracao"] : ["so-apuracao"];
+// As bases na ordem do controle da projeção, com a da noite aberta no gráfico.
+const bases = BASES_DA_PROJECAO.filter((b) => b === "so-apuracao" || CHAVES.noite.baseComPesquisas);
+const aberta = bases.includes(BASE_DA_NOITE) ? BASE_DA_NOITE : bases[0]!;
 const erros = errosDaNoite(noite);
 const em5 = erros[0]!;
-const erroDe = (e: ErroDaNoite, base: IdDaBase) => (base === "so-apuracao" ? e.soApuracao : e.comPesquisas);
+const erroDe = (e: ErroDaNoite, base: IdDaBase) => e[BASE_NOS_ARQUIVOS[base]];
 const erroEmPontos = (n: number) => (umaCasa(n) < 0.1 ? "menos de 0,1 ponto" : formatarPontos(n));
 const erroNaTabela = (n: number) => (umaCasa(n) < 0.1 ? "<0,1" : formatarCalculo(n));
 
@@ -32,15 +34,14 @@ const [a, b] = noite.finalistas
   })
   .sort((x, y) => x.nome.localeCompare(y.nome, "pt-BR"));
 
-const naBase = (base: IdDaBase, i: number) =>
-  `${i === 0 ? "" : " e "}${erroEmPontos(erroDe(em5, base))}${bases.length > 1 ? ` na base ${NOME_DA_BASE[base]}` : ""}`;
+const em5NasBases = bases.map((base) => `${erroEmPontos(erroDe(em5, base))}${bases.length > 1 ? ` na base ${NOME_DA_BASE[base]}` : ""}`).join(" e ");
 const graficos = bases.map((base) => ({
   id: base,
   botao: NOME_DA_BASE[base],
   noite,
   base,
   titulo: `Noite de 25/10, ${noite.finalistas[0].nome} × ${noite.finalistas[1].nome}, base ${NOME_DA_BASE[base]}`,
-  oQue: "Noite de 25/10, como a projeção foi publicada",
+  assunto: "Noite de 25/10, como a projeção foi publicada",
 }));
 const momentos = erros.map((e) => formatarPctComCasas(e.momento, 2));
 ---
@@ -49,10 +50,10 @@ const momentos = erros.map((e) => formatarPctComCasas(e.momento, 2));
   <h2 id="como-se-saiu-titulo">Como a projeção se saiu</h2>
   <p>
     Na totalização final do TSE, {a!.nome} teve {a!.pct} dos votos válidos, e {b!.nome}, {b!.pct}. Com 5% das seções, a projeção errava{" "}
-    <strong>{bases.map(naBase).join("")}</strong>. O placar parcial errava {erroEmPontos(em5.placar)}.
+    <strong>{em5NasBases}</strong>. O placar parcial errava {erroEmPontos(em5.placar)}.
   </p>
   <figure>
-    <GraficosDaNoite graficos={graficos} escolha="Base da projeção" />
+    <GraficosDaNoite graficos={graficos} aberto={aberta} escolha="Base da projeção" />
   </figure>
   <div class="tabela">
     <table data-bloco="erros-da-noite">
@@ -61,11 +62,9 @@ const momentos = erros.map((e) => formatarPctComCasas(e.momento, 2));
         <tr>
           <th scope="col">Com</th>
           <th scope="col">Placar parcial</th>
-          {["so-apuracao" as const, "com-pesquisas" as const]
-            .filter((b) => bases.includes(b))
-            .map((b) => (
-              <th scope="col">{NOME_DA_BASE[b]}</th>
-            ))}
+          {bases.map((b) => (
+            <th scope="col">{NOME_DA_BASE[b]}</th>
+          ))}
         </tr>
       </thead>
       <tbody>
@@ -73,11 +72,9 @@ const momentos = erros.map((e) => formatarPctComCasas(e.momento, 2));
           <tr>
             <th scope="row">{e.secoes}% das seções</th>
             <td>{erroNaTabela(e.placar)}</td>
-            {["so-apuracao" as const, "com-pesquisas" as const]
-              .filter((b) => bases.includes(b))
-              .map((b) => (
-                <td>{erroNaTabela(erroDe(e, b))}</td>
-              ))}
+            {bases.map((b) => (
+              <td>{erroNaTabela(erroDe(e, b))}</td>
+            ))}
           </tr>
         ))}
       </tbody>

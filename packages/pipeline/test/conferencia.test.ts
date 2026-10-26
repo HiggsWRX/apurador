@@ -132,9 +132,11 @@ describe("conferenciaDoTurno", () => {
     expect(linhas[0]).toContain("npm run dados -- --atualizar");
   });
 
-  it("mostra, quando os arquivos oficiais saem, onde o último estado da noite não bate com eles", () => {
+  it("mostra, quando os arquivos oficiais saem, onde o último estado da noite não bate com eles, menos as seções", () => {
     const turno = provisorio();
     turno.lugares.BR!.aptos = 3281;
+    // O arquivo ao vivo conta as seções sem as agregadas: no 1º turno de 2026, 499.248 contra 517.179 nos oficiais.
+    turno.lugares.AC!.secoes = 3;
 
     expect(conferenciaDoTurno(turno, oficial).linhas.slice(1)).toEqual(["  BR, aptos: repositório 3281, TSE 3280"]);
   });

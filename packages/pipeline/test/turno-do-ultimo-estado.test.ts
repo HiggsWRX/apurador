@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
 import { lerResultado } from "@apurador/tse";
 import { describe, expect, it } from "vitest";
-import { turnoDoUltimoEstado } from "../src/turno.ts";
-import type { Turno } from "../src/turno.ts";
+import { turnoDoUltimoEstado, type Turno } from "../src/index.ts";
 
 // O turno provisório do último estado da noite, sobre arquivos reais da divulgação de 2026: os finais do 1º turno
 // (eleição 6257) e os zerados do 2º (6258), baixados em 19/10/2026. A referência é o resultado oficial do 1º turno,

@@ -30,17 +30,18 @@ export const CACHE_DO_IBGE = new URL("../ibge/", CACHE);
  */
 const ESTADO_DA_NOITE = new URL("../coletor/estado-producao.json", CACHE);
 
-/** Os arquivos ao vivo do último estado da noite, lidos, e a origem deles para o manifesto. */
-export function ultimoEstadoDaNoite(ano: number): { resultados: ResultadoDoTse[]; fonte: Omit<FonteBaixada, "dados"> } {
-  if (!existsSync(ESTADO_DA_NOITE)) throw new Error(`Os arquivos oficiais não têm o turno da noite, e não há o último estado dela em ${ESTADO_DA_NOITE.href}`);
+/** Os arquivos ao vivo do último estado da noite, lidos, e a origem deles para o manifesto; `null` num checkout sem ele. */
+export function ultimoEstadoDaNoite(ano: number): { resultados: ResultadoDoTse[]; fonte: Omit<FonteBaixada, "dados"> } | null {
+  if (!existsSync(ESTADO_DA_NOITE)) return null;
   const bytes = readFileSync(ESTADO_DA_NOITE);
+  // Só os campos que a pipeline lê, porque ela não depende do coletor.
   const { estado, arquivos } = JSON.parse(bytes.toString("utf8")) as {
     estado: { eleicao: string; numero: number; quando: string };
     arquivos: { corpo: string }[];
   };
-  const utf8 = new TextEncoder();
+  const paraBytes = new TextEncoder();
   return {
-    resultados: arquivos.map((a) => lerResultado(utf8.encode(a.corpo))),
+    resultados: arquivos.map((a) => lerResultado(paraBytes.encode(a.corpo))),
     fonte: {
       url: `https://resultados.tse.jus.br/oficial/ele${ano}/${estado.eleicao}/dados/`,
       membro: `estado-producao.json, rodada ${estado.numero}`,

@@ -28,14 +28,16 @@ const TURNOS = [
   { ano: 2022, turno: 1 },
   { ano: 2022, turno: 2 },
   { ano: 2026, turno: 1 },
-  { ano: 2026, turno: 2, daNoite: true },
+  // O dia da noite, como o TSE escreve a data: o estado em disco tem de ser dela.
+  { ano: 2026, turno: 2, noite: "25/10/2026" },
 ];
 
+const manifestoAntes = lerManifesto();
 const fontes = new Map<string, { url: string; membro: string; geracao: string[]; sha256: string; bytes: number; baixadoEm: string }>();
 const derivados: { arquivo: string; sha256: string; fontes: string[] }[] = [];
 const detalhesDosTurnos: DetalheMunzona[] = [];
 
-for (const { ano, turno, daNoite } of TURNOS) {
+for (const { ano, turno, noite: diaDaNoite } of TURNOS) {
   const urlCandidatos = urlDadosAbertos("votacao_candidato_munzona", ano);
   const urlDetalhes = urlDadosAbertos("detalhe_votacao_munzona", ano);
   const [arqCandidatos, arqDetalhes] = await Promise.all([
@@ -53,20 +55,30 @@ for (const { ano, turno, daNoite } of TURNOS) {
     fontes.set(arq.url, { ...fonte, geracao: [...new Set(linhas.map((l) => l.geracao))].sort() });
   }
 
+  const arquivo = `turnos/${idDoTurno({ ano, turno })}.json`;
   let resultado: Turno;
   let fontesDoTurno = [urlCandidatos, urlDetalhes];
-  if (daNoite && !candidatos.some(doTurno(ano, turno))) {
+  if (diaDaNoite && !candidatos.some(doTurno(ano, turno))) {
     const noite = ultimoEstadoDaNoite(ano);
+    if (!noite) {
+      // Num checkout sem o estado em disco da noite (um clone), o turno provisório fica como o repositório o guarda.
+      const guardado = manifestoAntes.derivados.find((d) => d.arquivo === arquivo);
+      if (!guardado) throw new Error(`Os arquivos oficiais não têm o ${turno}º turno de ${ano}, e não há o último estado da noite nem ${arquivo}`);
+      const fonteGuardada = (url: string) => manifestoAntes.fontes.find((f) => f.url === url)!;
+      for (const url of guardado.fontes) fontes.set(url, fonteGuardada(url));
+      derivados.push(guardado);
+      console.log(`${arquivo}: provisório, mantido como está, porque este checkout não tem o último estado da noite`);
+      continue;
+    }
     resultado = turnoDoUltimoEstado({ ano, turno, resultados: noite.resultados });
-    if (!resultado.geracao[0]!.startsWith("25/10/2026 "))
-      throw new Error(`O estado em disco da produção é de outra noite: a totalização final do Brasil é de ${resultado.geracao[0]}`);
+    if (!resultado.geracao[0]!.startsWith(`${diaDaNoite} `))
+      throw new Error(`O estado em disco da produção não é o de ${diaDaNoite}: a totalização final do Brasil é de ${resultado.geracao[0]}`);
     fontes.set(noite.fonte.url, { ...noite.fonte, geracao: resultado.geracao });
     fontesDoTurno = [noite.fonte.url];
   } else {
     detalhesDosTurnos.push(...detalhes.filter(doTurno(ano, turno)));
     resultado = resultadoDoTurno({ ano, turno, candidatos, detalhes });
   }
-  const arquivo = `turnos/${idDoTurno({ ano, turno })}.json`;
   const conteudo = serializarTurno(resultado);
   mkdirSync(new URL("turnos/", DADOS), { recursive: true });
   writeFileSync(new URL(arquivo, DADOS), conteudo);
@@ -94,7 +106,7 @@ derivados.push({
 console.log(`lugares.json: ${lugares.length} lugares`);
 
 // O manifesto também tem os derivados de outros geradores (`gerar-noites.ts`), que ficam como estão.
-const manifesto = atualizarManifesto(lerManifesto(), { pastas: ["turnos/", "lugares.json"], fontes: [...fontes.values()], derivados });
+const manifesto = atualizarManifesto(manifestoAntes, { pastas: ["turnos/", "lugares.json"], fontes: [...fontes.values()], derivados });
 gravarManifesto(manifesto);
 console.log(`manifesto.json: ${manifesto.fontes.length} fontes, ${derivados.length} derivados`);
 

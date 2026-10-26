@@ -4,6 +4,9 @@ import { DIST, elemento, elementos, existe, pagina, texto } from "../html";
 
 // Confere o que o build gera: as páginas de lugar estáticas, com o histórico já no HTML.
 const lugares = JSON.parse(readFileSync(new URL("../../../../dados/lugares.json", import.meta.url), "utf8")) as { id: string; tipo: string }[];
+// O 2º turno de 2026 é provisório enquanto vem do último estado da noite; com os arquivos oficiais, o aviso sai.
+const PROVISORIO =
+  (JSON.parse(readFileSync(new URL("../../../../dados/turnos/2026-2.json", import.meta.url), "utf8")) as { provisorio?: true }).provisorio === true;
 
 const turno = (html: string, id: string) => elemento(html, new RegExp(`<div[^>]*data-turno="${id}"`));
 const barras = (html: string) =>
@@ -76,15 +79,23 @@ describe("histórico do lugar", () => {
     expect(turno(pagina("/sp/campinas/"), "2026-2")).toContain("data-ativo");
   });
 
-  it("mostra o 2026 2T do último estado da noite, com o aviso de provisório só nele", () => {
+  it("mostra o 2026 2T com a totalização final do TSE", () => {
     // A totalização final do TSE na noite de 25/10 (docs/noite/2026-10-25.md, "Resultado").
-    const brasil = turno(pagina("/"), "2026-2");
-    expect(texto(brasil)).toContain("LULA PT 51,79% 64.256.232 votos");
-    expect(texto(brasil)).toContain("FLAVIO BOLSONARO PL 48,21% 59.826.041 votos");
-    expect(texto(elemento(brasil, /<p[^>]*data-provisorio/))).toBe("Provisório, até os arquivos oficiais do TSE. Vem da totalização final divulgada na noite.");
+    const brasil = texto(turno(pagina("/"), "2026-2"));
+    expect(brasil).toContain("LULA PT 51,79% 64.256.232 votos");
+    expect(brasil).toContain("FLAVIO BOLSONARO PL 48,21% 59.826.041 votos");
+  });
 
-    expect(turno(pagina("/"), "2026-1")).not.toContain("data-provisorio");
-    expect(turno(pagina("/sp/campinas/"), "2026-2")).toContain("data-provisorio");
+  it("avisa que o 2026 2T é provisório enquanto ele vem do último estado da noite, e só nele", () => {
+    for (const caminho of ["/", "/sp/campinas/"]) {
+      const segundo = turno(pagina(caminho), "2026-2");
+      if (PROVISORIO) {
+        expect(texto(elemento(segundo, /<p[^>]*data-provisorio/)), caminho).toBe(
+          "Provisório, até os arquivos oficiais do TSE. Vem da totalização final divulgada na noite.",
+        );
+      } else expect(segundo, caminho).not.toContain("data-provisorio");
+      expect(turno(pagina(caminho), "2026-1"), caminho).not.toContain("data-provisorio");
+    }
   });
 
   it('mostra nos 1º turnos os 5 maiores e "demais", e nos 2º turnos os dois candidatos', () => {
@@ -154,11 +165,13 @@ describe("comparação de dois turnos", () => {
     expect(par(html, "2018-1_2018-2")).not.toMatch(/^<div[^>]*data-ativo/);
   });
 
-  it("avisa que o 2026 2T é provisório em todo par que o tem, e só neles", () => {
+  it("avisa, enquanto o 2026 2T é provisório, em todo par que o tem, e só neles", () => {
     const html = pagina("/");
 
-    expect(texto(elemento(par(html, "2026-1_2026-2"), /<p[^>]*data-provisorio/))).toBe("2026 2T: provisório, até os arquivos oficiais do TSE.");
-    expect(par(html, "2018-2_2026-2")).toContain("data-provisorio");
+    if (PROVISORIO) {
+      expect(texto(elemento(par(html, "2026-1_2026-2"), /<p[^>]*data-provisorio/))).toBe("2026 2T: provisório, até os arquivos oficiais do TSE.");
+      expect(par(html, "2018-2_2026-2")).toContain("data-provisorio");
+    } else expect(comparacao(html)).not.toContain("data-provisorio");
     expect(par(html, "2022-2_2026-1")).not.toContain("data-provisorio");
   });
 

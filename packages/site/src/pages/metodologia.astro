@@ -112,7 +112,7 @@ const graficosDasNoites = NOITES_REPRODUZIDAS.map((noite) => ({
   noite,
   base: BASE_DA_NOITE,
   titulo: `2º turno de ${noite.ano}, ${noite.finalistas[0].nome} × ${noite.finalistas[1].nome}`,
-  oQue: `Noite do 2º turno de ${noite.ano} reproduzida`,
+  assunto: `Noite do 2º turno de ${noite.ano} reproduzida`,
 }));
 const erroDasPesquisas2018 = formatarPontos(noite2018.agregado - noite2018.resultado);
 const anoDoAgregado = (ano: number) => AGREGADO_CONTRA_RESULTADO.find((a) => a.ano === ano)!;

@@ -20,27 +20,29 @@ interface Grafico {
   /** O título sobre o gráfico: "2º turno de 2022, Lula × Bolsonaro". */
   titulo: string;
   /** O começo da descrição para o leitor de tela: "Noite do 2º turno de 2022 reproduzida". */
-  oQue: string;
+  assunto: string;
 }
 
 interface Props {
-  /** Os gráficos: o primeiro abre aberto, e com um só não há botões. */
+  /** Os gráficos, na ordem dos botões: com um só, não há botões. */
   graficos: Grafico[];
+  /** O id do gráfico que abre aberto; de partida, o do primeiro. */
+  aberto?: string;
   /** O que os botões escolhem, para o leitor de tela: "Noite", "Base". */
   escolha: string;
 }
-const { graficos: pedidos, escolha } = Astro.props;
+const { graficos: pedidos, aberto = pedidos[0]!.id, escolha } = Astro.props;
 const LARGURA = 340;
 const ALTURA = 220;
 const pct = (n: number) => formatarPctComCasas(n, 1);
-const graficos = pedidos.map(({ id, botao, noite, base, titulo, oQue }) => {
+const graficos = pedidos.map(({ id, botao, noite, base, titulo, assunto }) => {
   const g = graficoDaNoite(noite, { largura: LARGURA, altura: ALTURA }, base);
   const [primeiro] = noite.finalistas;
   const placares = noite.momentos.filter((m) => m.placar !== null);
   const projecoes = noite.momentos.map((m) => m[BASE_NOS_ARQUIVOS[base]].projecao);
   const resultado = `${primeiro.nome} ${formatarPctComCasas(noite.resultado, 2)}`;
   const descricao =
-    `${oQue}, de 0% a 100% das seções totalizadas, em % de ${primeiro.nome}: ` +
+    `${assunto}, de 0% a 100% das seções totalizadas, em % de ${primeiro.nome}: ` +
     `o placar parcial, de ${pct(placares[0]!.placar!)} com a primeira seção a ${pct(placares[placares.length - 1]!.placar!)} no fim; ` +
     `a projeção na base ${NOME_DA_BASE[base]}, com a faixa de 95%, de ${pct(projecoes[0]!)} antes da primeira seção ` +
     `a ${pct(projecoes[projecoes.length - 1]!)} no fim; e o resultado, ${resultado}.`;
@@ -54,15 +56,15 @@ const projecao = bases.length === 1 ? `Projeção, ${NOME_DA_BASE[bases[0]!]}` :
 <div class="graficos-da-noite" data-graficos-da-noite>
   {graficos.length > 1 && (
     <div class="turnos" role="group" aria-label={escolha}>
-      {graficos.map(({ id, botao }, i) => (
-        <button type="button" data-noite-botao={id} aria-controls={`noite-${id}`} aria-pressed={i === 0 ? "true" : "false"}>
+      {graficos.map(({ id, botao }) => (
+        <button type="button" data-grafico-botao={id} aria-controls={`grafico-${id}`} aria-pressed={id === aberto ? "true" : "false"}>
           {botao}
         </button>
       ))}
     </div>
   )}
-  {graficos.map(({ id, g, titulo, resultado, descricao }, i) => (
-    <div class="noite" id={`noite-${id}`} data-noite={id} data-ativo={i === 0 ? "" : undefined}>
+  {graficos.map(({ id, g, titulo, resultado, descricao }) => (
+    <div class="grafico" id={`grafico-${id}`} data-grafico={id} data-ativo={id === aberto ? "" : undefined}>
       <p class="titulo-da-noite">{titulo}</p>
       <svg viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={descricao}>
         {g.marcasY.map((m) => (
@@ -101,13 +103,13 @@ const projecao = bases.length === 1 ? `Projeção, ${NOME_DA_BASE[bases[0]!]}` :
 
 <script>
   for (const bloco of document.querySelectorAll("[data-graficos-da-noite]")) {
-    const botoes = [...bloco.querySelectorAll<HTMLButtonElement>("[data-noite-botao]")];
+    const botoes = [...bloco.querySelectorAll<HTMLButtonElement>("[data-grafico-botao]")];
     for (const botao of botoes) {
       botao.addEventListener("click", () => {
         for (const outro of botoes) {
           const ativo = outro === botao;
           outro.setAttribute("aria-pressed", String(ativo));
-          bloco.querySelector(`[data-noite="${outro.dataset.noiteBotao}"]`)?.toggleAttribute("data-ativo", ativo);
+          bloco.querySelector(`[data-grafico="${outro.dataset.graficoBotao}"]`)?.toggleAttribute("data-ativo", ativo);
         }
       });
     }
@@ -115,10 +117,10 @@ const projecao = bases.length === 1 ? `Projeção, ${NOME_DA_BASE[bases[0]!]}` :
 </script>
 
 <style>
-  :global(:root.js) .noite:not([data-ativo]) {
+  :global(:root.js) .grafico:not([data-ativo]) {
     display: none;
   }
-  .noite + .noite {
+  .grafico + .grafico {
     margin-top: 1rem;
   }
   .titulo-da-noite {

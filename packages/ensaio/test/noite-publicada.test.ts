@@ -1,12 +1,12 @@
 import { readFileSync } from "node:fs";
-import type { Fase, RegistroDaRodada } from "@apurador/coletor";
+import type { Fase } from "@apurador/coletor";
 import { describe, expect, it } from "vitest";
 import { csvDaNoitePublicada } from "../src/noite-publicada.ts";
 
 // A noite de 25/10 momento a momento, do registro das rodadas do coletor, no formato do CSV da calibração. As rodadas
 // daqui são as do registro real (`.cache/coletor/rodadas-2026-10-25T18-04-27-457Z.jsonl`), cortadas no que conta.
 
-type Rodada = Pick<RegistroDaRodada, "fase" | "placarDoTse" | "projecaoDoBrasil">;
+type Rodada = Parameters<typeof csvDaNoitePublicada>[0][number];
 type Base = [projecao: number, margem: number, chance: number];
 
 function rodada(fase: Fase, [totalizacao, secoes, flavio]: [string | null, number, number], [peso, so, com]: [number, Base, Base]): Rodada {

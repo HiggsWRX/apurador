@@ -180,7 +180,10 @@ export interface MomentoReproduzido {
   deslocadas?: readonly [ProjecaoReproduzida, ProjecaoReproduzida];
 }
 
-/** Uma noite passada reproduzida pela calibração, momento a momento, no 1º finalista dela. */
+/**
+ * Uma noite momento a momento, no 1º finalista dela: uma noite passada reproduzida pela calibração, ou a de 25/10 como
+ * o coletor a publicou, que "Como a projeção se saiu" mede com as mesmas contas (`como-a-projecao-se-saiu.ts`).
+ */
 export interface NoiteReproduzida {
   ano: number;
   /** O 1º finalista do 1º turno, em cujo % vêm o placar e as projeções, e o outro. */

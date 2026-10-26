@@ -1,6 +1,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { gunzipSync } from "node:zlib";
 
 // `npm run varredura`: a varredura do histórico do Git antes de o repositório ficar público (Plano de lançamento em
 // fases, decisão 8; ticket 35). Lê cada arquivo de cada commit de todas as refs, uma vez por conteúdo, e cada mensagem
@@ -11,7 +12,7 @@ import { dirname, join } from "node:path";
 // - os endereços e os nomes do ambiente do ensaio e das sentinelas, que ficam no código de propósito e levam a nada
 //   depois de apagados, e os endereços `*.workers.dev` e os tópicos do ntfy, para o dono decidir.
 // Nunca escreve um segredo: só o nome da variável e onde ela apareceu. Falha se achar um segredo, um `.env` ou uma
-// chave privada. Os arquivos com gzip (`dados/noites/`) são procurados como estão, sem descomprimir.
+// chave privada. Os arquivos com gzip (`dados/noites/`) são procurados também descomprimidos.
 
 const git = (...args: string[]) => execFileSync("git", args, { encoding: "utf8", maxBuffer: 1 << 30 });
 
@@ -28,8 +29,11 @@ const segredos = existsSync(arquivoDoEnv)
       })
   : [];
 
-/** Os nomes que ficam no código e levam a nada depois de apagados (ticket 30; `packages/coletor/cloudflare/README.md`). */
-const ENDERECOS = [
+/**
+ * O domínio, os Workers e os buckets do ensaio e as sentinelas, que ficam no código e levam a nada depois de apagados
+ * (ticket 30; `packages/coletor/cloudflare/README.md`).
+ */
+const DO_ENSAIO_E_DAS_SENTINELAS = [
   "ao-vivo-ensaio.apurador.org",
   "apurador-ensaio",
   "apurador-ensaio-plano-b",
@@ -62,7 +66,9 @@ for (let i = 0; i < lote.stdout.length;) {
   if (tipo === undefined || tamanho === undefined) continue;
   const bytes = lote.stdout.subarray(i, i + Number(tamanho));
   i += Number(tamanho) + 1;
-  if (tipo === "blob") conteudos.push({ caminho: caminhos.get(sha!)!, bytes });
+  if (tipo !== "blob") continue;
+  conteudos.push({ caminho: caminhos.get(sha!)!, bytes });
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) conteudos.push({ caminho: `${caminhos.get(sha!)!} (descomprimido)`, bytes: gunzipSync(bytes) });
 }
 const commits = git("log", "--all", "--format=%H%x00%B%x00")
   .split("\0\n")
@@ -82,30 +88,39 @@ const achados = (padrao: RegExp) =>
     .sort();
 
 let falhas = 0;
+/** Conta os achados de um segredo e diz onde estão, ou o que dizer sem nenhum. */
+const segredo = (rotulo: string, em: string[], semNenhum: string) => {
+  falhas += em.length;
+  console.log(`${rotulo}: ${em.length === 0 ? semNenhum : `APARECE em ${lista(em)}`}`);
+};
 console.log(
   `${conteudos.length - commits.length} conteúdos de arquivo e ${commits.length} mensagens, em ${git("rev-list", "--all").trim().split("\n").length} commits`,
 );
 
 console.log(`\nSegredos do .env do coletor (${segredos.length}, de ${arquivoDoEnv}):`);
 if (segredos.length === 0) console.log("  sem .env, ou sem valores: nada a procurar");
-for (const { nome, valor } of segredos) {
-  const em = onde((b) => b.includes(valor));
-  falhas += em.length;
-  console.log(`  ${nome}: ${em.length === 0 ? "não aparece" : `APARECE em ${lista(em)}`}`);
-}
+for (const { nome, valor } of segredos)
+  segredo(
+    `  ${nome}`,
+    onde((b) => b.includes(valor)),
+    "não aparece",
+  );
 
-const envs = [...new Set([...caminhos.values()].filter((c) => ENV.test(c)))];
-falhas += envs.length;
-console.log(`\n.env num commit: ${envs.length === 0 ? "nenhum" : lista(envs)}`);
-const atribuidos = onde((b) => ATRIBUICAO.test(b.toString("latin1")));
-falhas += atribuidos.length;
-console.log(`Valor numa variável de segredo: ${atribuidos.length === 0 ? "nenhum" : lista(atribuidos)}`);
-const chaves = onde((b) => CHAVE_PRIVADA.test(b.toString("latin1")));
-falhas += chaves.length;
-console.log(`Chave privada: ${chaves.length === 0 ? "nenhuma" : lista(chaves)}`);
+console.log("");
+segredo(".env num commit", [...new Set([...caminhos.values()].filter((c) => ENV.test(c)))], "nenhum");
+segredo(
+  "Valor numa variável de segredo",
+  onde((b) => ATRIBUICAO.test(b.toString("latin1"))),
+  "nenhum",
+);
+segredo(
+  "Chave privada",
+  onde((b) => CHAVE_PRIVADA.test(b.toString("latin1"))),
+  "nenhuma",
+);
 
 console.log("\nEndereços e nomes do ensaio e das sentinelas (no código de propósito; levam a nada depois de apagados):");
-for (const nome of ENDERECOS) {
+for (const nome of DO_ENSAIO_E_DAS_SENTINELAS) {
   const em = onde((b) => b.includes(nome));
   console.log(`  ${nome}: ${em.length === 0 ? "não aparece" : `${em.length} arquivo(s), como ${lista(em.slice(0, 3))}`}`);
 }
