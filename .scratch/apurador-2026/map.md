@@ -84,6 +84,7 @@ Especificação fechada e com os riscos resolvidos do site Apurador, pronta para
   - **Etapas**: em 22/10 entra tudo, menos o histórico de acerto e a calibração, que chegam no build do ensaio 2.
   - **Para baixar**: pesquisas, histórico das pesquisas, calibração e noites em CSV. O código, a partir de 26/10.
   - **Também lá**: o tom, as âncoras que a página de lugar usa e o escopo, sem narração nem mapa.
+- [Confirmação dos textos preditivos](issues/22-confirmacao-dos-textos-preditivos.md): em 25/10, às 15h18, o advogado respondeu por escrito ("ao que tudo indica poderá sim exibir os items e os textos"), e o dono a tomou como a confirmação dos quatro itens. Os quatro ficam no ar, e a chave dos textos preditivos liga na noite, pelo comando.
 
 ## Not yet specified
 

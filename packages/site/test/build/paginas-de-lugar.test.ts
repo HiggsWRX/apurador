@@ -190,10 +190,11 @@ describe("comparação de dois turnos", () => {
 describe("rodapé", () => {
   const rodape = texto(elemento(pagina("/sp/campinas/"), /<footer/));
 
-  it("traz o responsável, a independência, a atribuição do TSE e o aviso sobre a projeção", () => {
+  it("traz o responsável, a independência, a atribuição do TSE e a da malha e o aviso sobre a projeção", () => {
     expect(rodape).toContain("Responsável: Hiago de Oliveira · contato@apurador.org");
     expect(rodape).toContain("independente do TSE, dos candidatos e dos partidos");
     expect(rodape).toMatch(/Fonte: TSE.*CC-BY/);
+    expect(rodape).toContain("Malha: IBGE, Malha Municipal Digital 2024, CC BY 4.0, simplificada pelo Apurador");
     expect(rodape).toContain("Estimativa do Apurador. Não é resultado oficial nem garantia do resultado.");
   });
 
@@ -208,8 +209,9 @@ describe("identidade visual", () => {
     .map((f) => readFileSync(new URL(`_astro/${f}`, DIST), "utf8"))
     .join("\n");
 
-  it("usa laranja para Flávio e roxo para Lula, nos temas claro e escuro", () => {
-    for (const cor of ["#c2410c", "#f0793f", "#6d28d9", "#a68bf7"]) expect(css.toLowerCase()).toContain(cor);
+  // Flávio passou de laranja a verde-azulado em 25/10, porque o laranja parecia vermelho (Telas da página de lugar, comentário de 25/10).
+  it("usa verde-azulado para Flávio e roxo para Lula, nos temas claro e escuro", () => {
+    for (const cor of ["#0d9488", "#1aa898", "#6d28d9", "#a68bf7"]) expect(css.toLowerCase()).toContain(cor);
   });
 
   it("segue o tema do sistema, com um botão para trocar", () => {

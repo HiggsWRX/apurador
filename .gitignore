@@ -18,3 +18,5 @@ prototipos/
 # os builds dos testes com outro arquivo de chaves (packages/site/test/chaves-desligadas e test/projecao-desligada)
 dist-chaves-desligadas/
 dist-projecao-desligada/
+# o build do site do ensaio geral (packages/site/ensaio)
+dist-ensaio/

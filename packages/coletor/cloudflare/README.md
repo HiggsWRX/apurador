@@ -1,10 +1,10 @@
 # A conta da Cloudflare para os arquivos ao vivo
 
-O caminho principal dos arquivos ao vivo é o bucket `apurador-ao-vivo` do R2, servido em `ao-vivo.apurador.org` com o cache da CDN. O plano B é o Worker `apurador-plano-b`, em `apurador-plano-b.hicampos93.workers.dev` (Arquitetura e tecnologia, decisão 15; Operação na noite, decisão 14). O ensaio tem os dele, nunca os de produção (`packages/coletor/src/ambientes.ts`), e quem os cria é o ticket 30.
+O caminho principal dos arquivos ao vivo é o bucket `apurador-ao-vivo` do R2, servido em `ao-vivo.apurador.org` com o cache da CDN. O plano B é o Worker `apurador-plano-b`, em `apurador-plano-b.hicampos93.workers.dev` (Arquitetura e tecnologia, decisão 15; Operação na noite, decisão 14). O ensaio tem os dele, nunca os de produção (`packages/coletor/src/ambientes.ts`): os passos estão em "O ambiente do ensaio geral", no fim.
 
 ## Os arquivos
 
-- `cors-ao-vivo.json`: o CORS do bucket. A página em `https://apurador.org` lê com `GET` e o `If-None-Match` posto à mão, então o pedido tem preflight. O R2 responde ao `OPTIONS` pelas regras do bucket, sem `OPTIONS` na lista de métodos. `Date` e `ETag` ficam expostos, porque a página lê os dois. O preflight vale 24 h, e o Chrome corta em 2 h.
+- `cors-ao-vivo.json` e `cors-ao-vivo-ensaio.json`: o CORS de cada bucket, com a origem do site que o lê. A página em `https://apurador.org` lê com `GET` e o `If-None-Match` posto à mão, então o pedido tem preflight. O R2 responde ao `OPTIONS` pelas regras do bucket, sem `OPTIONS` na lista de métodos. `Date` e `ETag` ficam expostos, porque a página lê os dois. O preflight vale 24 h, e o Chrome corta em 2 h.
 - `plano-b.jsonc` e `plano-b-ensaio.jsonc`: os Workers do plano B, só com os static assets da pasta que o coletor grava (`.cache/coletor/plano-b/` e `.cache/coletor/plano-b-ensaio/`). O coletor os republica com `wrangler deploy --config`, pelo login do wrangler.
 - `sentinela.jsonc` e `sentinela.ts`: a sentinela, um Worker com Cron Trigger a cada minuto e sem endereço público. Lê o `rodada.json` do principal e do plano B, fica com o mais novo e manda um alerta pelo ntfy se ele passar 3 min parado, ou se os dois endereços derem erro por mais de 3 min. Com a fase "encerrada", ou com uma rodada de mais de 6 h (de outra noite), ela fica quieta. O ensaio tem a dele, `apurador-sentinela-ensaio`, com os endereços do ensaio (`--env ensaio`).
 
@@ -63,6 +63,21 @@ Os passos 1, 2 e 6 são comandos, rodados na raiz do repositório com o login do
 
 Se o CORS mudar depois de a borda já ter cópias, apague o cache do host: painel → Caching → Configuration → "Purge Cache" → "Custom Purge" → "Hostname" `ao-vivo.apurador.org`.
 
+## Os objetos da noite
+
+A cada rodada, o coletor grava o objeto da noite: o estado de retomada e os arquivos do TSE da rodada, comprimidos (`packages/coletor/src/retomada.ts`). Sem o disco, numa outra máquina, ele retoma do último. O estado leva as travas dos preditivos e os preditivos de uma base fora do ar, então o objeto fica num bucket sem endereço público, um por ambiente (`AMBIENTES.*.noite`, em `packages/coletor/src/ambientes.ts`). O dono:
+
+1. cria o bucket `apurador-noite`, sem domínio próprio e sem `r2.dev` (os dois foram criados em 22/10/2026):
+
+   ```bash
+   npx wrangler r2 bucket create apurador-noite
+   ```
+
+2. cria a chave (painel → R2 → "Manage API tokens" → "Create API token"), "Object Read & Write", "Apply to specific buckets only": `apurador-noite`. A leitura é a da retomada;
+3. cola os dois valores em `R2_NOITE_ACCESS_KEY_ID` e `R2_NOITE_SECRET_ACCESS_KEY`, no `packages/coletor/.env`.
+
+O ensaio faz o mesmo com o bucket `apurador-ensaio-noite` e as variáveis `R2_ENSAIO_NOITE_*`. Sem a chave, o coletor avisa ao começar, não grava o objeto da noite e só retoma do disco. Cada objeto tem ~1,2 MB no fim da noite (~1,7 GB na noite de 2022 inteira), e o contador soma as gravações nele às do bucket dos arquivos ao vivo.
+
 ## Os alertas e a sentinela
 
 Tudo aqui é do dono, e nada roda sozinho. Os comandos são na raiz do repositório, com o login do wrangler.
@@ -116,3 +131,55 @@ Tudo aqui é do dono, e nada roda sozinho. Os comandos são na raiz do repositó
 - O plano B: `npm run noite -- plano-b`. Na rodada seguinte, o coletor passa ao Worker, regrava todos os arquivos na pasta dele e o republica a cada minuto, até o fim da noite.
 - O build do site leva `PUBLIC_AO_VIVO=https://ao-vivo.apurador.org/` e `PUBLIC_AO_VIVO_PLANO_B=https://apurador-plano-b.hicampos93.workers.dev/`.
 - **Sem domínio** (se `ao-vivo.apurador.org` não estiver pronto): `npm run coletor -- --destino producao --sem-dominio`, que publica só no Worker desde a primeira rodada e não pede a chave do R2. O build do site leva só `PUBLIC_AO_VIVO_PLANO_B`.
+
+## O ambiente do ensaio geral
+
+O ensaio tem bucket, domínio, Worker do plano B, sentinela e site próprios (Ensaio geral, decisão 5), com os nomes de `AMBIENTES.ensaio`:
+
+- o bucket `apurador-ensaio`, servido em `ao-vivo-ensaio.apurador.org`;
+- o plano B `apurador-ensaio-plano-b`, em `apurador-ensaio-plano-b.hicampos93.workers.dev`;
+- o site `apurador-ensaio`, em `apurador-ensaio.hicampos93.workers.dev`, com `noindex` e a tarja (`packages/site/ensaio/`).
+
+Tudo é do dono, na raiz do repositório, com o login do wrangler. Os passos 2 a 5 são os da produção, com os nomes do ensaio.
+
+1. **Bucket**:
+
+   ```bash
+   npx wrangler r2 bucket create apurador-ensaio
+   ```
+
+2. **Domínio próprio do bucket**, num nível só, para caber no certificado `*.apurador.org` do plano gratuito:
+
+   ```bash
+   npx wrangler r2 bucket domain add apurador-ensaio --domain ao-vivo-ensaio.apurador.org --zone-id <ID da zona apurador.org> --min-tls 1.2
+   ```
+
+3. **CORS do bucket**, com a origem do site do ensaio:
+
+   ```bash
+   npx wrangler r2 bucket cors set apurador-ensaio --file packages/coletor/cloudflare/cors-ao-vivo-ensaio.json
+   ```
+
+4. **Cache e CORS da zona**: uma Cache Rule "ao-vivo-ensaio: respeitar a origem" igual à do passo 3 da produção e uma Transform Rule "ao-vivo-ensaio: CORS" igual à do passo 4, ambas com `Hostname` `equals` `ao-vivo-ensaio.apurador.org`, e na Transform Rule `Access-Control-Allow-Origin` = `https://apurador-ensaio.hicampos93.workers.dev`. O Smart Tiered Cache e o "Browser Cache TTL" já valem para a zona inteira.
+
+5. **Chave de escrita**: "Object Read & Write", "Apply to specific buckets only" `apurador-ensaio`. Cole os dois valores em `R2_ENSAIO_ACCESS_KEY_ID` e `R2_ENSAIO_SECRET_ACCESS_KEY` do `packages/coletor/.env`. Nunca a chave de produção ali.
+
+6. **Conferência da entrega** no ensaio, que também publica o Worker do plano B do ensaio pela primeira vez. A origem é a do site do ensaio:
+
+   ```bash
+   npm run conferir-entrega -- --destino ensaio --plano-b
+   ```
+
+7. **Site do ensaio**: o build com `noindex`, a tarja, os endereços do ensaio e o painel de antes das 17h com as pesquisas de 2022, publicado no Worker `apurador-ensaio`:
+
+   ```bash
+   npm run deploy-ensaio
+   ```
+
+   Sem o domínio do passo 2, o site lê só o plano B: no PowerShell, `$env:APURADOR_SEM_DOMINIO="1"` antes do comando, e o coletor com `--sem-dominio`.
+
+8. **Sentinela do ensaio**: os passos de "Os alertas e a sentinela", com `--env ensaio`.
+
+**Retirar uma pesquisa de 2022** (Ensaio geral, decisão 12): ponha o registro dela em `packages/site/ensaio/pesquisas-retiradas.json` (por exemplo, `["BR-08297/2022"]`) e rode `npm run deploy-ensaio`. O painel de antes das 17h do site do ensaio recalcula o agregado, a lista e as duas projeções; o coletor não muda. Um registro que não é pesquisa do 2º turno de 2022 quebra o build. Depois do ensaio, o arquivo volta a `[]`.
+
+**No fim** (26/10, antes de o repositório ficar público): `npx wrangler delete --name apurador-ensaio`, `npx wrangler delete --name apurador-ensaio-plano-b`, a sentinela do ensaio, o domínio e o bucket `apurador-ensaio` (esvaziado antes, pelo painel).

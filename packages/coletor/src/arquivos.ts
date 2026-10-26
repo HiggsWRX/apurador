@@ -142,6 +142,38 @@ export interface MunicipiosDaTabela {
 }
 
 /**
+ * A apuração de cada município na ordem da base do modelo, em colunas: os números do TSE com que a rodada projetou (um
+ * município que o coletor ainda não tem fica como antes da primeira seção, `ApuracaoDoMunicipio` do `modelo`).
+ */
+export interface ApuracaoEmColunas {
+  secoes: number[];
+  secoesTotais: number[];
+  aptos: number[];
+  aptosTotais: number[];
+  /** Os votos de cada finalista, na ordem dos finalistas da base. */
+  votos: [number[], number[]];
+}
+
+/**
+ * O arquivo do simulador na noite (`simulador.json`; Simulador "e se", decisão 12), baixado só quando o simulador abre e
+ * relido a cada 30 s: a apuração da rodada e o agregado da noite, na precisão do modelo, a exceção da spec ("Precisão").
+ * A ilha do simulador junta isso à base do modelo, que não muda na noite e vem com o site (`/dados/simulador.json`), e
+ * roda o `modelo` no navegador, sem regravar a base a cada rodada. Na noite de 2022, deu até 58 KB com gzip, em 755
+ * gravações e ~36 MB enviados.
+ */
+export interface ArquivoDoSimuladorAoVivo {
+  /** A assinatura dos municípios da base do modelo, na ordem dela (`assinaturaDosLugares`): a ilha só junta os dois com a mesma. */
+  assinatura: string;
+  /**
+   * Com o simulador no ar: na fase ao vivo, com a chave dele e antes da indicação do TSE. Sem ele, o arquivo é regravado
+   * só com a assinatura, para nenhuma apuração velha ficar no ar.
+   */
+  apuracao?: ApuracaoEmColunas;
+  /** O agregado de pesquisas da noite, em % do 1º finalista da base: só com a base com pesquisas no ar. */
+  agregado?: { valor: number; incerteza: number };
+}
+
+/**
  * O `mapa.json`: o % de seções e o placar de cada UF, do Exterior e de cada município, baixado só quando o cartão do mapa
  * entra na tela. Para caber em ~25 KB com gzip (20 KB no pico de 2022), ele segue a ordem dos lugares do site
  * (`dados/lugares.json`, sem o Brasil) sem repetir os ids, que sozinhos dariam ~17 KB, e só leva o % do 2º candidato
@@ -155,8 +187,13 @@ export interface ArquivoDoMapa {
    * 100,00: o TSE arredonda cada um à parte, e numa seção sem votos válidos os dois são 0. `null` sem arquivo do TSE.
    */
   tse: ([secoes: number, primeiro: number, segundo?: number] | null)[];
-  /** A projeção de cada UF e do Exterior, em % do 1º candidato com uma casa, nas bases no ar: a coluna da tabela do Brasil. */
-  projecao?: { soApuracao: Record<string, number>; comPesquisas?: Record<string, number> };
+  /**
+   * A projeção de cada UF e do Exterior, em % do 1º candidato com uma casa, nas bases no ar: a coluna da tabela do Brasil.
+   * `primeiroTurno` é com o que "A projeção, comparada" de cada uma compara (`comparacoes.primeiroTurno` do JSON dela):
+   * o modo "Mudança desde o 1º turno" do mapa do Brasil, que não baixa os JSONs das UFs. O coletor o grava desde o
+   * ticket 26; um coletor de antes, ainda no ar quando o site novo vai ao ar, grava sem ele.
+   */
+  projecao?: { soApuracao: Record<string, number>; comPesquisas?: Record<string, number>; primeiroTurno?: Record<string, number> };
 }
 
 /** Um ponto da curva real: o % de seções totalizadas e o % de cada candidato, como o TSE os publica. */

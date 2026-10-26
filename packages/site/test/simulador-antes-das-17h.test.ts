@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { caminhoDoSimulador, simuladorNoAr } from "../src/lib/simulador-antes-das-17h";
+import { caminhoDoSimulador } from "../src/lib/caminho-do-simulador";
+import { simuladorNoAr } from "../src/lib/simulador-antes-das-17h";
 
 // Quando o simulador "e se" vai ao ar antes das 17h e como a caixa da projeção de cada lugar o abre (ticket 24). O build
 // dos testes exercita só as chaves todas ligadas e todas desligadas; as outras combinações ficam aqui.

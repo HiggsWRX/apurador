@@ -1,25 +1,27 @@
 ---
-import { DIA_DA_ELEICAO, diasEntre, INICIO_DO_2O_TURNO } from "@apurador/modelo";
+import { diasEntre, somarDias } from "@apurador/modelo";
 import { formatarCalculo, formatarDia, formatarPontos, umaCasa } from "../lib/formato";
 import { corDoPartido } from "../lib/identidade";
-import { AGREGADO, entreOsFinalistas, FINALISTAS, PLACAR_ENTRE_FINALISTAS_DO_BRASIL, quemGanhouEntre, TENDENCIA } from "../lib/pesquisas";
+import { AGREGADO, CALENDARIO, entreOsFinalistas, FINALISTAS, PLACAR_ENTRE_FINALISTAS_DO_BRASIL, quemGanhouEntre, TENDENCIA } from "../lib/pesquisas";
 import { ValoresDosFinalistas } from "./ValoresDosFinalistas";
 
 // O agregado de pesquisas do Brasil antes das 17h (Agregado de pesquisas e erro histórico, decisão 9b): o valor do
 // dia com a faixa de 95% e a tendência desde 05/10, num bloco separado da lista das pesquisas, com o aviso. A chance
-// de vitória fica fora daqui: ela é da projeção, que tem a sua própria chave.
+// de vitória fica fora daqui: ela é da projeção, que tem a sua própria chave. As datas são as da noite do build
+// (`CALENDARIO`): no build do ensaio geral, as de 2022, de 03/10 a 30/10, com o congelamento às 23h de 29/10.
 
 const pct = (n: number) => `${formatarCalculo(n)}%`;
 const [primeiro, segundo] = FINALISTAS;
 const primeiroTurno = entreOsFinalistas(umaCasa(PLACAR_ENTRE_FINALISTAS_DO_BRASIL));
 const ganhou = AGREGADO && quemGanhouEntre(PLACAR_ENTRE_FINALISTAS_DO_BRASIL, AGREGADO.valor);
+const congelamento = `23h de ${formatarDia(somarDias(CALENDARIO.dia, -1))}`;
 const regra =
   AGREGADO &&
   `Média simples, em votos válidos, de ${AGREGADO.pesquisas.length} pesquisas: a mais recente de cada instituto da lista, com campo terminando nos ` +
     `${AGREGADO.janela} dias anteriores (${formatarDia(AGREGADO.campoEntre[0])} a ${formatarDia(AGREGADO.campoEntre[1])})` +
     `${AGREGADO.janela > 7 ? ", porque os 7 dias anteriores tinham menos de 4 institutos" : ""}. ` +
     "Os válidos de cada pesquisa saem dos votos totais publicados, sem peso por amostra, data ou modo. " +
-    (AGREGADO.dia === DIA_DA_ELEICAO ? "É o agregado da noite, congelado às 23h de 24/10." : "O agregado congela às 23h de 24/10.");
+    (AGREGADO.dia === CALENDARIO.dia ? `É o agregado da noite, congelado às ${congelamento}.` : `O agregado congela às ${congelamento}.`);
 
 // O gráfico da tendência: de 05/10 a 25/10, o dia da eleição, no eixo horizontal e, no vertical, uma faixa simétrica
 // em torno de 50% que cabe a faixa de 95% de todos os dias. Desenhado para a largura do celular: no computador, ele
@@ -30,7 +32,7 @@ const MARGEM = { esq: 34, dir: 10, topo: 8, base: 22 };
 const largura = LARGURA - MARGEM.esq - MARGEM.dir;
 const altura = ALTURA - MARGEM.topo - MARGEM.base;
 const desvio = Math.max(5, ...TENDENCIA.flatMap((a) => a.faixa.map((f) => Math.ceil(Math.abs(f - 50) / 5) * 5)));
-const x = (dia: string) => MARGEM.esq + (diasEntre(INICIO_DO_2O_TURNO, dia) / diasEntre(INICIO_DO_2O_TURNO, DIA_DA_ELEICAO)) * largura;
+const x = (dia: string) => MARGEM.esq + (diasEntre(CALENDARIO.inicio, dia) / diasEntre(CALENDARIO.inicio, CALENDARIO.dia)) * largura;
 const y = (v: number) => MARGEM.topo + altura / 2 - ((v - 50) / desvio) * (altura / 2);
 const ponto = (dia: string, v: number) => `${x(dia).toFixed(1)},${y(v).toFixed(1)}`;
 const linha = (valor: (a: (typeof TENDENCIA)[number]) => number) => TENDENCIA.map((a, i) => `${i ? "L" : "M"}${ponto(a.dia, valor(a))}`).join("");
@@ -41,7 +43,8 @@ const faixa =
     .map((a) => `L${ponto(a.dia, a.faixa[0])}`)
     .join("") +
   "Z";
-const marcas = [INICIO_DO_2O_TURNO, "2026-10-15", DIA_DA_ELEICAO];
+// O começo, o meio (15/10 em 2026) e o dia da eleição.
+const marcas = [CALENDARIO.inicio, somarDias(CALENDARIO.inicio, Math.round(diasEntre(CALENDARIO.inicio, CALENDARIO.dia) / 2)), CALENDARIO.dia];
 const [primeiroDia, ultimoDia] = [TENDENCIA[0], TENDENCIA.at(-1)];
 const descricao =
   primeiroDia && ultimoDia
@@ -88,7 +91,9 @@ const descricao =
             <circle class="ponto" data-cor={corDoPartido(primeiro.partido)} data-dia={a.dia} cx={x(a.dia).toFixed(1)} cy={y(a.valor).toFixed(1)} r="2" />
           ))}
         </svg>
-        <figcaption class="nota">Tendência desde 05/10, recalculada dia a dia com a mesma regra, com a faixa de 95% de {primeiro.nomeUrna}.</figcaption>
+        <figcaption class="nota">
+          Tendência desde {formatarDia(CALENDARIO.inicio)}, recalculada dia a dia com a mesma regra, com a faixa de 95% de {primeiro.nomeUrna}.
+        </figcaption>
       </figure>
       <p>
         No 1º turno, entre os dois finalistas: {primeiroTurno.map((c) => `${c.candidato.nomeUrna} ${pct(c.pct)}`).join(", ")}.{" "}

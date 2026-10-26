@@ -21,11 +21,14 @@ export function cacheDoTse(raiz: URL): URL {
 
 const CACHE = cacheDoTse(RAIZ);
 
-/** Um arquivo do TSE baixado (ou lido do cache), com a origem para o manifesto. */
+/** O cache da malha do IBGE (`.cache/ibge/`), ao lado do do TSE, dividido pelos worktrees do mesmo jeito. */
+export const CACHE_DO_IBGE = new URL("../ibge/", CACHE);
+
+/** Um arquivo do TSE (ou do IBGE) baixado, ou lido do cache, com a origem para o manifesto. */
 export interface FonteBaixada {
   url: string;
   membro: string;
-  /** Hash do membro extraído (o CSV), não do zip inteiro, que nunca é baixado. */
+  /** Hash do membro extraído (o CSV, ou o .shp da malha), não do zip inteiro, que nunca é baixado. */
   sha256: string;
   bytes: number;
   baixadoEm: string;
@@ -42,16 +45,21 @@ export async function membroDePresidenteComCache(url: string, opcoes: { atualiza
 }
 
 /**
- * O membro `nome` de um zip do TSE, do cache ou, se não estiver lá (ou com `atualizar`), da rede. Quando o
- * nome do membro não se sabe antes (`casa`), `nome` é só o do arquivo no cache.
+ * O membro `nome` de um zip, do cache ou, se não estiver lá (ou com `atualizar`), da rede. Quando o nome do membro não
+ * se sabe antes (`casa`), `nome` é só o do arquivo no cache. O cache é o do TSE, ou outro (`cache`, como o do IBGE).
  */
-export async function membroComCache(url: string, nome: string, opcoes: { atualizar: boolean; casa?: (membro: string) => boolean }): Promise<FonteBaixada> {
-  const arquivo = new URL(nome, CACHE);
-  const meta = new URL(`${nome.replace(/\.csv$/, "")}.json`, CACHE);
+export async function membroComCache(
+  url: string,
+  nome: string,
+  opcoes: { atualizar: boolean; casa?: (membro: string) => boolean; cache?: URL },
+): Promise<FonteBaixada> {
+  const pasta = opcoes.cache ?? CACHE;
+  const arquivo = new URL(nome, pasta);
+  const meta = new URL(`${nome.replace(/\.csv$/, "")}.json`, pasta);
 
   if (opcoes.atualizar || !existsSync(arquivo) || !existsSync(meta)) {
     const membro = await lerMembroRemoto({ url, membro: opcoes.casa ?? ((n) => n === nome) });
-    mkdirSync(CACHE, { recursive: true });
+    mkdirSync(pasta, { recursive: true });
     writeFileSync(arquivo, membro.dados);
     writeFileSync(meta, JSON.stringify({ url, membro: membro.nome, baixadoEm: new Date().toISOString() }, null, 2));
   }

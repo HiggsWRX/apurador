@@ -10,11 +10,14 @@ export {
 export { criarPainelDoColetor, type LeituraDeFora, type MedidaDoComputador, type OpcoesDoPainelDoColetor, type PainelDoColetor } from "./painel-do-coletor.ts";
 export { despacharAlertas, LIMITES_DOS_ALERTAS, type Alerta, type IdDoAlerta, type LimitesDosAlertas, type NivelDoAlerta } from "./alertas.ts";
 export { placarDoArquivoDoTse, type PlacarDoTse } from "./placar-conferido.ts";
+export { type ConexaoDoComputador } from "./conexao.ts";
 export { enviarAoNtfy, type MensagemDoNtfy } from "./ntfy.ts";
 export {
+  type ApuracaoEmColunas,
   type ArquivoDeRodada,
   type ArquivoDoLugar,
   type ArquivoDoMapa,
+  type ArquivoDoSimuladorAoVivo,
   type BaseDaProjecao,
   type ColunasDaBase,
   type Fase,
@@ -27,13 +30,14 @@ export {
   type ProjecoesDosMunicipios,
   type TabelaDeProjecoes,
 } from "./arquivos.ts";
-export { type EntradaDaProjecao } from "./projecao.ts";
+export { criarProjecaoDaNoite, type EntradaDaProjecao, type ProjecaoDaRodada } from "./projecao.ts";
 export { lerEntradaDaProjecao, NOITES_DA_PROJECAO, type NoiteDaProjecao } from "./entrada-da-projecao.ts";
-export { ehPreditivo, TIPOS_PREDITIVOS, type EventoDaNarracao, type TipoDeEvento } from "./narracao.ts";
+export { ehPreditivo, TIPOS_PREDITIVOS, type EstadoDaNarracao, type EventoDaNarracao, type TipoDeEvento } from "./narracao.ts";
 export { pastaLocal, type Destino } from "./destino.ts";
 export { destinoR2, type CredenciaisDoR2 } from "./r2.ts";
 export { republicacaoDoWorker, type DestinoDoPlanoB } from "./plano-b.ts";
-export { criarContadorDeGravacoes, type ContadorDeGravacoes, type GravacoesDoMes } from "./contador.ts";
+export { AMBIENTES, type AmbienteDoR2 } from "./ambientes.ts";
+export { ARQUIVO_DO_CONTADOR, criarContadorDeGravacoes, lerContadorDeGravacoes, type ContadorDeGravacoes, type GravacoesDoMes } from "./contador.ts";
 export { relogioReal, relogioSemEspera, type RelogioDoColetor } from "./relogio.ts";
 export {
   AVISOS_PRONTOS,
@@ -50,3 +54,4 @@ export {
   type NomeDaChave,
 } from "./chaves.ts";
 export { ARQUIVO_DE_CONTROLE, controleDoArquivoDeChaves, gravarArquivoDeControle, lerArquivoDeControle, type ArquivoDeControle } from "./controle.ts";
+export { lerEstadoGuardado, reproduzirAProjecao, type ArquivoDoTseGuardado, type EstadoDeRetomada, type EstadoGuardado, type Partida } from "./retomada.ts";

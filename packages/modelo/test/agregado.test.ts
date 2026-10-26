@@ -171,6 +171,16 @@ describe("agregado de pesquisas", () => {
     it("soma 0,4² por dia que falta àquela eleição, não a 25/10/2026", () => {
       expect(agregadoDePesquisas(de2018, "2018-10-24", eleicao)!.incerteza).toBeCloseTo(Math.sqrt(1.5 ** 2 + 0.4 ** 2 * 4), 10);
     });
+
+    it("dá a tendência daquela eleição, do dia seguinte ao 1º turno (08/10/2018) ao dia dela", () => {
+      const tendencia = tendenciaDoAgregado(de2018, "2018-10-28", eleicao, "2018-10-08");
+
+      // A primeira pesquisa termina o campo em 21/10 e entra no dia seguinte.
+      expect(tendencia[0]!.dia).toBe("2018-10-22");
+      expect(tendencia.at(-1)!.dia).toBe("2018-10-28");
+      expect(tendencia.at(-1)!.valor).toBeCloseTo(57.0, 1);
+      expect(tendencia.at(-1)!.incerteza).toBe(1.5);
+    });
   });
 
   it("usa a pesquisa de campo mais recente de cada instituto e, no empate, a divulgada por último", () => {

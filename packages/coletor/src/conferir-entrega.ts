@@ -5,7 +5,6 @@ import { AMBIENTES, destinosDoColetor, lerCredenciais } from "./ambientes.ts";
 import { ARQUIVO_DO_CONTADOR, criarContadorDeGravacoes, gravarContadorDeGravacoes, lerContadorDeGravacoes } from "./contador.ts";
 import { conferirEntrega, type ItemDaConferencia } from "./entrega.ts";
 import { implantarWorker } from "./plano-b.ts";
-import { ORIGEM_DO_SITE } from "./visto-de-fora.ts";
 
 // A conferência da entrega na conta (entrega.ts): grava um objeto novo no R2 pelo mesmo destino do coletor, com gzip
 // (ou sem, com --sem-gzip), e o lê pelo endereço público como a noite o lê. Com --plano-b, também republica o Worker
@@ -13,7 +12,8 @@ import { ORIGEM_DO_SITE } from "./visto-de-fora.ts";
 // principal. Republicar troca tudo o que o Worker tem, então o --plano-b só roda antes da noite: com um `rodada.json`
 // no Worker ou na pasta dele, o plano B está em uso, e a conferência para. Cada execução usa um nome novo, para a borda
 // ainda não ter cópia. Os objetos ficam em `conferencia/`.
-// Uso: npm run conferir-entrega -- [--destino producao|ensaio] [--sem-gzip] [--plano-b] [--origem https://apurador.org]
+// Uso: npm run conferir-entrega -- [--destino producao|ensaio] [--sem-gzip] [--plano-b] [--origem <origem do site>]
+//   --origem: a do `Origin` da página; sem ela, a do site do ambiente (`AMBIENTES`), a mesma do CORS do bucket.
 // Precisa da chave de escrita do bucket em packages/coletor/.env; o --plano-b, do login do wrangler.
 
 const { values: opcoes } = parseArgs({
@@ -21,11 +21,12 @@ const { values: opcoes } = parseArgs({
     destino: { type: "string", default: "producao" },
     "sem-gzip": { type: "boolean", default: false },
     "plano-b": { type: "boolean", default: false },
-    origem: { type: "string", default: ORIGEM_DO_SITE },
+    origem: { type: "string" },
   },
 });
 if (opcoes.destino !== "producao" && opcoes.destino !== "ensaio") throw new Error(`--destino deve ser producao ou ensaio, e não ${opcoes.destino}`);
 const ambiente = AMBIENTES[opcoes.destino];
+const origem = opcoes.origem ?? ambiente.site;
 
 if (opcoes["plano-b"]) {
   const noWorker = await fetch(`${ambiente.planoB.endereco}rodada.json`, { method: "HEAD" }).then(
@@ -68,7 +69,7 @@ await destinos.principal.gravar(caminho, bytes);
 await gravarContadorDeGravacoes(ARQUIVO_DO_CONTADOR, contador.doMes());
 let certo = mostrar(
   `R2 (${ambiente.endereco})`,
-  await conferirEntrega({ url: `${ambiente.endereco}${caminho}`, esperado: bytes, origem: opcoes.origem, tipo: "r2", buscar: fetch }),
+  await conferirEntrega({ url: `${ambiente.endereco}${caminho}`, esperado: bytes, origem, tipo: "r2", buscar: fetch }),
 );
 if (!certo && !opcoes["sem-gzip"])
   console.log("\nSe só o corpo, a ETag ou o 304 falharam, rode de novo com --sem-gzip: se passar, o coletor grava sem compressão (--sem-gzip).");
@@ -87,9 +88,6 @@ if (opcoes["plano-b"]) {
   }
   console.log(`Na borda em ${((Date.now() - inicio) / 1000).toFixed(0)} s depois do deploy.`);
   certo =
-    mostrar(
-      `Worker do plano B (${ambiente.planoB.endereco})`,
-      await conferirEntrega({ url, esperado: bytes, origem: opcoes.origem, tipo: "worker", buscar: fetch }),
-    ) && certo;
+    mostrar(`Worker do plano B (${ambiente.planoB.endereco})`, await conferirEntrega({ url, esperado: bytes, origem, tipo: "worker", buscar: fetch })) && certo;
 }
 process.exit(certo ? 0 : 1);

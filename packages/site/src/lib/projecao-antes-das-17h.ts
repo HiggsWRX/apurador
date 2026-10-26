@@ -14,9 +14,11 @@ import {
 } from "@apurador/modelo";
 import constantesDoModelo from "@apurador/modelo/constantes.json";
 import { indicadoresDaBase } from "@apurador/pipeline";
+import baseDe2022 from "../../../../dados/bases/2022-2.json";
 import base from "../../../../dados/bases/2026-2.json";
 import { NOME_DA_BASE, type IdDaBase } from "./bases-da-projecao";
 import { CHAVES } from "./chaves";
+import { ENSAIO } from "./ensaio";
 import { AGREGADO, FINALISTAS } from "./pesquisas";
 
 // A projeção e a curva projetada de antes das 17h (Telas da página de lugar, decisão 11; Combinação de pesquisas e
@@ -24,7 +26,8 @@ import { AGREGADO, FINALISTAS } from "./pesquisas";
 // de 25/10 (o 1º turno de 2026 por município), a apuração de antes da primeira seção (nada totalizado, com as seções
 // e os aptos do 1º turno) e o agregado de pesquisas do dia, inteiro, porque a incerteza dele cresce com os dias que
 // faltam. As constantes são as congeladas pela calibração. Só a página do Brasil mostra isto: os outros lugares ficam
-// com a indicação das pesquisas.
+// com a indicação das pesquisas. No build do ensaio geral, a base é a da noite de 2022 (o 1º turno de 2022 por
+// município), a mesma do coletor com `--noite 2022-2`, com o agregado de 2022 (`pesquisas.ts`).
 
 /** A projeção do Brasil numa base da projeção, antes das 17h, com a curva projetada de 0% a 100% das seções. */
 export interface ProjecaoDeUmaBase {
@@ -37,10 +40,10 @@ export interface ProjecaoDeUmaBase {
   pesoDasPesquisas: number;
 }
 
-/** A base do modelo de 25/10: o 1º turno de 2026 por município. */
-export const BASE_DO_MODELO = base as unknown as BaseDoModelo;
+/** A base do modelo de 25/10, o 1º turno de 2026 por município, ou, no ensaio, a de 2022. */
+export const BASE_DO_MODELO = (ENSAIO ? baseDe2022 : base) as unknown as BaseDoModelo;
 if (BASE_DO_MODELO.finalistas[0]?.numero !== FINALISTAS[0].numero) {
-  throw new Error(`a base do modelo de 25/10 tem o ${BASE_DO_MODELO.finalistas[0]?.numero} como 1º finalista, e o agregado dá o % do ${FINALISTAS[0].numero}`);
+  throw new Error(`a base do modelo da noite tem o ${BASE_DO_MODELO.finalistas[0]?.numero} como 1º finalista, e o agregado dá o % do ${FINALISTAS[0].numero}`);
 }
 const CONSTANTES = lerConstantes(constantesDoModelo);
 /** A base do modelo de 25/10 preparada para projetar. */

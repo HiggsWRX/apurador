@@ -16,7 +16,7 @@ import type { ArquivoDeRodada, ArquivoDoLugar, Fase } from "./arquivos.ts";
 import { CHAVES_DA_NOITE, NOMES_DAS_CHAVES, type Controle } from "./chaves.ts";
 import type { RegistroDaRodada } from "./coletor.ts";
 import { somaDoMes } from "./contador.ts";
-import { comCasas, duracao, horaDeBrasilia, ROTULO_DAS_BASES, ROTULO_DO_NIVEL } from "./formatos.ts";
+import { comCasas, duracao, horaDeBrasilia, O_QUE_A_TRAVA_GRAVA, ROTULO_DAS_BASES, ROTULO_DO_NIVEL } from "./formatos.ts";
 import { divergenciasDoPlacar, type PlacarDoTse } from "./placar-conferido.ts";
 
 // O painel do coletor (Operação na noite, decisões 5 e 6; Volume de gravações na noite, decisões 5 e 8): uma página que
@@ -300,14 +300,34 @@ function secaoDoEstado(d: DadosDaPagina): string {
       ? "nenhum"
       : `<ul>${d.lista.map((x) => `<li>${horaDeBrasilia(x.comecou)}${x.terminou === null ? "" : ` a ${horaDeBrasilia(x.terminou)}`} · ${escapar(x.alerta.mensagem)}</li>`).join("")}</ul>`;
   return secao("estado", "1. Estado", [
-    linha("Fase", r?.fase ? ROTULO_DA_FASE[r.fase] : "sem fase (sem o Brasil do TSE)"),
+    linha(
+      "Fase",
+      r?.fase
+        ? `${ROTULO_DA_FASE[r.fase]}${r.encerraEm ? ` · o coletor para sozinho às ${horaDeBrasilia(Date.parse(r.encerraEm))}, 30 min depois da totalização final` : ""}`
+        : "sem fase (sem o Brasil do TSE)",
+    ),
     linha("Chaves", chaves),
     linha("Aviso pronto", controle?.aviso ? `aviso ${controle.aviso} no ar` : "nenhum"),
     linha("Destino ativo", r ? (r.destinoAtivo === "principal" ? "principal" : marca("atencao", "plano B")) : "—"),
     linha("Conexão", d.computador?.conexao ? (d.computador.conexao === "cabo" ? "cabo" : marca("atencao", "celular")) : "sem medida"),
+    linha("Pedidos ao TSE", pedidosAoTse(r, d.limites)),
     linha("Alertas ativos", alertas),
     linha("Alertas da noite", lista),
   ]);
+}
+
+/** O ritmo dos pedidos ao TSE (Operação na noite, decisão 12): parados no bloqueio, a rodada de 40 s depois dele, ou o normal. */
+function pedidosAoTse(r: RegistroDaRodada | undefined, limites: LimitesDosAlertas): string {
+  if (r?.bloqueio)
+    return marca("critico", `parados no bloqueio desde ${horaDeBrasilia(Date.parse(r.bloqueio.desde))} (${r.bloqueio.status}): troque a conexão`);
+  if (r?.rodadaDe40s)
+    return marca(
+      "atencao",
+      r.rodadaDe40s.ate === null
+        ? `uma rodada a cada 40 s até o fim da noite: o pico passou de ${limites.picoDePedidos} pedidos por segundo`
+        : `uma rodada a cada 40 s até ${horaDeBrasilia(Date.parse(r.rodadaDe40s.ate))}, 15 min depois da volta`,
+    );
+  return r ? "no ritmo normal" : "—";
 }
 
 function secaoDoVistoDeFora(d: DadosDaPagina): string {
@@ -441,8 +461,18 @@ function secaoDaGravacao(d: DadosDaPagina): string {
     linha("Última republicação boa do plano B", quandoFoi(d.ultimaGravacaoBoa.planoB, d.agora)),
     linha("Falhas da última rodada", falhas),
     linha("Gravações do mês", mes),
+    linha("Trava de 90%", r?.gravacoesTravadas ? marca("critico", `ligada: ${O_QUE_A_TRAVA_GRAVA}`) : "desligada"),
+    linha("Teto por rodada", r?.adiadas ? marca("atencao", `atingido: ${comCasas(r.adiadas)} arquivos para a rodada seguinte`) : "não atingido"),
+    linha("Objeto da noite", objetoDaNoite(r)),
     linha("Pelo celular desde a troca", peloCelular),
   ]);
+}
+
+/** O objeto da noite da última rodada: pelo celular, ele fica no disco e sobe no primeiro no cabo (Volume de gravações na noite, decisão 8). */
+function objetoDaNoite(r: RegistroDaRodada | undefined): string {
+  if (!r?.objetoDaNoite) return "sem objeto da noite";
+  if (r.objetoDaNoite === "no disco") return marca("atencao", "no disco enquanto a conexão for o celular: sobe no primeiro com o cabo");
+  return r.objetoDaNoite === "gravado" ? "gravado" : marca("atencao", "falhou: vai no da rodada seguinte");
 }
 
 function secaoDoComputador(d: DadosDaPagina): string {

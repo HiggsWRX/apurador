@@ -23,3 +23,6 @@ export const ROTULO_DO_NIVEL: Record<NivelDoAlerta, string> = { critico: "críti
 
 /** O título da mensagem do alerta crítico no celular e na notificação do Windows. */
 export const TITULO_DO_ALERTA_CRITICO = "Apurador: alerta crítico";
+
+/** O que o coletor grava com a trava de 90% das gravações do mês, como o alerta e o painel o dizem. */
+export const O_QUE_A_TRAVA_GRAVA = "só o arquivo de rodada, o Brasil, as UFs e as tabelas, e cada município a cada 5 min";

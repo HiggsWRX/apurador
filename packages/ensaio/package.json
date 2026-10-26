@@ -9,12 +9,16 @@
   "scripts": {
     "tse-falso": "tsx src/servir.ts",
     "calibracao": "tsx src/calibrar.ts",
-    "noite-local": "tsx src/noite-local.ts"
+    "noite-local": "tsx src/noite-local.ts",
+    "ler-ensaio": "tsx src/ler-ensaio.ts",
+    "conferir-ensaio": "tsx src/conferir-ensaio.ts",
+    "roteiro": "tsx src/imprimir-roteiro.ts"
   },
   "dependencies": {
     "@apurador/coletor": "*",
     "@apurador/modelo": "*",
     "@apurador/pipeline": "*",
-    "@apurador/tse": "*"
+    "@apurador/tse": "*",
+    "marked": "^18.1.1"
   }
 }

@@ -41,7 +41,12 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # O runner (2 núcleos, 7 GB) dá ~2 GB de heap ao Node, e o replay com quedas (`retomada.test.ts`) guarda duas
+      # noites inteiras para compará-las: ~2,6 GB no fim de um teste (`--logHeapUsage`, 26/10), e com 2 GB ele estourou
+      # localmente. Com 3 GB, o projeto inteiro passou. O vitest usa um núcleo a menos que o runner: um arquivo por vez.
       - run: npx vitest run --project @apurador/ensaio
+        env:
+          NODE_OPTIONS: --max-old-space-size=3072
       # A calibração gerada de novo (~1 min) tem de sair igual à do repositório: uma mudança no modelo que mexa nos
       # números do registro ou dos CSVs falha aqui, e não na página de metodologia.
       - run: npm run calibracao
@@ -76,3 +81,6 @@ jobs:
         run: npm ci
       - if: steps.secrets.outputs.ok == 'true'
         run: npm run deploy
+        env:
+          PUBLIC_AO_VIVO: https://ao-vivo.apurador.org/
+          PUBLIC_AO_VIVO_PLANO_B: https://apurador-plano-b.hicampos93.workers.dev/

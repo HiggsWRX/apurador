@@ -17,6 +17,7 @@ import {
 import { assinaturaDosLugares, idDoMunicipio } from "@apurador/pipeline";
 import type { AbrangenciaDaDivulgacao, ResultadoDoTse } from "@apurador/tse";
 import type {
+  ApuracaoEmColunas,
   BaseDaProjecao,
   ColunasDaBase,
   MunicipiosDaTabela,
@@ -61,10 +62,14 @@ export interface ProjecaoDaRodada {
    * arquivos: o que os textos preditivos da narração dizem. `undefined` num lugar fora da base do modelo.
    */
   numeros(id: string, base: BaseDaProjecao): NumerosDaProjecao | undefined;
+  /** A apuração de cada município com que a rodada projetou, para o arquivo do simulador. */
+  apuracao: ApuracaoEmColunas;
 }
 
 /** A projeção da noite, preparada uma vez: o modelo e o 1º turno de cada lugar. */
 export interface ProjecaoDaNoite {
+  /** A assinatura dos municípios da base do modelo, na ordem dela: a do arquivo do simulador. */
+  assinatura: string;
   /**
    * Projeta com o que o coletor guarda de cada município (`resultado`), com os candidatos na ordem do arquivo de rodada
    * (`ordem`, pelos números), ou dá `undefined` enquanto faltam municípios na partida a frio. Falha se os candidatos
@@ -140,6 +145,7 @@ export function criarProjecaoDaNoite({ base, constantes, agregado }: EntradaDaPr
   }
 
   return {
+    assinatura: assinaturaDosLugares(idDe),
     projetar(resultado, ordem) {
       if (ordem.length !== 2 || !ordem.includes(primeiro) || !ordem.includes(segundo)) {
         throw new Error(`os candidatos da noite (${ordem.join(", ")}) não são os finalistas da base do modelo (${primeiro}, ${segundo})`);
@@ -234,6 +240,13 @@ export function criarProjecaoDaNoite({ base, constantes, agregado }: EntradaDaPr
             municipios: indices.map((i) => idDe[i]!),
             comparacoes: { primeiroTurno: comparadas.map((c) => c.primeiroTurno), pesquisas: comparadas.map((c) => c.pesquisas) },
           };
+        },
+        apuracao: {
+          secoes: daRodada.map((a) => a.secoes),
+          secoesTotais: daRodada.map((a) => a.secoesTotais),
+          aptos: daRodada.map((a) => a.aptos),
+          aptosTotais: daRodada.map((a) => a.aptosTotais),
+          votos: [daRodada.map((a) => a.votos[0]!), daRodada.map((a) => a.votos[1]!)],
         },
       };
     },

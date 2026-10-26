@@ -7,7 +7,8 @@ import NarracaoDaNoite from "../components/NarracaoDaNoite";
 import Trilha from "../components/Trilha.astro";
 import { CHAVES } from "../lib/chaves";
 import { turnosDoLugar } from "../lib/curvas-passadas";
-import { enderecosDoBuild } from "../lib/enderecos-ao-vivo";
+import { ENDERECOS_DO_BUILD } from "../lib/enderecos-do-build";
+import { SUBTITULO_DA_ELEICAO } from "../lib/ensaio";
 import { FOTOS } from "../lib/fotos";
 import { daUf, emLugar, lugarDaTabela } from "../lib/lugares";
 import { AGREGADO } from "../lib/pesquisas";
@@ -36,20 +37,13 @@ const tituloDoCartao =
         ? "Municípios"
         : `Municípios ${daUf(daTabela)}`;
 const tabelaDeProjecoes = daTabela.tipo === "brasil" ? undefined : { uf: daTabela.id, desdeOInicio: lugar.tipo === "municipio" };
-// Os endereços dos arquivos ao vivo: no build, PUBLIC_AO_VIVO (o R2) e PUBLIC_AO_VIVO_PLANO_B (o Worker do plano B); no
-// `astro dev`, as pastas que o coletor publica, servidas pela integração `ao-vivo-local`. Sem nenhum, a ilha não lê
-// nada e fica no estado de antes das 17h.
-const enderecos = enderecosDoBuild(
-  import.meta.env.PUBLIC_AO_VIVO ?? (typeof __AO_VIVO_LOCAL__ === "string" ? __AO_VIVO_LOCAL__ : null),
-  import.meta.env.PUBLIC_AO_VIVO_PLANO_B ?? (typeof __AO_VIVO_LOCAL_PLANO_B__ === "string" ? __AO_VIVO_LOCAL_PLANO_B__ : null),
-);
 ---
 
 <Base titulo={nome}>
   <div class="cabecalho">
     <Trilha lugar={lugar} />
     <h1>{nome}</h1>
-    <p class="subtitulo">Eleição para Presidente · 2º turno em 25 de outubro de 2026</p>
+    <p class="subtitulo">{SUBTITULO_DA_ELEICAO}</p>
   </div>
   <div class="colunas">
     <div class="principal">
@@ -60,7 +54,7 @@ const enderecos = enderecosDoBuild(
         uf={lugar.uf}
         em={emLugar(lugar)}
         fotos={FOTOS}
-        enderecos={enderecos}
+        enderecos={ENDERECOS_DO_BUILD}
         chaves={CHAVES.noite}
         turnosPassados={turnosDoLugar(lugar.id)}
         pesquisasDoAgregado={CHAVES.antesDas17h.agregado && AGREGADO ? AGREGADO.pesquisas.length : null}

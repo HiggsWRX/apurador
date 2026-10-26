@@ -1,6 +1,7 @@
 /*
-  Identidade visual do Apurador (Telas da página de lugar, decisão 10): laranja para Flávio e roxo
-  para Lula, nada de vermelho nem de verde e amarelo; tema claro ou escuro conforme o sistema, com
+  Identidade visual do Apurador (Telas da página de lugar, decisão 10): verde-azulado para Flávio
+  (desde 25/10; antes, laranja, que parecia vermelho) e roxo para Lula, nada de vermelho nem do verde
+  e amarelo da bandeira; tema claro ou escuro conforme o sistema, com
   botão; Source Serif nos títulos, Inter no resto e algarismos de largura fixa. Uma folha só, global,
   para o HTML das ~5.800 páginas não carregar atributos de estilo por elemento.
 */
@@ -13,7 +14,7 @@
   --borda: #e4e0d7;
   --borda-forte: #cdc7bb;
   --trilho: #e7e3da;
-  --cor-flavio: #c2410c;
+  --cor-flavio: #0d9488;
   --cor-lula: #6d28d9;
   --cor-cinza: #9a948a;
   --sombra: 0 8px 24px rgb(0 0 0 / 0.12);
@@ -31,7 +32,7 @@
     --borda: #2b2e33;
     --borda-forte: #3b3f45;
     --trilho: #2a2d31;
-    --cor-flavio: #f0793f;
+    --cor-flavio: #1aa898;
     --cor-lula: #a68bf7;
     --cor-cinza: #7d786f;
     --sombra: 0 8px 24px rgb(0 0 0 / 0.5);
@@ -49,7 +50,7 @@
   --borda: #2b2e33;
   --borda-forte: #3b3f45;
   --trilho: #2a2d31;
-  --cor-flavio: #f0793f;
+  --cor-flavio: #1aa898;
   --cor-lula: #a68bf7;
   --cor-cinza: #7d786f;
   --sombra: 0 8px 24px rgb(0 0 0 / 0.5);
@@ -130,6 +131,17 @@ a {
   z-index: 20;
   background: var(--fundo);
   border-bottom: 1px solid var(--borda);
+}
+
+/* A tarja do build do ensaio geral (Ensaio geral, decisão 5): dentro do topo, sempre na tela e em qualquer print. */
+.tarja-do-ensaio {
+  margin: 0;
+  padding: 0.375rem 1rem;
+  background: var(--grafite);
+  color: var(--fundo);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
 }
 
 .topo-linha {
@@ -302,8 +314,9 @@ a {
   .narracao {
     grid-column: 2;
     position: sticky;
-    top: 4.5rem;
-    max-height: calc(100vh - 5.5rem);
+    /* Abaixo do topo, que cresce com a tarja do ensaio: a altura dele é medida pela ilha do bloco ao vivo. */
+    top: calc(var(--altura-do-topo, 3.5rem) + 1rem);
+    max-height: calc(100vh - var(--altura-do-topo, 3.5rem) - 2rem);
     overflow: auto;
   }
   /* O mapa e o histórico ficam lado a lado embaixo; sozinho, o histórico ocupa a largura toda. */
@@ -324,7 +337,8 @@ a {
 
 .turnos button,
 .base-da-projecao button,
-.turnos-da-comparacao button {
+.turnos-da-comparacao button,
+.alternancia button {
   border: 1px solid var(--borda-forte);
   background: var(--cartao);
   color: var(--texto);
@@ -337,7 +351,8 @@ a {
 
 .turnos button[aria-pressed="true"],
 .base-da-projecao button[aria-pressed="true"],
-.turnos-da-comparacao button[aria-pressed="true"] {
+.turnos-da-comparacao button[aria-pressed="true"],
+.alternancia button[aria-pressed="true"] {
   background: var(--texto);
   color: var(--fundo);
   border-color: var(--texto);
@@ -643,6 +658,123 @@ a {
 .tabela-dos-lugares [data-cor="lula"] {
   color: var(--cor-lula);
   font-weight: 700;
+}
+
+/* ---------- cartão do mapa: o mapa ---------- */
+
+/* Os controles do cartão (Mapa | Tabela, Estados | Municípios, Placar | Mudança), com os botões dos turnos. */
+.alternancia {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.5rem 0.75rem 0 0;
+}
+
+.mapa-dos-lugares {
+  margin-top: 0.5rem;
+}
+
+.mapa-dos-lugares svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 32rem;
+}
+
+/* O canvas guarda a proporção pelo `aspect-ratio` que a ilha põe: com altura máxima, ele esticaria. */
+.mapa-dos-lugares canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mapa-dos-lugares svg,
+.mapa-dos-lugares canvas {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mapa-dos-lugares .lugares path {
+  stroke: var(--cartao);
+  stroke-width: 0.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.mapa-dos-lugares .contorno,
+.mapa-dos-lugares .destaque {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.mapa-dos-lugares .contorno {
+  stroke: var(--texto-suave);
+  stroke-width: 1px;
+}
+
+.mapa-dos-lugares .destaque {
+  stroke: var(--texto);
+  stroke-width: 2px;
+}
+
+.legenda-do-mapa ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.legenda-do-mapa li::before {
+  content: "";
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.25rem;
+  border-radius: 2px;
+  vertical-align: -0.1em;
+  background: var(--trilho);
+}
+
+.legenda-do-mapa li[data-cor="flavio"]::before {
+  background: var(--cor-flavio);
+}
+.legenda-do-mapa li[data-cor="lula"]::before {
+  background: var(--cor-lula);
+}
+.legenda-do-mapa li[data-cor="empate"]::before {
+  background: var(--cor-cinza);
+}
+
+/* O cartão de um lugar tocado no mapa, embaixo dele. */
+.cartao-do-lugar {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borda);
+  border-radius: 0.5rem;
+  background: var(--fundo);
+  font-size: 0.875rem;
+}
+
+.cartao-do-lugar-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cartao-do-lugar p {
+  margin: 0.25rem 0;
+}
+
+.cartao-do-lugar button {
+  border: 0;
+  background: none;
+  color: var(--texto-suave);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
 }
 
 /* ---------- painel de antes das 17h: o que esperar da noite e a projeção ---------- */
@@ -1585,6 +1717,12 @@ a {
 
 .amostra-do-site {
   opacity: 0.5;
+}
+
+.amostra-solida {
+  height: 0;
+  border-top: 2px solid var(--texto-suave);
+  vertical-align: 3px;
 }
 
 .sim-botao,

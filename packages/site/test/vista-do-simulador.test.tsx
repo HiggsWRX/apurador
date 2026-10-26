@@ -1,11 +1,14 @@
+import type { ArquivoDoSimuladorAoVivo } from "@apurador/coletor";
 import { HIPOTESES_ZERADAS, lerConstantes, REGIOES, type BaseDoModelo, type Hipoteses } from "@apurador/modelo";
 import constantesDoModelo from "@apurador/modelo/constantes.json";
+import { assinaturaDosLugares, idDoMunicipio } from "@apurador/pipeline";
 import { render } from "preact-render-to-string";
 import { describe, expect, it } from "vitest";
+import { IndicadorAoVivo } from "../src/components/IndicadorAoVivo";
 import { VistaDoSimulador, type PropsDaVistaDoSimulador } from "../src/components/VistaDoSimulador";
 import { compactarBase, type ArquivoDoSimulador } from "../src/lib/arquivo-do-simulador";
 import type { IdDaBase } from "../src/lib/bases-da-projecao";
-import type { FinalistasDoSimulador } from "../src/lib/hipoteses";
+import { enderecoDaSimulacao, lerEndereco, type FinalistasDoSimulador } from "../src/lib/hipoteses";
 import { prepararSimulador, simularNaTela, type DadosDoSimulador } from "../src/lib/simulador";
 import { AGREGADO, ler } from "./dados-do-build";
 import { elemento, elementos, texto } from "./html";
@@ -20,8 +23,11 @@ const FINALISTAS: FinalistasDoSimulador = [
 ];
 const NORDESTE = REGIOES.indexOf("Nordeste");
 
+const BASE = JSON.parse(ler("bases/2026-2.json")) as BaseDoModelo;
+const ASSINATURA = assinaturaDosLugares(BASE.municipios.map((m) => idDoMunicipio(m.municipio)));
 const arquivo = (agregado: ArquivoDoSimulador["agregado"]): ArquivoDoSimulador => ({
-  base: compactarBase(JSON.parse(ler("bases/2026-2.json")) as BaseDoModelo),
+  assinatura: ASSINATURA,
+  base: compactarBase(BASE),
   agregado,
   constantes: lerConstantes(constantesDoModelo),
   placarEntreFinalistasDoBrasil: 51.0,
@@ -222,5 +228,104 @@ describe("o link de outra pessoa", () => {
   it("avisa que é a simulação de outra pessoa, com os dados de agora", () => {
     expect(texto(elemento(vista({ outras: { deOutraPessoa: true } }), /<p[^>]*data-outra-pessoa/))).toBe("Simulação de outra pessoa · com os dados de agora");
     expect(vista()).not.toContain("data-outra-pessoa");
+  });
+});
+
+describe("o indicador ao vivo", () => {
+  it("vem na barra fixa da simulação, o mesmo componente da página, com o estado do quadro; antes das 17h, a barra fica sem ele", () => {
+    const indicador = (
+      <IndicadorAoVivo
+        indicador={{ estado: "tse-sem-novidade", desde: "19:42" }}
+        ultimaLeitura={12}
+        ultimaTotalizacao="2022-10-30 19:42:10"
+        movimentoReduzido={false}
+        proximaLeitura={18}
+        lendo={false}
+      />
+    );
+    const barra = elemento(vista({ outras: { indicador } }), /<section[^>]*data-barra-da-simulacao/);
+    expect(barra).toContain(render(indicador));
+    expect(barra).toMatch(/data-estado="tse-sem-novidade"/);
+    expect(vista()).not.toContain("data-indicador");
+  });
+});
+
+describe("na noite", () => {
+  // O arquivo do simulador que o coletor publica (`simulador.json`), junto ao do build: o Sul inteiro totalizado e um quarto
+  // das seções de cada outro município, cada um com o placar do 1º turno.
+  const DO_SUL = ["PR", "SC", "RS"];
+  const daNoite = (agregado?: ArquivoDoSimuladorAoVivo["agregado"]): ArquivoDoSimuladorAoVivo => {
+    const secoes = BASE.municipios.map((m) => (DO_SUL.includes(m.uf) ? m.secoes : Math.floor(m.secoes / 4)));
+    const parte = (n: number, i: number) => Math.round((n * secoes[i]!) / BASE.municipios[i]!.secoes);
+    return {
+      assinatura: ASSINATURA,
+      apuracao: {
+        secoes,
+        secoesTotais: BASE.municipios.map((m) => m.secoes),
+        aptos: BASE.municipios.map((m, i) => parte(m.aptos, i)),
+        aptosTotais: BASE.municipios.map((m) => m.aptos),
+        votos: [BASE.municipios.map((m, i) => parte(m.votos[0]!, i)), BASE.municipios.map((m, i) => parte(m.votos[1]!, i))],
+      },
+      ...(agregado ? { agregado } : {}),
+    };
+  };
+  const AGREGADO_DA_NOITE = { valor: 50.4, incerteza: 1.5 };
+  const NOITE = prepararSimulador(arquivo({ valor: AGREGADO.valor, incerteza: AGREGADO.incerteza }), daNoite(AGREGADO_DA_NOITE));
+  const SUL = REGIOES.indexOf("Sul");
+
+  it("projeta sobre a apuração da rodada, e as hipóteses prontas somem depois da primeira seção", () => {
+    const tela = simularNaTela(NOITE, "com-pesquisas", HIPOTESES_ZERADAS);
+    expect(tela.brasilNaProjecao.secoes).toBeGreaterThan(30);
+    expect(tela.brasilNaProjecao.secoes).toBeLessThan(45);
+    expect(vista({ dados: NOITE })).not.toContain("sim-pronta");
+    // Com a apuração andando, as pesquisas quase não pesam: K ÷ (K + % de seções).
+    expect(NOITE.bases.find((b) => b.id === "com-pesquisas")!.partida.projecao.pesoDasPesquisas).toBeLessThan(0.02);
+  });
+
+  it("o que já foi totalizado não muda: com o Sul inteiro apurado, as hipóteses do Sul não mexem nele nem no Brasil", () => {
+    const tela = simularNaTela(NOITE, "com-pesquisas", hipoteses({ regioes: { Sul: 10 }, comparecimento: { Sul: 10 } }));
+    expect(tela.regioes[SUL]!.naSimulacao).toBeCloseTo(tela.regioes[SUL]!.naProjecao, 12);
+    expect(tela.brasilNaSimulacao.projecao).toBeCloseTo(tela.brasilNaProjecao.projecao, 12);
+    // No Nordeste, com três quartos das seções por apurar, as mesmas hipóteses mexem.
+    const noNordeste = simularNaTela(NOITE, "com-pesquisas", hipoteses({ regioes: { Nordeste: 10 } }));
+    expect(Math.abs(noNordeste.regioes[NORDESTE]!.naSimulacao - noNordeste.regioes[NORDESTE]!.naProjecao)).toBeGreaterThan(0.03);
+  });
+
+  it("usa o agregado da noite, e sem ele (a base com pesquisas desligada) fica só a 'Só apuração', mesmo com o do build", () => {
+    const comPesquisas = (dados: DadosDoSimulador) => dados.bases.find((b) => b.id === "com-pesquisas")!.partida.projecao.brasil.projecao;
+    const comOutro = prepararSimulador(arquivo({ valor: AGREGADO.valor, incerteza: AGREGADO.incerteza }), daNoite({ valor: 60, incerteza: 1.5 }));
+    expect(comPesquisas(comOutro)).toBeGreaterThan(comPesquisas(NOITE));
+    const semAgregado = prepararSimulador(arquivo({ valor: AGREGADO.valor, incerteza: AGREGADO.incerteza }), daNoite());
+    expect(semAgregado.bases.map((b) => b.id)).toEqual(["so-apuracao"]);
+  });
+
+  it("não junta a apuração de outra base: sem a mesma assinatura, os municípios não estariam na ordem dela", () => {
+    expect(() => prepararSimulador(arquivo(null), { ...daNoite(), assinatura: "12345678" })).toThrow(/assinatura/);
+  });
+
+  it("desenha por baixo a curva real do Brasil, sólida, até onde a apuração chegou: a cada leitura, ela se estende", () => {
+    const figura = (curvaReal: { x: number; y: number }[]) => elemento(vista({ dados: NOITE, outras: { curvaReal } }), /<figure[^>]*data-curva-projetada/);
+    const trechos = (html: string) => (/<path[^>]*class="linha-real"[^>]*d="([^"]+)"/.exec(html)?.[1] ?? "").split("L").length;
+    const ate10 = figura([
+      { x: 0.5, y: 0.6 },
+      { x: 10, y: 0.52 },
+    ]);
+    const ate20 = figura([
+      { x: 0.5, y: 0.6 },
+      { x: 10, y: 0.52 },
+      { x: 20, y: 0.515 },
+    ]);
+    expect(elementos(ate10, /<path[^>]*class="linha-real"/)).toHaveLength(2);
+    expect(trechos(ate20)).toBeGreaterThan(trechos(ate10));
+    expect(texto(elemento(ate10, /<figcaption/))).toContain("Curva real");
+    // Antes das 17h, não há curva real.
+    expect(vista()).not.toContain("linha-real");
+  });
+
+  it("o link compartilhado, aberto em outro celular com os mesmos dados, reproduz a mesma simulação", () => {
+    const h = hipoteses({ brasil: 1.5, regioes: { Nordeste: -2 }, comparecimento: { Sudeste: 3 } });
+    const lido = lerEndereco(enderecoDaSimulacao("com-pesquisas", h, FINALISTAS), FINALISTAS);
+    const outroCelular = prepararSimulador(arquivo({ valor: AGREGADO.valor, incerteza: AGREGADO.incerteza }), daNoite(AGREGADO_DA_NOITE));
+    expect(simularNaTela(outroCelular, lido.base!, lido.hipoteses)).toEqual(simularNaTela(NOITE, "com-pesquisas", h));
   });
 });

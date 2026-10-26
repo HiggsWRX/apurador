@@ -785,6 +785,14 @@
       "geracao": [
         "01/11/2022 16:05:25"
       ]
+    },
+    {
+      "url": "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2024/Brasil/BR_Municipios_2024.zip",
+      "membro": "BR_Municipios_2024.shp",
+      "sha256": "679c58184f7dd37597be9da8af622c22c845e30fbfb05ce316d8b73529b8cfe4",
+      "bytes": 286858448,
+      "baixadoEm": "2026-10-23T15:01:34.817Z",
+      "geracao": []
     }
   ],
   "derivados": [
@@ -1164,6 +1172,20 @@
         "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2022_BR.zip",
         "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2022.zip",
         "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2022.zip"
+      ]
+    },
+    {
+      "arquivo": "malha/municipios.json",
+      "sha256": "840e8c0c3caef5b5d351d7b6504764b5969cc67fe9058221d400dabff75cffb3",
+      "fontes": [
+        "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2024/Brasil/BR_Municipios_2024.zip"
+      ]
+    },
+    {
+      "arquivo": "malha/ufs.json",
+      "sha256": "7a449cb2930c919c95968d1df2be2a017f6df1b7dc41bb3a33d70031258b029f",
+      "fontes": [
+        "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2024/Brasil/BR_Municipios_2024.zip"
       ]
     }
   ]

@@ -1,10 +1,12 @@
-import type { BaseDoModelo, Constantes } from "@apurador/modelo";
+import type { ApuracaoEmColunas } from "@apurador/coletor";
+import type { Apuracao, BaseDoModelo, Constantes } from "@apurador/modelo";
 
 // O arquivo que o simulador "e se" baixa ao abrir (Simulador "e se", decisão 5; Arquitetura e tecnologia, decisão 18):
 // tudo o que o `modelo` precisa para projetar no navegador antes das 17h, gerado no build. A base do modelo vai em
 // colunas, com os degraus de chegada em diferenças: com gzip, fica em pouco mais da metade da base como o pipeline a
-// grava, e é o maior peso da tela do simulador (ticket 24, a abertura em até 5 s). Sem DOM e sem dados do build: o
-// endpoint do build monta o arquivo, e a ilha o lê.
+// grava, e é o maior peso da tela do simulador (ticket 24, a abertura em até 5 s). Na noite, a base não muda, e o
+// arquivo que o coletor publica a cada rodada (`ArquivoDoSimuladorAoVivo`) traz só a apuração e o agregado da noite.
+// Sem DOM e sem dados do build: o endpoint do build monta o arquivo, e a ilha o lê.
 
 /** A base do modelo em colunas, um valor por município em cada uma, na ordem da base. */
 export interface BaseCompacta {
@@ -23,10 +25,15 @@ export interface BaseCompacta {
   degraus: number[][];
 }
 
-/** O arquivo do simulador antes das 17h: a base do modelo, o agregado, as constantes e o 1º turno de cada região. */
+/** O arquivo do simulador do build: a base do modelo, o agregado, as constantes e o 1º turno de cada região. */
 export interface ArquivoDoSimulador {
+  /** A assinatura dos municípios da base, na ordem dela (`assinaturaDosLugares`): a do arquivo do coletor tem de ser a mesma. */
+  assinatura: string;
   base: BaseCompacta;
-  /** O agregado de pesquisas do instante do build (em % do 1º finalista), ou `null` sem ele no ar: fica só a "Só apuração". */
+  /**
+   * O agregado de pesquisas do instante do build (em % do 1º finalista), ou `null` sem ele no ar: fica só a "Só apuração".
+   * Na noite, vale o do arquivo do coletor.
+   */
   agregado: { valor: number; incerteza: number } | null;
   constantes: Constantes;
   /** O placar entre finalistas do Brasil no 1º turno, em % do 1º finalista: a referência da tradução do controle do Brasil. */
@@ -86,4 +93,15 @@ export function descompactarBase(c: BaseCompacta): BaseDoModelo {
       };
     }),
   };
+}
+
+/** A apuração de cada município, de volta às linhas do `modelo`, a partir das colunas do arquivo do simulador da noite. */
+export function apuracaoDasColunas(c: ApuracaoEmColunas): Apuracao {
+  return c.secoes.map((secoes, i) => ({
+    secoes,
+    secoesTotais: c.secoesTotais[i]!,
+    aptos: c.aptos[i]!,
+    aptosTotais: c.aptosTotais[i]!,
+    votos: [c.votos[0][i]!, c.votos[1][i]!],
+  }));
 }

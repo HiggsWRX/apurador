@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -70,19 +71,33 @@ describe("os destinos do coletor", () => {
     );
   });
 
-  it("nada do ensaio é de produção: bucket, endereço, Worker, configuração, pasta e chave", () => {
+  it("nada do ensaio é de produção: bucket, endereço, site, Worker, configuração, pasta e chave", () => {
     const { producao, ensaio } = AMBIENTES;
     const valores = (a: typeof producao | typeof ensaio) => [
       a.bucket,
       a.endereco,
+      a.site,
       a.variaveis.chave,
       a.variaveis.segredo,
       a.planoB.worker,
       a.planoB.configuracao,
       a.planoB.pasta,
       a.planoB.endereco,
+      a.noite.bucket,
+      a.noite.variaveis.chave,
+      a.noite.variaveis.segredo,
     ];
     expect(valores(ensaio).filter((v) => valores(producao).includes(v))).toEqual([]);
+  });
+
+  it("o CORS de cada bucket, na pasta cloudflare/, deixa ler só o site do próprio ambiente", () => {
+    const origens = (arquivo: string) =>
+      (JSON.parse(readFileSync(new URL(`../cloudflare/${arquivo}`, import.meta.url), "utf8")) as { rules: { allowed: { origins: string[] } }[] }).rules.flatMap(
+        (r) => r.allowed.origins,
+      );
+
+    expect(origens("cors-ao-vivo.json")).toEqual([AMBIENTES.producao.site]);
+    expect(origens("cors-ao-vivo-ensaio.json")).toEqual([AMBIENTES.ensaio.site]);
   });
 
   it("a produção grava no bucket dos JSONs ao vivo e republica o Worker do plano B pelo login do wrangler", async () => {
@@ -119,5 +134,20 @@ describe("os destinos do coletor", () => {
     expect(implantados).toEqual([]);
     expect(await readdir(join(pasta, "pasta"))).toEqual(["rodada.json"]);
     expect((await readdir(join(pasta, "pasta-plano-b"))).sort()).toEqual(["_headers", "rodada.json"]);
+  });
+
+  it("os objetos da noite vão para o bucket da noite do ambiente, com a chave dele, e sem ela ficam de fora", async () => {
+    const chavesDaNoite = { R2_NOITE_ACCESS_KEY_ID: "id-noite", R2_NOITE_SECRET_ACCESS_KEY: "segredo-noite" };
+    const { objetosDaNoite, pedidos } = montar("producao", { ...CHAVES_DE_PRODUCAO, ...chavesDaNoite });
+    await objetosDaNoite!.gravar("{}", { numero: 1, quando: "2026-10-25T20:00:00.000Z" });
+
+    expect(pedidos).toEqual(["https://40aa2d90c0ed3139d2e8a10389f509ec.r2.cloudflarestorage.com/apurador-noite/noite/2026-10-25T20-00-00.000Z-r00001.json.gz"]);
+    expect(AMBIENTES.producao.noite.bucket).not.toBe(AMBIENTES.producao.bucket);
+    expect(montar("producao", CHAVES_DE_PRODUCAO).objetosDaNoite).toBeNull();
+    expect(montar("producao", chavesDaNoite, true).objetosDaNoite).not.toBeNull();
+  });
+
+  it("na pasta local, sem objetos da noite: o coletor só retoma do disco", () => {
+    expect(montar("pasta", {}).objetosDaNoite).toBeNull();
   });
 });

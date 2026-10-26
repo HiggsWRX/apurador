@@ -1,0 +1,13 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": ["https://apurador-ensaio.hicampos93.workers.dev"],
+        "methods": ["GET", "HEAD"],
+        "headers": ["If-None-Match"]
+      },
+      "exposeHeaders": ["Date", "ETag"],
+      "maxAgeSeconds": 86400
+    }
+  ]
+}

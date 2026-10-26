@@ -95,6 +95,7 @@ function quadroEm({
     aviso: null,
     tabelaDeProjecoes: null,
     mapa: null,
+    simulador: null,
   };
 }
 

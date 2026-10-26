@@ -1,0 +1,14 @@
+// O site do ensaio geral (Ensaio geral, decisão 5): um Worker só com static assets, separado do `apurador` da noite,
+// em `apurador-ensaio.hicampos93.workers.dev`, sem domínio próprio, porque o link fica só com quem assiste. Ele e o
+// bucket do ensaio são apagados em 26/10 (Plano de lançamento em fases, decisão 8).
+{
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "apurador-ensaio",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  // Só o endereço do próprio Worker, sem uma URL pública a mais por versão.
+  "preview_urls": false,
+  "assets": {
+    "directory": "../dist-ensaio",
+  },
+}

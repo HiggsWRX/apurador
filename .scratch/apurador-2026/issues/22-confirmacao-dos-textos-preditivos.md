@@ -1,7 +1,7 @@
 # Confirmação dos textos preditivos
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: —
 Map: [Apurador 2026](../map.md)
 
@@ -33,3 +33,22 @@ De [Simulador "e se" antes das 17h](../../apurador-2026-construcao/issues/24-sim
 - quando as hipóteses das regiões já pendem para quem está atrás: "Para Lula passar à frente, o voto que falta no país precisaria pender menos de 2,9 pontos para Flávio."
 
 Se o item 3 não for liberado, as três saem juntas.
+
+## Answer
+
+Resolvido em 25/10/2026, às 15h18. O dono recebeu a resposta por escrito do advogado, Antonio Valença, e a relatou na sessão do Claude. O texto, como veio:
+
+> Caro Hiago, confirmo que ao que tudo indica poderá sim exibir os items e os textos.
+> Atenciosamente,
+> Antonio Valença
+
+Para o dono, a resposta vale para os quatro itens da tabela:
+
+| Item | Estado final |
+|---|---|
+| **1.** Projeção, chance de vitória e curva projetada antes das 17h | Fica: a chave `antesDas17h.projecao` segue ligada |
+| **2a.** Rótulos curtos no painel da curva | Ficam |
+| **2b.** Frases preditivas na manchete e na narração depois das 17h | Liga, pelo comando `npm run noite -- ligar textos-preditivos`, valendo dali em diante, sem nada retroativo |
+| **3.** "O que seria preciso" no simulador | Fica |
+
+**Ressalva**: a resposta diz "ao que tudo indica" e não trata item por item, nem da forma dos textos (os "cuidados indicados" do item 2b). A [Segunda consulta jurídica](21-segunda-consulta-juridica.md) pedia uma confirmação expressa, e o dono tomou esta como a confirmação. Os textos são os já construídos, sem mudança, porque o código está congelado: os das decisões 8 e 9 da [Narração da noite](14-narracao-da-noite.md) e os três do item 3.

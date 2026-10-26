@@ -1,11 +1,13 @@
 export { criarTseFalso, type EntradaDoRegistro, type Pedido, type Registro, type Resposta, type TseFalso } from "./tse-falso.ts";
 export {
+  momentoReal,
   relogioAcelerado,
   relogioDoReplay,
   relogioManual,
   RITMO_DO_ENSAIO,
   ritmoDesde,
   type Momento,
+  type PartidaDoRelogio,
   type Relogio,
   type RelogioManual,
   type Trecho,
@@ -13,6 +15,10 @@ export {
 export { buscarNoTseFalso, servirTseFalso } from "./servidor.ts";
 export { conferirPlacar, resultadosDoTseFalso, type PlacarPublicado } from "./conferencia.ts";
 export { conferirPreditivos, type JsonPublico } from "./conferencia-dos-preditivos.ts";
+export { criarLeitorDoEnsaio, type LeitorDoEnsaio, type LeituraDoEnsaio } from "./leitor-do-ensaio.ts";
+export { conferirEnsaio, type Distribuicao, type NumerosDoEnsaio } from "./conferencia-do-ensaio.ts";
+export { registroDoEnsaio } from "./registro-do-ensaio.ts";
+export { narracaoDoReplay } from "./replay-da-noite.ts";
 export {
   calibrar,
   CANDIDATOS,
