@@ -41,8 +41,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      # O runner tem ~2 GB de heap por padrão, e o replay com quedas (`retomada.test.ts`) guarda duas noites inteiras
-      # para compará-las: ~2,5 GB, medido com `--logHeapUsage` em 26/10. Dois workers com 3 GB cabem nos 7 GB do runner.
+      # O runner (2 núcleos, 7 GB) dá ~2 GB de heap ao Node, e o replay com quedas (`retomada.test.ts`) guarda duas
+      # noites inteiras para compará-las: ~2,6 GB no fim de um teste (`--logHeapUsage`, 26/10), e com 2 GB ele estourou
+      # localmente. Com 3 GB, o projeto inteiro passou. O vitest usa um núcleo a menos que o runner: um arquivo por vez.
       - run: npx vitest run --project @apurador/ensaio
         env:
           NODE_OPTIONS: --max-old-space-size=3072

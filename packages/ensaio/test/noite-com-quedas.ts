@@ -133,8 +133,8 @@ export const LUGARES_DO_TSE = 1 + cadastro.ufs.reduce((soma, uf) => soma + 1 + u
  */
 export const ARQUIVOS_AO_VIVO = LUGARES_DO_TSE + 2 * cadastro.ufs.length + 3;
 
-/** Os eventos de um lugar numa narração. */
-export const eventosDoLugar = (id: string, eventos: EventoDaNarracao[]) => eventos.filter((e) => e.lugar === id);
+/** Só os eventos do próprio lugar numa narração que junta os de vários: a do Brasil leva os das UFs, e a das UFs, os do Brasil. */
+export const soDoLugar = (id: string, eventos: EventoDaNarracao[]) => eventos.filter((e) => e.lugar === id);
 
 /**
  * O que a retomada não pode fazer com a narração de nenhum lugar, em nenhuma gravação: perder um evento já publicado,
@@ -146,7 +146,7 @@ export function conferirNarracao(r: NoiteComQuedas): string[] {
   const antes = new Map<string, EventoDaNarracao[]>();
   for (const g of r.lugares()) {
     const id = g.conteudo.lugar;
-    const eventos = eventosDoLugar(id, g.conteudo.narracao).sort((a, b) => a.numero! - b.numero!);
+    const eventos = soDoLugar(id, g.conteudo.narracao).sort((a, b) => a.numero! - b.numero!);
     const anteriores = antes.get(id) ?? [];
     for (const e of anteriores) {
       const agora = eventos.find((x) => x.numero === e.numero);

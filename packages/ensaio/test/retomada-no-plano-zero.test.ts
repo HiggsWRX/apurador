@@ -5,8 +5,7 @@ import { conferirNarracao, noColetor, noiteComQuedas, type NoiteComQuedas } from
 import { cadastro, noite } from "./noite-2022.ts";
 
 // Uma queda no plano zero (Operação na noite, decisões 9 e 15): o coletor cai com o núcleo mínimo desligado e volta do
-// objeto da noite. Num arquivo próprio, porque a noite guarda os objetos de todas as rodadas, e com as outras noites com
-// quedas num processo só ela passava dos 2 GB do runner do CI.
+// objeto da noite. Num arquivo próprio, pela memória (`noite-com-quedas.ts`).
 
 describe("uma queda no plano zero", () => {
   // O dono liga o plano zero às 17:05; o coletor cai às 17:12 e volta do objeto da noite, sem o disco; o dono religa o

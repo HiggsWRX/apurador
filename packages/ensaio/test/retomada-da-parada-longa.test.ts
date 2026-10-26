@@ -1,10 +1,9 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import type { ArquivoDoLugar } from "@apurador/coletor";
-import { ARQUIVOS_AO_VIVO, conferirNarracao, eventosDoLugar, LUGARES_DO_TSE, noiteComQuedas, type Gravacao, type NoiteComQuedas } from "./noite-com-quedas.ts";
+import { ARQUIVOS_AO_VIVO, conferirNarracao, soDoLugar, LUGARES_DO_TSE, noiteComQuedas, type Gravacao, type NoiteComQuedas } from "./noite-com-quedas.ts";
 
 // Uma parada longa no replay com quedas (Narração da noite, decisão 11; Operação na noite, decisão 4): o coletor fica
-// 100 min fora e volta do objeto da noite, numa outra máquina. Num arquivo próprio, porque a noite guarda os objetos de
-// todas as rodadas, e com as outras noites com quedas num processo só ela passava dos 2 GB do runner do CI.
+// 100 min fora e volta do objeto da noite, numa outra máquina. Num arquivo próprio, pela memória (`noite-com-quedas.ts`).
 
 describe("uma parada longa", () => {
   // O coletor parte a frio às 17:30, cai às 17:57, com o Brasil logo depois de 25%, e só volta às 19:37, do objeto da
@@ -29,7 +28,7 @@ describe("uma parada longa", () => {
   });
 
   it("na volta, narra no Brasil só o marco mais alto que ele cruzou e a virada, com o % e a hora observados", () => {
-    const brasil = eventosDoLugar("BR", r.publicado("BR")!.narracao).reverse();
+    const brasil = soDoLugar("BR", r.publicado("BR")!.narracao).reverse();
     expect(brasil.filter((e) => e.tipo === "marco").map((e) => e.marco)).toEqual([10, 25, 95]);
     const [marco, virada] = [brasil.find((e) => e.marco === 95)!, brasil.find((e) => e.tipo === "virada")!];
     expect(marco.quando >= "2022-10-30 19:36:00").toBe(true);
@@ -39,7 +38,7 @@ describe("uma parada longa", () => {
   });
 
   it("uma virada que aconteceu e se desfez durante a parada não aparece: Minas Gerais", () => {
-    expect(eventosDoLugar("MG", r.publicado("MG")!.narracao).filter((e) => e.tipo === "virada")).toEqual([]);
+    expect(soDoLugar("MG", r.publicado("MG")!.narracao).filter((e) => e.tipo === "virada")).toEqual([]);
     expect(r.publicado("BR")!.narracao.filter((e) => e.lugar === "MG" && e.tipo === "virada")).toEqual([]);
   });
 });

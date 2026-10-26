@@ -31,7 +31,7 @@
     "supervisor": "npm run supervisor -w @apurador/coletor --",
     "conferir-entrega": "npm run conferir-entrega -w @apurador/coletor --",
     "alerta-de-teste": "npm run alerta-de-teste -w @apurador/coletor --",
-    "replay": "vitest run --project @apurador/ensaio",
+    "replay": "vitest run --project @apurador/ensaio replay",
     "calibracao": "npm run calibracao -w @apurador/ensaio --",
     "conferir": "npm run conferir -w @apurador/pipeline --",
     "pesquisas": "npm run conferir-pesquisas -w @apurador/pipeline --",

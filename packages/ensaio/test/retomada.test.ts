@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { lerEstadoGuardado, reproduzirAProjecao, type ArquivoDoLugar, type TabelaDeProjecoes } from "@apurador/coletor";
 import { conferirPlacar } from "../src/index.ts";
-import { ARQUIVOS_AO_VIVO, conferirNarracao, eventosDoLugar, LUGARES_DO_TSE, noiteComQuedas, type Gravacao, type NoiteComQuedas } from "./noite-com-quedas.ts";
+import { ARQUIVOS_AO_VIVO, conferirNarracao, soDoLugar, LUGARES_DO_TSE, noiteComQuedas, type Gravacao, type NoiteComQuedas } from "./noite-com-quedas.ts";
 import { cadastro, noite, projecaoDe2022 } from "./noite-2022.ts";
 
 // O replay com quedas (Ensaio geral, decisões 20 e 21; Operação na noite, decisões 4 e 15; Narração da noite, decisão
@@ -10,8 +10,7 @@ import { cadastro, noite, projecaoDe2022 } from "./noite-2022.ts";
 // rodar o modelo de novo sobre os objetos da noite dá os números publicados. As referências são a mesma noite sem queda,
 // o TSE falso e a medição da narração de 2022 (.scratch/apurador-2026/research/14-narracao-noite-2t-2022.md). Como no
 // ensaio geral, o relógio do coletor anda em 2026 e o do TSE falso na noite de 2022: o estado guarda horas dos dois. A
-// parada longa e a queda no plano zero ficam em arquivos próprios: as três noites juntas passavam dos 2 GB de memória
-// do runner do CI.
+// parada longa e a queda no plano zero ficam em arquivos próprios, pela memória (`noite-com-quedas.ts`).
 
 describe("o replay com quedas", () => {
   // Das 16:50 às 17:50, com ~10% das seções: o coletor cai às 17:15 e volta do disco na rodada seguinte, como pelo
@@ -28,7 +27,7 @@ describe("o replay com quedas", () => {
 
   it("não perde, não repete e não publica evento retroativo em nenhum lugar, e o Brasil termina com a mesma narração da noite sem queda", () => {
     expect(conferirNarracao(comQuedas)).toEqual([]);
-    const tipos = (r: NoiteComQuedas) => eventosDoLugar("BR", r.publicado("BR")!.narracao).map((e) => (e.tipo === "marco" ? `${e.marco}%` : e.tipo));
+    const tipos = (r: NoiteComQuedas) => soDoLugar("BR", r.publicado("BR")!.narracao).map((e) => (e.tipo === "marco" ? `${e.marco}%` : e.tipo));
     expect(tipos(comQuedas)).toEqual(tipos(semQueda));
     expect(tipos(comQuedas)).toContain("10%");
   });
@@ -87,24 +86,24 @@ describe("o replay com quedas", () => {
       for (const o of comQuedas.objetos) yield lerEstadoGuardado(o.json);
     })();
     let conferidos = 0;
+    const reproduzidas: number[] = [];
     const json = (x: unknown) => JSON.parse(JSON.stringify(x ?? null)) as unknown;
-    let i = 0;
-    for (const { projecao } of reproduzirAProjecao(lidos, projecaoDe2022)) {
-      const objeto = comQuedas.objetos[i++]!;
-      for (const g of comQuedas.daRodada(objeto.numero)) {
+    for (const { numero, projecao } of reproduzirAProjecao(lidos, projecaoDe2022)) {
+      reproduzidas.push(numero);
+      for (const g of comQuedas.daRodada(numero)) {
         if (g.caminho.startsWith("lugares/") && "projecao" in (g.conteudo as ArquivoDoLugar)) {
           const lugar = g.conteudo as ArquivoDoLugar;
-          expect(json(lugar.projecao), `${lugar.lugar} na rodada ${objeto.numero}`).toEqual(json(projecao?.doLugar(lugar.lugar, true)));
+          expect(json(lugar.projecao), `${lugar.lugar} na rodada ${numero}`).toEqual(json(projecao?.doLugar(lugar.lugar, true)));
           conferidos++;
         }
         if (/^tabelas\/[A-Z]{2}\.json$/.test(g.caminho) && (g.conteudo as TabelaDeProjecoes).projecao) {
           const tabela = g.conteudo as TabelaDeProjecoes;
-          expect(json(tabela.projecao), `${g.caminho} na rodada ${objeto.numero}`).toEqual(json(projecao?.dosMunicipios(tabela.uf, true)));
+          expect(json(tabela.projecao), `${g.caminho} na rodada ${numero}`).toEqual(json(projecao?.dosMunicipios(tabela.uf, true)));
           conferidos++;
         }
       }
     }
-    expect(i).toBe(comQuedas.objetos.length);
+    expect(reproduzidas).toEqual(comQuedas.objetos.map((o) => o.numero));
     expect(conferidos).toBeGreaterThan(1_000);
   }, 300_000);
 });
