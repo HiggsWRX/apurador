@@ -1,7 +1,9 @@
 import { crc32, inflateRawSync } from "node:zlib";
 
 // Os zips do TSE têm centenas de MB, e o pipeline quer um membro só (o CSV de Presidente, a foto de um candidato): aqui
-// ele vem por pedidos HTTP Range, sem baixar o zip, e é conferido pelo CRC do diretório.
+// ele vem por pedidos HTTP Range, sem baixar o zip, e é conferido pelo CRC do diretório. O TSE regera os zips todo dia
+// (o de pesquisas, por volta das 08:45 UTC, a hora do CI agendado): os pedidos depois da cauda levam `If-Range` com a
+// ETag dela, e um zip que mudou no meio da leitura é lido de novo, do começo.
 
 /** A função de rede, injetável para os testes rodarem sem rede. Tem a forma do `fetch`. */
 export type Buscar = (url: string, init?: RequestInit) => Promise<Response>;
@@ -23,6 +25,11 @@ interface EntradaDoDiretorio {
 
 // O fim do zip tem o registro final (22 bytes) mais um comentário de até 64 KB.
 const CAUDA = 22 + 0xffff;
+// Leituras de um zip que muda no meio delas: depois disso, o TSE ainda está regerando, e é melhor desistir.
+const LEITURAS = 3;
+
+/** O zip mudou entre dois pedidos da mesma leitura. */
+class ZipMudou extends Error {}
 
 /**
  * Baixa um único membro de um zip remoto só com pedidos HTTP Range: a cauda (onde está o diretório),
@@ -30,10 +37,19 @@ const CAUDA = 22 + 0xffff;
  * de Presidente (`*_BR.csv`) tem poucos MB.
  */
 export async function lerMembroRemoto(opcoes: { url: string; membro: (nome: string) => boolean; buscar?: Buscar }): Promise<MembroRemoto> {
-  const { url, membro } = opcoes;
-  const buscar = opcoes.buscar ?? fetch;
+  for (let leitura = 1; ; leitura++) {
+    try {
+      return await lerUmaVez(opcoes.url, opcoes.membro, opcoes.buscar ?? fetch);
+    } catch (erro) {
+      if (!(erro instanceof ZipMudou) || leitura === LEITURAS) throw erro;
+    }
+  }
+}
 
+async function lerUmaVez(url: string, membro: (nome: string) => boolean, buscar: Buscar): Promise<MembroRemoto> {
   const cauda = await baixarFaixa(buscar, url, `bytes=-${CAUDA}`);
+  // Sem ETag, a mudança só aparece no membro, que chega corrompido.
+  const { etag } = cauda;
   const fim = cauda.dados;
   const registroFinal = ultimaAssinatura(fim, 0x06054b50);
   if (registroFinal < 0) throw new Error(`${url}: registro final do zip não encontrado`);
@@ -46,36 +62,51 @@ export async function lerMembroRemoto(opcoes: { url: string; membro: (nome: stri
   const diretorio =
     inicioDoDiretorio >= inicioDaCauda
       ? fim.subarray(inicioDoDiretorio - inicioDaCauda, inicioDoDiretorio - inicioDaCauda + tamanhoDoDiretorio)
-      : (await baixarFaixa(buscar, url, `bytes=${inicioDoDiretorio}-${inicioDoDiretorio + tamanhoDoDiretorio - 1}`)).dados;
+      : (await baixarFaixa(buscar, url, `bytes=${inicioDoDiretorio}-${inicioDoDiretorio + tamanhoDoDiretorio - 1}`, etag)).dados;
 
   const entradas = lerDiretorio(diretorio);
   const entrada = entradas.find((e) => membro(e.nome));
   if (!entrada) throw new Error(`${url}: nenhum membro casa com o pedido. Membros: ${entradas.map((e) => e.nome).join(", ")}`);
 
   // O cabeçalho local tem 30 bytes mais o nome e um campo extra que pode diferir do diretório.
-  const cabecalho = (await baixarFaixa(buscar, url, `bytes=${entrada.inicioDoCabecalho}-${entrada.inicioDoCabecalho + 29}`)).dados;
+  const cabecalho = (await baixarFaixa(buscar, url, `bytes=${entrada.inicioDoCabecalho}-${entrada.inicioDoCabecalho + 29}`, etag)).dados;
   const visaoDoCabecalho = new DataView(cabecalho.buffer, cabecalho.byteOffset, cabecalho.byteLength);
-  if (visaoDoCabecalho.getUint32(0, true) !== 0x04034b50) throw new Error(`${url}: cabeçalho local inválido para ${entrada.nome}`);
+  if (visaoDoCabecalho.getUint32(0, true) !== 0x04034b50)
+    throw new ZipMudou(`${url}: o zip mudou durante a leitura (cabeçalho local inválido para ${entrada.nome})`);
   const inicioDosDados = entrada.inicioDoCabecalho + 30 + visaoDoCabecalho.getUint16(26, true) + visaoDoCabecalho.getUint16(28, true);
   const comprimido =
     entrada.tamanhoComprimido === 0
       ? new Uint8Array()
-      : (await baixarFaixa(buscar, url, `bytes=${inicioDosDados}-${inicioDosDados + entrada.tamanhoComprimido - 1}`)).dados;
+      : (await baixarFaixa(buscar, url, `bytes=${inicioDosDados}-${inicioDosDados + entrada.tamanhoComprimido - 1}`, etag)).dados;
 
-  const dados = descomprimir(entrada, comprimido);
-  if (dados.length !== entrada.tamanhoOriginal || crc32(dados) !== entrada.crc) throw new Error(`${url}: ${entrada.nome} chegou corrompido`);
+  let dados: Uint8Array;
+  try {
+    dados = descomprimir(entrada, comprimido);
+  } catch (erro) {
+    if ((erro as NodeJS.ErrnoException).code !== "Z_DATA_ERROR") throw erro;
+    throw new ZipMudou(`${url}: o zip mudou durante a leitura (${entrada.nome} não descomprime)`);
+  }
+  if (dados.length !== entrada.tamanhoOriginal || crc32(dados) !== entrada.crc)
+    throw new ZipMudou(`${url}: o zip mudou durante a leitura (${entrada.nome} chegou corrompido)`);
   return { nome: entrada.nome, dados };
 }
 
-async function baixarFaixa(buscar: Buscar, url: string, range: string): Promise<{ dados: Uint8Array; total: number }> {
-  const resposta = await buscar(url, { headers: { Range: range } });
+/** Uma faixa do zip. Com a `etag` da cauda, um 200 quer dizer que o zip mudou desde ela (`If-Range`). */
+async function baixarFaixa(
+  buscar: Buscar,
+  url: string,
+  range: string,
+  etag?: string | null,
+): Promise<{ dados: Uint8Array; total: number; etag: string | null }> {
+  const resposta = await buscar(url, { headers: etag ? { Range: range, "If-Range": etag } : { Range: range } });
   if (resposta.status !== 206) {
     await resposta.body?.cancel();
+    if (etag && resposta.status === 200) throw new ZipMudou(`${url}: o zip mudou durante a leitura (a ETag ${etag} não vale mais)`);
     throw new Error(`${url}: o servidor respondeu ${resposta.status} a um pedido com Range (${range}); o zip inteiro não é baixado`);
   }
   const total = Number(resposta.headers.get("content-range")?.split("/")[1]);
   if (!Number.isFinite(total)) throw new Error(`${url}: resposta sem Content-Range com o tamanho total`);
-  return { dados: new Uint8Array(await resposta.arrayBuffer()), total };
+  return { dados: new Uint8Array(await resposta.arrayBuffer()), total, etag: resposta.headers.get("etag") };
 }
 
 function ultimaAssinatura(bytes: Uint8Array, assinatura: number): number {

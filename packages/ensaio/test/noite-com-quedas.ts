@@ -6,6 +6,7 @@ import {
   type Buscar,
   type ConexaoDoComputador,
   type Controle,
+  type EventoDaNarracao,
   type OpcoesDoColetor,
   type RegistroDaRodada,
 } from "@apurador/coletor";
@@ -123,3 +124,44 @@ export type NoiteComQuedas = Awaited<ReturnType<typeof noiteComQuedas>>;
 /** Os arquivos do TSE que chegaram nas rodadas: os que vão para os objetos da noite. */
 export const chegaram = (rodadas: RegistroDaRodada[]) =>
   rodadas.reduce((soma, x) => soma + x.baixados.brasil + x.baixados.ufs + x.baixados.municipios + x.baixados.zonas, 0);
+
+/** Os lugares que o TSE falso de 2022 tem: o Brasil, as UFs, o Exterior e os municípios do cadastro. */
+export const LUGARES_DO_TSE = 1 + cadastro.ufs.reduce((soma, uf) => soma + 1 + uf.municipios.length, 0);
+/**
+ * Os arquivos ao vivo: os lugares, as 28 tabelas de projeções e os municípios delas, o mapa.json, o arquivo do simulador
+ * e o arquivo de rodada.
+ */
+export const ARQUIVOS_AO_VIVO = LUGARES_DO_TSE + 2 * cadastro.ufs.length + 3;
+
+/** Os eventos de um lugar numa narração. */
+export const eventosDoLugar = (id: string, eventos: EventoDaNarracao[]) => eventos.filter((e) => e.lugar === id);
+
+/**
+ * O que a retomada não pode fazer com a narração de nenhum lugar, em nenhuma gravação: perder um evento já publicado,
+ * repetir um evento (um marco, o começo, o fim) ou publicar um evento com hora mais velha que um já publicado. Só a
+ * virada aberta muda de texto, quando outra troca entra na janela dela.
+ */
+export function conferirNarracao(r: NoiteComQuedas): string[] {
+  const problemas: string[] = [];
+  const antes = new Map<string, EventoDaNarracao[]>();
+  for (const g of r.lugares()) {
+    const id = g.conteudo.lugar;
+    const eventos = eventosDoLugar(id, g.conteudo.narracao).sort((a, b) => a.numero! - b.numero!);
+    const anteriores = antes.get(id) ?? [];
+    for (const e of anteriores) {
+      const agora = eventos.find((x) => x.numero === e.numero);
+      if (!agora || agora.tipo !== e.tipo || agora.quando !== e.quando || (e.tipo !== "virada" && agora.texto !== e.texto))
+        problemas.push(`${id}: o evento ${e.numero} (${e.tipo} ${e.quando}) mudou ou sumiu às ${new Date(g.quando).toISOString()}`);
+    }
+    const vistos = new Set<string>();
+    eventos.forEach((e, i) => {
+      if (e.numero !== i + 1) problemas.push(`${id}: o evento ${i + 1} tem o número ${e.numero}`);
+      const chave = `${e.tipo} ${e.marco ?? ""}`;
+      if (e.tipo !== "virada" && vistos.has(chave)) problemas.push(`${id}: ${chave} repetido`);
+      vistos.add(chave);
+      if (i > 0 && e.quando < eventos[i - 1]!.quando) problemas.push(`${id}: ${e.tipo} ${e.quando} depois de um evento das ${eventos[i - 1]!.quando}`);
+    });
+    antes.set(id, eventos);
+  }
+  return problemas;
+}

@@ -41,7 +41,11 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # O runner tem ~2 GB de heap por padrão, e o replay com quedas (`retomada.test.ts`) guarda duas noites inteiras
+      # para compará-las: ~2,5 GB, medido com `--logHeapUsage` em 26/10. Dois workers com 3 GB cabem nos 7 GB do runner.
       - run: npx vitest run --project @apurador/ensaio
+        env:
+          NODE_OPTIONS: --max-old-space-size=3072
       # A calibração gerada de novo (~1 min) tem de sair igual à do repositório: uma mudança no modelo que mexa nos
       # números do registro ou dos CSVs falha aqui, e não na página de metodologia.
       - run: npm run calibracao
