@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { lerMembroRemoto } from "@apurador/tse";
+import { lerMembroRemoto, lerResultado, type ResultadoDoTse } from "@apurador/tse";
 
 // Os arquivos do TSE baixados ficam num cache fora do Git (`.cache/tse/` na raiz do checkout principal). O
 // repositório guarda só os dados derivados, e o manifesto diz de onde cada um veio.
@@ -23,6 +23,34 @@ const CACHE = cacheDoTse(RAIZ);
 
 /** O cache da malha do IBGE (`.cache/ibge/`), ao lado do do TSE, dividido pelos worktrees do mesmo jeito. */
 export const CACHE_DO_IBGE = new URL("../ibge/", CACHE);
+
+/**
+ * O estado em disco do coletor da produção (`.cache/coletor/`, ao lado do cache do TSE): o último estado da noite, com
+ * o arquivo ao vivo de cada lugar como chegou do TSE (o `EstadoGuardado` de `packages/coletor/src/retomada.ts`).
+ */
+const ESTADO_DA_NOITE = new URL("../coletor/estado-producao.json", CACHE);
+
+/** Os arquivos ao vivo do último estado da noite, lidos, e a origem deles para o manifesto; `null` num checkout sem ele. */
+export function ultimoEstadoDaNoite(ano: number): { resultados: ResultadoDoTse[]; fonte: Omit<FonteBaixada, "dados"> } | null {
+  if (!existsSync(ESTADO_DA_NOITE)) return null;
+  const bytes = readFileSync(ESTADO_DA_NOITE);
+  // Só os campos que a pipeline lê, porque ela não depende do coletor.
+  const { estado, arquivos } = JSON.parse(bytes.toString("utf8")) as {
+    estado: { eleicao: string; numero: number; quando: string };
+    arquivos: { corpo: string }[];
+  };
+  const paraBytes = new TextEncoder();
+  return {
+    resultados: arquivos.map((a) => lerResultado(paraBytes.encode(a.corpo))),
+    fonte: {
+      url: `https://resultados.tse.jus.br/oficial/ele${ano}/${estado.eleicao}/dados/`,
+      membro: `estado-producao.json, rodada ${estado.numero}`,
+      sha256: createHash("sha256").update(bytes).digest("hex"),
+      bytes: bytes.length,
+      baixadoEm: estado.quando,
+    },
+  };
+}
 
 /** Um arquivo do TSE (ou do IBGE) baixado, ou lido do cache, com a origem para o manifesto. */
 export interface FonteBaixada {

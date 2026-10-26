@@ -1,45 +1,70 @@
 ---
-import { NOME_DA_BASE } from "../lib/bases-da-projecao";
+import { BASE_NOS_ARQUIVOS, NOME_DA_BASE, type IdDaBase } from "../lib/bases-da-projecao";
 import { formatarPctComCasas } from "../lib/formato";
 import { graficoDaNoite } from "../lib/graficos-da-metodologia";
 import type { NoiteReproduzida } from "../lib/metodologia";
 
-// A noite reproduzida da seção "Como o modelo teria se saído" (Página de metodologia, decisões 2 e 3): o placar
-// parcial, a projeção com a faixa de 95% e o resultado, de 0% a 100% das seções, com os botões "2022 | 2018". A
-// projeção é a da base que a caixa da projeção abre na noite, Apuração + pesquisas. Sem JavaScript, os botões somem e
-// as duas noites ficam à vista, uma embaixo da outra, como no histórico da página de lugar.
+// Os gráficos de uma noite: o placar parcial, a projeção de uma base com a faixa de 95% e o resultado, de 0% a 100%
+// das seções, um por botão. Na seção "Como o modelo teria se saído" da metodologia (Página de metodologia, decisões 2
+// e 3), as noites reproduzidas, com os botões "2022 | 2018" e a base que a caixa da projeção abre na noite; em "Como a
+// projeção se saiu", na página do Brasil, a noite de 25/10 publicada, com um botão por base. Sem JavaScript, os botões
+// somem e os gráficos ficam à vista, um embaixo do outro, como no histórico da página de lugar.
+
+/** Um gráfico, com o botão que o abre. */
+interface Grafico {
+  /** O id do gráfico na página: "2022", "com-pesquisas". */
+  id: string;
+  botao: string;
+  noite: NoiteReproduzida;
+  base: IdDaBase;
+  /** O título sobre o gráfico: "2º turno de 2022, Lula × Bolsonaro". */
+  titulo: string;
+  /** O começo da descrição para o leitor de tela: "Noite do 2º turno de 2022 reproduzida". */
+  assunto: string;
+}
 
 interface Props {
-  noites: NoiteReproduzida[];
+  /** Os gráficos, na ordem dos botões: com um só, não há botões. */
+  graficos: Grafico[];
+  /** O id do gráfico que abre aberto; de partida, o do primeiro. */
+  aberto?: string;
+  /** O que os botões escolhem, para o leitor de tela: "Noite", "Base". */
+  escolha: string;
 }
-const { noites } = Astro.props;
+const { graficos: pedidos, aberto = pedidos[0]!.id, escolha } = Astro.props;
 const LARGURA = 340;
 const ALTURA = 220;
 const pct = (n: number) => formatarPctComCasas(n, 1);
-const graficos = noites.map((noite) => {
-  const g = graficoDaNoite(noite, { largura: LARGURA, altura: ALTURA });
-  const [primeiro, segundo] = noite.finalistas;
+const graficos = pedidos.map(({ id, botao, noite, base, titulo, assunto }) => {
+  const g = graficoDaNoite(noite, { largura: LARGURA, altura: ALTURA }, base);
+  const [primeiro] = noite.finalistas;
   const placares = noite.momentos.filter((m) => m.placar !== null);
+  const projecoes = noite.momentos.map((m) => m[BASE_NOS_ARQUIVOS[base]].projecao);
   const resultado = `${primeiro.nome} ${formatarPctComCasas(noite.resultado, 2)}`;
   const descricao =
-    `Noite do 2º turno de ${noite.ano} reproduzida, de 0% a 100% das seções totalizadas, em % de ${primeiro.nome}: ` +
+    `${assunto}, de 0% a 100% das seções totalizadas, em % de ${primeiro.nome}: ` +
     `o placar parcial, de ${pct(placares[0]!.placar!)} com a primeira seção a ${pct(placares[placares.length - 1]!.placar!)} no fim; ` +
-    `a projeção na base ${NOME_DA_BASE["com-pesquisas"]}, com a faixa de 95%, de ${pct(noite.agregado)} antes da primeira seção ` +
-    `a ${pct(noite.momentos[noite.momentos.length - 1]!.comPesquisas.projecao)} no fim; e o resultado, ${resultado}.`;
-  return { noite, g, titulo: `2º turno de ${noite.ano}, ${primeiro.nome} × ${segundo.nome}`, resultado, descricao };
+    `a projeção na base ${NOME_DA_BASE[base]}, com a faixa de 95%, de ${pct(projecoes[0]!)} antes da primeira seção ` +
+    `a ${pct(projecoes[projecoes.length - 1]!)} no fim; e o resultado, ${resultado}.`;
+  return { id, botao, g, titulo, resultado, descricao };
 });
+// A legenda diz a base quando todos os gráficos são da mesma; senão, cada título diz a dele.
+const bases = [...new Set(pedidos.map((p) => p.base))];
+const projecao = bases.length === 1 ? `Projeção, ${NOME_DA_BASE[bases[0]!]}` : "Projeção";
 ---
 
-<div class="noites-reproduzidas" data-noites-reproduzidas>
-  <div class="turnos" role="group" aria-label="Noite">
-    {graficos.map(({ noite }, i) => (
-      <button type="button" data-noite-botao={noite.ano} aria-controls={`noite-${noite.ano}`} aria-pressed={i === 0 ? "true" : "false"}>
-        {noite.ano}
-      </button>
-    ))}
-  </div>
-  {graficos.map(({ noite, g, titulo, resultado, descricao }, i) => (
-    <div class="noite" id={`noite-${noite.ano}`} data-noite={noite.ano} data-ativo={i === 0 ? "" : undefined}>
+<div class="graficos-da-noite" data-graficos-da-noite>
+  {graficos.length > 1 && (
+    <div class="turnos" role="group" aria-label={escolha}>
+      {graficos.map(({ id, botao }) => (
+        <button type="button" data-grafico-botao={id} aria-controls={`grafico-${id}`} aria-pressed={id === aberto ? "true" : "false"}>
+          {botao}
+        </button>
+      ))}
+    </div>
+  )}
+  {graficos.map(({ id, g, titulo, resultado, descricao }) => (
+    <div class="grafico" id={`grafico-${id}`} data-grafico={id} data-ativo={id === aberto ? "" : undefined}>
       <p class="titulo-da-noite">{titulo}</p>
       <svg viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label={descricao}>
         {g.marcasY.map((m) => (
@@ -70,21 +95,21 @@ const graficos = noites.map((noite) => {
   ))}
   <p class="legenda">
     <span class="placar">Placar parcial</span>
-    <span class="linha-da-projecao">Projeção, {NOME_DA_BASE["com-pesquisas"]}</span>
+    <span class="linha-da-projecao">{projecao}</span>
     <span class="faixa">faixa de 95%</span>
     <span class="resultado">resultado</span>
   </p>
 </div>
 
 <script>
-  for (const bloco of document.querySelectorAll("[data-noites-reproduzidas]")) {
-    const botoes = [...bloco.querySelectorAll<HTMLButtonElement>("[data-noite-botao]")];
+  for (const bloco of document.querySelectorAll("[data-graficos-da-noite]")) {
+    const botoes = [...bloco.querySelectorAll<HTMLButtonElement>("[data-grafico-botao]")];
     for (const botao of botoes) {
       botao.addEventListener("click", () => {
         for (const outro of botoes) {
           const ativo = outro === botao;
           outro.setAttribute("aria-pressed", String(ativo));
-          bloco.querySelector(`[data-noite="${outro.dataset.noiteBotao}"]`)?.toggleAttribute("data-ativo", ativo);
+          bloco.querySelector(`[data-grafico="${outro.dataset.graficoBotao}"]`)?.toggleAttribute("data-ativo", ativo);
         }
       });
     }
@@ -92,10 +117,10 @@ const graficos = noites.map((noite) => {
 </script>
 
 <style>
-  :global(:root.js) .noite:not([data-ativo]) {
+  :global(:root.js) .grafico:not([data-ativo]) {
     display: none;
   }
-  .noite + .noite {
+  .grafico + .grafico {
     margin-top: 1rem;
   }
   .titulo-da-noite {

@@ -34,6 +34,11 @@ const barras = [
   <h3>
     {turno.turno}º turno de {turno.ano}
   </h3>
+  {turno.provisorio && (
+    <p class="nota" data-provisorio>
+      Provisório, até os arquivos oficiais do TSE. Vem da totalização final divulgada na noite.
+    </p>
+  )}
   {!resultado ? (
     <p class="nota">{nomeCompleto(lugar)} não teve votação neste turno.</p>
   ) : (

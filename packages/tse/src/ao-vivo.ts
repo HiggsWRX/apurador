@@ -13,6 +13,8 @@ export interface CandidatoDoResultado {
   numero: number;
   /** O sequencial do candidato (`sqcand`), que dá a foto oficial. */
   sequencial: string;
+  /** O nome completo (`nm`). */
+  nome: string;
   nomeUrna: string;
   /** A sigla do partido. */
   partido: string;
@@ -38,8 +40,11 @@ export interface ResultadoDoTse {
   /** A indicação do TSE (`md = "e"`): a eleição matematicamente definida, com eleito. Só no Brasil. */
   indicacao: boolean;
   secoes: SecoesDoTse;
-  /** Os aptos do lugar, os das seções totalizadas e quantos deles votaram. */
-  eleitorado: { total: number; totalizado: number; comparecimento: number };
+  /**
+   * Os aptos do lugar, os das seções totalizadas, quantos deles votaram e as abstenções, que o TSE conta só nas seções
+   * instaladas, como nos arquivos oficiais por município e zona.
+   */
+  eleitorado: { total: number; totalizado: number; comparecimento: number; abstencao: number };
   /** Os nulos incluem os técnicos. */
   votos: { validos: number; brancos: number; nulos: number };
   /** Na ordem do arquivo. */
@@ -123,6 +128,7 @@ export function lerResultado(bytes: Uint8Array): ResultadoDoTse {
         lista(partido, "cand").map((c) => ({
           numero: inteiro(c, "n"),
           sequencial: campo(c, "sqcand"),
+          nome: campo(c, "nm"),
           nomeUrna: campo(c, "nmu"),
           partido: campo(partido, "sg"),
           votos: inteiro(c, "vap"),
@@ -138,7 +144,7 @@ export function lerResultado(bytes: Uint8Array): ResultadoDoTse {
     totalizacaoFinal: campo(raiz, "tf") === "s",
     indicacao: (raiz as Bruto)["md"] === "e",
     secoes: secoes(s),
-    eleitorado: { total: inteiro(e, "te"), totalizado: inteiro(e, "est"), comparecimento: inteiro(e, "c") },
+    eleitorado: { total: inteiro(e, "te"), totalizado: inteiro(e, "est"), comparecimento: inteiro(e, "c"), abstencao: inteiro(e, "a") },
     votos: { validos: inteiro(v, "vv"), brancos: inteiro(v, "vb"), nulos: inteiro(v, "tvn") },
     candidatos,
   };

@@ -1,0 +1,124 @@
+---
+import { BASE_DA_NOITE, BASE_NOS_ARQUIVOS, BASES_DA_PROJECAO, NOME_DA_BASE, type IdDaBase } from "../lib/bases-da-projecao";
+import { CHAVES } from "../lib/chaves";
+import { NOITE_PUBLICADA } from "../lib/como-a-projecao-se-saiu";
+import { formatarCalculo, formatarPct, formatarPctComCasas, formatarPontos, umaCasa } from "../lib/formato";
+import { TURNOS } from "../lib/lugares";
+import { errosDaNoite, type ErroDaNoite } from "../lib/metodologia";
+import GraficosDaNoite from "./GraficosDaNoite.astro";
+
+// "Como a projeção se saiu" (Telas da página de lugar, decisão 13), na página do Brasil depois da noite: o erro da
+// projeção que o coletor publicou, nas duas bases, contra a totalização final do TSE, com o mesmo código da seção 6 da
+// metodologia. A noite vem do registro das rodadas, e o erro é medido no primeiro momento publicado mais perto de 5%,
+// 25% e 50% das seções. Segue as chaves da noite: a página só o mostra com a da projeção ligada (`index.astro`), e sem
+// a da base com pesquisas fica só a Só apuração.
+
+const noite = NOITE_PUBLICADA;
+// As bases na ordem do controle da projeção, com a da noite aberta no gráfico.
+const bases = BASES_DA_PROJECAO.filter((b) => b === "so-apuracao" || CHAVES.noite.baseComPesquisas);
+const aberta = bases.includes(BASE_DA_NOITE) ? BASE_DA_NOITE : bases[0]!;
+const erros = errosDaNoite(noite);
+const em5 = erros[0]!;
+const erroDe = (e: ErroDaNoite, base: IdDaBase) => e[BASE_NOS_ARQUIVOS[base]];
+const erroEmPontos = (n: number) => (umaCasa(n) < 0.1 ? "menos de 0,1 ponto" : formatarPontos(n));
+const erroNaTabela = (n: number) => (umaCasa(n) < 0.1 ? "<0,1" : formatarCalculo(n));
+
+// O resultado como o TSE o publicou, com os candidatos na ordem alfabética fixa do site.
+const turno = TURNOS.find((t) => t.ano === 2026 && t.turno === 2)!;
+const brasil = turno.lugares.BR!;
+const [a, b] = noite.finalistas
+  .map((f) => {
+    const i = turno.candidatos.findIndex((c) => c.numero === f.numero);
+    if (i < 0) throw new Error(`${f.nome} não é candidato no 2º turno de 2026`);
+    return { nome: f.nome, pct: formatarPct(brasil.votos[i]!, brasil.validos) };
+  })
+  .sort((x, y) => x.nome.localeCompare(y.nome, "pt-BR"));
+
+const em5NasBases = bases.map((base) => `${erroEmPontos(erroDe(em5, base))}${bases.length > 1 ? ` na base ${NOME_DA_BASE[base]}` : ""}`).join(" e ");
+const graficos = bases.map((base) => ({
+  id: base,
+  botao: NOME_DA_BASE[base],
+  noite,
+  base,
+  titulo: `Noite de 25/10, ${noite.finalistas[0].nome} × ${noite.finalistas[1].nome}, base ${NOME_DA_BASE[base]}`,
+  assunto: "Noite de 25/10, como a projeção foi publicada",
+}));
+const momentos = erros.map((e) => formatarPctComCasas(e.momento, 2));
+---
+
+<section class="cartao como-se-saiu" data-bloco="como-a-projecao-se-saiu" aria-labelledby="como-se-saiu-titulo">
+  <h2 id="como-se-saiu-titulo">Como a projeção se saiu</h2>
+  <p>
+    Na totalização final do TSE, {a!.nome} teve {a!.pct} dos votos válidos, e {b!.nome}, {b!.pct}. Com 5% das seções, a projeção errava{" "}
+    <strong>{em5NasBases}</strong>. O placar parcial errava {erroEmPontos(em5.placar)}.
+  </p>
+  <figure>
+    <GraficosDaNoite graficos={graficos} aberto={aberta} escolha="Base da projeção" />
+  </figure>
+  <div class="tabela">
+    <table data-bloco="erros-da-noite">
+      <caption>O erro, em pontos, contra o resultado</caption>
+      <thead>
+        <tr>
+          <th scope="col">Com</th>
+          <th scope="col">Placar parcial</th>
+          {bases.map((b) => (
+            <th scope="col">{NOME_DA_BASE[b]}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {erros.map((e) => (
+          <tr>
+            <th scope="row">{e.secoes}% das seções</th>
+            <td>{erroNaTabela(e.placar)}</td>
+            {bases.map((b) => (
+              <td>{erroNaTabela(erroDe(e, b))}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="nota">
+    Cada linha é o primeiro momento publicado mais perto do ponto: {momentos.slice(0, -1).join(", ")} e {momentos.at(-1)} das seções. A projeção saía com uma
+    casa. Os estados e os municípios ficam de fora: a noite foi guardada só no Brasil.
+  </p>
+  <p>
+    <a href="/metodologia/#acerto">Como o modelo teria se saído em 2022 e 2018 →</a>
+  </p>
+  <p class="fonte">Cálculo do Apurador com dados do TSE</p>
+</section>
+
+<style>
+  p {
+    margin: 0.5rem 0 0;
+  }
+  figure {
+    margin: 0.75rem 0 0;
+  }
+  .tabela {
+    overflow-x: auto;
+    margin-top: 0.75rem;
+  }
+  table {
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+  caption {
+    text-align: left;
+    font-weight: 600;
+    padding-bottom: 0.25rem;
+  }
+  th,
+  td {
+    padding: 0.25rem 0.75rem 0.25rem 0;
+    text-align: left;
+  }
+  td {
+    font-variant-numeric: tabular-nums;
+  }
+  thead th {
+    border-bottom: 1px solid var(--borda-forte);
+  }
+</style>

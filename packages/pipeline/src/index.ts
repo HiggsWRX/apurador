@@ -1,4 +1,4 @@
-export { doTurno, idDoTurno, resultadoDoTurno, TOTAIS, type CandidatoDoTurno, type ResultadoOficialDoLugar, type Turno } from "./turno.ts";
+export { doTurno, idDoTurno, resultadoDoTurno, TOTAIS, turnoDoUltimoEstado, type CandidatoDoTurno, type ResultadoOficialDoLugar, type Turno } from "./turno.ts";
 export {
   assinaturaDosLugares,
   compararIds,
@@ -10,7 +10,7 @@ export {
   type Lugar,
   type TipoDeLugar,
 } from "./lugares.ts";
-export { conferirTotais, type Divergencia } from "./conferencia.ts";
+export { conferenciaDoTurno, conferirTotais, type Divergencia } from "./conferencia.ts";
 export {
   dataHoraDoInstante,
   instanteDaNoite,

@@ -4,7 +4,39 @@ import { doTurno, TOTAIS, type Turno } from "./turno.ts";
 
 // A conferência automática: os totais de um turno que o repositório guarda, no Brasil e em cada UF
 // (com o Exterior), contra os arquivos do TSE. A soma aqui é feita à parte, linha a linha, sem passar
-// pelo código que gerou os dados.
+// pelo código que gerou os dados. O turno provisório, do último estado da noite, só é conferido quando os
+// arquivos oficiais o trazem, e aí a conferência falha até ele ser gerado de novo a partir deles.
+
+/** As linhas dos arquivos oficiais do TSE de um ano, por município e zona. */
+type ArquivosOficiais = { candidatos: VotoCandidatoMunzona[]; detalhes: DetalheMunzona[] };
+
+/** O resultado da conferência de um turno, como o `npm run conferir` o mostra: se passa, e as linhas do relatório. */
+export function conferenciaDoTurno(turno: Turno, oficial: ArquivosOficiais): { passa: boolean; linhas: string[] } {
+  const rotulo = `${turno.ano} ${turno.turno}º turno`;
+  const linhasDe = (divergencias: Divergencia[]) =>
+    divergencias.map((d) => `  ${d.lugar}, ${d.total}: repositório ${d.repositorio ?? "sem o lugar"}, TSE ${d.tse ?? "sem o lugar"}`);
+  if (turno.provisorio) {
+    if (!oficial.candidatos.some(doTurno(turno.ano, turno.turno))) {
+      return { passa: true, linhas: [`${rotulo}: provisório, do último estado da noite; os arquivos oficiais do TSE ainda não têm o turno`] };
+    }
+    return {
+      passa: false,
+      linhas: [
+        `${rotulo}: os arquivos oficiais do TSE já têm o turno. Gere de novo com \`npm run dados -- --atualizar\`, para ele passar a eles e o aviso de provisório sair`,
+        // O arquivo ao vivo conta as seções sem as agregadas, e elas nunca batem.
+        ...linhasDe(conferirTotais(turno, oficial).filter((d) => d.total !== "secoes")),
+      ],
+    };
+  }
+  const divergencias = conferirTotais(turno, oficial);
+  return {
+    passa: divergencias.length === 0,
+    linhas: [
+      `${rotulo}: ${divergencias.length === 0 ? "o Brasil, as 27 UFs e o Exterior batem com o TSE" : `${divergencias.length} divergência(s)`}`,
+      ...linhasDe(divergencias),
+    ],
+  };
+}
 
 /** Um total do repositório que não bate com o do TSE, num lugar. */
 export interface Divergencia {
@@ -19,7 +51,7 @@ export interface Divergencia {
 const votosDo = (c: { numero: number; partido: string }) => `votos do ${c.numero} (${c.partido})`;
 
 /** Os totais de um turno, no Brasil e em cada UF, que não batem com os arquivos do TSE. */
-export function conferirTotais(turno: Turno, oficial: { candidatos: VotoCandidatoMunzona[]; detalhes: DetalheMunzona[] }): Divergencia[] {
+export function conferirTotais(turno: Turno, oficial: ArquivosOficiais): Divergencia[] {
   // Os totais de cada lugar, dos dois lados: no TSE, somados das linhas; no repositório, como estão.
   const tse = new Map<string, Map<string, number>>();
   const somar = (lugar: string, total: string, n: number) => {

@@ -170,6 +170,20 @@ describe("os dois endereços dos arquivos ao vivo", () => {
     expect(urls()).toEqual([`${PRINCIPAL}rodada.json`, `${PRINCIPAL}lugares/BR.json`]);
   });
 
+  it("com a fase encerrada no principal, a rodada parada não é atraso, e o plano B nem é lido", async () => {
+    // Depois da noite de 25/10, com o coletor parado desde as 23:59 (docs/noite/2026-10-25.md, "Achados", 4).
+    const { leitor, responder, urls } = montar();
+    const depois = "2026-10-26T11:00:00-03:00";
+    responder(`${PRINCIPAL}rodada.json`, { status: 200, date: depois, corpo: { ...rodada("2026-10-25T23:59:03-03:00"), fase: "encerrada" } });
+    responder(`${PRINCIPAL}lugares/BR.json`, { status: 200, date: depois, corpo: lugar(100) });
+
+    await leitor.ler();
+    await leitor.ler();
+
+    expect(urls()).toEqual([`${PRINCIPAL}rodada.json`, `${PRINCIPAL}lugares/BR.json`, `${PRINCIPAL}rodada.json`, `${PRINCIPAL}lugares/BR.json`]);
+    expect(leitor.quadro().indicador.estado).toBe("encerrada");
+  });
+
   it("no principal, pede com o If-None-Match à mão; no plano B, sem cabeçalho próprio e com o cache do navegador, porque os static assets não atendem o preflight", async () => {
     const { leitor, responder, pedidos } = montar();
     responder(`${PRINCIPAL}rodada.json`, { status: 200, date: AGORA, etag: '"r1"', corpo: rodada("2026-10-25T19:41:40-03:00") });

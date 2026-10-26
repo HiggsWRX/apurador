@@ -12,7 +12,8 @@
     "noite-local": "tsx src/noite-local.ts",
     "ler-ensaio": "tsx src/ler-ensaio.ts",
     "conferir-ensaio": "tsx src/conferir-ensaio.ts",
-    "roteiro": "tsx src/imprimir-roteiro.ts"
+    "roteiro": "tsx src/imprimir-roteiro.ts",
+    "noite-publicada": "tsx src/gerar-noite-publicada.ts"
   },
   "dependencies": {
     "@apurador/coletor": "*",

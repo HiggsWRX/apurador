@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { DIST, elemento, pagina, texto as textoDe } from "../html";
+import { DIST, DIST_CHAVES_DESLIGADAS, DIST_ENSAIO, elemento, elementos, pagina, texto as textoDe } from "../html";
 
 // Confere o que o build gera (a fronteira do site): o HTML estático da página do Brasil.
 const html = pagina("/");
@@ -27,6 +27,53 @@ describe("página do Brasil, 1º turno de 2026", () => {
 
   it("dá a atribuição do TSE", () => {
     expect(textoDe(html)).toMatch(/Fonte: TSE.*CC-BY/);
+  });
+});
+
+describe("como a projeção se saiu, depois da noite", () => {
+  const bloco = elemento(html, /<section[^>]*data-bloco="como-a-projecao-se-saiu"/);
+  // O registro da noite (docs/noite/2026-10-25.md, "A projeção contra o resultado"): Flávio 48,21% no resultado; com
+  // 4,80% das seções, o placar 48,78, a Só apuração 48,0 e a Apuração + pesquisas 48,1; com 25,19%, 50,51, 48,9 e 49,0;
+  // e o arquivo do Brasil de 50,76%, às 20:27:24, com 49,85 e as duas bases em 48,5.
+  it('diz o erro com 5% das seções nas duas bases: "com 5% das seções, a projeção errava X"', () => {
+    expect(textoDe(bloco)).toContain("Na totalização final do TSE, Flávio teve 48,21% dos votos válidos, e Lula, 51,79%.");
+    expect(textoDe(bloco)).toContain("Com 5% das seções, a projeção errava 0,2 ponto na base Só apuração e 0,1 ponto na base Apuração + pesquisas");
+    expect(textoDe(bloco)).toContain("O placar parcial errava 0,6 ponto.");
+  });
+
+  it("traz o erro com 5%, 25% e 50% das seções, no placar parcial e nas duas bases, e de que momento ele é", () => {
+    const tabela = elemento(bloco, /<table[^>]*data-bloco="erros-da-noite"/);
+
+    expect(elementos(tabela, /<tr\b/).map(textoDe)).toEqual([
+      "Com Placar parcial Só apuração Apuração + pesquisas",
+      "5% das seções 0,6 0,2 0,1",
+      "25% das seções 2,3 0,7 0,8",
+      "50% das seções 1,6 0,3 0,3",
+    ]);
+    expect(textoDe(bloco)).toContain("o primeiro momento publicado mais perto do ponto: 4,80%, 25,19% e 50,76% das seções");
+  });
+
+  it("mostra a noite em cada base, com um botão para cada e a base da noite aberta: o placar parcial, a projeção com a faixa de 95% e o resultado", () => {
+    const botoes = elementos(bloco, /<button[^>]*data-grafico-botao/);
+    expect(botoes.map(textoDe)).toEqual(["Só apuração", "Apuração + pesquisas"]);
+    expect(botoes.map((b) => /aria-pressed="(true|false)"/.exec(b)?.[1])).toEqual(["false", "true"]);
+    expect(elemento(bloco, /<div[^>]*data-grafico="com-pesquisas"/)).toMatch(/^<div[^>]*data-ativo/);
+    for (const base of ["so-apuracao", "com-pesquisas"]) {
+      const grafico = elemento(bloco, new RegExp(`<div[^>]*data-grafico="${base}"`));
+      for (const classe of ["placar", "linha-da-projecao", "faixa"]) expect(grafico, `${base} ${classe}`).toMatch(new RegExp(`<path[^>]*class="${classe}"`));
+      expect(textoDe(grafico), base).toContain("resultado: Flávio 48,21%");
+    }
+  });
+
+  it("abre os blocos abaixo do bloco ao vivo e leva a atribuição", () => {
+    expect(html.indexOf('data-bloco="como-a-projecao-se-saiu"')).toBeLessThan(html.indexOf('data-bloco="o-que-esperar-da-noite"'));
+    expect(textoDe(bloco)).toContain("Cálculo do Apurador com dados do TSE");
+  });
+
+  it("não aparece com a chave da projeção desligada, nem no build do ensaio, que reproduz 2022", () => {
+    for (const dist of [DIST_CHAVES_DESLIGADAS, DIST_ENSAIO]) {
+      expect(readFileSync(new URL("index.html", dist), "utf8"), dist.href).not.toContain('data-bloco="como-a-projecao-se-saiu"');
+    }
   });
 
   it("é indexada em apurador.org, e o *.workers.dev do site não", () => {

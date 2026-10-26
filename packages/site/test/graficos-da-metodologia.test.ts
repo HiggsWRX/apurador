@@ -12,7 +12,7 @@ const [de2022, de2018] = NOITES_REPRODUZIDAS as [(typeof NOITES_REPRODUZIDAS)[nu
 const pontos = (d: string) => [...d.matchAll(/[ML](-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g)].map((m) => [Number(m[1]), Number(m[2])] as const);
 
 describe("graficoDaNoite", () => {
-  const g = graficoDaNoite(de2022, TAMANHO);
+  const g = graficoDaNoite(de2022, TAMANHO, "com-pesquisas");
 
   it("cobre o placar parcial da noite inteira, com as marcas de 4 em 4 pontos em volta de 50% e o nome de quem está à frente", () => {
     expect(g.dominio).toEqual([42, 56]);
@@ -30,7 +30,7 @@ describe("graficoDaNoite", () => {
     // Com 50% das seções, o placar parcial de 2022 está abaixo do resultado (49,70 contra 50,90), e o de 2018, acima
     // (56,14 contra 55,13).
     expect(g.rotuloAbaixo).toBe(false);
-    expect(graficoDaNoite(de2018, TAMANHO).rotuloAbaixo).toBe(true);
+    expect(graficoDaNoite(de2018, TAMANHO, "com-pesquisas").rotuloAbaixo).toBe(true);
   });
 
   it("deixa o placar parcial de fora antes da primeira seção e recorta a faixa larga do começo no eixo", () => {

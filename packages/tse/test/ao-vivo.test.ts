@@ -20,12 +20,13 @@ describe("lerResultado", () => {
       totalizacaoFinal: true,
       indicacao: false,
       secoes: { totalizadas: 499_248, total: 499_248, percentual: 100 },
-      eleitorado: { total: 158_745_502, totalizado: 158_745_502, comparecimento: 125_275_835 },
+      eleitorado: { total: 158_745_502, totalizado: 158_745_502, comparecimento: 125_275_835, abstencao: 33_469_244 },
       votos: { validos: 119_300_788, brancos: 2_300_798, nulos: 3_674_249 },
     });
     expect(brasil.candidatos.find((c) => c.numero === 22)).toEqual({
       numero: 22,
       sequencial: "280002551544",
+      nome: "FLAVIO NANTES BOLSONARO",
       nomeUrna: "FLAVIO BOLSONARO",
       partido: "PL",
       votos: 56_104_503,
